@@ -1,0 +1,47 @@
+# ---- secrets: never commit ----
+vapid.json
+push_subs.json*
+*.pem
+*.key
+.env
+.env.*
+
+# ---- your own data and config (copy from *.example.json) ----
+config.json
+roster.json
+state.json*
+inbox.jsonl*
+*.lock
+.*.lock
+manager-handoff.md
+*-handoff.md
+
+# ---- runtime folders ----
+uploads/
+work/
+logs/
+rcshots/
+avatars/
+tools/models/
+tools/voice/
+voices*/
+.claude/agent-memory/
+.claude/agents/
+.claude/settings.local.json
+
+# ---- backups: the project writes name.bak-<tag>, so match *.bak* (not just *.bak) ----
+*.bak*
+*~
+
+# ---- media you generate ----
+*.wav
+*.mp3
+*.m4a
+*.mp4
+*.mov
+
+# ---- python / os ----
+__pycache__/
+*.pyc
+.venv*/
+.DS_Store

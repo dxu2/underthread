@@ -1,0 +1,2820 @@
+// Underthread dashboard. Polls /api/state, renders, posts your clicks to /api/action.
+(function () {
+  const $ = (s, el = document) => el.querySelector(s);
+  const $$ = (s, el = document) => Array.from(el.querySelectorAll(s));
+  const LS = {
+    get(k, d) { try { const v = localStorage.getItem("rt." + k); return v == null ? d : JSON.parse(v); } catch { return d; } },
+    set(k, v) { try { localStorage.setItem("rt." + k, JSON.stringify(v)); } catch { } },
+  };
+
+  const UI = {
+    page: LS.get("page", "review"), item: null, chat: LS.get("chat", "manager"),
+    lang: LS.get("lang", "zh"), theme: LS.get("theme", "dark"), sort: LS.get("sort", "activity"),
+    logAgent: "", mailFilter: "all", doc: null, docs: null, docText: "", openRep: null, calForm: false, tick: 0,
+    seen: LS.get("seen", {}), chatW: LS.get("chatW", 420), chatFold: LS.get("chatFold", false),
+  };
+  let ST = null, REV = null;
+  // t-draft-keep: unsent text in the card reply box ("item:<id>") and the DM box ("dm:<agent>"), one draft each, kept on this device only (rt.drafts).
+  // Saved on every input; cleared when the text goes out (comment / reject / approve-with-note / chat send) or when the box is emptied.
+  const DRAFT = {
+    all() { const d = LS.get("drafts", {}); return d && typeof d === "object" ? d : {}; },
+    get(k) { const d = DRAFT.all()[k]; return d && d.t ? d : null; },
+    set(k, txt) { if (!k) return; const d = DRAFT.all(), had = !!d[k]; if (txt && txt.trim()) d[k] = { t: txt, at: new Date().toISOString() }; else if (had) delete d[k]; else return; LS.set("drafts", d); },
+  };
+
+  // ---------- i18n ----------
+  const T = {
+    zh: { quests: "委托", all_quests: "全部", search_ph: "搜索条目和对话",
+      review: "审核", main: "主线", side: "支线", daily: "日常委托", urgent: "紧急活动", ongoing: "常驻活动",
+      pipe: "制作线", board: "委托板", logs: "日志", reports: "报告", channels: "频道", docs: "文档", assets: "素材", roles: "角色", mail: "信箱",
+      today: "今日日程", meetings: "个", team: "TEAM", stamina: "体力", updated: "更新于",
+      todo: "待办", doing: "进行中", review_s: "待你审核", waiting: "等别人", done: "完成",
+      plan: "待拍板", deliverable: "待验收", question: "待回答", task: "任务",
+      approve: "批准", reject: "驳回", complete: "完成", reopen: "重开", archive: "归档",
+      owner: "负责", category: "分类", stage: "阶段", platforms: "平台", due: "截止",
+      draft: "草稿", confidence: "把握度", evidence: "证据", links: "链接", attachments: "附件", thread: "动态", older: "较早版本",
+      copy: "复制", copied: "已复制", send_hint: "⌘/Ctrl+Enter 发送，Enter 换行",
+      composer_ph: "输入 @ 选择发给谁（默认发给负责人）；驳回时写原因。图片和文件可以直接粘贴或拖进来。",
+      chat_ph: "对{n}说……  ⌘/Ctrl+Enter 发送，Enter 换行",
+      file: "文件", default_owner: "默认：负责人",
+      send_to: "发给", jump_top: "顶部", jump_new: "最新", expand: "展开全文", collapse: "收起", owner_tag: "负责人",
+      k_plan: "方案", k_deliverable: "交付", k_question: "提问", k_task: "草稿",
+      online: "在线", offline: "离线", working: "执行中", idle: "待机",
+      by_activity: "按最新动态", by_created: "最新创建", pending: "待审核",
+      empty_review: "没有等你审核的东西。去喝杯水。", empty: "这里是空的。", empty_mail: "没有新动态", mail_thread: "{n} 条", unread_only: "未读",
+      wake: "唤醒管家", write_report: "日报", report_req: "让管家写日报", theme: "主题",
+      cancel: "取消",
+      reject_t: "驳 回", reject_reason: "原因（会被整理成规则提议）",
+      lessons: "规则提议", adopt: "采纳", drop: "丢弃", dm: "私信",
+      closed: "已完成", first_pass: "一次通过", adopted: "已采纳规则",
+      all: "全部", unread: "未读", replies: "回复", updates: "更新", mark_all: "全部已读",
+      week_done: "本周交付", in_review: "待审核", in_progress: "进行中", pending_rules: "待采纳规则",
+      days7: "7 天前", now: "现在", add: "添加",
+      mgr_offline: "管家离线：有 {n} 条指令还没处理。启动 manager session。",
+      sleeping: "休眠", sleep_at: "休眠 · {t} 复活", waking: "复活中",
+      mgr_sleep: "管家休眠中，{t} 复活。{n} 条指令已排队，醒来自动处理。",
+      mgr_waking: "用量已重置，正在唤醒管家；几分钟内没回应就到管家的 session 里说一句话。",
+      waiting_long: "「{t}」已经等你审核超过 24 小时",
+      no_owner_urgent: "紧急：「{t}」还没有人接",
+      next: "NEXT", sync: "SYNC", inbox: "INBOX", comfy_on: "5090 在线", comfy_off: "5090 未连",
+      no_next: "没有日程", tomorrow: "明天", today_w: "今天", yesterday: "昨天",
+      ago_m: "{n} 分钟前", ago_h: "{n} 小时前", just: "刚刚",
+      stamina_t: "体 力", stamina_q: "本月剩余额度（%）",
+      unacked: "待处理", reports_empty: "还没有日报。每天 {t} 管家会自动写一份。",
+      docs_pick: "选一个文档", ch_none: "未标平台",
+    },
+    en: { quests: "Quests", all_quests: "All", search_ph: "Search items and chats",
+      review: "Review", main: "Main quest", side: "Side quest", daily: "Daily", urgent: "Urgent", ongoing: "Ongoing",
+      pipe: "Pipeline", board: "Board", logs: "Log", reports: "Reports", channels: "Channels", docs: "Docs", assets: "Assets", roles: "Roster", mail: "Mailbox",
+      today: "Today", meetings: "", team: "TEAM", stamina: "Stamina", updated: "updated",
+      todo: "To do", doing: "In progress", review_s: "Your review", waiting: "Waiting", done: "Done",
+      plan: "Decide", deliverable: "Accept", question: "Answer", task: "Task",
+      approve: "Approve", reject: "Reject", complete: "Done", reopen: "Reopen", archive: "Archive",
+      owner: "Owner", category: "Category", stage: "Stage", platforms: "Platforms", due: "Due",
+      draft: "Draft", confidence: "Confidence", evidence: "Evidence", links: "Links", attachments: "Files", thread: "Thread", older: "Older drafts",
+      copy: "Copy", copied: "Copied", send_hint: "⌘/Ctrl+Enter to send",
+      composer_ph: "Type @ to pick who gets it (default: owner). Give a reason when rejecting. Paste or drop images and files.",
+      chat_ph: "Message {n}…  ⌘/Ctrl+Enter to send",
+      file: "File", default_owner: "default: owner",
+      send_to: "To", jump_top: "Top", jump_new: "Latest", expand: "Show all", collapse: "Collapse", owner_tag: "owner",
+      k_plan: "Plan", k_deliverable: "Deliverable", k_question: "Question", k_task: "Draft",
+      online: "online", offline: "offline", working: "working", idle: "idle",
+      by_activity: "Latest activity", by_created: "Newest", pending: "Pending",
+      empty_review: "Nothing waiting on you.", empty: "Nothing here.", empty_mail: "Nothing new", mail_thread: "{n}", unread_only: "Unread",
+      wake: "Ping manager", write_report: "Report", report_req: "Ask for a report", theme: "Theme",
+      cancel: "Cancel",
+      reject_t: "Reject", reject_reason: "Reason (becomes a rule proposal)",
+      lessons: "Rule proposals", adopt: "Adopt", drop: "Drop", dm: "DM",
+      closed: "closed", first_pass: "first-pass", adopted: "rules adopted",
+      all: "All", unread: "Unread", replies: "Replies", updates: "Updates", mark_all: "Mark all read",
+      week_done: "Shipped this week", in_review: "In review", in_progress: "In progress", pending_rules: "Pending rules",
+      days7: "7d ago", now: "now", add: "Add",
+      mgr_offline: "Manager offline: {n} instructions waiting. Start the manager session.",
+      sleeping: "asleep", sleep_at: "asleep · back {t}", waking: "waking",
+      mgr_sleep: "Manager asleep until {t}. {n} instructions queued; handled on wake.",
+      mgr_waking: "Usage has reset; waking the manager. No reply in a few minutes? Send any message in its session.",
+      waiting_long: "\"{t}\" has waited on your review for 24h+",
+      no_owner_urgent: "Urgent: \"{t}\" has no owner yet",
+      next: "NEXT", sync: "SYNC", inbox: "INBOX", comfy_on: "5090 online", comfy_off: "5090 not linked",
+      no_next: "no events", tomorrow: "Tomorrow", today_w: "Today", yesterday: "Yesterday",
+      ago_m: "{n}m ago", ago_h: "{n}h ago", just: "just now",
+      stamina_t: "Stamina", stamina_q: "Budget left this month (%)",
+      unacked: "pending", reports_empty: "No reports yet. The manager writes one daily at {t}.",
+      docs_pick: "Pick a doc", ch_none: "No platform",
+    },
+  };
+  const t = (k, vars) => { let s = (T[UI.lang] && T[UI.lang][k]) ?? T.zh[k] ?? k; for (const [a, b] of Object.entries(vars || {})) s = s.replace("{" + a + "}", b); return s; };
+  const EN_SUB = { review: "PENDING REVIEW", main: "MAIN QUEST", side: "SIDE QUEST", daily: "DAILY COMMISSIONS", urgent: "URGENT EVENTS",
+    ongoing: "ONGOING EVENTS", pipe: "PRODUCTION LINE", board: "COMMISSION BOARD", logs: "JOURNAL", reports: "REPORTS", channels: "CHANNELS", docs: "ARCHIVE", assets: "ASSET LIBRARY", roles: "ROSTER", mail: "MAILBOX" };
+  const CATS = ["main", "side", "daily", "urgent", "ongoing"];
+  const STAGES = ["todo", "doing", "review", "waiting", "done"];
+  const PLAT_ZH = { bili: "B站", yt: "YouTube", xhs: "小红书" }, PLAT_EN = { bili: "Bilibili", yt: "YouTube", xhs: "RedNote" };
+  const PLAT = new Proxy({}, {  // platform names follow the UI language
+    get: (_, k) => (UI.lang === "en" ? PLAT_EN : PLAT_ZH)[k],
+    ownKeys: () => Object.keys(PLAT_ZH), getOwnPropertyDescriptor: (_, k) => ({ enumerable: true, configurable: true, value: (UI.lang === "en" ? PLAT_EN : PLAT_ZH)[k] }),
+  });
+  const stageLabel = s => t(s === "review" ? "review_s" : s);
+  // t-web-audit-2 03: a waiting plan/question is on the user, same as the home page (awaitsUser). Lists group it with review and call that group 「等你拍板」.
+  // q-1030-29a9: lists show a "doing" card under 进行中 only while an agent is actually working on it; a doing card with nobody on it
+  // (standing / ongoing work between runs) is shown under 待办. Display only: the stored stage stays "doing" (the detail's stage pill shows it).
+  const idleDoing = i => i.stage === "doing" && !workersOf(i.id).length;
+  const grpOf = i => awaitsUser(i) ? "review" : idleDoing(i) ? "todo" : i.stage;
+  // t-idle-pause-tag: such a card says 「暂停」 where a row shows its stage, so it stands apart from a real 待办
+  const pauseL = () => UI.lang === "en" ? "Paused" : "暂停";
+  const rowLabel = i => idleDoing(i) ? pauseL() : grpLabel(grpOf(i));
+  const grpLabel = s => s === "review" ? (UI.lang === "en" ? "On you" : "等你拍板") : stageLabel(s);
+
+  // ---------- helpers ----------
+  const D = iso => iso ? new Date(iso) : null;
+  const pad = n => String(n).padStart(2, "0");
+  const hm = iso => { const d = D(iso); return d ? `${pad(d.getHours())}:${pad(d.getMinutes())}` : ""; };
+  const dayKey = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+  function when(iso) {
+    const d = D(iso); if (!d) return "";
+    const today = new Date(); const y = new Date(Date.now() - 864e5);
+    if (dayKey(d) === dayKey(today)) return `${t("today_w")} ${hm(iso)}`;
+    if (dayKey(d) === dayKey(y)) return `${t("yesterday")} ${hm(iso)}`;
+    return `${d.getMonth() + 1}/${d.getDate()} ${hm(iso)}`;
+  }
+  // t-now-ago: relative/day labels in HTML carry data-rel + data-t; the 20 s wk-el interval re-derives them (only writes when the text changes)
+  const relH = (k, iso, txt) => iso ? `<time class="rel" data-rel="${k}" data-t="${esc(iso)}">${txt}</time>` : "";
+  const agoH = iso => relH("ago", iso, ago(iso)), whenH = iso => relH("when", iso, when(iso));
+  function ago(iso) {
+    const d = D(iso); if (!d) return "";
+    const m = Math.round((Date.now() - d) / 6e4);
+    if (m < 1) return t("just"); if (m < 60) return t("ago_m", { n: m }); if (m < 48 * 60) return t("ago_h", { n: Math.round(m / 60) });
+    return when(iso);
+  }
+  const agents = () => Object.values(ST.agents || {}).sort((a, b) => (a.order ?? 99) - (b.order ?? 99));
+  // q-1030-2214: a thread/log "who" that is not a roster id but a role's own name (e.g. its name_en, "steward" for manager) resolves to that role,
+  // so the row gets its real avatar and name instead of the pixel fallback.
+  const agentAlias = id => { const k = String(id || "").trim().toLowerCase(); return k ? Object.values(ST.agents || {}).find(a => [a.name_en, a.name].some(n => n && String(n).trim().toLowerCase() === k)) : null; };
+  const agent = id => (ST.agents || {})[id] || agentAlias(id) || { id, name: id, color: "#888" };
+  const aname = a => (UI.lang === "en" ? a.name_en : a.name) || a.name || a.id;
+  const atitle = a => (UI.lang === "en" ? a.title_en : a.title) || a.title || "";
+  const aduty = a => (UI.lang === "en" ? a.duty_en : a.duty) || a.duty || "";
+  function avatarUrl(a) {
+    const f = ST.meta.avatars && ST.meta.avatars[a.id];
+    return f ? `/avatars/${encodeURIComponent(f)}` : Office.avatar(a);
+  }
+  // t-m2-a ⓪ (L-1029-a669): while RING1 is a Set, a working agent keeps its ring on ONE avatar only (the first av() call for it); later ones are drawn idle.
+  // A list that calls av() per row renders inside ringOnce(), newest row first, so the ring lands on the newest row (DM threads do the same by index).
+  let RING1 = null;
+  function ringOnce(fn, set) { const prev = RING1; RING1 = set || new Set(); try { return fn(); } finally { RING1 = prev; } }
+  function av(a, cls = "", forItem) {
+    if (a === "me" || a.id === "me") return `<span class="av ${cls}" style="background:var(--ink2)"></span>`;
+    // t-working-avatar: ONE place for the "working" look (CSS in style.css). --wp = minus the wall-clock phase of the 4 s cycle, so a node created by a re-render
+    // starts exactly where the one it replaces was: polling never restarts the ring. Static (no animation) under prefers-reduced-motion.
+    // t-working-item-highlight: inside a row about item X (forItem), the ring stays off when we KNOW the agent is on another item (agents[].item set and different).
+    let w = a.status === "working" && !(forItem && a.item && a.item !== forItem);
+    if (w && RING1) { if (RING1.has(a.id)) w = false; else RING1.add(a.id); }
+    return `<span class="av ${cls} ${w ? "working" : ""}" style="background-image:url('${avatarUrl(a)}')${w ? `;--wp:${(-(Date.now() % 4000) / 1000).toFixed(3)}s` : ""}" title="${esc(aname(a))}"${w ? ` data-working="1"` : ""}>${w ? `<i class="aw" title="${t("working")}"></i>` : ""}</span>`;
+  }
+  // ===== t-m2-a ②: number roll. Runs only when the value really changes: the last value shown is kept in memory per key (NV), not read back from the DOM,
+  // so a poll or a rebuilt node with the same value does nothing. Each changed digit gets a one-glyph window: the old one slides out, the new one slides in
+  // (up when the number grows, down when it shrinks), transform + opacity only, WAAPI ~420 ms; the spans are replaced by plain text when it ends.
+  // First paint, non-integers, a hidden page and prefers-reduced-motion just swap the text.
+  const NV = {}, RMQ = matchMedia("(prefers-reduced-motion: reduce)");
+  function roll(el, to, key) {
+    if (!el) return; to = String(to);
+    const from = key ? NV[key] : el.dataset.nv; if (key) NV[key] = to; el.dataset.nv = to;
+    const isN = x => /^\d{1,6}$/.test(x);
+    if (from === to) { if (!el._nr && el.textContent !== to) el.textContent = to; return; }
+    if (el._nr) { const a = el._nr; el._nr = null; a.forEach(x => x.cancel()); }
+    if (from == null || !isN(from) || !isN(to) || RMQ.matches || document.hidden || !el.isConnected) { el.textContent = to; return; }
+    const n = Math.max(from.length, to.length), A = from.padStart(n, " "), B = to.padStart(n, " "), up = +to > +from;
+    el.innerHTML = [...B].map((c, i) => c === A[i] ? c : `<span class="nr"><span class="nr-o">${A[i].trim()}</span><span class="nr-n">${c.trim()}</span></span>`).join("");
+    const o = { duration: 420, easing: "cubic-bezier(.2,.8,.2,1)", fill: "both" }, d = up ? 100 : -100, run = [];
+    el.querySelectorAll(".nr").forEach(c => {
+      run.push(c.firstChild.animate([{ transform: "translateY(0)", opacity: 1 }, { transform: `translateY(${-d}%)`, opacity: 0 }], o));
+      run.push(c.lastChild.animate([{ transform: `translateY(${d}%)`, opacity: 0 }, { transform: "translateY(0)", opacity: 1 }], o));
+    });
+    el._nr = run;
+    Promise.all(run.map(x => x.finished)).then(() => { if (el._nr === run) { el._nr = null; el.textContent = to; } }, () => {});
+  }
+  // ===== t-working-item-highlight: an item is "being worked on" only when state.agents[x].status === "working" AND agents[x].item === its id.
+  // Never guessed from owner / stage: no agents[].item, no highlight. Same --wp wall-clock phase as App.av, so poll re-renders never restart the motion.
+  // t-now-closed: dashboard-side safety net. A card that is already closed (stage done) never shows as being worked on, whoever still holds it;
+  // the manager with no live card is "online · watching the inbox": no timer, no progress bar, not counted as working.
+  const liveItem = a => { const it = a && a.item && (ST.items || []).find(i => i.id === a.item); return it && it.stage !== "done" ? it : null; };
+  const mgrOnline = a => !!a && a.id === "manager" && a.status === "working" && !liveItem(a);
+  const MGR_ON = () => UI.lang === "en" ? "Online · watching the inbox" : "在线 · 看着信箱";
+  const workersOf = id => id ? Object.values(ST.agents || {}).filter(a => a.status === "working" && a.item === id && liveItem(a)).sort((a, b) => (a.order ?? 99) - (b.order ?? 99)) : [];
+  const wkP = () => `--wp:${(-(Date.now() % 4000) / 1000).toFixed(3)}s`;
+  function wkDur(iso) {
+    const m = Math.max(0, Math.floor((Date.now() - new Date(iso)) / 6e4)), en = UI.lang === "en";
+    if (m < 60) return en ? `${Math.max(1, m)}m` : `${Math.max(1, m)} 分钟`;
+    const h = Math.floor(m / 60), r = String(m % 60).padStart(2, "0");
+    return en ? `${h}h ${r}m` : `${h} 时 ${r} 分`;
+  }
+  function wkTag(ws, cls = "") {   // [ringed avatars] 「名字 处理中 · 12 分钟」 (elapsed only when `since` exists)
+    if (!ws.length) return "";
+    const since = ws.map(a => a.since).filter(Boolean).sort()[0], nm = ws.map(a => aname(a)).join(UI.lang === "en" ? ", " : "、");
+    return `<span class="wk-tag ${cls}" style="${wkP()}"><span class="wk-avs">${ringOnce(() => ws.map(a => av(a, "sm")).join(""))}</span><span class="wk-tx"><b>${esc(nm)}</b> ${UI.lang === "en" ? "on it" : "处理中"}${since ? ` · <time class="wk-el" data-since="${esc(since)}">${wkDur(since)}</time>` : ""}</span></span>`;
+  }
+  const wkFx = ws => ws.length ? `<i class="wk-fx" aria-hidden="true"><i class="wk-bg"></i><i class="wk-bar"></i></i>` : "";
+  const wkAttr = ws => ws.length ? ` style="${wkP()}"` : "";
+  function dcDur(iso) {   // 此刻 card format: 「12 分钟」/「1 小时 5 分」 (t-now-elapsed: was computed once per render, so it froze between state revs)
+    const m = Math.max(0, Math.round((Date.now() - new Date(iso)) / 6e4)), zh = UI.lang !== "en";
+    return m < 60 ? m + (zh ? " 分钟" : " min") : Math.floor(m / 60) + (zh ? " 小时 " : " h ") + (m % 60) + (zh ? " 分" : " min");
+  }
+  setInterval(() => { document.querySelectorAll(".wk-el[data-since]").forEach(el => { const v = el.dataset.fmt === "dc" ? dcDur(el.dataset.since) : wkDur(el.dataset.since); if (el.textContent !== v) el.textContent = v; });
+    document.querySelectorAll("time.rel[data-t]").forEach(el => { const v = el.dataset.rel === "ago" ? ago(el.dataset.t) : when(el.dataset.t); if (el.textContent !== v) el.textContent = v; });
+  }, 20000);   // elapsed ticks between polls (render only runs on a new rev)
+  const whoName = w => w === "me" ? (ST.meta.owner && !ST.meta.owner.startsWith("<") ? ST.meta.owner : (UI.lang === "en" ? "You" : "我")) : aname(agent(w));
+  const items = () => (ST.items || []).filter(i => !i.archived);
+  const byAct = (a, b) => (b.activity || b.updated || "").localeCompare(a.activity || a.updated || "");
+  const byCreated = (a, b) => (b.created || "").localeCompare(a.created || "");
+  // Ornaments live in fx.js; pathLength=1 lets CSS draw them in.
+  function orn(w = 200) { return window.ORN.divider(w); }
+  function toast(msg, err) {
+    const el = $("#toast"); el.textContent = msg; el.className = err ? "err" : ""; el.hidden = false;
+    clearTimeout(toast._t); toast._t = setTimeout(() => el.hidden = true, 2600);
+  }
+  async function api(kind, body = {}) {
+    try {
+      const r = await fetch("/api/action", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ kind, ...body }) });
+      const j = await r.json();
+      if (!r.ok) throw new Error(j.error || r.statusText);
+      await poll(true);
+      return j;
+    } catch (e) { toast(String(e.message || e), true); throw e; }
+  }
+  // Raw bytes straight to disk (no base64), with real progress: big footage from the phone works.
+  function upload(file, onProgress) {
+    return new Promise((resolve, reject) => {
+      const x = new XMLHttpRequest();
+      x.open("POST", "/api/upload/raw?name=" + encodeURIComponent(file.name || "paste.png"));
+      x.setRequestHeader("Content-Type", "application/octet-stream");
+      x.upload.onprogress = e => { if (e.lengthComputable && onProgress) onProgress(e.loaded / e.total); };
+      x.onload = () => {
+        let j = {}; try { j = JSON.parse(x.responseText); } catch { }
+        if (x.status === 200 && j.path) resolve(j.path); else { toast(j.error || `upload failed (${x.status})`, true); reject(new Error(j.error)); }
+      };
+      x.onerror = () => { toast(UI.lang === "en" ? "Upload failed: connection lost" : "上传失败：连接中断", true); reject(new Error("network")); };
+      x.send(file);
+    });
+  }
+  const fmtSize = b => b > 1 << 30 ? (b / (1 << 30)).toFixed(1) + " GB" : b > 1 << 20 ? Math.round(b / (1 << 20)) + " MB" : Math.max(1, Math.round(b / 1024)) + " KB";
+  // Chips for a composer's attachments: finished files, plus anything still uploading with its percentage.
+  function attChips(pending) {
+    const done = pending.map(p => `<span class="att-chip">📎 ${esc(p.split("/").pop().replace(/^\d{8}-\d{6}-[0-9a-f]{4}-/, ""))}</span>`);
+    const up = Object.values(pending._up || {}).map(u => `<span class="att-chip up" style="--p:${Math.round(u.p * 100)}%">⇡ ${esc(u.name)} <b>${Math.round(u.p * 100)}%</b> <small>${u.size}</small></span>`);
+    return done.concat(up).join("");
+  }
+  const stillUploading = pending => Object.keys(pending._up || {}).length > 0;
+  // Attachments on messages and timeline entries: images inline, footage playable, everything else a link.
+  // ===== t-voice-memo: voice memos render as a play bar. One shared Audio for the whole page, so a re-render
+  // (a new chat message rebuilds the box) never cuts playback: bars are re-bound to it by path (data-vm).
+  const AUD_RE = /\.(m4a|mp3|wav|aac|ogg|opus)$/i;
+  const media = p => ((ST && ST.media) || {})[p] || null;
+  const isAudioAtt = p => AUD_RE.test(p) || (/\.webm$/i.test(p) && (media(p) || {}).kind === "audio");
+  const VM = { a: null, cur: null, rate: 1, dur: {}, err: {}, open: new Set(), probe: new Set(), raf: 0, seek: null };
+  const vmFmt = s => isFinite(s) && s > 0 ? fmtDur(s) : "--:--";
+  const VM_PLAY = `<svg class="i-play" viewBox="0 0 12 14" aria-hidden="true"><path d="M0 0L12 7L0 14Z"/></svg><svg class="i-pause" viewBox="0 0 12 14" aria-hidden="true"><path d="M1 0h3.5v14H1zM7.5 0H11v14H7.5z"/></svg>`;
+  const vmBars = (pk, n = 48) => (pk && pk.length ? pk : Array(n).fill(0.3)).map(v => `<i style="--h:${v}"></i>`).join("");
+  const vmDur = p => (media(p) || {}).dur || VM.dur[p] || 0;
+  const vmSig = p => { const m = media(p) || {}, tx = m.tx || {}; return [m.peaks ? 1 : 0, m.dur || "", tx.status || "", (tx.text || "").length, tx.lang || "", ST && ST.meta && ST.meta.media_v ? 1 : 0, UI.lang].join("|"); };
+  function vmTime(p) {
+    const zh = UI.lang !== "en", a = VM.a, d = vmDur(p);
+    if (VM.err[p]) return VM.err[p] === "codec" ? (zh ? "此设备不能播放" : "Can't play here") : (zh ? "暂时打不开" : "Can't load");
+    return VM.cur === p && a && (a.currentTime > 0 || !a.paused) ? vmFmt(a.currentTime) + " / " + vmFmt(d) : vmFmt(d);
+  }
+  function vmTx(p, m) {
+    const zh = UI.lang !== "en", tx = m.tx || {}, srv = ST && ST.meta && ST.meta.media_v;
+    if (tx.status === "done") {
+      const t = tx.text || "", cjk = !tx.lang || /^(zh|ja|ko)$/.test(tx.lang), n = cjk ? t.length : (t.match(/\S+/g) || []).length;
+      let ln = ""; if (tx.lang && tx.lang !== "zh") try { ln = new Intl.DisplayNames([zh ? "zh-CN" : "en"], { type: "language" }).of(tx.lang) + " · "; } catch { ln = tx.lang + " · "; }
+      const cnt = zh ? `${n} ${cjk ? "字" : "词"}` : `${n} ${cjk ? "chars" : "words"}`;
+      return `<details class="vm-tx"${VM.open.has(p) ? " open" : ""}><summary>${zh ? "机器转写" : "Machine transcript"} · ${ln}${cnt}</summary><p>${t ? esc(t) : (zh ? "（没听到说话）" : "(no speech)")}</p></details>`;
+    }
+    if (tx.status === "queued" || tx.status === "working")   // negative delay: a poll re-render does not restart the spinner
+      return `<div class="vm-busy"><i style="animation-delay:-${Date.now() % 900}ms"></i>${zh ? (tx.status === "queued" ? "排队等本机转写…" : "正在本机转写…") : "Transcribing on this Mac…"}</div>`;
+    if (!srv) return "";   // older server: no transcription yet, the bar still plays
+    if (tx.status === "failed") return `<div class="vm-busy err">${zh ? "转写失败" : "Transcription failed"} · <button type="button" class="vm-retry" title="${esc(tx.error || "")}">${zh ? "重试" : "Retry"}</button></div>`;
+    return `<div class="vm-busy"><button type="button" class="vm-retry">${zh ? "转写这条录音" : "Transcribe"}</button></div>`;
+  }
+  function vmHTML(p, u, name) {
+    const m = media(p) || {}, zh = UI.lang !== "en", on = VM.cur === p && VM.a && !VM.a.paused, d = vmDur(p);
+    const prog = VM.cur === p && VM.a && d ? Math.min(1, VM.a.currentTime / d) : 0, bars = vmBars(m.peaks);
+    return `<div class="vm-wrap" data-vm="${esc(p)}" data-name="${name}" data-sig="${esc(vmSig(p))}"><div class="vm${on ? " on" : ""}" data-src="${u}" style="--pp:${(prog * 100).toFixed(2)}%">` +
+      `<button type="button" class="vm-play" aria-label="${zh ? "播放" : "Play"} ${name}">${VM_PLAY}</button>` +
+      `<div class="vm-wave${m.peaks ? "" : " vm-ph"}" role="slider" tabindex="0" aria-label="${zh ? "播放进度" : "Position"}" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${Math.round(prog * 100)}"><div class="vm-b">${bars}</div><div class="vm-b vm-p" aria-hidden="true">${bars}</div></div>` +
+      `<b class="vm-t">${vmTime(p)}</b><button type="button" class="vm-rate" aria-label="${zh ? "倍速" : "Speed"}">${VM.rate}×</button></div>${vmTx(p, m)}</div>`;
+  }
+  const vmEls = p => document.querySelectorAll(`.vm-wrap[data-vm="${CSS.escape(p)}"]`);
+  function vmPaint(p = VM.cur) {
+    if (!p) return;
+    const a = VM.a, d = vmDur(p) || (a && VM.cur === p ? a.duration : 0), mine = VM.cur === p && a;
+    const prog = mine && d ? Math.min(1, a.currentTime / d) : 0;
+    vmEls(p).forEach(w => {
+      const el = w.firstElementChild; if (!el) return;
+      el.classList.toggle("on", !!(mine && !a.paused));
+      el.style.setProperty("--pp", (prog * 100).toFixed(2) + "%");
+      const t = $(".vm-t", el), s = vmTime(p); if (t && t.textContent !== s) t.textContent = s;
+      const wv = $(".vm-wave", el); if (wv) wv.setAttribute("aria-valuenow", Math.round(prog * 100));
+    });
+  }
+  function vmTick() { cancelAnimationFrame(VM.raf); const f = () => { vmPaint(); if (VM.a && !VM.a.paused) VM.raf = requestAnimationFrame(f); }; f(); }
+  function vmAudio() {
+    if (VM.a) return VM.a;
+    const a = VM.a = new Audio(); a.preload = "metadata";
+    a.addEventListener("play", vmTick); a.addEventListener("pause", () => vmPaint());
+    a.addEventListener("ended", () => { a.currentTime = 0; vmPaint(); });
+    a.addEventListener("loadedmetadata", () => {
+      if (VM.cur && isFinite(a.duration)) VM.dur[VM.cur] = a.duration;
+      if (VM.seek != null && isFinite(a.duration)) { a.currentTime = VM.seek * a.duration; VM.seek = null; }
+      vmPaint();
+    });
+    a.addEventListener("error", () => { if (VM.cur && a.error) VM.err[VM.cur] = vmCodec(VM.cur); vmPaint(); });
+    return a;
+  }
+  // a file this browser cannot decode (ogg/opus on iPhone) vs one that failed to load (network, old server)
+  const VM_MIME = { m4a: "audio/mp4", aac: "audio/aac", mp3: "audio/mpeg", wav: "audio/wav", ogg: 'audio/ogg; codecs="opus"', opus: 'audio/ogg; codecs="opus"', webm: 'audio/webm; codecs="opus"' };
+  const vmCodec = p => { const m = VM_MIME[(p.split(".").pop() || "").toLowerCase()]; return m && !vmAudio().canPlayType(m) ? "codec" : "load"; };
+  function vmStart(w, frac) {
+    const p = w.dataset.vm, a = vmAudio();
+    if (VM.cur !== p) {
+      const old = VM.cur; VM.cur = p; if (old) { a.pause(); vmPaint(old); }
+      VM.seek = frac != null ? frac : null;
+      a.src = w.firstElementChild.dataset.src; a.defaultPlaybackRate = a.playbackRate = VM.rate;
+    } else if (frac != null) { const d = vmDur(p) || a.duration; if (d) a.currentTime = frac * d; }
+    delete VM.err[p];
+    const pr = a.play(); if (pr && pr.catch) pr.catch(e => { if (e && e.name === "NotSupportedError") VM.err[p] = vmCodec(p); vmPaint(p); });
+  }
+  function vmSync() {   // poll brought a waveform / transcript for a bar already on screen: swap just that bar
+    document.querySelectorAll(".vm-wrap[data-vm]").forEach(w => {
+      const p = w.dataset.vm;
+      if (w.dataset.sig !== vmSig(p)) w.outerHTML = vmHTML(p, w.firstElementChild.dataset.src, w.dataset.name);
+      else if (!vmDur(p) && !VM.probe.has(p)) {   // no server-side duration (older memo / older server): read it from the file header once
+        VM.probe.add(p); const au = new Audio(); au.preload = "metadata";
+        au.addEventListener("loadedmetadata", () => { if (isFinite(au.duration)) { VM.dur[p] = au.duration; vmPaint(p); } au.removeAttribute("src"); });
+        au.src = w.firstElementChild.dataset.src;
+      }
+    });
+  }
+  const vmFrac = (wv, x) => { const r = wv.getBoundingClientRect(); return Math.max(0, Math.min(1, (x - r.left) / r.width)); };
+  document.addEventListener("click", e => {   // capture: these buttons sit inside links/bubbles that have their own click handlers
+    const b = e.target.closest && e.target.closest(".vm-play, .vm-rate, .vm-retry"); if (!b) return;
+    e.preventDefault(); e.stopPropagation();
+    const w = b.closest(".vm-wrap"), p = w.dataset.vm;
+    if (b.classList.contains("vm-play")) { if (VM.cur === p && VM.a && !VM.a.paused) VM.a.pause(); else vmStart(w); }
+    else if (b.classList.contains("vm-rate")) {
+      VM.rate = VM.rate === 1 ? 1.5 : VM.rate === 1.5 ? 2 : 1;
+      if (VM.a) VM.a.defaultPlaybackRate = VM.a.playbackRate = VM.rate;
+      document.querySelectorAll(".vm-rate").forEach(x => { x.textContent = VM.rate + "×"; });
+    } else {
+      b.disabled = true;
+      fetch("/api/transcribe", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ path: p }) })
+        .then(r => { if (!r.ok) throw new Error(r.status); return poll(true); })
+        .catch(() => { b.disabled = false; toast(UI.lang === "en" ? "Could not start transcription" : "没能开始转写", true); });
+    }
+  }, true);
+  document.addEventListener("pointerdown", e => {   // tap or drag the waveform to seek
+    const wv = e.target.closest && e.target.closest(".vm-wave"); if (!wv || e.button > 0) return;
+    e.stopPropagation(); const w = wv.closest(".vm-wrap");
+    vmStart(w, vmFrac(wv, e.clientX));
+    const mv = ev => { const a = VM.a, d = vmDur(w.dataset.vm) || (a && a.duration); if (a && d && VM.cur === w.dataset.vm) { a.currentTime = vmFrac(wv, ev.clientX) * d; vmPaint(); } };
+    const up = () => { removeEventListener("pointermove", mv); removeEventListener("pointerup", up); removeEventListener("pointercancel", up); };
+    addEventListener("pointermove", mv); addEventListener("pointerup", up); addEventListener("pointercancel", up);
+  }, true);
+  document.addEventListener("keydown", e => {
+    const wv = e.target.closest && e.target.closest(".vm-wave"); if (!wv || !/^Arrow(Left|Right)$|^ $|^Enter$/.test(e.key)) return;
+    e.preventDefault(); const w = wv.closest(".vm-wrap"), p = w.dataset.vm, a = VM.a;
+    if (e.key === " " || e.key === "Enter") { if (VM.cur === p && a && !a.paused) a.pause(); else vmStart(w); return; }
+    if (VM.cur === p && a) { a.currentTime = Math.max(0, a.currentTime + (e.key === "ArrowRight" ? 5 : -5)); vmPaint(); }
+  });
+  document.addEventListener("toggle", e => { const d = e.target; if (d.classList && d.classList.contains("vm-tx")) { const p = d.closest(".vm-wrap").dataset.vm; d.open ? VM.open.add(p) : VM.open.delete(p); } }, true);
+  // composer tile for a pending memo: duration + a 12-bar waveform decoded locally (best effort)
+  function vmTileFace(el, it) {
+    const src = it.url || (it.path ? "/" + it.path.split("/").map(encodeURIComponent).join("/") : "");
+    if (!src) return;
+    const au = new Audio(); au.preload = "metadata"; au.src = src;
+    au.addEventListener("loadedmetadata", () => { const d = $(".ap-dur2", el); if (d && isFinite(au.duration)) d.textContent = fmtDur(au.duration); });
+    if (!it.url || !window.AudioContext) return;
+    fetch(it.url).then(r => r.arrayBuffer()).then(buf => buf.byteLength < 30e6 ? new AudioContext().decodeAudioData(buf) : null).then(ab => {
+      if (!ab) return;
+      const ch = ab.getChannelData(0), n = 12, step = Math.floor(ch.length / n), rms = [];
+      for (let i = 0; i < n; i++) { let s = 0, c = 0; for (let j = i * step; j < (i + 1) * step; j += 64) { s += ch[j] * ch[j]; c++; } rms.push(Math.sqrt(s / (c || 1))); }
+      const top = Math.max(...rms) || 1, b = $(".vm-b", el);
+      if (b) { b.innerHTML = vmBars(rms.map(v => Math.max(0.12, Math.pow(v / top, 0.7)).toFixed(2)), n); $(".vm-wave", el).classList.remove("vm-ph"); }
+    }).catch(() => { });
+  }
+  function attHTML(list) {
+    if (!list || !list.length) return "";
+    return `<div class="atts">${list.map(p => {
+      const u = /^(uploads|work)\//.test(p) ? "/" + p.split("/").map(encodeURIComponent).join("/") : null;
+      const name = esc(p.split("/").pop().replace(/^\d{8}-\d{6}-[0-9a-f]{4}-/, ""));
+      // ui2-C: thumbnails open the in-app viewer (viewer.js). /api/thumb needs the new server; on the old one the img falls back to the original.
+      const th = `/api/thumb?p=${encodeURIComponent(p)}&w=360`, fb = `onerror="if(!this.dataset.f){this.dataset.f=1;this.src='${u}'}else{this.style.display='none'}"`;
+      if (u && /\.(png|jpe?g|gif|webp)$/i.test(p)) return `<a href="${u}" target="_blank" class="lb-th" data-lb="${u}" data-kind="image" data-name="${name}"><img src="${th}" alt="${name}" loading="lazy" ${fb}></a>`;
+      if (u && isAudioAtt(p)) return vmHTML(p, u, name);
+      if (u && /\.(mp4|mov|m4v|webm)$/i.test(p)) return `<a href="${u}" target="_blank" class="lb-th lb-vid" data-lb="${u}" data-kind="video" data-name="${name}"><img src="${th}" alt="${name}" loading="lazy" onerror="this.style.display='none'"><i class="lb-play">▶</i></a>`;
+      return u ? `<a href="${u}" target="_blank">📎 ${name}</a>` : `<span class="mono">📎 ${esc(p)}</span>`;
+    }).join("")}</div>`;
+  }
+  // ===== ui19: preview tiles for pending attachments (one renderer for the chat composer and the detail-page reply composer) =====
+  // Keyed reconcile instead of innerHTML: an upload tile keeps its DOM node (and the decoded thumbnail) when it turns from "uploading" into "done".
+  const fmtDur = s => { s = Math.round(s); return Math.floor(s / 60) + ":" + String(s % 60).padStart(2, "0"); };
+  function attTiles(box, pending, redraw) {
+    if (!box) return;
+    const items = pending.map(p => {
+      const m = (pending._m || {})[p] || {}, name = (m.name || p.split("/").pop().replace(/^\d{8}-\d{6}-[0-9a-f]{4}-/, ""));
+      const kind = m.kind || (isAudioAtt(p) ? "audio" : /\.(mp4|mov|m4v|webm)$/i.test(p) ? "video" : /\.(png|jpe?g|gif|webp|heic|heif)$/i.test(p) ? "image" : "file");
+      return { k: m.key || p, name, kind, path: p, url: m.url, up: null };
+    }).concat(Object.entries(pending._up || {}).map(([k, u]) => ({ k, name: u.name, kind: u.kind, url: u.url, up: u })));
+    const have = new Map(Array.from(box.children).map(el => [el.dataset.k, el]));
+    items.forEach((it, i) => {
+      let el = have.get(it.k); have.delete(it.k);
+      if (!el) {
+        el = document.createElement("div"); el.className = "ap-tile"; el.dataset.k = it.k;
+        const thumb = it.path ? `/api/thumb?p=${encodeURIComponent(it.path)}&w=240` : "";
+        let face;
+        if (it.kind === "audio") face = `<div class="vm-mini"><div class="vm-wave vm-ph"><div class="vm-b">${vmBars(null, 12)}</div></div><b class="ap-dur2">--:--</b></div>`;
+        else if (it.kind === "video" && it.url) face = `<video muted playsinline preload="metadata" src="${esc(it.url)}#t=0.1"></video>`;
+        else if (it.kind !== "file" && (thumb || it.url)) face = `<img alt="" draggable="false" src="${esc(it.url || thumb)}">`;
+        else face = `<div class="ap-file"><em>📎</em><small>${esc(it.name)}</small></div>`;
+        if (it.kind === "video") face += `<i class="ap-play">▶</i><b class="ap-dur"></b>`;
+        el.innerHTML = `<div class="ap-face">${face}</div><div class="ap-up"><i></i><b></b></div><button type="button" class="ap-x" aria-label="${UI.lang === "en" ? "Remove" : "移除"}">✕</button>`;
+        el.title = it.name;
+        el.classList.add(it.kind);
+        if (it.kind === "audio") vmTileFace(el, it);
+        const v = $("video", el), im = $("img", el);
+        if (v) {
+          v.addEventListener("loadedmetadata", () => { if (isFinite(v.duration)) { const d = $(".ap-dur", el); d.textContent = fmtDur(v.duration); el.classList.add("has-dur"); } });
+          v.addEventListener("error", () => { el.classList.add("noprev"); });
+        }
+        if (im) im.addEventListener("error", () => el.classList.add("noprev"));
+        el.querySelector(".ap-x").addEventListener("click", e => {
+          e.stopPropagation();
+          const idx = pending.findIndex(p => ((pending._m || {})[p] || {}).key === el.dataset.k || p === el.dataset.k);
+          if (idx >= 0) { const m = (pending._m || {})[pending[idx]]; pending.splice(idx, 1); if (m && m.url) try { URL.revokeObjectURL(m.url); } catch { } redraw(); }
+        });
+      }
+      // done: expose the file to the shared lightbox (viewer.js collects every [data-lb] in the strip)
+      const face = $(".ap-face", el);
+      if (it.path && !it.up) {
+        const u = "/" + it.path.split("/").map(encodeURIComponent).join("/");
+        if (it.kind === "video" || (it.kind === "image" && /\.(png|jpe?g|gif|webp)$/i.test(it.path))) { face.dataset.lb = u; face.dataset.kind = it.kind; face.dataset.name = it.name; }
+        if (!el.dataset.path) { el.dataset.path = it.path; if (it.kind === "image" && !it.url) { /* thumb already set */ } }
+      }
+      if (it.path && !it.up && el.classList.contains("noprev") && !el.dataset.retry) {   // e.g. a HEIC the browser cannot decode: the server's /api/thumb can
+        el.dataset.retry = 1; const im = $("img", el); if (im) { im.src = `/api/thumb?p=${encodeURIComponent(it.path)}&w=240`; el.classList.remove("noprev"); }
+      }
+      el.classList.toggle("up", !!it.up);
+      if (it.up) { const p = Math.round(it.up.p * 100); el.style.setProperty("--p", p + "%"); $(".ap-up b", el).textContent = p + "%"; }
+      if (box.children[i] !== el) box.insertBefore(el, box.children[i] || null);
+    });
+    have.forEach(el => el.remove());
+    box.classList.toggle("has", items.length > 0);
+  }
+
+  // t-lib-attach: library tiles ([data-lib-path]) drag their existing path; a reply box takes it as an attachment without uploading again
+  const LIB_MIME = "application/x-rt-path";
+  const attachPath = (pending, p) => { if (p && !pending.includes(p)) pending.push(p); if (pending._show) pending._show(); };
+  document.addEventListener("dragstart", e => { const a = e.target && e.target.closest && e.target.closest("[data-lib-path]"); if (a) { e.dataTransfer.setData(LIB_MIME, a.dataset.libPath); e.dataTransfer.effectAllowed = "copy"; } });
+  document.addEventListener("dragend", () => document.querySelectorAll("textarea.lib-drop").forEach(t => t.dispatchEvent(new Event("dragleave"))));
+  function wireUploads(ta, pending, onChange) {
+    pending._up = pending._up || {};
+    const add = files => Promise.all(Array.from(files).map(async f => {
+      const key = Math.random().toString(36).slice(2);
+      const isA = /^audio\//.test(f.type) || AUD_RE.test(f.name || "");   // t-voice-memo
+      const isV = !isA && (/^video\//.test(f.type) || /\.(mp4|mov|m4v|webm)$/i.test(f.name || "")), isI = /^image\//.test(f.type);
+      let blob = ""; try { if (isV || isI || isA) blob = URL.createObjectURL(f); } catch { }   // ui19: local preview while uploading
+      pending._up[key] = { name: f.name || "paste.png", p: 0, size: fmtSize(f.size), url: blob, kind: isA ? "audio" : isV ? "video" : isI ? "image" : "file" }; onChange();
+      try { const path = await upload(f, p => { pending._up[key].p = p; onChange(); }); (pending._m = pending._m || {})[path] = { key, url: blob, kind: pending._up[key].kind, name: pending._up[key].name }; pending.push(path); }
+      catch { if (blob) try { URL.revokeObjectURL(blob); } catch { } }
+      delete pending._up[key]; onChange();
+    }));
+    ta.addEventListener("paste", e => { const fs = Array.from(e.clipboardData.files || []); if (fs.length) { e.preventDefault(); add(fs); } });
+    pending._show = onChange;   // t-lib-attach: attachTo() refreshes the tiles after adding a library path
+    const libDrag = e => Array.from((e.dataTransfer && e.dataTransfer.types) || []).includes(LIB_MIME);
+    const hint = on => { ta.classList.toggle("lib-drop", on); if (on && ta.dataset.ph == null) { ta.dataset.ph = ta.placeholder; ta.placeholder = UI.lang === "en" ? "Drop to attach (no re-upload)" : "松手 = 附到这条消息（不用重新上传）"; } else if (!on && ta.dataset.ph != null) { ta.placeholder = ta.dataset.ph; delete ta.dataset.ph; } };
+    ta.addEventListener("dragover", e => { e.preventDefault(); if (libDrag(e)) { e.dataTransfer.dropEffect = "copy"; hint(true); } });
+    ta.addEventListener("dragleave", () => hint(false));
+    ta.addEventListener("drop", e => { e.preventDefault(); hint(false); const lp = e.dataTransfer.getData(LIB_MIME); if (lp) { attachPath(pending, lp); return; } add(Array.from(e.dataTransfer.files || [])); });
+    return add;
+  }
+
+  // ---------- t-mobile-crash-state: slim polling on the phone ----------
+  // A slim done/archived card has no draft / versions (it.slim = 1). The drawer asks /api/item for the full card once; FULL keeps those
+  // fields and every poll puts them back while the card's `updated` is unchanged (a changed card is fetched again on the next open).
+  // An older server ignores ?slim=1 and sends full cards (no it.slim), so nothing here ever runs against it.
+  const FULL = {}, FULLP = {};
+  function rehydrate() {
+    for (const it of ST.items || []) {
+      const f = it.slim && FULL[it.id];
+      if (!f) continue;
+      if (f.updated !== it.updated) { delete FULL[it.id]; continue; }
+      it.draft = f.draft; it.versions = f.versions; delete it.slim;
+    }
+  }
+  function fullItem(id) {
+    return FULLP[id] || (FULLP[id] = fetch("/api/item?id=" + encodeURIComponent(id)).then(r => r.ok ? r.json() : null)
+      .then(f => { if (f) { FULL[id] = { updated: f.updated, draft: f.draft || "", versions: f.versions || [] }; rehydrate(); } return !!f; }, () => false)
+      .finally(() => { delete FULLP[id]; }));
+  }
+  // t-m2-a ③: the cold-start skeleton (index.html #boot-sk, phone only) goes as soon as the first poll answers or fails
+  function bootDone() { const b = document.getElementById("boot-sk"); if (b) b.remove(); }
+  // ---------- polling ----------
+  async function poll(force) {
+    try {
+      const qs = [REV != null && !force ? `rev=${REV}` : "", MOBQ.matches ? "slim=1" : ""].filter(Boolean).join("&");   // t-mobile-crash-state
+      const r = await fetch("/api/state" + (qs ? "?" + qs : ""));
+      var j = await r.json();
+    } catch (e) {
+      bootDone();
+      UI.down = true;
+      $("#sync").innerHTML = `<div class="row"><span class="off">● ${UI.lang === "en" ? "dashboard unreachable · retrying" : "看板暂时连不上 · 自动重试中"}</span></div>`;
+      return;
+    }
+    // a rendering bug must not masquerade as the server being down
+    try {
+      const back = UI.down; UI.down = false;  // clear the "unreachable" banner as soon as the server answers again
+      if (j.same) { ST.meta.comfy = j.meta.comfy; ST.meta.inbox_unacked = j.meta.inbox_unacked; if (back || ++UI.tick % 12 === 0) renderChrome(); return; }
+      ST = j; REV = j.meta.rev; rehydrate(); render(); bootDone();
+    } catch (e) {
+      console.error("render failed", e);
+      if (!poll.warned) { poll.warned = true; toast((UI.lang === "en" ? "Display error: " : "界面出错：") + e.message, true); }
+    }
+  }
+
+  function render() {
+    document.documentElement.dataset.theme = UI.theme;
+    document.documentElement.lang = UI.lang === "en" ? "en" : "zh";
+    renderChrome(); renderLeft(); renderPage(); if (UI.item) renderDrawer(); renderChat(); renderMailbox();
+    appBadge();
+    hooks.forEach(f => f("all"));
+    vmSync();
+  }
+  // t-app-badge: the installed app's icon badge (iPhone home screen, Mac Dock) = 「等你拍板」 = the nav's 审核 count. server.py pending_count() mirrors it for pushes.
+  // Only touched when the number changes; unsupported browsers and a missing permission are ignored.
+  function appBadge() {
+    if (!("setAppBadge" in navigator)) return;
+    const n = counts().review;
+    if (n === appBadge.last) return;
+    appBadge.last = n;
+    (n > 0 ? navigator.setAppBadge(n) : navigator.clearAppBadge()).catch(() => { appBadge.last = undefined; });
+  }
+  const hooks = [];
+  function renderChrome() { renderHeader(); renderTicker(); }
+
+  // ---------- header ----------
+  function nextEvent() {
+    const now = new Date();
+    const ev = (ST.calendar || []).map(c => ({ ...c, d: new Date(`${c.date}T${c.time || "00:00"}`) })).filter(c => c.d > now).sort((a, b) => a.d - b.d)[0];
+    if (!ev) return "";   // t-cal-fold: no upcoming event -> the header leaves the NEXT segment out
+    const lbl = dayKey(ev.d) === dayKey(now) ? t("today_w") : dayKey(ev.d) === dayKey(new Date(Date.now() + 864e5)) ? t("tomorrow") : `${ev.d.getMonth() + 1}/${ev.d.getDate()}`;
+    return `<b>${lbl} ${esc(ev.time || "")} ${esc(ev.title)}</b>`;
+  }
+  function mgrState() {
+    const m = agent("manager");
+    const stale = m.last_seen && (Date.now() - new Date(m.last_seen)) > 45 * 6e4 && ST.meta.inbox_unacked > 0;
+    if (m.status === "offline" || !m.last_seen) return { on: false, txt: t("offline") };
+    // asleep: planned (S sleep --until) or a hard stop (a usage window at ~100% and no heartbeat since)
+    const u = ST.meta.usage || {}, quiet = Date.now() - new Date(m.last_seen) > 10 * 6e4;
+    const hit = [u.five_hour, u.seven_day].filter(w => w && w.used >= 98 && until(w.resets_at)).map(w => w.resets_at).sort().pop();
+    const wake = m.status === "sleeping" ? m.wake_at : quiet && hit;
+    if (wake) {
+      const back = until(wake);
+      return { on: false, sleep: true, wake, back: back && clock(wake), since: m.last_seen,
+        txt: back ? t("sleep_at", { t: clock(wake) }) : t("waking") };
+    }
+    return { on: !stale, txt: stale ? `${t("offline")}?` : t("online"), since: m.last_seen };
+  }
+  // Plan usage comes from the manager's statusLine (tools/statusline.py): 5-hour window drives the orb,
+  // the weekly window is the thin bar under it. Shown as what's LEFT, like a stamina bar.
+  function until(iso) {
+    const ms = new Date(iso) - Date.now(); if (!(ms > 0)) return null;
+    const h = Math.floor(ms / 36e5), m = Math.round(ms % 36e5 / 6e4);
+    return h ? `${h}h${pad(m)}m` : `${m}m`;
+  }
+  // "03:10" today, "明天 03:10" / "周二 19:00" further out; English uses 3:10 AM style like Claude's own card
+  function clock(iso) {
+    const d = new Date(Math.round(new Date(iso) / 6e4) * 6e4), en = UI.lang === "en", now = new Date();  // 03:09:59 reads as 03:10
+    const tm = en ? d.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" }) : `${pad(d.getHours())}:${pad(d.getMinutes())}`;
+    const days = Math.round((new Date(d.toDateString()) - new Date(now.toDateString())) / 864e5);
+    if (days <= 0) return tm;
+    if (days === 1) return en ? `tomorrow ${tm}` : `明天 ${tm}`;
+    return (en ? d.toLocaleDateString("en-US", { weekday: "short" }) : "周" + "日一二三四五六"[d.getDay()]) + " " + tm;
+  }
+  // t-imp-p4: usage is shown honestly. The manager's usage tool times out often, so old readings are normal:
+  // older than USAGE_STALE minutes = "≈" + "11:11 的数据" + greyed; a window whose reset passed AFTER the reading
+  // is unknown (the reading is from before the reset), never "100% 已回满".
+  const USAGE_STALE = 20;   // t-stamina-stale: was 30; past this the orb greys out and the subtitle says how old the reading is
+  const ageShort = iso => { const d = D(iso); if (!d) return ""; const m = Math.max(0, Math.round((Date.now() - d) / 6e4)), en = UI.lang === "en";
+    return m < 60 ? (en ? `${m} min ago` : `${m} 分钟前`) : m < 48 * 60 ? (en ? `${Math.floor(m / 60)}h ago` : `${Math.floor(m / 60)} 小时前`) : when(iso); };
+  function ageTxt(iso) {
+    const d = D(iso); if (!d) return "";
+    const m = Math.max(0, Math.round((Date.now() - d) / 6e4)), en = UI.lang === "en";
+    if (m < 1) return t("just");
+    if (m < 60) return en ? `${m} min ago` : `${m} 分钟前`;
+    const h = Math.floor(m / 60), r = m % 60;
+    if (h < 48) return en ? `${h}h${r ? ` ${r}m` : ""} ago` : `${h} 小时${r ? ` ${r} 分钟` : ""}前`;
+    return when(iso);
+  }
+  function usageSrc(src) {
+    const en = UI.lang === "en";
+    if (src === "manager") return en ? "read by the manager with the desktop app's get_usage" : "管家用桌面端 get_usage 读取";
+    if (src === "statusline") return en ? "written by the terminal statusLine (tools/statusline.py)" : "终端 statusLine 自动写入（tools/statusline.py）";
+    return src ? (en ? `source: ${src}` : `来源：${src}`) : (en ? "source unknown" : "来源未记录");
+  }
+  function usage() {
+    const u = ST.meta.usage || {}, en = UI.lang === "en";
+    const five = u.five_hour, week = u.seven_day;
+    if (!five && !week) return { left: null, week: null, sub: en ? "no usage data" : "未接入用量", stale: true, none: true,
+      tip: en ? "Set up tools/statusline.py as the manager's statusLine" : "把 tools/statusline.py 配成管家的 statusLine 后显示 Claude 用量" };
+    const at = D(u.at), ageMin = at ? (Date.now() - at) / 6e4 : Infinity;
+    const stale = ageMin > USAGE_STALE;
+    const gone = w => { const r = w && D(w.resets_at); return !!r && r <= Date.now() && (!at || at < r); };
+    const lost5 = gone(five), lostW = gone(week);
+    const reset5 = five && until(five.resets_at), resetW = week && until(week.resets_at);
+    const at5 = reset5 && clock(five.resets_at), atW = resetW && clock(week.resets_at);
+    const left = five && !lost5 ? Math.round(100 - five.used) : null;
+    const wk = week && !lostW ? Math.round(100 - week.used) : null;
+    const approx = stale && left != null;
+    const sub = lost5 ? (stale && u.at ? (en ? `reset · ${ageShort(u.at)}` : `已重置 · ${ageShort(u.at)}`) : (en ? "reset · no new data" : "已重置 · 等新数据"))
+      : stale ? ageShort(u.at)
+      : reset5 ? (en ? `full at ${at5}` : `${at5} 复活`) : "";
+    const age = u.at ? ageTxt(u.at) : "";
+    const tip = [five && (lost5 ? (en ? "Session: window reset after the last reading, waiting for new data" : "5 小时窗口：上次读数之后已重置，等新数据")
+        : (en ? `Session: ${approx ? "≈" : ""}${left}% left${at5 ? ` · full at ${at5}` : ""}` : `5 小时窗口：剩 ${approx ? "≈" : ""}${left}%${at5 ? ` · ${at5} 回满` : ""}`)),
+      week && (lostW ? (en ? "Weekly: reset after the last reading" : "本周：上次读数之后已重置")
+        : (en ? `Weekly: ${wk}% left${atW ? ` · resets ${atW}` : ""}` : `本周：剩 ${wk}%${atW ? ` · ${atW} 重置` : ""}`)),
+      u.context != null && (en ? `Manager context: ${u.context}% used` : `管家上下文：已用 ${u.context}%`),
+      u.at && (en ? `Read at ${hm(u.at)} (${age})${stale ? " · may be out of date" : ""}` : `${hm(u.at)} 读取（${age}）${stale ? " · 可能已过期" : ""}`)].filter(Boolean).join("\n");
+    return { left, week: wk, sub, stale, approx, lost5, lostW, age, tip, reset5, resetW, at5, atW, src: u.source,
+      used5: five && Math.round(five.used), usedW: week && Math.round(week.used), context: u.context, at: u.at };
+  }
+  function renderHeader() {
+    const m = mgrState(), ag = agents().filter(a => a.enabled !== false && a.id !== "manager");
+    const working = ag.filter(a => a.status === "working").length;
+    const c = ST.meta.comfy || {};
+    $("#sync").innerHTML = `
+      <div class="row"><span class="k">${t("sync")}<span class="gl" aria-hidden="true"> ◇</span></span> ${t("updated")} <b>${hm(ST.meta.updated)}</b>
+        <span class="dot">◆</span> ${esc(aname(agent("manager")))} <span class="${m.on ? "on" : m.sleep ? "zz" : "off"}">${m.txt}</span> ${m.since ? `<span class="dim">${agoH(m.since)}</span>` : ""}
+        ${(nx => nx ? `<span class="dot">|</span> <span class="k">${t("next")}</span> ${nx}` : "")(nextEvent())}</div>
+      <div class="row"><span class="k">TEAM<span class="gl" aria-hidden="true"> ◇</span></span> ${ag.length} · <b>${working}</b> ${t("working")}
+        <span class="dot">◆</span> <span class="k">COMFY</span> <span class="${c.online ? "on" : "dim"}">● ${c.online ? t("comfy_on") : t("comfy_off")}</span>
+        <span class="dot">◆</span> <span class="k">${t("inbox")}</span> <b>${ST.meta.inbox_unacked || 0}</b> ${t("unacked")}</div>`;
+    const U = usage();
+    const sta = $("#stamina");
+    sta.className = "stamina" + (U.stale ? " stale" : "") + (U.lost5 ? " lost" : "");
+    sta.title = U.tip;
+    // Build the soul vessel once so its waves keep flowing; later renders only move the level.
+    if (!sta.querySelector(".orb")) {
+      const wave = "M0 0 Q10 -4 20 0 T40 0 T60 0 T80 0 T100 0 V60 H0 Z";
+      sta.innerHTML = `<div class="orb"><svg viewBox="0 0 52 52"><defs><clipPath id="orbclip"><circle cx="26" cy="26" r="20"/></clipPath></defs>
+        <circle class="ring2" cx="26" cy="26" r="25"/><circle class="ring" cx="26" cy="26" r="22.5"/><circle class="well" cx="26" cy="26" r="20"/>
+        <g clip-path="url(#orbclip)"><g class="liq"><path class="w2" d="${wave}" transform="translate(-6 2)"/><path class="w1" d="${wave}"/></g>
+        <ellipse class="shine" cx="19" cy="17" rx="6" ry="3.2" transform="rotate(-28 19 17)"/></g></svg></div>
+        <div class="lbl"><b></b><small>STAMINA</small></div><div class="pct"><b></b><small></small></div><div class="focus"><i></i></div><span class="st-age" hidden></span>`;
+    }
+    const lvl = 46 - (Math.max(0, Math.min(100, U.left ?? 0)) / 100) * 36;  // keep a crest visible when full
+    sta.querySelector(".liq").style.transform = `translateY(${lvl}px)`;
+    sta.querySelector(".orb").classList.toggle("low", U.left != null && U.left < 20);
+    sta.querySelector(".lbl b").textContent = UI.lang === "en" ? "Soul" : "体力";
+    {   // t-m2-a ②: the % rolls when it changes (the span is kept, only its digits move)
+      const pb = sta.querySelector(".pct b");
+      if (U.left == null) { pb.innerHTML = "—"; delete NV.sta; }
+      else { if (!pb.querySelector(".nrv")) pb.innerHTML = `<i class="ap"></i><span class="nrv"></span><small>%</small>`;
+        const ap = pb.querySelector(".ap"); ap.textContent = U.approx ? "≈" : ""; ap.hidden = !U.approx; roll(pb.querySelector(".nrv"), U.left, "sta"); }
+    }
+    const sa = sta.querySelector(".st-age");
+    sa.hidden = !(U.stale && U.at);
+    sa.textContent = U.at ? (UI.lang === "en" ? `stale · ${U.age}` : `过期 · ${U.age}`) : "";
+    sta.querySelector(".pct > small").textContent = U.sub;
+    sta.querySelector(".focus").hidden = U.week == null;
+    sta.querySelector(".focus i").style.width = (U.week ?? 0) + "%";
+    const unread = (ST.mail || []).filter(m => !m.read).length;
+    $("#hdrctrl").innerHTML = `
+      <span class="hc-stage" role="radiogroup" aria-label="${UI.lang === "en" ? "Stage" : "舞台"}">${[["night", "舞台·夜", "Stage · night", "dark"], ["day", "舞台·昼", "Stage · day", "white"]].map(x => { const on = !!document.documentElement.dataset.stage && UI.theme === x[3]; return `<button type="button" class="${on ? "on" : ""}" role="radio" aria-checked="${on}" title="${UI.lang === "en" ? x[2] : x[1]}" aria-label="${UI.lang === "en" ? x[2] : x[1]}" data-stage-set="${x[0]}"><i></i></button>`; }).join("")}</span>
+      <button data-h="lang">${UI.lang === "zh" ? "EN" : "中"}</button>
+      <button data-h="chat" class="hc-chat" aria-expanded="${document.body.classList.contains("chat-pop")}">${UI.lang === "en" ? "Chat" : "聊天"}</button>
+      <button data-h="mail">✉ ${t("mail")} ${unread ? `<span class="badge">${unread}</span>` : ""}</button>
+      <button data-h="report">${t("write_report")}</button>
+      <button data-h="ping">${t("wake")}</button>`;
+  }
+  document.addEventListener("click", e => {
+    const h = e.target.closest("[data-h]"); if (!h) return;
+    const k = h.dataset.h;
+    if (k === "theme") { UI.theme = { dark: "light", light: "white" }[UI.theme] || "dark"; LS.set("theme", UI.theme); render(); }   // D2: legacy cycle; the header picker uses [data-theme-set] (handled in mobile.js, same rt.theme key as the phone menu)
+    if (k === "lang") { UI.lang = UI.lang === "zh" ? "en" : "zh"; LS.set("lang", UI.lang); render(); }
+    if (k === "mail") { MB.open ? closeMailbox() : openMailbox(); }
+    if (k === "chat") chatPop(!document.body.classList.contains("chat-pop"));
+    if (k === "report") go("reports");
+    if (k === "ping") api("ping").then(() => toast("ping → inbox"));
+  });
+  $("#brand").addEventListener("click", () => go("review"));
+  $("#stamina").addEventListener("click", () => modalStatus());
+  $("#sync").addEventListener("click", e => { if (!e.target.closest("a,button")) modalStatus(); });
+
+  // ---------- ticker ----------
+  function tickerItems() {
+    const out = [];
+    const now = Date.now();
+    for (const n of ST.notices || []) if (!n.until || new Date(n.until) > now) out.push({ text: n.text, level: n.level, id: n.id });
+    const m = mgrState();
+    if (m.sleep) out.unshift({ text: m.back ? t("mgr_sleep", { t: m.back, n: ST.meta.inbox_unacked || 0 }) : t("mgr_waking"), level: "info" });
+    else if (!m.on && ST.meta.inbox_unacked) out.unshift({ text: t("mgr_offline", { n: ST.meta.inbox_unacked }), level: "urgent" });
+    for (const it of items()) {
+      if (it.category === "urgent" && it.stage !== "done" && it.owner === "manager") out.unshift({ text: t("no_owner_urgent", { t: it.title }), level: "urgent", item: it.id });
+      if (it.stage === "review" && now - new Date(it.activity) > 864e5) out.push({ text: t("waiting_long", { t: it.title }), item: it.id });
+    }
+    return out;
+  }
+  let tickIdx = 0;
+  function renderTicker() {
+    const list = tickerItems();
+    const el = $("#ticker");
+    if (!list.length) { el.innerHTML = ""; return; }
+    tickIdx %= list.length;
+    const n = list[tickIdx];
+    const html = `<span class="k">${UI.lang === "en" ? "Notice" : "通知"}</span><span class="msg ${n.level === "urgent" ? "urgent" : ""}" data-ti="${tickIdx}">${esc(n.text)}</span>
+      ${n.id ? `<button class="dim" data-dismiss="${n.id}" title="dismiss">✕</button>` : ""}
+      <span class="pager">${list.map((_, i) => `<i class="${i === tickIdx ? "on" : ""}"></i>`).join("")}</span>`;
+    if (html !== renderTicker.last) { el.innerHTML = html; renderTicker.last = html; }  // re-animate only when the notice changes
+    el.onclick = e => {
+      const d = e.target.closest("[data-dismiss]"); if (d) return api("notice_dismiss", { id: d.dataset.dismiss });
+      if (e.target.closest(".msg") && n.item) openItem(n.item);
+    };
+  }
+  setInterval(() => { if (ST) { tickIdx++; renderTicker(); } }, 6000);
+
+  // ---------- left ----------
+  function counts() {
+    const c = { review: 0 }; for (const k of CATS) c[k] = 0;
+    c.pipe = items().filter(i => i.stage !== "done" && isContent(i)).length;   // t-imp-p3
+    for (const it of items()) { if (it.stage === "review" || awaitsUser(it)) c.review++; if (it.stage !== "done") c[it.category] = (c[it.category] || 0) + 1; }
+    return c;
+  }
+  function renderLeft() {
+    const c = counts();
+    const navs = ["review", ...CATS, "sep", "pipe", "board", "logs", "reports", "channels", "docs", "assets", "roles"];
+    $("#nav").innerHTML = navs.map(k => k === "sep" ? `<div class="nav-sep"></div>` :
+      `<button class="nav-i ${UI.page === k ? "on" : ""} ${k === "urgent" && c.urgent ? "urgent" : ""}" data-go="${k}"><span>${t(k)}</span><span class="n${c[k] === 0 ? " z" : ""}">${c[k] ?? ""}</span></button>`).join("");
+
+    // calendar
+    const today = dayKey(new Date()), tmr = dayKey(new Date(Date.now() + 864e5));
+    const evs = (ST.calendar || []).filter(e => e.date === today || e.date === tmr);
+    const nowHM = `${pad(new Date().getHours())}:${pad(new Date().getMinutes())}`;
+    $("#cal").classList.toggle("cal-empty", !evs.length && !UI.calForm);   // t-cal-fold: nothing today or tomorrow -> one faint row, "+" still there
+    if (!evs.length && !UI.calForm) $("#cal").innerHTML = `<div class="side-h"><span>${t("today")} · ${UI.lang === "en" ? "none" : "无"}</span><button data-cal-add>+</button></div>`;
+    else $("#cal").innerHTML = `<div class="side-h"><span>${t("today")} <span class="dim" style="font-weight:400">${evs.filter(e => e.date === today).length} ${t("meetings")}</span></span><button data-cal-add>${UI.calForm ? "−" : "+"}</button></div>
+      ${UI.calForm ? `<form class="cal-form" id="calf"><input type="date" name="date" value="${today}"><input type="time" name="time"><input name="title" placeholder="…" required style="flex:1"><button class="btn-s">${t("add")}</button></form>` : ""}
+      ${evs.map(e => `<div class="cal-i ${e.date === today && e.time && e.time < nowHM ? "past" : ""}"><span class="tm">${e.date === tmr ? "+1 " : ""}${esc(e.time || "—")}</span><span>${esc(e.title)}</span><button class="x" data-cal-del="${e.id}">✕</button></div>`).join("")}
+      <div class="cal-now">${nowHM}</div>`;
+    const f = $("#calf");
+    if (f) f.onsubmit = e => { e.preventDefault(); const fd = new FormData(f); api("calendar_add", Object.fromEntries(fd)); };
+
+    $("#cal").classList.toggle("noev", !evs.length);   // t-web-audit 02: no events -> no empty time rail
+    // team
+    // ui1: rows animate in once (not on every poll re-render); the open chat's row is marked; unread mail shows a dot
+    const teamFirst = !UI.teamIn; UI.teamIn = true; $("#team").classList.toggle("team-enter", teamFirst);
+    const unreadBy = new Set((ST.mail || []).filter(m => !m.read && m.agent).map(m => m.agent));
+    $("#team").innerHTML = `<div class="side-h"><span class="sc">TEAM</span></div>` + agents().map((a, i) => {
+      const ms = a.id === "manager" && mgrState();
+      const st = ms ? (ms.on ? "working" : ms.sleep ? "sleeping" : "offline") : a.status || "idle";
+      const sub = mgrOnline(a) ? MGR_ON() : a.status === "working" && a.activity ? `▶ ${esc(a.activity)}` : esc(aduty(a));   // t-now-closed
+      return `<div class="team-i ${a.status === "working" && a.activity && !mgrOnline(a) ? "busy" : ""} ${a.enabled === false ? "disabled" : ""} ${UI.chat === a.id ? "on" : ""} ${unreadBy.has(a.id) ? "unread" : ""}" style="--i:${Math.min(i, 12)}" data-chat="${a.id}">${av(a)}<div><div class="nm">${esc(aname(a))}<span class="st ${st}">${ms ? (ms.on ? t("online") : ms.sleep ? ms.txt : t("offline")) : t(st)}</span></div><div class="du">${sub}</div></div></div>`;
+    }).join("");
+  }
+  document.addEventListener("click", e => {
+    const g = e.target.closest("[data-go]"); if (g) { go(g.dataset.go); return; }
+    const ch = e.target.closest("[data-chat]"); if (ch) { setChat(ch.dataset.chat); if (NARROWQ.matches && !MOBQ.matches) chatPop(true); return; }
+    if (e.target.closest("[data-cal-add]")) { UI.calForm = !UI.calForm; renderLeft(); return; }
+    const cd = e.target.closest("[data-cal-del]"); if (cd) { api("calendar_del", { id: cd.dataset.calDel }); return; }
+    const oi = e.target.closest("[data-item]"); if (oi && !e.target.closest("button")) { openItem(oi.dataset.item); return; }
+  });
+  function go(p) {
+    // the "new" group on the review page compares against when you last left it
+    if (UI.page === "review" && p !== "review") { UI.seen.review = new Date().toISOString(); LS.set("seen", UI.seen); }
+    UI.page = p; LS.set("page", p); closeItem(true); renderLeft(); renderPage(true);
+    window.FX && FX.enter($("#pagebody"));
+  }
+
+  // ---------- pages ----------
+  // t-visual-ink: date eyebrow above every page title (hidden unless html[data-skin="ink"])
+  function inkEb(right) { const d = new Date(), en = UI.lang === "en";
+    const day = en ? d.toLocaleDateString("en-US", { month: "short", day: "numeric", weekday: "short" }) : `${d.getMonth() + 1}月${d.getDate()}日 · 周${"日一二三四五六"[d.getDay()]}`;
+    return `<div class="ink-eb">${day}<i></i>${right}</div>`; }
+  function pageHead(k, extra = "") {
+    return `<div class="ph ph-${k}">${inkEb("Underthread")}<h1>${t(k)}</h1>${UI.lang === "zh" ? `<div class="en">${EN_SUB[k] || ""}</div>` : ""}${orn()}</div>${extra}`;
+  }
+  function card(it) {
+    const a = agent(it.owner), ws = workersOf(it.id);
+    const kind = it.stage === "review" || awaitsUser(it) ? (it.kind === "task" ? "deliverable" : it.kind) : null;
+    return `<div class="card${ws.length ? " wk-on" : ""}" data-item="${it.id}"${wkAttr(ws)}>${wkFx(ws)}
+      <div class="meta">${kind ? `<span class="tag ${kind}"><span class="gl" aria-hidden="true">◆</span>${t(kind)}</span>${waitTag(it)}` : `<span class="tag">${idleDoing(it) ? pauseL() : stageLabel(it.stage)}</span>`}
+        <span>${t(it.category)}${it.category === "urgent" ? " ⚑" : ""}</span>
+        <span>${whenH(it.created)}</span><span class="dim">${UI.lang === "en" ? "act." : "动态"} ${whenH(it.activity)}</span>
+        <span>${(it.platforms || []).map(p => `<span class="tag pf">${PLAT[p] || p}</span>`).join(" ")}</span></div>
+      <div class="body"><h3>${esc(it.title)}</h3><p>${esc(it.summary || "")}</p>${wkTag(ws)}${askRow(it)}</div>
+      <div class="owner">${av(a, "sm", it.id)}<span>${esc(aname(a))}</span></div>
+      <div class="acts"><button data-arch="${it.id}">${t("archive")}</button>${it.stage !== "done" && !routineOf(it) ? `<button data-quickdone="${it.id}">${t("complete")}</button>` : ""}</div></div>`;
+  }
+
+  // ===== p3 (t-slack-p3): Slack-Activity-style list rows on phones (<=760px). Desktop keeps .card / .mail-i. =====
+  const MOBQ = matchMedia("(max-width: 760px)");
+  const lsGet = (k, d) => { try { const v = localStorage.getItem(k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } };
+  const lsSet = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} };
+  UI.mailUnread = lsGet("rt.mailUnread", false) === true;
+  function actRow(o) {   // one shared row: avatar (+unread dot) | name + title ... time | preview ... chips
+    const ws = o.ws || [];
+    return `<div class="act-row ${o.unread ? "unread" : ""}${ws.length ? " wk-on" : ""}" ${o.attr}${wkAttr(ws)}>${wkFx(ws)}
+      <span class="act-av">${o.av}${o.unread ? `<i class="act-dot"></i>` : ""}</span>
+      <div class="act-main">
+        <div class="act-l1"><b class="act-nm">${esc(o.name)}</b>${o.title ? `<span class="act-ti">${esc(o.title)}</span>` : ""}<time class="act-tm">${o.time}</time></div>
+        <div class="act-l2"><span class="act-pv">${esc(o.preview)}</span>${ws.length ? wkTag(ws) : o.chip ? `<span class="act-chip">${esc(o.chip)}</span>` : ""}${o.extra || ""}${o.n > 1 ? `<span class="act-n ${o.unread ? "on" : ""}">${o.n > 99 ? "99+" : o.n}</span>` : ""}</div>
+      </div></div>`;
+  }
+  function reviewRow(it, fresh) {
+    const a = agent(it.owner), th = (it.thread || []).filter(x => x.kind !== "event").length;
+    return actRow({ attr: `data-item="${it.id}"`, av: av(a, "", it.id), ws: workersOf(it.id), unread: fresh, name: aname(a), title: it.title, time: agoH(it.activity || it.updated),
+      preview: it.summary || "", chip: rowLabel(it), n: th, extra: waitTag(it) });
+  }
+  // ===== P5 (t-aes-p5): phone home 待审 = a review card per item: first image on top, owner + time, title, summary, 看详情 / 批准.
+  // 批准 only where the detail page has it (stage review AND kind plan / deliverable); questions and other kinds get 看详情 only.
+  // A tap on 批准 is held for RV_HOLD ms behind an undo pill before the same POST /api/action {kind:"approve"} the detail page sends.
+  const RV = { pending: null, timer: 0 }, RV_HOLD = 4500;
+  const rvCanApprove = it => !!it && it.stage === "review" && (it.kind === "plan" || it.kind === "deliverable");
+  function reviewCard(it, fresh) {
+    const a = agent(it.owner), zh = UI.lang !== "en";
+    const img = (it.draft_attachments && it.draft_attachments.length ? it.draft_attachments : it.attachments || []).find(p => /^(uploads|work)\/.+\.(png|jpe?g|webp|gif)$/i.test(p));
+    const kind = it.kind === "plan" ? (zh ? "方案" : "Plan") : it.kind === "question" ? (zh ? "问题" : "Question") : (zh ? "交付" : "Delivery");
+    const u = img && "/" + img.split("/").map(encodeURIComponent).join("/");
+    const media = img ? `<div class="rv-media"><img src="/api/thumb?p=${encodeURIComponent(img)}&w=780" alt="" loading="lazy" onerror="if(!this.dataset.f){this.dataset.f=1;this.src='${u}'}else{this.parentNode.remove()}"><span class="rv-kind">${kind}</span></div>` : "";
+    const ok = rvCanApprove(it);
+    return `<div class="rv-card${img ? "" : " no-img"}" data-item="${it.id}">${media}<div class="rv-body">
+      <div class="rv-meta">${av(a, "sm", it.id)}<b>${esc(aname(a))}</b>${fresh ? `<i class="rv-dot"></i>` : ""}<span>· ${t(it.category)} · ${agoH(it.activity || it.updated)}</span>${waitTag(it)}${img ? "" : `<span class="rv-kind sm">${kind}</span>`}</div>
+      <h3>${esc(it.title)}</h3>${it.summary ? `<p>${esc(it.summary)}</p>` : ""}${askRow(it)}
+      <div class="rv-acts${ok ? "" : " one"}"><button class="rv-open" data-rv-open="${it.id}">${zh ? "看详情" : "Open"}</button>${ok ? `<button class="rv-ok${openAsks(it).length ? " has-ask" : ""}" data-rv-ok="${it.id}">${okBtnIn(it)}</button>` : ""}</div>
+    </div></div>`;
+  }
+  // ===== t-imp-p1: 等你拍板 = review items + waiting items whose open draft is a plan or a question (the owner is waiting on the user).
+  // Shown as compact rows under the review cards; when nothing is waiting on review, the page shows 此刻 (who is working on what) and 今天交付.
+  const awaitsUser = it => !!it && it.stage === "waiting" && (it.kind === "plan" || it.kind === "question");
+  // t-wait-days: a card on the user (review, or waiting on a plan / question) for more than 24 h gets an amber 「等了 N 天」 tag (same idea as 暂停).
+  // The wait starts at the last 提交审核 event in the thread; no such event -> it.updated.
+  const waitSince = it => { const th = it.thread || []; for (let i = th.length - 1; i >= 0; i--) if (th[i].kind === "event" && /^提交审核/.test(th[i].text || "")) return th[i].t; return it.updated; };
+  function waitTag(it) {
+    if (!it || !(it.stage === "review" || awaitsUser(it))) return "";
+    const h = (Date.now() - new Date(waitSince(it))) / 36e5; if (!(h >= 24)) return "";
+    const d = Math.floor(h / 24); return `<span class="wait-d">${UI.lang === "en" ? `Waiting ${d}d` : `等了 ${d} 天`}</span>`;
+  }
+  // ===== t-open-questions: it.asks = questions for the user with clickable options (stateutil ask / upsert-item --ask). An older server sends no asks: nothing shows. =====
+  const liveAsks = it => ((it && it.asks) || []).filter(a => !a.closed);
+  const openAsks = it => liveAsks(it).filter(a => !a.answer);
+  // t-btn-names: the approve button is named by what happens after the press (plan -> back to doing, the specialist goes on;
+  // deliverable -> the card closes; question -> the answer is recorded). Only labels: the action kinds (approve / done) are unchanged.
+  const okLabel = (it, en = UI.lang === "en") => it && it.kind === "plan" ? (en ? "Approve & start" : "批准开工") : it && it.kind === "question" ? (en ? "Answer" : "回答") : (en ? "Accept & close" : "验收 · 关单");
+  const okDone = (it, en = UI.lang === "en") => it && it.kind === "plan" ? (en ? "Approved · work begins" : "已批准开工 · 专员接着做") : it && it.kind === "question" ? (en ? "Answered" : "已回答") : (en ? "Accepted · card closed" : "已验收 · 卡已关");
+  const askLeft = (it, en = UI.lang === "en") => { const n = openAsks(it).length; return !n ? "" : en ? `${n} question${n > 1 ? "s" : ""} unanswered` : `还有 ${n} 个问题没答`; };
+  // ===== t-ask-rec: the asker's recommended option = ask.rec (written as "B*" in stateutil), else an option whose text says （推荐） (older asks).
+  // 「全按推荐」 shows when 2+ asks are open and at least one has a recommendation; it answers those after a 4.5 s undo hold, one ordinary answer each.
+  const REC_TXT = /[（(]\s*推荐/;
+  const recOf = a => (a && a.rec && a.options.includes(a.rec)) ? a.rec : ((a && a.options) || []).find(o => REC_TXT.test(o)) || null;
+  // t-opt-star: chat quick-reply chips. "B*" marks the manager's recommendation (same convention as --ask): the * is never shown or sent;
+  // the starred chip gets the 推荐 outline + badge. An option whose text already says （推荐） gets the outline only.
+  const optChips = opts => { const clean = o => String(o).replace(/\s*[*＊]\s*$/, ""); const star = opts.find(o => /[*＊]\s*$/.test(o)); const rec = star || opts.find(o => REC_TXT.test(o)) || null;
+    return `<div class="opts">${opts.map(o => { const c = clean(o), r = o === rec; return `<button class="btn-s${r ? " rec" : ""}" data-opt="${esc(c)}">${esc(c)}${r && !REC_TXT.test(c) ? `<i class="rec-b">${UI.lang === "en" ? "Rec." : "推荐"}</i>` : ""}</button>`; }).join("")}</div>`; };
+  const AR = { pending: null, timer: 0 };   // pending = { id, picks: [{ ask, opt }] }
+  const arPick = (id, askId) => { const p = AR.pending; return p && p.id === id ? (p.picks.find(x => x.ask === askId) || {}).opt : undefined; };
+  function arButton(it) {
+    const oa = openAsks(it), n = oa.filter(a => recOf(a)).length, zh = UI.lang !== "en";
+    if (oa.length < 2 || !n || it.stage === "done" || (AR.pending && AR.pending.id === it.id)) return "";
+    return `<button type="button" class="ask-allrec" data-ask-allrec="${esc(it.id)}">${zh ? `全按推荐（${n}）` : `Use recommended (${n})`}</button>`;
+  }
+  function arCommit(keepalive) {
+    const P = AR.pending; if (!P) return;
+    clearTimeout(AR.timer); AR.pending = null; arHide();
+    if (keepalive) { P.picks.forEach(x => { try { fetch("/api/action", { method: "POST", keepalive: true, headers: { "Content-Type": "application/json" }, body: JSON.stringify({ kind: "answer", item: P.id, ask: x.ask, opt: x.opt }) }); } catch (e) { } }); return; }
+    const zh = UI.lang !== "en";
+    P.picks.reduce((q, x) => q.then(() => api("answer", { item: P.id, ask: x.ask, opt: x.opt })), Promise.resolve())
+      .then(() => toast(zh ? `已按推荐答了 ${P.picks.length} 题` : `${P.picks.length} answered as recommended`))
+      .catch(() => { if (UI.item === P.id) renderDrawer(); });
+  }
+  function arHide() { const b = document.getElementById("ar-undo"); if (b && !b.hidden) { b.classList.remove("on"); clearTimeout(b._h); b._h = setTimeout(() => { b.hidden = true; }, 260); } }
+  function arStart(id) {
+    const it = ST.items.find(i => i.id === id); if (!it) return;
+    if (AR.pending) arCommit();
+    const picks = openAsks(it).map(a => ({ ask: a.id, opt: recOf(a) })).filter(x => x.opt); if (!picks.length) return;
+    AR.pending = { id, picks }; const zh = UI.lang !== "en";
+    if (UI.item === id) renderDrawer();
+    let b = document.getElementById("ar-undo");
+    if (!b) { b = document.createElement("div"); b.id = "ar-undo"; b.setAttribute("role", "status"); b.hidden = true; document.body.appendChild(b); }
+    b.innerHTML = `<span class="rv-u-tx"><b>${zh ? `按推荐答 ${picks.length} 题` : `${picks.length} answered as recommended`}</b>${zh ? "4.5 秒后发出" : "sending in 4.5 s"}</span><button type="button" data-ar-undo>${zh ? "撤销" : "Undo"}</button><i class="rv-u-bar" style="--hold:${RV_HOLD}ms"></i>`;
+    clearTimeout(b._h); b.hidden = false; void b.offsetWidth; b.classList.add("on");
+    clearTimeout(AR.timer); AR.timer = setTimeout(() => arCommit(), RV_HOLD);
+  }
+  function arUndo() { const P = AR.pending; if (!P) return; clearTimeout(AR.timer); AR.pending = null; arHide(); if (UI.item === P.id) renderDrawer(); }
+  const okBtnIn = it => { const l = askLeft(it); return `<b>${okLabel(it)}</b>${l ? `<small class="ok-ask">${l}</small>` : ""}`; };   // label + the open-question line under it
+  function askChips(it, a, cls = "") {
+    const done = it.stage === "done", zh = UI.lang !== "en";
+    const rec = !a.answer && recOf(a), pend = arPick(it.id, a.id);   // t-ask-rec
+    return `<div class="ask-opts${cls}">${a.options.map(o => `<button type="button" class="ask-o${(a.answer ? a.answer.opt === o : pend === o) ? " on" : ""}${rec === o ? " rec" : ""}" data-ask-opt="${esc(o)}" data-ask="${esc(a.id)}" data-ask-item="${esc(it.id)}"${done ? " disabled" : ""}>${esc(o)}${rec === o && !REC_TXT.test(o) ? `<i class="rec-b">${zh ? "推荐" : "Rec."}</i>` : ""}</button>`).join("")}${a.other !== false && !done ? `<button type="button" class="ask-o ghost" data-ask-other="${esc(a.id)}" data-ask-item="${esc(it.id)}">${zh ? "其他…" : "Other…"}</button>` : ""}</div>`;
+  }
+  function askCard(it, a, n) {
+    const zh = UI.lang !== "en", by = aname(agent(a.by || it.owner));
+    const ans = a.answer ? `<div class="ask-a">${zh ? `你选了「${esc(a.answer.opt)}」· ${when(a.answer.t)} · 已转给${esc(by)}${it.stage !== "done" ? " · 点别的选项可以改选" : ""}` : `You chose “${esc(a.answer.opt)}” · ${when(a.answer.t)} · sent to ${esc(by)}`}</div>` : "";
+    return `<div class="ask${a.answer ? " done" : ""}"><div class="ask-q"><span class="n">${a.answer ? "✓" : n}</span><span>${esc(a.q)}</span></div>${askChips(it, a)}${ans}</div>`;
+  }
+  function askBlock(it) {
+    const all = liveAsks(it); if (!all.length) return "";
+    const n = openAsks(it).length, zh = UI.lang !== "en"; let i = 0;
+    const arb = arButton(it);   // t-ask-rec
+    const head = `<div class="sec-h ask-h${n ? " on" : ""}"><i></i>${zh ? `要你拿主意 · ${n ? `还剩 ${n} 个` : "都答了"}` : `Your call · ${n ? `${n} open` : "all answered"}`}${arb}</div>${arb ? `<div class="ask-recnote">${zh ? "带「推荐」的是提问人给的建议。点「全按推荐」一次答完，再单独改不同意的几题。" : "Marked options are the asker's recommendation. Use them all at once, then change any you disagree with."}</div>` : ""}`;
+    const list = `<div class="ask-list">${all.map(a => askCard(it, a, a.answer ? 0 : ++i)).join("")}</div>`;
+    if (n) return head + list;
+    // t-ui-next 1: every question answered -> one summary row (tap to expand and change a pick); the open state survives poll re-renders
+    const open = DW.askOpen.has(it.id), picks = all.map(a => a.answer.opt).join(" · ");
+    return `${head}<button type="button" class="uin-asum${open ? " open" : ""}" data-uin-asks aria-expanded="${open}"><b>${zh ? `${all.length} 个问题都答了` : `${all.length} answered`}</b><span class="p">${esc(picks)}</span><span class="t">${open ? (zh ? "收起 ▴" : "Hide ▴") : (zh ? "展开 ▾" : "Show ▾")}</span></button>${open ? list : ""}`;
+  }
+  function askRow(it) {   // list cards: the first open question with its options, answerable in place
+    const oa = openAsks(it); if (!oa.length) return "";
+    const zh = UI.lang !== "en", a = oa[0];
+    return `<div class="ask-row"><div class="ask-rt"><i></i><b>${zh ? `${oa.length} 个问题要你选` : `${oa.length} question${oa.length > 1 ? "s" : ""} for you`}</b><span> · ${esc(a.q)}</span></div>${askChips(it, a, " sm")}${oa.length > 1 ? `<span class="ask-more">+${oa.length - 1}</span>` : ""}</div>`;
+  }
+  const AG = { draw: null };
+  // approve / done while questions are open: a sheet lists them (answerable in place); 跳过 sends skip_asks so the server lets it through and logs what was skipped
+  function askGuard(id, k, proceed) {
+    const it = ST.items.find(i => i.id === id);
+    if (!openAsks(it).length) return proceed(false);
+    const zh = UI.lang !== "en", verb = k === "approve" ? (zh ? okLabel(it, false) : okLabel(it, true).toLowerCase()) : (zh ? "完成" : "mark done");
+    const draw = m => {
+      const cur = ST.items.find(i => i.id === id) || it, oa = openAsks(cur); let i = 0;
+      m.innerHTML = oa.length
+        ? `<h2>${zh ? `还有 ${oa.length} 个问题没回答` : `${oa.length} question${oa.length > 1 ? "s" : ""} still open`}</h2><p class="ask-gp">${zh ? `${esc(aname(agent(cur.owner)))}在这张单子里问了你。可以现在点选；也可以跳过直接${verb}，跳过的问题会记在动态里，管家会转成后续单子。` : `Answer here, or skip and ${verb}: skipped questions are logged and the manager follows up.`}</p>
+           <div class="ask-list">${oa.map(a => askCard(cur, a, ++i)).join("")}</div>
+           <div class="foot"><button class="btn" data-ag-skip>${zh ? `跳过，直接${verb}` : `Skip, ${verb}`}</button><button class="btn primary" data-ag-first>${zh ? "先回答" : "Answer first"}</button></div>`
+        : `<h2>${zh ? "问题都回答了" : "All answered"}</h2><p class="ask-gp">${zh ? `可以${verb}了。` : `Ready to ${verb}.`}</p>
+           <div class="foot"><button class="btn" data-ag-x>${zh ? "取消" : "Cancel"}</button><button class="btn primary" data-ag-go>${zh ? verb : "Go"}</button></div>`;
+      const q = sel => m.querySelector(sel);
+      if (q("[data-ag-skip]")) q("[data-ag-skip]").onclick = () => { closeModal(); proceed(true); };
+      if (q("[data-ag-first]")) q("[data-ag-first]").onclick = () => { closeModal(); if (UI.item === id) { const l = $("#drawer .ask-list"); if (l) l.scrollIntoView({ behavior: "smooth", block: "center" }); } else openItem(id); };
+      if (q("[data-ag-go]")) q("[data-ag-go]").onclick = () => { closeModal(); proceed(false); };
+      if (q("[data-ag-x]")) q("[data-ag-x]").onclick = closeModal;
+    };
+    openModal("", m => { m.classList.add("ask-guard"); AG.draw = () => draw(m); draw(m); });
+  }
+  document.addEventListener("click", e => {   // capture: a chip inside a card must not also open the card
+    const o = e.target.closest("[data-ask-opt]"), x = !o && e.target.closest("[data-ask-other]");
+    if (!o && !x) return;
+    e.stopPropagation(); e.preventDefault();
+    const el = o || x, id = el.dataset.askItem, it = ST.items.find(i => i.id === id); if (!it) return;
+    const a = (it.asks || []).find(q => q.id === (o ? o.dataset.ask : x.dataset.askOther)); if (!a) return;
+    const zh = UI.lang !== "en";
+    if (o) {
+      if (AR.pending && AR.pending.id === id) AR.pending.picks = AR.pending.picks.filter(x => x.ask !== a.id);   // t-ask-rec: a hand pick during the hold wins over the recommendation
+      if (o.disabled || (a.answer && a.answer.opt === o.dataset.askOpt)) return;
+      o.parentElement.querySelectorAll(".ask-o.on").forEach(b => b.classList.remove("on")); o.classList.add("on");   // instant; the poll then redraws from the stored answer
+      api("answer", { item: id, ask: a.id, opt: o.dataset.askOpt })
+        .then(() => { toast(zh ? `已回答 · 转给${aname(agent(a.by || it.owner))}` : `Answered · sent to ${aname(agent(a.by || it.owner))}`); if (AG.draw && !$("#modal").hidden && $("#modal .ask-guard")) AG.draw(); })
+        .catch(() => o.classList.remove("on"));
+      return;
+    }
+    if (!$("#modal").hidden) closeModal();   // 其他…: write it in the detail composer, addressed to whoever asked
+    const fill = () => { const ta = $("#drawer .composer textarea"); if (!ta) return; ta.value = `@${aname(agent(a.by || it.owner))} ${zh ? `关于「${a.q}」：` : `re “${a.q}”: `}`; ta.focus(); ta.setSelectionRange(ta.value.length, ta.value.length); ta.dispatchEvent(new Event("input", { bubbles: true })); };
+    if (UI.item !== id) { openItem(id); setTimeout(fill, 450); } else fill();
+  }, true);
+  const decisions = () => items().filter(awaitsUser).sort(byAct);
+  function decHead(nRev, dec) {
+    const zh = UI.lang !== "en", np = dec.filter(i => i.kind === "plan").length, nq = dec.length - np;
+    const parts = zh ? [`审核 ${nRev}`, np && `方案 ${np}`, nq && `问题 ${nq}`] : [`review ${nRev}`, np && `plans ${np}`, nq && `questions ${nq}`];
+    return `<div class="dc-h">${zh ? "等你拍板" : "Waiting on you"}<small>${nRev + dec.length}</small><span class="r">${parts.filter(Boolean).join(" · ")}</span></div>`;
+  }
+  function decRow(it) {
+    const a = agent(it.owner), zh = UI.lang !== "en", plan = it.kind === "plan";
+    const what = plan ? (zh ? "方案待批" : "Plan to approve") : (zh ? "问题待答" : "Question for you");
+    return `<div class="dc-row" data-item="${it.id}">${av(a, "", it.id)}<div class="dc-main"><div class="dc-t">${esc(it.title)}</div>
+      <div class="dc-s">${what} · ${esc(aname(a))} · ${agoH(it.activity || it.updated)}${waitTag(it)}${openAsks(it).length ? ` · <b class="ask-n">${zh ? `${openAsks(it).length} 个问题要你选` : `${openAsks(it).length} to answer`}</b>` : ""}</div></div>
+      <button class="dc-btn${plan ? "" : " g"}" data-rv-open="${it.id}">${plan ? (zh ? "看方案" : "Review") : (zh ? "去回答" : "Answer")}</button></div>`;
+  }
+  const DC_KIND = { plan: '<path d="M5 4h10l4 4v12H5z"/><path d="M9 12h6M9 16h4"/>', deliverable: '<path d="M5 12.5l4.5 4.5L19 7.5"/>',
+    question: '<circle cx="12" cy="12" r="8.5"/><path d="M9.6 9.5a2.5 2.5 0 1 1 3.4 2.3c-.7.3-1 .8-1 1.5v.4M12 16.8v.2"/>', task: '<rect x="5" y="5" width="14" height="14" rx="3"/><path d="M9 12h6"/>' };
+  function todayBlock() {
+    const zh = UI.lang !== "en", its = items(), today = dayKey(new Date());
+    const all = agents().filter(a => a.enabled !== false && a.status === "working"), ws = all.filter(a => !mgrOnline(a)), on = all.filter(mgrOnline);
+    const now = ws.map(a => {
+      const it = liveItem(a);
+      return `<div class="dc-row${it ? "" : " plain"}"${it ? ` data-item="${it.id}"` : ""}>${av(a, "", it && it.id)}<div class="dc-main">
+        <div class="dc-t">${esc(aname(a))}${it ? ` · ${esc(it.title)}` : ""}</div>
+        <div class="dc-s">${esc(a.activity || (zh ? "工作中" : "Working"))}${a.since ? ` · <time class="wk-el" data-fmt="dc" data-since="${esc(a.since)}">${dcDur(a.since)}</time>` : ""}</div>
+        <i class="dc-bar" aria-hidden="true"><u style="animation-delay:-${Date.now() % 2400}ms"></u></i></div></div>`;
+    }).join("") + on.map(a => `<div class="dc-row plain dc-on">${av({ ...a, status: "online" })}<div class="dc-main"><div class="dc-t">${esc(aname(a))}</div><div class="dc-s">${MGR_ON()}</div></div></div>`).join("")
+      || `<div class="dc-none">${zh ? "现在没人在干活。" : "Nobody is working right now."}</div>`;
+    const done = its.filter(i => i.stage === "done" && i.closed && dayKey(new Date(i.closed)) === today).sort((x, y) => (y.closed || "").localeCompare(x.closed || ""));
+    // t-home-nopic (option C): a card with an image keeps its cover; a card without one has no cover and is drawn compact (kind icon + label + time + small
+    // avatar, then a 2-line title). Pairing walks the newest-first list: two CONSECUTIVE no-image cards share one column (upper = newer); a no-image card whose
+    // neighbour has an image stays alone in its own column, top-aligned. So the reading order (column by column, top then bottom) is exactly the time order.
+    const ship = [];
+    done.forEach(it => {
+      const img = (it.draft_attachments && it.draft_attachments.length ? it.draft_attachments : it.attachments || []).find(p => /^(uploads|work)\/.+\.(png|jpe?g|webp|gif)$/i.test(p));
+      const a = agent(it.owner);
+      if (img) return ship.push(`<div class="dc-sh" data-item="${it.id}"><div class="im" style="background-image:url('/api/thumb?p=${encodeURIComponent(img)}&w=320')"></div><b>${esc(it.title)}</b><span>${esc(aname(a))} · ${hm(it.closed)}</span></div>`);
+      const k = DC_KIND[it.kind] ? it.kind : "task";
+      const card = `<div class="dc-sh c" data-item="${it.id}"><div class="k"><svg viewBox="0 0 24 24" aria-hidden="true">${DC_KIND[k]}</svg>${esc(t("k_" + k))} · ${hm(it.closed)}${a ? `<i class="mav" style="background-image:url('${avatarUrl(a)}')" title="${esc(aname(a))}"></i>` : ""}</div><b>${esc(it.title)}</b></div>`;
+      const last = ship[ship.length - 1];
+      if (last && last.open) { last.push(card); last.open = false; } else { const col = [card]; col.open = true; ship.push(col); }
+    });
+    const shipHtml = ship.map(c => Array.isArray(c) ? `<div class="dc-col${c.length < 2 ? " one" : ""}">${c.join("")}</div>` : c).join("");
+    return `<div class="dc-h">${zh ? "此刻" : "Right now"}<small>${ws.length ? (zh ? `${ws.length} 人在做` : `${ws.length} working`) : ""}</small></div>${now}
+      <div class="dc-h">${zh ? "今天交付" : "Shipped today"}<small>${done.length}</small></div>${done.length ? `<div class="dc-ship">${shipHtml}</div>` : `<div class="dc-none">${zh ? "今天还没有交付。" : "Nothing shipped yet today."}</div>`}`;
+  }
+  const rvEase = "cubic-bezier(.32, .72, 0, 1)";   // = --m-ease-ios (WAAPI cannot read the CSS variable)
+  const rvReduce = () => matchMedia("(prefers-reduced-motion: reduce)").matches;
+  function rvCollapse(el, done) {   // card folds away: lift + fade, then the height closes so the cards below glide up
+    if (!el || rvReduce()) { if (el) el.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 160, fill: "forwards" }).onfinish = done; else done(); return; }
+    const h = el.offsetHeight, cs = getComputedStyle(el), mt = cs.marginTop, mb = cs.marginBottom;
+    el.style.overflow = "hidden"; el.style.pointerEvents = "none";
+    el.animate([{ transform: "none", opacity: 1 }, { transform: "translateY(-6px) scale(.96)", opacity: 0 }], { duration: 260, easing: rvEase, fill: "forwards" });
+    el.animate([{ height: h + "px", marginTop: mt, marginBottom: mb }, { height: "0px", marginTop: "0px", marginBottom: "0px" }], { duration: 330, delay: 170, easing: rvEase, fill: "forwards" }).onfinish = done;
+  }
+  function rvExpand(el) {   // undo: the card opens back in place
+    if (!el) return;
+    if (rvReduce()) { el.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 160 }); return; }
+    const h = el.offsetHeight, cs = getComputedStyle(el);
+    el.style.overflow = "hidden";
+    const a = el.animate([{ height: "0px", marginTop: "0px", marginBottom: "0px", opacity: 0, transform: "scale(.96)" },
+      { height: h + "px", marginTop: cs.marginTop, marginBottom: cs.marginBottom, opacity: 1, transform: "none" }], { duration: 420, easing: "cubic-bezier(.2, .8, .2, 1)" });
+    a.onfinish = () => { el.style.overflow = ""; };
+  }
+  function rvUndoBar() {
+    let b = document.getElementById("rv-undo");
+    if (!b) { b = document.createElement("div"); b.id = "rv-undo"; b.setAttribute("role", "status"); b.hidden = true; document.body.appendChild(b); }
+    return b;
+  }
+  function rvHideBar() { const b = document.getElementById("rv-undo"); if (b && !b.hidden) { b.classList.remove("on"); clearTimeout(b._h); b._h = setTimeout(() => { b.hidden = true; }, 260); } }
+  function rvCommit(keepalive) {   // send the held approve; the same server action and payload as the detail page's 批准
+    const id = RV.pending; if (!id) return;
+    clearTimeout(RV.timer); RV.pending = null; rvHideBar();
+    const it = ST.items.find(i => i.id === id), zh = UI.lang !== "en";
+    if (!rvCanApprove(it)) { toast(zh ? `这张卡的状态已经变了，没有${okLabel(it, false)}` : "This card changed, nothing was sent", true); renderPage(); return; }
+    if (keepalive) {   // page is going away: fire and forget so the approve still lands
+      try { fetch("/api/action", { method: "POST", keepalive: true, headers: { "Content-Type": "application/json" }, body: JSON.stringify({ kind: "approve", item: id, skip_asks: RV.skip === id || undefined }) }); } catch (e) { }
+      return;
+    }
+    api("approve", { item: id, skip_asks: RV.skip === id || undefined }).then(() => {
+      toast(okDone(it));
+    }).catch(() => renderPage());   // failed: the card comes back (api() already showed the error)
+  }
+  function rvApprove(id, btn, asked) {
+    const it = ST.items.find(i => i.id === id); if (!rvCanApprove(it)) return;
+    if (!asked && openAsks(it).length) return askGuard(id, "approve", skip => { RV.skip = skip ? id : null; rvApprove(id, btn && btn.isConnected ? btn : null, true); });   // t-open-questions: asked before the 4.5 s hold starts
+    if (RV.pending) rvCommit();   // a second approve while one is held: send the first now
+    RV.pending = id;
+    const zh = UI.lang !== "en";
+    if (window.FX && btn) { const r = btn.getBoundingClientRect(); FX.burst(r.left + r.width / 2, r.top + r.height / 2, { n: 18 }); }
+    const card = btn && btn.closest(".rv-card");
+    rvCollapse(card, () => { if (RV.pending === id || !RV.pending) renderPage(); });
+    const b = rvUndoBar();
+    b.innerHTML = `<span class="rv-u-tx"><b>${okDone(it).split(" · ")[0]}</b>${esc(it.title)}</span><button type="button" data-rv-undo>${zh ? "撤销" : "Undo"}</button><i class="rv-u-bar" style="--hold:${RV_HOLD}ms"></i>`;
+    clearTimeout(b._h); b.hidden = false; void b.offsetWidth; b.classList.add("on");
+    clearTimeout(RV.timer); RV.timer = setTimeout(() => rvCommit(), RV_HOLD);
+  }
+  function rvUndo() {
+    const id = RV.pending; if (!id) return;
+    clearTimeout(RV.timer); RV.pending = null; rvHideBar();
+    if (UI.page === "review") { renderPage(); rvExpand(document.querySelector(`#pagebody .rv-card[data-item="${CSS.escape(id)}"]`)); }
+  }
+  document.addEventListener("click", e => {
+    const ok = e.target.closest("[data-rv-ok]"); if (ok) { e.stopPropagation(); rvApprove(ok.dataset.rvOk, ok); return; }
+    const op = e.target.closest("[data-rv-open]"); if (op) { e.stopPropagation(); openItem(op.dataset.rvOpen); return; }
+    if (e.target.closest("[data-rv-undo]")) { e.stopPropagation(); rvUndo(); }
+  });
+  // leaving the app with an approve on hold still sends it (the user did tap 批准 and did not undo)
+  addEventListener("pagehide", () => rvCommit(true));
+  addEventListener("pagehide", () => arCommit(true));   // t-ask-rec: a held 全按推荐 still lands when the app goes away
+  document.addEventListener("visibilitychange", () => { if (document.visibilityState === "hidden") arCommit(true); });
+  document.addEventListener("click", e => {   // t-ask-rec
+    const b = e.target.closest("[data-ask-allrec]"); if (b) { e.stopPropagation(); arStart(b.dataset.askAllrec); return; }
+    if (e.target.closest("[data-ar-undo]")) { e.stopPropagation(); arUndo(); }
+  });
+  document.addEventListener("visibilitychange", () => { if (document.visibilityState === "hidden") rvCommit(true); });
+  function mailGroups(list) {   // newest first in, newest first out; entries of one item (or one agent's direct replies) fold into one row
+    const gs = [], by = {};
+    for (const m of list) {
+      const k = m.item ? "i:" + m.item : "a:" + (m.agent || "");
+      if (!by[k]) { by[k] = { last: m, ms: [] }; gs.push(by[k]); }
+      by[k].ms.push(m);
+    }
+    return gs;
+  }
+  // t-web-audit 07: previews are plain text: no markdown marks, no "管家:" prefix (the sender is already on the row)
+  // t-chat-table: in a one-line preview a Markdown table becomes 「〔表格〕a b · c d …」 (the header row and |---| line are dropped)
+  function tablePv(s) {
+    const L = String(s || "").split("\n"), out = []; let i = 0;
+    const isRow = l => /^\s*\|.*\|?\s*$/.test(l) && (l.match(/\|/g) || []).length >= 2, isSep = l => /^\s*\|?\s*:?-{2,}:?\s*(\|\s*:?-{2,}:?\s*)*\|?\s*$/.test(l);
+    while (i < L.length) {
+      if (isRow(L[i]) && i + 1 < L.length && isSep(L[i + 1])) {
+        const rows = []; i += 2;
+        while (i < L.length && isRow(L[i])) { rows.push(L[i].trim().replace(/^\||\|$/g, "").split("|").map(c => c.trim()).filter(Boolean).join(" ")); i++; }
+        out.push((UI.lang === "en" ? "[table] " : "〔表格〕") + rows.join(" · "));
+      } else out.push(L[i++]);
+    }
+    return out.join("\n");
+  }
+  function mailPv(s, a) {   // t-chat-table: phones use it too now (mail rows + 动态 rows)
+    s = tablePv(s).replace(/!?\[([^\]]*)\]\([^)]*\)/g, "$1").replace(/\*\*(.+?)\*\*/g, "$1").replace(/__(.+?)__/g, "$1").replace(/`([^`]+)`/g, "$1")
+      .replace(/^\s{0,3}(#{1,6}\s+|>\s?|[-*+]\s+)/gm, "").replace(/\s+/g, " ").trim();
+    for (const n of ["管家", "manager", a && aname(a), a && a.id].filter(Boolean)) {
+      const re = new RegExp("^" + n.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + "\\s*[:：]\\s*");
+      if (re.test(s)) { s = s.replace(re, ""); break; }
+    }
+    return s;
+  }
+  // t-web-audit 11: runs of manager heartbeats fold into one dim row; bare "agent <id>" lines are hidden
+  function logRows(list) {
+    if (MOBQ.matches) return list.map(l => ({ l }));   // desktop only for now
+    const HB = /^(Online: watching the inbox|在线：盯收件箱)/, AID = /^agent [0-9a-f]{12,}$/, out = [];
+    for (const l of list) {
+      const x = l.text || ""; if (AID.test(x)) continue;
+      if (HB.test(x)) { const p = out[out.length - 1]; if (p && p.hb && p.l.agent === l.agent) { p.n++; continue; } out.push({ l, hb: true, n: 1 }); }
+      else out.push({ l });
+    }
+    return out;
+  }
+  function mailRow(g) {
+    const m = g.last, it = m.item ? ST.items.find(i => i.id === m.item) : null, a = m.agent ? agent(m.agent) : null;
+    const unread = g.ms.some(x => !x.read);
+    return actRow({ attr: `data-mail="${m.id}" data-mailids="${g.ms.map(x => x.id).join(",")}"`, av: a ? av(a, "", m.item) : av("me"), ws: it ? workersOf(it.id) : [], unread,
+      name: a ? aname(a) : whoName("me"), title: it ? it.title : "", time: agoH(m.t), preview: mailPv(m.text, a),
+      chip: it ? rowLabel(it) : (m.kind === "reply" ? t("replies") : t("updates")), n: g.ms.length });
+  }
+  document.addEventListener("click", e => {
+    const a = e.target.closest("[data-arch]"); if (a) { e.stopPropagation(); api("archive", { item: a.dataset.arch }); }
+    const d = e.target.closest("[data-quickdone]"); if (d) { e.stopPropagation(); const qid = d.dataset.quickdone; askGuard(qid, "done", skip => api("done", { item: qid, skip_asks: skip || undefined })); }
+  });
+
+  const PAGES = {
+    quests() { return questsPage(); },
+    review() {
+      const hf = MOBQ.matches ? (UI.hf || "review") : "review", wkc = Date.now() - 7 * 864e5;   // hf: set by the phone home strip's stat row
+      const list = items().filter(i => i.id !== RV.pending && (hf === "week" ? (i.stage === "done" && i.closed && new Date(i.closed) > wkc) : hf === "review" ? i.stage === hf : grpOf(i) === hf)).sort(UI.sort === "created" ? byCreated : byAct);
+      const dec = hf === "review" ? decisions() : [];   // t-imp-p1
+      const decH = dec.length ? decHead(list.length, dec) : "", decR = dec.map(decRow).join(""), today = hf === "review" && !list.length ? todayBlock() : "";
+      const bar = `<div class="ph-bar"><button data-sort="activity" class="${UI.sort === "activity" ? "on" : ""}">${t("by_activity")}</button>
+        <button data-sort="created" class="${UI.sort === "created" ? "on" : ""}"><span class="gl" aria-hidden="true">▼ </span>${t("by_created")}</button>
+        <span class="count">${hf === "review" ? (UI.lang === "en" ? "On you" : "等你拍板") : hf === "week" ? "本周交付" : stageLabel(hf)} <b>${list.length + dec.length}</b></span></div>`;
+      if (!list.length) return pageHead("review", bar) + (dec.length ? decH + decR : hf === "review" ? `<div class="dc-none top">${t("empty_review")}</div>` : `<div class="empty">${t("empty_review")}</div>`) + today;
+      const seen = UI.seen.review || "";
+      const fresh = list.filter(i => (i.activity || "") > seen);
+      let html = pageHead("review", bar);
+      const mob = MOBQ.matches, rowf = i => mob ? reviewRow(i, !!seen && fresh.includes(i)) : card(i), wrap = h => mob ? `<div class="act-list">${h}</div>` : h;
+      if (mob && hf === "review") {   // P5: one flat column of review cards (new first, then by category), no group headers; the category sits in each card's meta line
+        const rest = seen ? list.filter(i => !fresh.includes(i)) : list, cats = ["urgent", "main", "side", "daily", "ongoing"];
+        const ord = (seen ? fresh : []).concat(cats.flatMap(c => rest.filter(i => i.category === c)), rest.filter(i => !cats.includes(i.category)));
+        return html + decH + `<div class="rv-list">${ord.map(i => reviewCard(i, !!seen && fresh.includes(i))).join("")}</div>` + decR;
+      }
+      if (fresh.length && seen) html += `<div class="grp-h"><b>${UI.lang === "en" ? "New" : "新到待批"}</b> · ${fresh.length}</div>` + wrap(fresh.map(rowf).join(""));
+      const rest = seen ? list.filter(i => !fresh.includes(i)) : list;
+      for (const c of ["urgent", "main", "side", "daily", "ongoing"]) {
+        const g = rest.filter(i => i.category === c); if (!g.length) continue;
+        html += `<div class="grp-h"><b>${t(c)}</b> · ${g.length}</div>` + wrap(g.map(rowf).join(""));
+      }
+      return html + (dec.length ? decH.replace('class="dc-h"', 'class="dc-h after"') + decR : "");
+    },
+    board() {
+      const cutoff = Date.now() - 7 * 864e5;
+      const list = items().filter(i => i.stage !== "done" || new Date(i.closed || i.updated) > cutoff);
+      return pageHead("board") + `<div class="board">${STAGES.map(s => {
+        let g = list.filter(i => grpOf(i) === s).sort(byAct); const total = g.length;
+        const more = s === "done" && !UI.boardAll && !MOBQ.matches && total > 12 ? total - 12 : 0; if (more) g = g.slice(0, 12);   // t-web-audit 01: the done column shows the latest 12
+        return `<div class="col" data-drop="${s}"><div class="col-h"><span>${grpLabel(s)}</span><span>${total}</span></div>${g.map(i =>
+          { const ws = workersOf(i.id); return `<div class="mini${ws.length ? " wk-on" : ""}" draggable="true" data-drag="${i.id}" data-item="${i.id}"${wkAttr(ws)}>${wkFx(ws)}<div class="t">${esc(i.title)}</div>${wkTag(ws)}<div class="m">${av(agent(i.owner), "sm", i.id)}${idleDoing(i) ? `<span class="tag">${pauseL()}</span>` : ""}<span>${t(i.category)}</span><span>${when(i.activity)}</span></div></div>`; }).join("")}${more ? `<button class="col-more" data-board-all>${UI.lang === "en" ? `${more} more · show all` : `还有 ${more} 张 · 展开`}</button>` : ""}</div>`;
+      }).join("")}</div>`;
+    },
+    logs() {
+      const ids = ["", ...agents().map(a => a.id), "me"];
+      const list = (ST.logs || []).filter(l => !UI.logAgent || l.agent === UI.logAgent).slice(-400).reverse();
+      return pageHead("logs") + `<div class="filters"><div class="seg" data-seg="logs">${ids.map(id => `<button class="seg-i ${UI.logAgent === id ? "on" : ""}" data-logf="${id}">${id ? esc(whoName(id)) : t("all")}</button>`).join("")}</div></div>` +
+        (list.length ? logRows(list).map(({ l, hb, n }) => hb ? `<div class="log-i hb"><span class="tm">${whenH(l.t)}</span>${av(agent(l.agent), "sm")}<span>${esc(whoName(l.agent))}</span><span>${UI.lang === "en" ? "Heartbeat" : "在线心跳"}${n > 1 ? ` × ${n}` : ""}</span></div>` : `<div class="log-i"><span class="tm">${whenH(l.t)}</span>${l.agent === "me" ? av("me", "sm") : av(agent(l.agent), "sm")}<span>${esc(whoName(l.agent))}</span>
+          <span>${l.item ? `<span class="it" data-item="${l.item}">${esc(l.item)}</span> ` : ""}${esc(l.text)}</span></div>`).join("") : `<div class="empty">${t("empty")}</div>`);
+    },
+    reports() {
+      const list = (ST.reports || []).slice().reverse();
+      const open = UI.openRep || (list[0] && list[0].id);
+      return pageHead("reports", `<div class="ph-bar"><button class="btn-s" data-repreq>${t("report_req")}</button></div>`) +
+        (list.length ? list.map(r => `<div class="rep"><div class="rep-h" data-rep="${r.id}"><b>${esc(r.title)} · ${esc(r.date)}</b><span class="dim">${whenH(r.t)}</span></div>
+          ${r.id === open ? `<div class="md" style="margin-top:10px">${md(r.body)}</div>` : ""}</div>`).join("") : `<div class="empty">${t("reports_empty", { t: "18:00" })}</div>`);
+    },
+    channels() {
+      const its = items().filter(i => i.stage !== "done" || new Date(i.closed || i.updated) > Date.now() - 14 * 864e5);
+      const col = (key, name, list) => `<div class="plat"><h3>${name}</h3><div class="sub">${list.length}</div>${list.sort(byAct).map(i =>
+        { const ws = workersOf(i.id); return `<div class="mini${ws.length ? " wk-on" : ""}" data-item="${i.id}"${wkAttr(ws)}>${wkFx(ws)}<div class="t">${esc(i.title)}</div>${wkTag(ws)}<div class="m"><span class="tag">${rowLabel(i)}</span>${av(agent(i.owner), "sm", i.id)}<span>${t(i.category)}</span></div></div>`; }).join("") || `<div class="dim">—</div>`}</div>`;
+      const none = its.filter(i => !(i.platforms || []).length && ["main", "side"].includes(i.category));
+      return pageHead("channels") + `<div class="plats">${Object.entries(PLAT).map(([k, n]) => col(k, n, its.filter(i => (i.platforms || []).includes(k)))).join("")}</div>` +
+        (none.length ? `<div class="grp-h"><b>${t("ch_none")}</b> · ${none.length}</div>` + none.map(card).join("") : "");
+    },
+    docs() {
+      if (!UI.docs) { fetch("/api/docs").then(r => r.json()).then(d => { UI.docs = d; renderPage(); }); return pageHead("docs"); }
+      const groups = {}; for (const d of UI.docs) (groups[d.group] = groups[d.group] || []).push(d);
+      return pageHead("docs") + `<div class="docs"><div class="dl">${Object.entries(groups).map(([g, ds]) => `<div class="g">${esc(g)}</div>` +
+        ds.map(d => `<button class="${UI.doc === d.path ? "on" : ""}" data-doc="${esc(d.path)}" title="${esc(d.path)}">${esc(d.path.split("/").pop())}</button>`).join("")).join("")}</div>
+        <div class="md">${UI.doc ? md(UI.docText) : `<div class="empty">${t("docs_pick")}</div>`}</div></div>`;
+    },
+    roles() {
+      const ls = ST.lessons || [];
+      window.RF && RF.ensure(() => { if (UI.page === "roles") renderPage(); });
+      return pageHead("roles") + `<div class="roster">${agents().map(a => {
+        const mine = items().filter(i => i.owner === a.id);
+        const done = mine.filter(i => i.stage === "done"), first = done.filter(i => !i.rejects).length;
+        const adopted = ls.filter(l => l.agent === a.id && l.status === "adopted").length;
+        const pend = ls.filter(l => l.agent === a.id && l.status === "pending");
+        const cur = liveItem(a);   // t-now-closed: a closed card is not "current"
+        return `<div class="rc frame ${a.enabled === false ? "disabled" : ""}"><img class="rc-art" src="/static/art/${esc(a.id)}.jpg?v=1" alt="" width="560" height="840" loading="lazy" decoding="async" onerror="this.remove()"><div class="rc-h">${av(a, "lg")}<div><div class="nm">${esc(aname(a))}</div><div class="ti">${esc(atitle(a))} · <span class="mono">${esc(a.agent_name || "main session")}</span></div></div></div>
+          <div class="du">${esc(aduty(a))}</div>
+          <div class="now">${a.status === "working" ? `<span style="color:var(--accent)">▶ ${t("working")}</span> ${esc(a.activity || "")} ${cur ? `· <a data-item="${cur.id}" href="#">${esc(cur.title)}</a>` : ""}` : `<span class="dim">${t(a.status || "idle")} ${a.last_seen ? "· " + ago(a.last_seen) : ""}</span>`}</div>
+          <div class="stats"><div><b>${done.length}</b><small>${t("closed")}</small></div><div><b>${done.length ? Math.round(first / done.length * 100) + "%" : "—"}</b><small>${t("first_pass")}</small></div><div><b>${adopted}</b><small>${t("adopted")}</small></div></div>
+          ${rcLinks(a)}
+          ${rcTasks(a, mine)}
+          ${pend.length ? `<div class="dim" style="font-size:12px;margin-top:6px"><a href="#" data-ui12go="review">${UI.lang === "en" ? `${pend.length} rule proposal(s) → Review page` : `${pend.length} 条规则提议 → 在「审核」页处理`}</a></div>` : ""}
+          <div style="display:flex;gap:8px;margin-top:10px">${a.id !== "manager" ? `<button class="btn-s" data-chat="${a.id}">${t("dm")}</button>` : `<button class="btn-s" data-chat="manager">${t("dm")}</button>`}</div></div>`;
+      }).join("")}</div>`;
+    },
+    mail() {
+      const f = UI.mailFilter, mob = MOBQ.matches;
+      let list = mailFiltered(300);
+      if (mob && UI.mailUnread) list = list.filter(m => !m.read);
+      const fs = [["all", t("all")], ["unread", t("unread")], ["reply", t("replies")], ["update", t("updates")], ["urgent", t("urgent")]];
+      const segs = `<div class="seg" data-seg="mail">${fs.map(([k, n]) => `<button class="seg-i ${f === k ? "on" : ""}" data-mailf="${k}">${n}</button>`).join("")}</div>`;
+      const head = mob   // t-mailbox-polish: phone = one row, filters + a small 全部已读 pill (masthead is hidden there)
+        ? pageHead("mail") + `<div class="filters mb-row">${segs}<button class="btn-s mb-readall" data-mailall>${t("mark_all")}</button></div>`
+        : pageHead("mail", `<div class="ph-bar"><button class="btn-s" data-mailall>${t("mark_all")}</button></div>`) + `<div class="filters">${segs}</div>`;
+      if (mob) return head + (list.length ? `<div class="act-list">${ringOnce(() => mailGroups(list).map(mailRow).join(""))}</div>` : `<div class="empty calm">${t("empty_mail")}</div>`) +
+        `<div class="act-foot"><button class="act-tog ${UI.mailUnread ? "on" : ""}" data-mailunread aria-pressed="${UI.mailUnread}">${t("unread_only")}</button></div>`;
+      return head +
+        (list.length ? ringOnce(() => list.map(m => `<div class="mail-i ${m.read ? "" : "unread"}" data-mail="${m.id}"><span class="u"></span><span class="tm">${whenH(m.t)}</span>${m.agent ? av(agent(m.agent), "sm") : "<span></span>"}<span class="tx">${esc(mailPv(m.text, m.agent && agent(m.agent)))}</span></div>`).join("")) : `<div class="empty">${t("empty")}</div>`);
+    },
+  };
+  // ===== t-agent-memory v2: 记忆 / 灵魂 pills on the role card (viewer lives in rolefiles.js; read-only) =====
+  function rcLinks(a) {
+    const c = window.RF && RF.counts, n = c && c !== "old" ? c[a.id] : null;
+    const soul = window.RF ? RF.soulFiles(a.id, a.agent_name).length : 0;
+    const at = `data-rf-id="${esc(a.id)}" data-rf-agent="${esc(a.agent_name || "")}" data-rf-name="${esc(aname(a))}"`;
+    return `<div class="rc-links"><button class="rf-pill" data-rf-open="mem" ${at}>${UI.lang === "en" ? "Memory" : "记忆"}${n != null ? ` <b>${n}</b>` : ""}</button><button class="rf-pill" data-rf-open="soul" ${at}>${UI.lang === "en" ? "Soul" : "灵魂"} <b>${soul}</b></button>${window.VoicePanel ? `<button class="rf-pill" data-vp-open="${esc(a.id)}" data-vp-name="${esc(aname(a))}">${UI.lang === "en" ? "Voice" : "声音"}</button>` : ""}</div>`;
+  }
+  // ===== ui20 (t-role-tasks): task list inside each roster card. Open work grouped doing > review > todo > waiting; done collapsed (latest 3). Rows reuse data-item -> openItem. =====
+  UI.rcx = UI.rcx || {};
+  function rcTasks(a, mine) {
+    const x = UI.rcx[a.id] || {}, zh = UI.lang !== "en";
+    const by = s => mine.filter(i => grpOf(i) === s);
+    const row = i => `<div class="rt-r" data-item="${esc(i.id)}" role="link" tabindex="0"><span class="rt-t">${esc(i.title)}</span><span class="tag rt-s rt-${grpOf(i)}">${rowLabel(i)}</span></div>`;
+    const groups = ["doing", "review", "todo", "waiting"].map(s => [s, by(s)]).filter(g => g[1].length);
+    const done = by("done").sort((p, q) => String(q.updated || q.created || "").localeCompare(String(p.updated || p.created || "")));
+    const open = groups.map(([s, g]) => `<div class="rt-g"><b>${grpLabel(s)}</b> · ${g.length}</div>` + g.map(row).join("")).join("");
+    const nrows = groups.reduce((n, g) => n + g[1].length + 1, 0);
+    const doneBlock = done.length ? `<button class="rt-dn" data-rcdone="${esc(a.id)}" aria-expanded="${!!x.done}">${x.done ? "▾" : "▸"} ${stageLabel("done")} · ${done.length}</button>` + (x.done ? done.slice(0, 3).map(row).join("") : "") : "";
+    const body = open || doneBlock ? open + doneBlock : `<div class="rt-e">${zh ? "没有单子" : "No items"}</div>`;
+    const long = nrows + (x.done ? Math.min(3, done.length) : 0) > 6;
+    return `<div class="rt ${x.all ? "all" : ""}"><div class="rt-b">${body}</div>${long ? `<button class="rt-more" data-rcall="${esc(a.id)}" aria-expanded="${!!x.all}">${x.all ? (zh ? "收起" : "Less") : (zh ? "展开全部" : "Show all")}</button>` : ""}</div>`;
+  }
+  document.addEventListener("click", e => {
+    const d = e.target.closest("[data-rcdone]"), m = e.target.closest("[data-rcall]"); if (!d && !m) return;
+    const id = (d || m).dataset.rcdone || (d || m).dataset.rcall; const x = UI.rcx[id] = UI.rcx[id] || {};
+    if (d) x.done = !x.done; else x.all = !x.all; renderPage();
+  });
+  document.addEventListener("keydown", e => { const r = e.target.closest && e.target.closest(".rt-r"); if (r && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); openItem(r.dataset.item); } });
+  // ===== ui12 (t-common-rules): 「待确认的规则」block under the review queue. Source: ST.lessons status=pending, newest first.
+  // agent "common" = team-wide (tag 「全员」). Buttons reuse data-lesson -> api("lesson"). The roster page only shows a count link now (de-dup). =====
+  function rulesBlock() {
+    const en = UI.lang === "en";
+    const ls = (ST.lessons || []).filter(l => l.status === "pending").sort((x, y) => (y.t || "").localeCompare(x.t || ""));
+    if (!ls.length) return "";
+    const rows = ls.map(l => {
+      const common = l.agent === "common";
+      const it = l.item ? (ST.items || []).find(i => i.id === l.item) : null;
+      const who = common ? `<span class="av lg rl-team" title="${en ? "Team-wide" : "全员"}">${en ? "ALL" : "全员"}</span>` : av(agent(l.agent), "lg");
+      const nm = common ? (en ? "Everyone" : "全员") : aname(agent(l.agent));
+      const link = it ? `<a href="#" class="rl-src" data-item="${esc(it.id)}">${esc(it.title)}</a>` : "";
+      const dim = [it ? it.title : "", l.t ? l.t.slice(0, 10) : ""].filter(Boolean).join(" · ");
+      return `<div class="rl-row ${common ? "common" : ""}">${who}<div class="rl-main"><div class="rl-top"><span class="rl-tag">${common ? (en ? "Team" : "全员") : (en ? "Rule" : "规则")}</span>${common ? `<span class="rl-tag">${en ? "Rule" : "规则"}</span>` : ""}<b class="rl-nm">${esc(nm)}</b>${link}</div>
+        <div class="rl-tx">${esc(l.text)}</div><div class="rl-dim dim">${esc(dim)}</div></div>
+        <div class="rl-bt"><button class="btn-s" data-lesson="${l.id}" data-d="adopt">${t("adopt")}</button><button class="btn-s" data-lesson="${l.id}" data-d="drop">${t("drop")}</button></div></div>`;
+    }).join("");
+    return `<div class="rl-block"><div class="grp-h"><b>${en ? "Rules awaiting your call" : "待确认的规则"}</b> · ${ls.length}</div>${rows}</div>`;
+  }
+  { const r0 = PAGES.review; PAGES.review = function () { return r0.call(this) + rulesBlock(); }; }
+  // ===== t-imp-p3: 制作线 (production line), READ-ONLY. Main/side content items grouped by production stage + this week's publish slots.
+  // Stage = tag "pipe:<key>" when present, else guessed from the owner's role (marked "推断" on the card). No new state fields, no server change.
+  // Moving a card never writes state: dropping it on another column sends the manager a chat message asking to retag it (the manager applies it).
+  const PIPE = [
+    { k: "topic", zh: "选题", en: "Topic", who: ["scout"], d: "选题论证 + 调研", de: "Pitch + research" },
+    { k: "script", zh: "脚本", en: "Script", who: ["writer"], d: "立项文档 + 脚本 + 事实核查", de: "Production doc, script, fact-check" },
+    { k: "board", zh: "分镜·素材", en: "Boards · art", who: ["director", "artist"], d: "分镜 + 封面 / 概念图", de: "Storyboard, cover, concept art" },
+    { k: "shoot", zh: "拍摄", en: "Shoot", who: ["me"], d: "你来拍", de: "You shoot" },
+    { k: "edit", zh: "剪辑", en: "Edit", who: ["director"], d: "粗剪方案 / 粗剪", de: "Edit plan, rough cut" },
+    { k: "pack", zh: "包装·排期", en: "Package", who: ["ops"], d: "三平台包装 + 排期", de: "Per-platform copy + slot" },
+    { k: "ready", zh: "待发布", en: "Ready", who: ["me"], d: "你来发布", de: "You publish" },
+  ];
+  const PIPE_ALIAS = { "选题": "topic", "调研": "topic", "脚本": "script", "核查": "script", "分镜": "board", "素材": "board", "封面": "board", "拍摄": "shoot", "剪辑": "edit", "粗剪": "edit", "包装": "pack", "排期": "pack", "待发布": "ready", "发布": "ready" };
+  const BY_OWNER = { scout: "topic", writer: "script", artist: "board", director: "board", ops: "pack" };
+  const CONTENT_ROLES = new Set(["scout", "writer", "director", "artist", "ops"]);
+  function pipeTag(it) {
+    for (const g of it.tags || []) { const m = /^pipe[:：](.+)$/i.exec(String(g).trim()); if (m) { const v = m[1].trim().toLowerCase(); return PIPE.some(p => p.k === v) ? v : PIPE_ALIAS[m[1].trim()] || null; } }
+    return null;
+  }
+  const isContent = it => ["main", "side"].includes(it.category) && (pipeTag(it) || (it.platforms || []).length || CONTENT_ROLES.has(it.owner));
+  function pipeOf(it) { const k = pipeTag(it); return k ? { k, guess: false } : { k: BY_OWNER[it.owner] || "topic", guess: true }; }
+  const pipeName = p => UI.lang === "en" ? p.en : p.zh;
+  function weekDays() {   // Monday-first, this week
+    const n = new Date(), mon = new Date(n.getFullYear(), n.getMonth(), n.getDate() - ((n.getDay() + 6) % 7));
+    return Array.from({ length: 7 }, (_, i) => new Date(mon.getFullYear(), mon.getMonth(), mon.getDate() + i));
+  }
+  const platOf = s => { s = String(s || ""); return /B站|bili/i.test(s) ? "bili" : /youtube|油管|\byt\b/i.test(s) ? "yt" : /小红书|xhs|rednote/i.test(s) ? "xhs" : ""; };
+  function pipeWeek(content) {
+    const en = UI.lang === "en", wd = en ? ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"] : ["周一", "周二", "周三", "周四", "周五", "周六", "周日"], today = dayKey(new Date());
+    const days = weekDays(), keys = days.map(dayKey);
+    const cal = (ST.calendar || []).filter(e => keys.includes(e.date)), dues = content.filter(i => i.due && keys.includes(String(i.due).slice(0, 10)));
+    const cells = days.map((d, i) => {
+      const k = keys[i], evs = cal.filter(e => e.date === k), ds = dues.filter(it => String(it.due).slice(0, 10) === k);
+      const slot = e => `<div class="pl-slot${platOf(e.title) ? " pf-" + platOf(e.title) : ""}"${e.item ? ` data-item="${esc(e.item)}"` : ""}>${e.time ? `<span class="tm">${esc(e.time)}</span>` : ""}${esc(e.title)}</div>`;
+      const due = it => `<div class="pl-slot due" data-item="${esc(it.id)}"><b>${en ? "Due" : "截止"}</b> · ${esc(it.title)}</div>`;
+      const body = evs.map(slot).join("") + ds.map(due).join("");
+      return `<div class="pl-day${k === today ? " today" : ""}${k < today ? " past" : ""}"><div class="pl-dh">${wd[i]} <span>${d.getMonth() + 1}/${d.getDate()}</span></div>${body || (k < today ? "" : `<button class="pl-add" data-pl-add="${k}">${en ? "+ add" : "+ 排一个"}</button>`)}</div>`;
+    }).join("");
+    const used = keys.filter(k => cal.some(e => e.date === k) || dues.some(it => String(it.due).slice(0, 10) === k)).length;
+    return { html: `<div class="pl-week">${cells}</div>`, used };
+  }
+  function pipeCard(it, guess) {
+    const en = UI.lang === "en", ws = workersOf(it.id), plats = (it.platforms || []).map(p => PLAT[p] || p).join(" · ");
+    const flag = it.stage === "review" ? (en ? `${it.draft_label || "draft"} · your review` : `${esc(it.draft_label || "新稿")} 待你看`) : awaitsUser(it) ? (en ? "needs your call" : "待你拍板") : it.stage === "waiting" ? (en ? "waiting" : "等别人") : "";
+    return `<div class="mini pl-card${ws.length ? " wk-on" : ""}" draggable="true" data-pdrag="${it.id}" data-item="${it.id}"${wkAttr(ws)}>${wkFx(ws)}<div class="t">${esc(it.title)}</div>${wkTag(ws)}
+      ${flag ? `<span class="pl-flag${it.stage === "review" || awaitsUser(it) ? " you" : ""}">${flag}</span>` : ""}
+      <div class="m">${av(agent(it.owner), "sm", it.id)}<span>${t(it.category)}</span>${plats ? `<span>${esc(plats)}</span>` : ""}${guess ? `<span class="pl-guess" title="${en ? "No pipe:<stage> tag; guessed from the owner" : "没有 pipe:阶段 标签，按负责人推断"}">${en ? "guessed" : "推断"}</span>` : ""}</div></div>`;
+  }
+  PAGES.pipe = function () {
+    const en = UI.lang === "en", all = items().filter(i => i.stage !== "done" && ["main", "side"].includes(i.category));
+    const content = all.filter(isContent), skipped = all.filter(i => !isContent(i));
+    const wk = pipeWeek(content);
+    const bar = `<div class="ph-bar"><span class="count">${en ? "Days booked this week" : "本周已排"} <b>${wk.used}</b>${en ? "" : " 天"}</span><span class="count">${en ? "In production" : "在制作"} <b>${content.length}</b></span></div>`;
+    const empty = !content.length ? `<div class="pl-empty"><b>${en ? "No content items yet." : "还没有内容单子。"}</b>
+      ${en ? "Main / side quests with a platform, a <code>pipe:&lt;stage&gt;</code> tag, or a content owner (scout, writer, director, artist, ops) show up here, one column per production stage. Calendar entries for this week fill the slots above."
+        : "主线 / 支线里，标了平台、带 <code>pipe:阶段</code> 标签、或者负责人是内容组（" + ["scout", "writer", "director", "artist", "ops"].map(id => aname(agent(id))).join("、") + "）的卡，会按制作阶段出现在下面七列。上面的发布位读的是日程里本周的条目。"}</div>` : "";
+    const cols = PIPE.map(p => {
+      const g = content.map(i => ({ i, p: pipeOf(i) })).filter(x => x.p.k === p.k).sort((a, b) => byAct(a.i, b.i));
+      const who = p.who.map(w => w === "me" ? `<span class="pl-me">${en ? "You" : "你"}</span>` : av(agent(w), "sm")).join("");
+      return `<div class="pl-col${g.length ? "" : " none"}" data-pdrop="${p.k}"><div class="col-h"><span>${pipeName(p)}</span><span class="pl-who">${who}<i>${g.length}</i></span></div>
+        <div class="pl-d">${esc(en ? p.de : p.d)}</div>${g.map(x => pipeCard(x.i, x.p.guess)).join("")}</div>`;
+    }).join("");
+    const skip = skipped.length ? `<div class="pl-skip">${en ? `${skipped.length} main/side item(s) don't look like content (no platform, no pipe tag, not a content owner), so they are not shown:` : `另有 ${skipped.length} 张主线/支线卡不像内容（没平台、没 pipe 标签、负责人不在内容组），没放进来：`} ${skipped.map(i => `<a href="#" data-item="${i.id}">${esc(i.title)}</a>`).join("、")}</div>` : "";
+    return pageHead("pipe", bar) + wk.html + empty + `<div class="pl-board">${cols}</div>` + skip;
+  };
+  const plFade = el => el.classList.toggle("more", el.scrollWidth - el.clientWidth - el.scrollLeft > 4);   // fade the right edge while columns hide past it
+  const plSL = {};   // polls re-render the page; keep each sideways row where you left it (phones open the week strip at today)
+  hooks.push(k => {
+    if (k !== "page" || UI.page !== "pipe") return;
+    document.querySelectorAll(".pl-week, .pl-board").forEach(el => {
+      const c = el.classList[0];
+      if (plSL[c] != null) el.scrollLeft = plSL[c];
+      else if (c === "pl-week" && MOBQ.matches) requestAnimationFrame(() => { const td = el.querySelector(".today"); if (td && plSL[c] == null) el.scrollLeft += td.getBoundingClientRect().left - el.getBoundingClientRect().left; });
+      plFade(el);
+    });
+  });
+  document.addEventListener("scroll", e => { const el = e.target; if (el.classList && (el.classList.contains("pl-board") || el.classList.contains("pl-week"))) { plSL[el.classList[0]] = el.scrollLeft; plFade(el); } }, true);
+  window.addEventListener("resize", () => { if (UI.page === "pipe") document.querySelectorAll(".pl-week, .pl-board").forEach(plFade); });
+  document.addEventListener("click", e => {
+    const a = e.target.closest("[data-pl-add]"); if (!a) return;
+    UI.calForm = true; renderLeft();
+    const f = $("#calf"); if (f) { f.date.value = a.dataset.plAdd; f.title.focus(); if (!f.title.placeholder || f.title.placeholder === "…") f.title.placeholder = UI.lang === "en" ? "e.g. Bilibili · EP1" : "例：B站 · EP1"; }
+  });
+  document.addEventListener("dragstart", e => { const d = e.target.closest("[data-pdrag]"); if (d) e.dataTransfer.setData("text/pipe", d.dataset.pdrag); });
+  document.addEventListener("dragover", e => { const c = e.target.closest("[data-pdrop]"); if (c && e.dataTransfer.types.includes("text/pipe")) { e.preventDefault(); c.classList.add("over"); } });
+  document.addEventListener("dragleave", e => { const c = e.target.closest("[data-pdrop]"); if (c && !c.contains(e.relatedTarget)) c.classList.remove("over"); });
+  document.addEventListener("drop", e => {
+    const c = e.target.closest("[data-pdrop]"); if (!c) return; const id = e.dataTransfer.getData("text/pipe"); c.classList.remove("over"); if (!id) return;
+    e.preventDefault();
+    const it = items().find(i => i.id === id), p = PIPE.find(x => x.k === c.dataset.pdrop); if (!it || !p) return;
+    const cur = pipeOf(it); if (cur.k === p.k && !cur.guess) return;
+    if (!confirm(UI.lang === "en" ? `Ask the manager to move "${it.title}" to ${p.en}?` : `请管家把「${it.title}」挪到「${p.zh}」？\n（发给管家确认，看板不直接改）`)) return;
+    const tags = (it.tags || []).filter(g => !/^pipe[:：]/i.test(g)).concat("pipe:" + p.k);
+    api("chat", { text: `【制作线】请把「${it.title}」（${it.id}）的制作阶段改到「${p.zh}」。\n设成：python3 stateutil.py upsert-item --id ${it.id} --who manager ${tags.map(g => `--tag "${g}"`).join(" ")}\n（--tag 会整组替换 tags，上面已带上原有标签）` })
+      .then(() => toast(UI.lang === "en" ? "Sent to the manager" : "已发给管家，确认后会挪过去"));
+  });
+
+  document.addEventListener("click", e => { const g = e.target.closest("[data-ui12go]"); if (g) { e.preventDefault(); go(g.dataset.ui12go); } });
+  // ---------- ui1-C: mailbox = drop-down panel under the header (the full page stays reachable via "view all") ----------
+  function mailFiltered(n) {
+    const f = UI.mailFilter;
+    return (ST.mail || []).filter(m => f === "all" || (f === "unread" ? !m.read : f === "urgent" ? (m.item && (ST.items.find(i => i.id === m.item) || {}).category === "urgent") : m.kind === f)).slice(-n).reverse();
+  }
+  const MB = { ct: null, open: false };
+  function mailboxEls() {
+    let box = $("#mailbox"), sc = $("#mailscrim");
+    if (!box) {
+      sc = document.createElement("div"); sc.id = "mailscrim"; sc.hidden = true; sc.addEventListener("click", () => closeMailbox());
+      box = document.createElement("div"); box.id = "mailbox"; box.hidden = true; box.setAttribute("role", "dialog");
+      document.body.append(sc, box);
+    }
+    return { box, sc };
+  }
+  function renderMailbox(enter) {
+    if (!MB.open) return;
+    const { box } = mailboxEls(), f = UI.mailFilter;
+    const unread = (ST.mail || []).filter(m => !m.read).length;
+    const fs = [["all", t("all")], ["unread", t("unread")], ["reply", t("replies")], ["update", t("updates")], ["urgent", t("urgent")]];
+    const kindName = { reply: t("replies"), update: t("updates") };
+    const list = mailFiltered(40);
+    const keep = $(".mb-list", box) ? $(".mb-list", box).scrollTop : 0;
+    box.innerHTML = `<div class="mb-h"><div class="mb-t"><b>${t("mail")}</b><span>${UI.lang === "en" ? `${unread} unread` : `${unread} 条未读`}</span></div><button class="btn-s" data-mailall>${t("mark_all")}</button></div>
+      <div class="mb-f"><div class="seg" data-seg="mailbox">${fs.map(([k, n]) => `<button class="seg-i ${f === k ? "on" : ""}" data-mailf="${k}">${n}</button>`).join("")}</div></div>
+      <div class="mb-list ${enter ? "mb-enter" : ""}">${list.length ? list.map((m, i) => `<div class="mb-i ${m.read ? "" : "unread"}" data-mail="${m.id}" style="--i:${Math.min(i, 8)}">
+        ${m.agent ? av(agent(m.agent), "sm") : "<span class=\"av sm\"></span>"}<div class="mb-b"><div class="mb-m"><b>${m.agent ? esc(aname(agent(m.agent))) : ""}</b>${kindName[m.kind] ? `<i>${esc(kindName[m.kind])}</i>` : ""}<span>${whenH(m.t)}</span></div><div class="mb-x">${esc(mailPv(m.text, m.agent && agent(m.agent)))}</div></div><span class="u"></span></div>`).join("") : `<div class="empty">${t("empty")}</div>`}</div>
+      <button class="mb-all" data-mbfull>${UI.lang === "en" ? "View all" : "查看全部"} →</button>`;
+    $(".mb-list", box).scrollTop = keep;
+    if (enter) setTimeout(() => { const l = $(".mb-list", box); l && l.classList.remove("mb-enter"); }, 700);
+  }
+  function openMailbox() {
+    const { box, sc } = mailboxEls(); clearTimeout(MB.ct);
+    const b = $('[data-h="mail"]'), r = b ? b.getBoundingClientRect() : { bottom: 56 };
+    const hb = $("#top").getBoundingClientRect().bottom;
+    document.documentElement.style.setProperty("--mb-top", Math.round(Math.max(hb, 0)) + "px");
+    MB.open = true; box.hidden = false; sc.hidden = false; renderMailbox(true);
+    void box.offsetWidth; box.classList.add("open"); sc.classList.add("open"); document.body.classList.add("mailopen");
+  }
+  function closeMailbox() {
+    if (!MB.open) return; MB.open = false;
+    const { box, sc } = mailboxEls(); box.classList.remove("open"); sc.classList.remove("open"); document.body.classList.remove("mailopen");
+    clearTimeout(MB.ct); MB.ct = setTimeout(() => { if (MB.open) return; box.hidden = true; sc.hidden = true; box.innerHTML = ""; }, 200);
+  }
+  document.addEventListener("click", e => {
+    if (e.target.closest("[data-mbfull]")) { closeMailbox(); go("mail"); return; }
+    if (MB.open && e.target.closest("#mailbox [data-mail]")) setTimeout(closeMailbox, 0);
+  });
+  // t-vis-b2: the phone 委托 tab's 「全部」 page: every live item across categories, grouped by stage like a category page
+  function questsPage() {
+    const list = items();
+    let html = pageHead("quests");
+    if (!list.length) return html + `<div class="empty">${t("empty")}</div>`;
+    for (const s of ["review", "doing", "todo", "waiting", "done"]) {
+      let g = list.filter(i => grpOf(i) === s).sort(byAct); if (!g.length) continue;
+      if (s === "done") g = g.slice(0, 12);
+      html += `<div class="grp-h"><b>${grpLabel(s)}</b> · ${g.length}</div>` + g.map(card).join("");
+    }
+    return html;
+  }
+  function catPage(c) {
+    const list = items().filter(i => i.category === c);
+    let html = pageHead(c);
+    if (!list.length) return html + `<div class="empty">${t("empty")}</div>`;
+    for (const s of ["review", "doing", "todo", "waiting", "done"]) {
+      let g = list.filter(i => grpOf(i) === s).sort(byAct); if (!g.length) continue;
+      if (s === "done") g = g.slice(0, 12);
+      html += `<div class="grp-h"><b>${grpLabel(s)}</b> · ${g.length}</div>` + g.map(card).join("");
+    }
+    return html;
+  }
+
+  let officeMounted = false;
+  function officeStats() {
+    const its = items(), c = counts();
+    const days = Array.from({ length: 7 }, (_, i) => dayKey(new Date(Date.now() - (6 - i) * 864e5)));
+    const spark = days.map(d => its.filter(i => i.stage === "done" && i.closed && dayKey(new Date(i.closed)) === d).length);
+    const week = spark.reduce((a, b) => a + b, 0), doing = its.filter(i => grpOf(i) === "doing").length;
+    const en = UI.lang === "en";
+    return { spark, s1: en ? `On you ${c.review}` : `待拍板 ${c.review}`, s2: en ? `Doing ${doing}` : `进行中 ${doing} · 待办 ${its.filter(i => grpOf(i) === "todo").length}`,
+      n1: en ? `Shipped ${week}` : `本周交付 ${week}` };
+  }
+  // ===== t-imp29-p4: 素材库 (asset library). Every attachment on every card (archived ones too), built from the loaded state; no new API.
+  // uploads/voices/ is private voice material (仅本机私用): hidden until switched on, then flagged. Only uploads/ and work/ paths show (never tools/).
+  // Lazy: 60 tiles per batch (an IntersectionObserver on .lib-more adds the next 60), images via /api/thumb + loading=lazy, no video posters
+  // (a video tile only reads its duration from the file header once it is on screen). A poll keeps the DOM unless the asset list itself changed.
+  const LIB = { kind: "all", who: "", q: "", priv: false, n: 60, rev: null, list: null, sig: "", dur: {}, io: null, dio: null, pio: null, peaks: {}, pq: [], busy: false, ac: null };
+  const LIB_BATCH = 60;
+  const libPriv = p => /^uploads\/voices\//.test(p);
+  const libKind = p => /\.(png|jpe?g|gif|webp|heic|heif)$/i.test(p) ? "image" : isAudioAtt(p) ? "audio" : /\.(mp4|mov|m4v|webm)$/i.test(p) ? "video" : "other";
+  const libUrl = p => "/" + p.split("/").map(encodeURIComponent).join("/");
+  const libName = p => p.split("/").pop().replace(/^\d{8}-\d{6}-[0-9a-f]{4}-/, "");
+  function libCollect() {
+    if (LIB.list && LIB.rev === REV) return LIB.list;
+    const m = new Map();
+    const add = (p, it, who, ms) => {
+      if (typeof p !== "string" || !/^(uploads|work)\//.test(p) || /(^|\/)\.\.(\/|$)/.test(p)) return;
+      const st = p.match(/(\d{4})(\d{2})(\d{2})-(\d{2})(\d{2})(\d{2})-[0-9a-f]{4}-/);   // uploads carry their own timestamp
+      if (st) ms = new Date(+st[1], st[2] - 1, +st[3], +st[4], +st[5], +st[6]).getTime();
+      const a = m.get(p);
+      if (!a) m.set(p, { p, kind: libKind(p), priv: libPriv(p), item: it, who, ms: ms || 0, n: 1 });
+      else { a.n++; if (ms > a.ms) { a.ms = ms; a.item = it; a.who = who; } }   // shown under the card that used it last
+    };
+    for (const it of ST.items || []) {
+      const subs = (it.thread || []).filter(x => x.kind === "event" && /^提交审核/.test(x.text || "")).map(x => Date.parse(x.t)).filter(isFinite);
+      const t0 = subs.length ? subs[0] : Date.parse(it.created) || 0, t1 = subs.length ? subs[subs.length - 1] : Date.parse(it.updated) || t0;
+      for (const p of it.attachments || []) add(p, it, it.owner, t0);
+      for (const p of it.draft_attachments || []) add(p, it, it.owner, t1);
+      for (const x of it.thread || []) for (const p of x.attachments || []) add(p, it, x.who || it.owner, Date.parse(x.t) || t0);
+    }
+    LIB.list = [...m.values()].sort((a, b) => b.ms - a.ms || a.p.localeCompare(b.p)); LIB.rev = REV;
+    return LIB.list;
+  }
+  const libSig = L => L.length + "|" + L.map(a => a.p + ">" + a.item.id).join(",");
+  function libFilter(L, skip) {
+    const q = LIB.q.trim().toLowerCase();
+    return L.filter(a => (LIB.priv || !a.priv) && (skip === "kind" || LIB.kind === "all" || a.kind === LIB.kind) && (skip === "who" || !LIB.who || a.who === LIB.who) &&
+      (!q || a.p.toLowerCase().includes(q) || (a.item.title || "").toLowerCase().includes(q) || a.item.id.toLowerCase().includes(q)));
+  }
+  const libWho = w => w === "me" ? whoName("me") : aname(agent(w));
+  function libChips(L) {
+    const zh = UI.lang !== "en", byK = libFilter(L, "kind"), byW = libFilter(L, "who");
+    const K = [["all", zh ? "全部" : "All"], ["image", zh ? "图片" : "Images"], ["video", zh ? "视频" : "Video"], ["audio", zh ? "录音" : "Audio"], ["other", zh ? "其他" : "Other"]];
+    const kc = k => k === "all" ? byK.length : byK.filter(a => a.kind === k).length;
+    const ids = new Set(byW.map(a => a.who)), ag = agents().map(a => a.id), order = ag.filter(id => ids.has(id)).concat([...ids].filter(w => w && !ag.includes(w)));
+    const nPriv = L.filter(a => a.priv).length;
+    return `<div class="lib-seg" role="group">${K.map(([k, n]) => `<button type="button" class="${LIB.kind === k ? "on" : ""}" data-libk="${k}">${n} <small>${kc(k)}</small></button>`).join("")}</div>` +
+      `<div class="lib-seg lib-who" role="group"><button type="button" class="${LIB.who ? "" : "on"}" data-libw="">${zh ? "所有人" : "Everyone"}</button>${order.map(w => `<button type="button" class="${LIB.who === w ? "on" : ""}" data-libw="${esc(w)}">${esc(libWho(w))}</button>`).join("")}</div>` +
+      (nPriv ? `<button type="button" class="lib-pvt${LIB.priv ? " on" : ""}" data-libpriv>${LIB.priv ? (zh ? `已显示私用录音 ${nPriv} 个 · 隐藏` : `Showing ${nPriv} private voice files · hide`) : (zh ? `私用录音 ${nPriv} 个已隐藏 · 显示` : `${nPriv} private voice files hidden · show`)}</button>` : "");
+  }
+  function libDay(ms) {
+    const zh = UI.lang !== "en", d = new Date(ms), k = dayKey(d), md = `${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+    if (!ms) return zh ? "日期不明" : "Undated";
+    if (k === dayKey(new Date())) return (zh ? "今天 · " : "Today · ") + md;
+    if (k === dayKey(new Date(Date.now() - 864e5))) return (zh ? "昨天 · " : "Yesterday · ") + md;
+    return (d.getFullYear() !== new Date().getFullYear() ? d.getFullYear() + "-" : "") + md;
+  }
+  function libTile(a) {
+    const zh = UI.lang !== "en", u = libUrl(a.p), name = esc(libName(a.p)), it = a.item, w = agent(a.who) || agent(it.owner);
+    const lb = `data-lb="${u}" data-name="${name}" data-lib-item="${esc(it.id)}" data-lib-title="${esc(it.title || it.id)}"${a.priv ? "" : ` data-lib-path="${esc(a.p)}"`}`;   // t-lib-attach: path for drag / 附到回复 (never for private voice files)
+    let face;
+    if (a.kind === "image") {
+      const th = `/api/thumb?p=${encodeURIComponent(a.p)}&w=360`;
+      face = /\.(heic|heif)$/i.test(a.p) ? `<a href="${u}" target="_blank" class="lib-f" ${lb} data-kind="image"><img src="${th}" alt="${name}" loading="lazy" decoding="async" onload="this.classList.add('ld')" onerror="this.style.display='none'"></a>`
+        : `<a href="${u}" target="_blank" class="lib-f" ${lb} data-kind="image"><img src="${th}" alt="${name}" loading="lazy" decoding="async" onload="this.classList.add('ld')" onerror="if(!this.dataset.f){this.dataset.f=1;this.src='${u}'}else{this.style.display='none'}"></a>`;
+    } else if (a.kind === "video") {
+      const d = LIB.dur[a.p];
+      face = `<a href="${u}" target="_blank" class="lib-f lib-vid" ${lb} data-kind="video"><i class="lib-play" aria-hidden="true">▶</i><b class="lib-k">${zh ? "视频" : "Video"}<span class="lib-dur" data-libdur="${esc(a.p)}">${d ? " " + fmtDur(d) : ""}</span></b></a>`;
+    } else if (a.kind === "audio") {
+      face = `<div class="lib-f lib-aud"><b class="lib-k">${zh ? "录音" : "Audio"}</b>${vmHTML(a.p, u, name)}</div>`;
+    } else {
+      const ext = (a.p.match(/\.([a-z0-9]+)$/i) || [, "file"])[1].toLowerCase();
+      face = `<a href="${u}" target="_blank" class="lib-f lib-doc"${a.priv ? "" : ` data-lib-path="${esc(a.p)}"`}><em>.${esc(ext)}</em><small>${name}</small></a>`;
+    }
+    const cap = `<div class="lib-cap" data-item="${esc(it.id)}" title="${esc((zh ? "去这张卡 · " : "Open card · ") + (it.title || it.id))}">${w ? av(w, "sm") : ""}<span>${esc(it.title || it.id)}</span></div>`;
+    return `<div class="lib-t lib-${a.kind}${a.priv ? " lib-pv" : ""}" title="${esc(a.p)}">${face}${a.priv ? `<span class="lib-pvb">${zh ? "仅本机私用" : "Private"}</span>` : ""}${cap}</div>`;
+  }
+  // append tiles [from, to) of the filtered list, grouped by day; a batch that starts on the same day continues the last section
+  function libAppend(grid, F, from, to) {
+    const last = grid.lastElementChild; let cur = last ? last.dataset.day : null, open = false, html = "", tail = "";
+    if (!from || !LIB.ring) LIB.ring = new Set();   // t-m2-a ⓪: a working uploader rings on its newest tile only
+    ringOnce(() => { for (let i = from; i < Math.min(to, F.length); i++) {
+      const a = F[i], k = a.ms ? dayKey(new Date(a.ms)) : "-";
+      if (k !== cur) { if (open) html += `</div></section>`; html += `<section class="lib-day" data-day="${k}"><h3 class="lib-dh">${libDay(a.ms)}</h3><div class="lib-g">`; open = true; cur = k; }
+      if (open) html += libTile(a); else tail += libTile(a);
+    } }, LIB.ring);
+    if (open) html += `</div></section>`;
+    if (tail) last.querySelector(".lib-g").insertAdjacentHTML("beforeend", tail);
+    if (html) grid.insertAdjacentHTML("beforeend", html);
+  }
+  function libPaint(full) {
+    const root = $("#pagebody .lib-root"); if (!root) return;
+    const L = libCollect(), F = libFilter(L), grid = $(".lib-grid", root), zh = UI.lang !== "en";
+    $(".lib-chips", root).innerHTML = libChips(L);
+    $(".lib-sub", root).textContent = zh ? `所有单子里的图、视频、录音 · ${F.length} / ${L.filter(a => LIB.priv || !a.priv).length} 个 · 点开用原来的查看器` : `Images, video and audio from every card · ${F.length} of ${L.filter(a => LIB.priv || !a.priv).length} · opens in the viewer`;
+    if (full) { grid.innerHTML = ""; libAppend(grid, F, 0, LIB.n); }
+    grid.dataset.shown = Math.min(LIB.n, F.length);
+    $(".lib-none", root).hidden = F.length > 0;
+    $(".lib-more", root).hidden = LIB.n >= F.length;
+    LIB.sig = libSig(L);
+    libObserve(root); vmSync();
+  }
+  function libMore() {
+    const root = $("#pagebody .lib-root"); if (!root) return;
+    const F = libFilter(libCollect()), from = Math.min(LIB.n, F.length); if (from >= F.length) return;
+    LIB.n += LIB_BATCH; libAppend($(".lib-grid", root), F, from, LIB.n);
+    $(".lib-more", root).hidden = LIB.n >= F.length; libObserve(root); vmSync();
+  }
+  function libObserve(root) {
+    if (!("IntersectionObserver" in window)) return;
+    if (!LIB.io) LIB.io = new IntersectionObserver(es => { if (es.some(e => e.isIntersecting)) libMore(); }, { rootMargin: "600px 0px" });
+    LIB.io.disconnect(); LIB.io.observe($(".lib-more", root));
+    if (!LIB.dio) LIB.dio = new IntersectionObserver(es => es.forEach(e => {   // a video's duration: header only, once it is on screen
+      if (!e.isIntersecting) return; const el = e.target, p = el.dataset.libdur; LIB.dio.unobserve(el);
+      if (LIB.dur[p]) { el.textContent = " " + fmtDur(LIB.dur[p]); return; }
+      const v = document.createElement("video"); v.preload = "metadata"; v.muted = true;
+      v.addEventListener("loadedmetadata", () => { if (isFinite(v.duration)) { LIB.dur[p] = v.duration; document.querySelectorAll(`.lib-dur[data-libdur="${CSS.escape(p)}"]`).forEach(x => x.textContent = " " + fmtDur(v.duration)); } v.removeAttribute("src"); v.load(); });
+      v.src = libUrl(p);
+    }), { rootMargin: "200px 0px" });
+    root.querySelectorAll(".lib-dur:empty").forEach(el => LIB.dio.observe(el));
+    // audio without a server waveform: decode it once it is on screen (one file at a time, one shared AudioContext; files over 12 MB keep the placeholder)
+    if (!LIB.pio) LIB.pio = new IntersectionObserver(es => es.forEach(e => { if (!e.isIntersecting) return; LIB.pio.unobserve(e.target); const w = e.target.closest(".vm-wrap"); if (w) libPeaks(w.dataset.vm); }), { rootMargin: "200px 0px" });
+    root.querySelectorAll(".lib-aud .vm-wave.vm-ph").forEach(el => { const p = el.closest(".vm-wrap").dataset.vm; if (LIB.peaks[p]) libPeakPaint(p); else LIB.pio.observe(el); });
+  }
+  function libPeakPaint(p) {
+    const pk = LIB.peaks[p]; if (!pk || pk === 1) return;
+    document.querySelectorAll(`#pagebody .lib-aud .vm-wrap[data-vm="${CSS.escape(p)}"] .vm-wave`).forEach(wv => { wv.querySelectorAll(".vm-b").forEach(b => b.innerHTML = vmBars(pk)); wv.classList.remove("vm-ph"); });
+  }
+  function libPeaks(p) {
+    if (LIB.peaks[p] || LIB.pq.includes(p)) return;
+    LIB.pq.push(p); if (LIB.busy) return;
+    const next = () => {
+      const q = LIB.pq.shift(); if (!q) { LIB.busy = false; return; }
+      LIB.busy = true;
+      const AC = window.AudioContext || window.webkitAudioContext; if (!AC) { LIB.busy = false; return; }
+      fetch(libUrl(q)).then(r => +(r.headers.get("content-length") || 0) > 12e6 ? null : r.arrayBuffer())
+        .then(buf => buf && new Promise((ok, no) => (LIB.ac = LIB.ac || new AC()).decodeAudioData(buf, ok, no)))
+        .then(ab => {
+          if (!ab) { LIB.peaks[q] = 1; return; }
+          const ch = ab.getChannelData(0), n = 48, step = Math.floor(ch.length / n), rms = [];
+          for (let i = 0; i < n; i++) { let s = 0, c = 0; for (let j = i * step; j < (i + 1) * step; j += 64) { s += ch[j] * ch[j]; c++; } rms.push(Math.sqrt(s / (c || 1))); }
+          const top = Math.max(...rms) || 1; LIB.peaks[q] = rms.map(v => +Math.max(0.12, Math.pow(v / top, 0.7)).toFixed(2)); libPeakPaint(q);
+        }).catch(() => { LIB.peaks[q] = 1; }).then(next);
+    };
+    next();
+  }
+  PAGES.assets = function () {
+    const root = $("#pagebody .lib-root");
+    if (root && root.dataset.lang === UI.lang) {   // already on the page: keep the DOM (scroll, focus, loaded thumbs); repaint only if the list changed
+      if (libSig(libCollect()) !== LIB.sig) libPaint(true);
+      return null;
+    }
+    LIB.n = LIB_BATCH;
+    const zh = UI.lang !== "en";
+    return pageHead("assets") + `<div class="lib-root" data-lang="${UI.lang}"><div class="lib-sub"></div>
+      <div class="lib-bar"><div class="lib-chips"></div><input type="search" class="lib-q" placeholder="${zh ? "搜文件名或单子…" : "Search file or card…"}" value="${esc(LIB.q)}" aria-label="${zh ? "搜索素材" : "Search assets"}"></div>
+      <div class="lib-grid"></div><div class="lib-none empty" hidden>${zh ? "没有符合条件的素材" : "Nothing matches"}</div><div class="lib-more" aria-hidden="true"></div></div>`;
+  };
+  hooks.push(k => { if (k === "page" && UI.page === "assets") { const g = $("#pagebody .lib-grid"); if (g && !g.childElementCount && g.dataset.shown == null) libPaint(true); } });
+  document.addEventListener("click", e => {
+    const k = e.target.closest("[data-libk]"); if (k) { LIB.kind = k.dataset.libk; LIB.n = LIB_BATCH; libPaint(true); return; }
+    const w = e.target.closest("[data-libw]"); if (w) { LIB.who = w.dataset.libw; LIB.n = LIB_BATCH; libPaint(true); return; }
+    if (e.target.closest("[data-libpriv]")) { LIB.priv = !LIB.priv; LIB.n = LIB_BATCH; libPaint(true); }
+  });
+  let libQT = 0;
+  document.addEventListener("input", e => { if (!e.target.classList || !e.target.classList.contains("lib-q")) return; clearTimeout(libQT); libQT = setTimeout(() => { LIB.q = e.target.value; LIB.n = LIB_BATCH; libPaint(true); }, 160); });
+
+  // ===== t-imp29-p5: card ids in messages / drafts render as chips (md.js calls md.ref), and a # card picker in the chat and detail composers.
+  // Chips are deterministic HTML (no time-based styles), so a poll re-render of the chat produces the same markup. What gets sent is still the plain id.
+  const idcMap = () => { if (!idcMap.m || idcMap.rev !== REV) { idcMap.m = new Map(((ST && ST.items) || []).map(i => [i.id, i])); idcMap.rev = REV; } return idcMap.m; };
+  md.ref = id => {
+    if (!ST) return null; const it = idcMap().get(id); if (!it) return null;
+    const a = it.owner && agent(it.owner), st = it.archived ? (UI.lang === "en" ? "archived" : "已归档") : rowLabel(it);
+    return `<span class="idc" data-idc="${esc(id)}" role="link" tabindex="0" title="${esc(id + " · " + (it.title || ""))}">${a ? `<i class="idc-av" style="background-image:url('${avatarUrl(a)}')"></i>` : ""}<b>${esc(it.title || id)}</b><small>${esc(st)}</small></span>`;
+  };
+  const idcGo = c => { const id = c.dataset.idc; if (c.closest("#drawer") && UI.item) { if (id !== UI.item) navItem(id); } else openItem(id); };
+  document.addEventListener("click", e => {   // capture: a chip can sit inside rows / bubbles that have their own click handlers
+    const c = e.target.closest && e.target.closest("[data-idc]"); if (!c) return;
+    e.preventDefault(); e.stopPropagation(); idcGo(c);
+  }, true);
+  document.addEventListener("keydown", e => { const c = e.target.closest && e.target.closest("[data-idc]"); if (c && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); idcGo(c); } });
+
+  const HP = { el: null, ta: null, rows: [], sel: 0, at: -1, q: "" };
+  const HP_TA = "#right .ch-comp textarea, #drawer .composer textarea";
+  function hpEl() {
+    if (HP.el) return HP.el;
+    const el = HP.el = document.createElement("div"); el.className = "hp-pop"; el.hidden = true; el.setAttribute("role", "listbox");
+    document.body.appendChild(el);
+    el.addEventListener("mousedown", e => e.preventDefault());   // keep the caret in the textarea
+    el.addEventListener("click", e => { const r = e.target.closest("[data-hp]"); if (r) hpPick(+r.dataset.hp); });
+    return el;
+  }
+  function hpClose() { if (HP.el) HP.el.hidden = true; HP.rows = []; HP.ta = null; }
+  function hpScan(ta) {
+    const c = ta.selectionStart; if (c !== ta.selectionEnd) return hpClose();
+    const m = ta.value.slice(0, c).match(/(^|[\s，。、；：,;:（(“"'])#([^\s#]{0,24})$/); if (!m) return hpClose();
+    const q = m[2].toLowerCase();
+    HP.ta = ta; HP.at = c - m[2].length - 1; HP.q = m[2];
+    HP.rows = window.Pal ? Pal.find(q, { items: 6, recent: 6 }).items.slice(0, 6) : items().filter(i => !q || (i.title + " " + i.id).toLowerCase().includes(q)).sort(byAct).slice(0, 6);
+    HP.sel = 0; hpDraw();
+  }
+  function hpDraw() {
+    const el = hpEl(), zh = UI.lang !== "en";
+    if (!HP.ta) return hpClose();
+    el.innerHTML = `<div class="hp-h">${zh ? "引用一张卡" : "Link a card"} · #${esc(HP.q)}</div>` +
+      (HP.rows.length ? HP.rows.map((it, i) => { const a = agent(it.owner); return `<div class="hp-r${i === HP.sel ? " on" : ""}" data-hp="${i}" role="option" aria-selected="${i === HP.sel}">${a ? `<i class="idc-av" style="background-image:url('${avatarUrl(a)}')"></i>` : ""}<b>${esc(it.title || it.id)}</b><small>${esc(grpLabel(grpOf(it)))}</small></div>`; }).join("")
+        : `<div class="hp-none">${zh ? "没有对得上的卡" : "No matching card"}</div>`) +
+      `<div class="hp-f">${zh ? "↑↓ 选 · ↵ 插入 · 发出去后对方收到的是卡片 id" : "↑↓ move · ↵ insert · the message carries the card id"}</div>`;
+    el.hidden = false; hpPlace();
+  }
+  function hpPlace() {
+    if (!HP.ta || !HP.el || HP.el.hidden) return;
+    const box = (HP.ta.closest(".ch-comp, .composer") || HP.ta).getBoundingClientRect(), el = HP.el, vv = window.visualViewport;
+    const w = Math.min(box.width, 460, innerWidth - 16), left = Math.max(8, Math.min(box.left, innerWidth - w - 8));
+    el.style.width = w + "px"; el.style.left = left + "px";
+    const h = el.offsetHeight, vTop = vv ? vv.offsetTop : 0;
+    el.style.top = Math.max(vTop + 8, box.top - h - 8) + "px";
+  }
+  function hpPick(i) {
+    const it = HP.rows[i], ta = HP.ta; if (!it || !ta) return hpClose();
+    const v = ta.value, end = ta.selectionStart, ins = it.id + " ";
+    ta.value = v.slice(0, HP.at) + ins + v.slice(end);
+    const p = HP.at + ins.length; hpClose(); ta.focus(); ta.setSelectionRange(p, p);
+    ta.dispatchEvent(new Event("input", { bubbles: true }));
+  }
+  document.addEventListener("input", e => { if (e.target.matches && e.target.matches(HP_TA) && !e.isComposing) hpScan(e.target); });
+  document.addEventListener("compositionend", e => { if (e.target.matches && e.target.matches(HP_TA)) hpScan(e.target); });
+  document.addEventListener("focusout", e => { if (HP.ta && e.target === HP.ta) setTimeout(() => { if (HP.ta && document.activeElement !== HP.ta) hpClose(); }, 200); });
+  document.addEventListener("keydown", e => {   // capture: runs before the composer's own keys (send, the @ picker)
+    if (!HP.ta || e.target !== HP.ta || !HP.el || HP.el.hidden || e.isComposing || e.keyCode === 229) return;
+    const k = e.key, n = HP.rows.length;
+    if ((k === "ArrowDown" || k === "ArrowUp") && n) { HP.sel = (HP.sel + (k === "ArrowDown" ? 1 : -1) + n) % n; hpDraw(); }
+    else if ((k === "Enter" || k === "Tab") && n && !(e.metaKey || e.ctrlKey || e.shiftKey)) hpPick(HP.sel);
+    else if (k === "Escape") hpClose();
+    else return;
+    e.preventDefault(); e.stopImmediatePropagation();
+  }, true);
+  document.addEventListener("keyup", e => { if (HP.ta && e.target === HP.ta && /^Arrow(Left|Right)$|^Home$|^End$/.test(e.key)) hpScan(HP.ta); });
+  addEventListener("resize", () => hpPlace());
+  if (window.visualViewport) visualViewport.addEventListener("resize", () => hpPlace());
+
+  // t-office-d1-s12: the four numbers of the home strip (they also drive the list filter UI.hf on phones)
+  function homeCounts() {   // t-imp-p1: review = 等你拍板 (review items + plans / questions parked in waiting)
+    const its = items(), wk = Date.now() - 7 * 864e5, rev = its.filter(i => i.stage === "review" && i.id !== RV.pending);
+    return { review: rev.length + its.filter(awaitsUser).length, doing: its.filter(i => grpOf(i) === "doing").length, todo: its.filter(i => grpOf(i) === "todo").length,
+      week: its.filter(i => i.stage === "done" && i.closed && new Date(i.closed) > wk).length, oldest: rev.length ? Math.min(...rev.map(i => new Date(i.activity || i.updated))) : null };
+  }
+  // t-visual-stage: pins on the terrace office (positions are fractions of the hero image; a new role without a seat is skipped)
+  const STG_SEAT = { manager: [.40, .56], smith: [.66, .70], writer: [.16, .30], director: [.30, .27], artist: [.80, .52], scout: [.53, .40], ops: [.90, .72] };
+  function stageHero(ob) {
+    if (ob.dataset.hv !== "stage") { ob.dataset.hv = "stage"; ob.innerHTML = ""; ob._stg = ""; }
+    const en = UI.lang === "en", A = agents(), busy = A.filter(a => a.status === "working" && !mgrOnline(a)), c = homeCounts();
+    const capHTML = `<span><i class="${c.review ? "" : "z"}"></i>${c.review} ${en ? "on you" : "等你拍板"}</span><span>${busy.length} ${en ? "busy" : "在忙"} · ${A.length - busy.length} ${en ? "idle" : "待机"}</span>`;
+    if (window.Office && Office.hero) {   // t-office-v3: the terrace pixel people (office3.js, same picture as hero.jpg) instead of avatar pins
+      if (!ob.querySelector(".o3-hero")) Office.hero(ob, pixelOpen);
+      Office.heroUpdate(A, a => aname(a));
+      let cap = ob.querySelector(".stg-cap"); if (!cap) { cap = document.createElement("div"); cap.className = "stg-cap"; ob.appendChild(cap); }
+      if (cap._h !== capHTML) { cap.innerHTML = capHTML; cap._h = capHTML; }
+      return;
+    }
+    const pins = A.filter(a => STG_SEAT[a.id]).map(a => { const [x, y] = STG_SEAT[a.id], w = a.status === "working" && !mgrOnline(a), it = w ? liveItem(a) : null;
+      const pos = `left:${x * 100}%;top:${y * 100}%`;
+      return `<span role="button" tabindex="0" class="stg-pin${w ? " w" : ""}" style="${pos};background-image:url('${avatarUrl(a)}')"${it ? ` data-item="${it.id}"` : ""} title="${esc(aname(a))}${it ? " · " + esc(it.title) : ""}" aria-label="${esc(aname(a))}"></span>`
+        + (it ? `<span class="stg-tag" style="${pos}">${esc(aname(a))} · ${esc(it.title)}</span>` : ""); }).join("");
+    const html = pins + `<div class="stg-cap"><span><i class="${c.review ? "" : "z"}"></i>${c.review} ${en ? "on you" : "等你拍板"}</span><span>${busy.length} ${en ? "busy" : "在忙"} · ${A.length - busy.length} ${en ? "idle" : "待机"}</span></div>`;
+    if (ob._stg !== html) { ob.innerHTML = html; ob._stg = html; const d = `-${(Date.now() % 2000) / 1000}s`; ob.querySelectorAll(".stg-pin.w").forEach(p => p.style.setProperty("--d", d)); }
+  }
+  function renderPage(scrollTop) {
+    autoFold();
+    const page = $("#page");
+    let body = $("#pagebody", page);
+    if (!body) { page.innerHTML = `<div class="office" id="officebox"></div><div id="pagebody"></div>`; body = $("#pagebody", page); officeMounted = false; }
+    const ob = $("#officebox", page);
+    if (UI.page === "review") {
+      ob.hidden = false;
+      if (MOBQ.matches && window.HomeD && HomeD.enabled()) {   // t-office-d1-s12: phones get the D1 character strip; the pixel office folds out behind its pill
+        officeMounted = false; HomeD.render(ob, { agents: agents(), stats: officeStats(), counts: homeCounts() });
+      } else if (!MOBQ.matches && document.documentElement.dataset.stage) {   // t-visual-stage: desktop 舞台 theme shows the terrace office with avatar pins
+        officeMounted = false; stageHero(ob);
+      } else {
+        if (ob.dataset.hv) { ob.dataset.hv = ""; ob.innerHTML = ""; officeMounted = false; }
+        if (!officeMounted) { Office.mount(ob, pixelOpen); officeMounted = true; }
+        Office.update(agents(), a => aname(a), officeStats());
+      }
+    } else { ob.hidden = true; officeMounted = false; ob.innerHTML = ""; }
+    const html = (PAGES[UI.page] || (() => catPage(UI.page)))();
+    if (html != null) body.innerHTML = html;   // t-imp29-p4: a page may return null to keep its DOM (the asset library keeps scroll, focus and loaded thumbs across polls)
+    if (scrollTop) page.scrollTop = 0;
+    hooks.forEach(f => f("page"));
+  }
+  MOBQ.addEventListener("change", () => { if (UI.page === "review" || UI.page === "mail") renderPage(); });
+  window.addEventListener("beforeunload", () => { if (UI.page === "review") { UI.seen.review = new Date().toISOString(); LS.set("seen", UI.seen); } });
+
+  document.addEventListener("click", e => {
+    const s = e.target.closest("[data-sort]"); if (s) { UI.sort = s.dataset.sort; LS.set("sort", UI.sort); renderPage(); }
+    if (e.target.closest("[data-board-all]")) { UI.boardAll = true; renderPage(); }
+    const lf = e.target.closest("[data-logf]"); if (lf) { UI.logAgent = lf.dataset.logf; renderPage(); }
+    if (e.target.closest("[data-repreq]")) api("report_request").then(() => toast("→ inbox"));
+    const rp = e.target.closest("[data-rep]"); if (rp) { UI.openRep = UI.openRep === rp.dataset.rep ? "-" : rp.dataset.rep; renderPage(); }
+    const dc = e.target.closest("[data-doc]"); if (dc) { UI.doc = dc.dataset.doc; fetch("/api/doc?path=" + encodeURIComponent(UI.doc)).then(r => r.json()).then(j => { UI.docText = j.text || j.error; renderPage(); }); }
+    const ls = e.target.closest("[data-lesson]"); if (ls) api("lesson", { id: ls.dataset.lesson, decision: ls.dataset.d });
+    const mf = e.target.closest("[data-mailf]"); if (mf) { UI.mailFilter = mf.dataset.mailf; renderPage(); renderMailbox(); }
+    if (e.target.closest("[data-mailall]")) api("mail_read", { all: true });
+    if (e.target.closest("[data-mailunread]")) { UI.mailUnread = !UI.mailUnread; lsSet("rt.mailUnread", UI.mailUnread); renderPage(); }
+    const ml = e.target.closest("[data-mail]");
+    if (ml) {
+      const m = ST.mail.find(x => x.id === ml.dataset.mail);
+      api("mail_read", { ids: ml.dataset.mailids ? ml.dataset.mailids.split(",") : [m.id] });
+      if (m.item) openItem(m.item); else if (m.agent) setChat(m.agent);
+    }
+  });
+  // board drag & drop
+  document.addEventListener("dragstart", e => { const d = e.target.closest("[data-drag]"); if (d) e.dataTransfer.setData("text/item", d.dataset.drag); });
+  document.addEventListener("dragover", e => { const c = e.target.closest("[data-drop]"); if (c && e.dataTransfer.types.includes("text/item")) { e.preventDefault(); c.classList.add("over"); } });
+  document.addEventListener("dragleave", e => { const c = e.target.closest("[data-drop]"); if (c) c.classList.remove("over"); });
+  document.addEventListener("drop", e => {
+    const c = e.target.closest("[data-drop]"); if (!c) return; const id = e.dataTransfer.getData("text/item"); if (!id) return;
+    e.preventDefault(); c.classList.remove("over"); const to = c.dataset.drop;
+    if (to === "done") return askGuard(id, "done", skip => api("set_stage", { item: id, stage: to, skip_asks: skip || undefined }));
+    api("set_stage", { item: id, stage: to });
+  });
+
+  // ---------- drawer ----------
+  // The thread reads like a chat: agent replies are cards, logs/events are centred lines, your messages are right bubbles,
+  // and each draft version is a card at the time it was submitted.
+  const drawerAtt = [];
+  const DW = { to: null, pop: [], sel: 0, open: new Set(), n: 0, fresh: false, stampPre: null, askOpen: new Set(), sumOpen: new Set() };   // askOpen / sumOpen: item ids (t-ui-next 1, 4)
+  const PHONE = matchMedia("(max-width: 760px)");
+  const nearEnd = sc => sc.scrollHeight - sc.scrollTop - sc.clientHeight < 60;
+  // t-parent-links: item -> item navigation (parent <-> child) keeps a small back stack, so back (button / swipe) returns to the card you came from.
+  // Any other way of opening or closing a card clears it.
+  let dwStack = [], dwNavDir = 0;
+  function navItem(id) { if (UI.item && UI.item !== id) dwStack.push(UI.item); dwNavDir = 1; openItem(id, true); }
+  function backItem() { if (!dwStack.length) return closeItem(); dwNavDir = -1; openItem(dwStack.pop(), true); }
+  // a card's parent = the first tag that is another item's id (child cards carry the parent id in tags, e.g. stateutil --tag t-ios-visual-audit)
+  const parentOf = it => { for (const x of it.tags || []) { if (x !== it.id) { const p = (ST.items || []).find(i => i.id === x); if (p) return p; } } return null; };
+  const childrenOf = it => (ST.items || []).filter(i => i.id !== it.id && parentOf(i) && parentOf(i).id === it.id).sort((a, b) => (a.created || "").localeCompare(b.created || ""));
+  // ===== t-m2-b ①: shared-element push (phone only). A tapped card grows into the detail page and the back button shrinks it back, via the
+  // View Transitions API (Safari 18+ / Chrome 111+). view-transition-name sits on ONE element at a time and only for the ~0.36 s of the transition
+  // (card -> #drawer on open, #drawer -> card on close), then it is removed. Anything else keeps the old slide: no API, reduced motion, card -> card
+  // inside the drawer, deep links / pushes (no tapped card), the finger back-swipe (it already moved the page) and iOS's own edge swipe (popstate).
+  const VT = { src: null, at: 0, back: false, cur: null };
+  // t-m2b-revert (2026-10-29): the user preferred the old slide (the cross-fade ghosted), so ① is switched OFF here. With VT_ON false, vtOK() is
+  // always false and openItem / closeItem take their old slide paths; the capture listener records nothing. The code stays dormant: flip to true to retry.
+  const VT_ON = false;
+  const vtOK = () => VT_ON && typeof document.startViewTransition === "function" && MOBQ.matches && !RMQ.matches && !document.hidden;
+  document.addEventListener("click", e => {   // capture: remember which card was tapped before any handler opens it
+    if (!VT_ON) return;
+    const c = e.target.closest("[data-item]"); if (c && !c.closest("#drawer, #modal")) { VT.src = c; VT.at = performance.now(); }
+    VT.back = !!e.target.closest("#drawer .dw-back[data-close]");
+  }, true);
+  const vtSeen = el => { if (!el || !el.isConnected) return false; const r = el.getBoundingClientRect(); return r.width > 0 && r.height > 0 && r.bottom > 0 && r.top < innerHeight; };
+  function vtRun(update, from, to) {   // from: element named in the old state; to: element (or fn returning it) named in the new state
+    if (VT.cur) { try { VT.cur.skipTransition(); } catch (e) {} }
+    const de = document.documentElement, N = "m2-card";
+    from.style.viewTransitionName = N; de.classList.add("vt-run");
+    let vt;
+    try {
+      vt = document.startViewTransition(() => { from.style.viewTransitionName = ""; update(); const t = typeof to === "function" ? to() : to; if (t) t.style.viewTransitionName = N; VT.end = t; });
+    } catch (e) { from.style.viewTransitionName = ""; de.classList.remove("vt-run"); update(); return; }
+    VT.cur = vt;
+    const done = () => { if (VT.cur === vt) VT.cur = null; if (VT.end) { VT.end.style.viewTransitionName = ""; VT.end = null; } from.style.viewTransitionName = ""; if (!VT.cur) de.classList.remove("vt-run"); };
+    vt.ready.catch(() => {}); vt.updateCallbackDone.catch(() => {}); vt.finished.then(done, done);
+  }
+  function openItem(id, nav) {
+    const src = !nav && VT.src && VT.src.dataset.item === id && performance.now() - VT.at < 800 && vtSeen(VT.src) ? VT.src : null; VT.src = null;
+    const d = $("#drawer");
+    if (src && vtOK() && (d.hidden || !d.classList.contains("open"))) return vtRun(() => openItemNow(id, nav), src, d);
+    return openItemNow(id, nav);
+  }
+  function openItemNow(id, nav) {
+    if (!nav) dwStack = [];
+    UI.item = id; drawerAtt.length = 0; ATT.lastCard = id;   // t-lib-attach: 「刚才看的卡」
+    DW.to = null; DW.pop = []; DW.open = new Set(); DW.n = 0; DW.fresh = false;
+    const dw = $("#drawer"); clearTimeout(DW.ct); const wasOpen = !dw.hidden && dw.classList.contains("open"); dw.hidden = false;
+    dw.innerHTML = `<div class="dw-top"></div><div class="dw-scroll"></div>
+      <div class="dw-dock"><div class="composer"><div class="at-pop" hidden></div><textarea placeholder="${esc(t("composer_ph"))}"></textarea><div class="pending-att"></div>
+        <div class="cm-row"><button class="dw-file" aria-label="${UI.lang === "en" ? "Attach" : "添加附件"}">+ ${t("file")}</button><input type="file" multiple hidden>
+        <span class="cm-to"></span><span class="dim dw-def">${t("default_owner")}</span><span style="flex:1"></span><span class="dim">${t("send_hint")}</span></div></div>
+      <div class="dw-acts"></div></div>`;
+    const ta = $(".composer textarea", dw), fi = $("input[type=file]", dw), pop = $(".at-pop", dw);
+    const dk = "item:" + id, dSaved = DRAFT.get(dk);   // t-draft-keep
+    const dTag = () => { const old = $(".dr-tag", dw); if (old) old.remove(); };
+    if (dSaved) {
+      ta.value = dSaved.t;
+      $(".dw-dock", dw).insertAdjacentHTML("afterbegin", `<div class="dr-tag"><b>${UI.lang === "en" ? "Draft" : "草稿"}</b><span>${UI.lang === "en" ? "not sent yet" : "上次没发出"} · ${whenH(dSaved.at)}</span><button type="button">${UI.lang === "en" ? "Clear" : "清空"}</button></div>`);
+      $(".dr-tag button", dw).onclick = () => { ta.value = ""; DRAFT.set(dk, ""); dTag(); ta.dispatchEvent(new Event("input", { bubbles: true })); ta.focus(); };
+    }
+    ta.addEventListener("input", () => { if (UI.item !== id) return; DRAFT.set(dk, ta.value); if (!ta.value.trim()) dTag(); });
+    const showAtt = () => { attTiles($(".pending-att", dw), drawerAtt, showAtt); fit(); };   // ui19
+    // t-detail-bottom (phone only): the field grows with its text (max 120px; works with IME composition, only the height is touched) and
+    // .composer.has mirrors "text or attachment present" for CSS (send button lit, composer expanded). Polled like the chat composer, because send/approve clear the value without an input event.
+    const fit = () => {
+      const cm = $(".composer", dw); if (!cm || !PHONE.matches) return;
+      if (ta.value) { ta.style.height = "auto"; ta.style.height = Math.min(120, Math.max(40, ta.scrollHeight)) + "px"; } else ta.style.height = "";
+      cm.classList.toggle("has", !!ta.value.trim() || drawerAtt.length > 0 || Object.keys(drawerAtt._up || {}).length > 0 || annList().length > 0);   // t-imp29-p2: notes alone can be sent
+    };
+    ta.addEventListener("input", fit); clearInterval(DW.fi); DW.fi = setInterval(fit, 300);
+    const add = wireUploads(ta, drawerAtt, showAtt);
+    $(".dw-file", dw).onclick = () => fi.click();
+    fi.onchange = () => { add(Array.from(fi.files)); fi.value = ""; };
+    const closePop = () => { pop.hidden = true; DW.pop = []; };
+    const drawPop = () => {
+      pop.innerHTML = DW.pop.map((a, i) => `<div data-pick-to="${a.id}" class="${i === DW.sel ? "on" : ""}">${av(a, "sm")}${esc(aname(a))} <small>${esc(atitle(a))}${a.id === curItem().owner ? " · " + t("owner_tag") : ""}</small></div>`).join("");
+      pop.hidden = !DW.pop.length;
+    };
+    const pick = id => {
+      const a = agent(id), pos = ta.selectionStart, before = ta.value.slice(0, pos).replace(/@[^\s@]*$/, "@" + aname(a) + " ");
+      ta.value = before + ta.value.slice(pos); ta.setSelectionRange(before.length, before.length);
+      DW.to = id; closePop(); drawTo(); ta.focus();
+    };
+    pop.addEventListener("mousedown", e => { const d = e.target.closest("[data-pick-to]"); if (d) { e.preventDefault(); pick(d.dataset.pickTo); } });
+    ta.addEventListener("input", () => {
+      const m = ta.value.slice(0, ta.selectionStart).match(/(^|\s)@([^\s@]*)$/);
+      if (!m) return closePop();
+      const q = m[2].toLowerCase(), own = curItem().owner;
+      DW.pop = agents().filter(a => a.enabled !== false && (!q || [aname(a), a.name, a.name_en, a.id].some(n => n && String(n).toLowerCase().startsWith(q))))
+        .sort((a, b) => (b.id === own) - (a.id === own)).slice(0, 8);
+      DW.sel = 0; drawPop();
+    });
+    ta.addEventListener("blur", () => setTimeout(closePop, 150));
+    ta.addEventListener("keydown", async e => {
+      if (e.isComposing || e.keyCode === 229) return;  // IME is still composing (pinyin): Enter / arrows belong to the IME
+      if (DW.pop.length && !pop.hidden && !(e.metaKey || e.ctrlKey)) {
+        if (e.key === "ArrowDown" || e.key === "ArrowUp") { e.preventDefault(); DW.sel = (DW.sel + (e.key === "ArrowDown" ? 1 : -1) + DW.pop.length) % DW.pop.length; return drawPop(); }
+        if (e.key === "Enter" || e.key === "Tab") { e.preventDefault(); return pick(DW.pop[DW.sel].id); }
+        if (e.key === "Escape") { e.preventDefault(); e.stopPropagation(); return closePop(); }
+      }
+      if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
+        e.preventDefault(); const text = annWrap(ta.value.trim()); if (!text && !drawerAtt.length) return;   // t-imp29-p2: notes go out in front
+        if (stillUploading(drawerAtt)) return toast(UI.lang === "en" ? "Still uploading…" : "文件还在上传……");
+        const to = DW.to || curItem().owner, aid = UI.item;
+        await api("comment", { item: UI.item, text, to, attachments: drawerAtt.slice() });
+        annClear(aid); DRAFT.set("item:" + aid, ""); dTag();
+        ta.value = ""; drawerAtt.length = 0; showAtt(); DW.to = null; drawTo(); closePop();
+        const sc = $(".dw-scroll", dw); sc.scrollTop = sc.scrollHeight; jumpState();
+      }
+    });
+    $(".dw-scroll", dw).addEventListener("scroll", jumpState, { passive: true });
+    renderDrawer(true);
+    try { DW.ro && DW.ro.disconnect(); const dk = $(".dw-dock", dw); DW.ro = new ResizeObserver(() => dw.style.setProperty("--dock-h", dk.offsetHeight + "px")); DW.ro.observe(dk); } catch { }   // phone CSS pads the scroller by the dock height
+    if (!matchMedia("(max-width: 760px)").matches) ta.focus({ preventScroll: true });  // phones: don't pop the keyboard
+    slideIn(dw, wasOpen);
+    dw.classList.toggle("dw-has-back", dwStack.length > 0);   // desktop shows the back button only when there is a card to go back to
+    if (wasOpen && dwNavDir) {   // t-parent-links: card -> card inside the open drawer: the new content slides in from the side you are heading (translate + opacity, --m-move)
+      const d = dwNavDir, rm = matchMedia("(prefers-reduced-motion: reduce)").matches, cs = getComputedStyle(document.documentElement);
+      const dur = rm ? 140 : (parseFloat(cs.getPropertyValue("--m-move")) || 330), ease = cs.getPropertyValue("--m-ease-std").trim() || "ease-out";
+      try { $(".dw-scroll", dw).animate(rm ? [{ opacity: 0 }, { opacity: 1 }] : [{ transform: `translateX(${d * 28}px)`, opacity: 0 }, { transform: "none", opacity: 1 }], { duration: dur, easing: ease }); } catch { }
+    }
+    dwNavDir = 0;
+    hooks.forEach(f => f("drawer"));
+  }
+  const curItem = () => (ST.items || []).find(i => i.id === UI.item) || {};
+  function drawTo() {
+    const dw = $("#drawer"), boxes = $$(".cm-to", dw); if (!boxes.length) return;
+    const a = agent(DW.to || curItem().owner || "manager");
+    const chip = `${t("send_to")} ${av(a, "sm")}<b>@${esc(aname(a))}</b>${DW.to ? `<button data-to-reset title="${t("default_owner")}">✕</button>` : ""}`;
+    boxes.forEach(b => { b.innerHTML = chip; });   // every chip together
+    const cm = $(".composer", dw); if (cm) cm.classList.toggle("to-set", !!DW.to);
+    const d = $(".dw-def", dw); if (d) d.hidden = !!DW.to;
+  }
+  function jumpState() {
+    const sc = $("#drawer .dw-scroll"); if (!sc) return;
+    const top = $("#drawer [data-jump=top]"), end = $("#drawer [data-jump=end]");
+    if (nearEnd(sc)) DW.fresh = false;
+    if (top) top.hidden = sc.scrollTop < 200;
+    if (end) { end.hidden = nearEnd(sc); const dot = $(".new", end); if (dot) dot.hidden = !DW.fresh; }
+  }
+  // one stream: thread entries + every draft version, by time; a "submitted for review" event next to a draft folds into its card
+  function streamOf(it) {
+    const ms = x => Date.parse(x) || 0;
+    const th = (it.thread || []).map((e, i) => ({ ...e, _i: i }));
+    const drafts = (it.versions || []).map((v, i) => ({ kind: "draft", t: v.t, text: v.draft, label: v.label, vkey: "v" + i, old: true, atts: v.attachments }));
+    if (it.draft) drafts.push({ kind: "draft", t: it.draft_at || it.updated, text: it.draft, label: it.draft_label, vkey: "cur", old: false, dkind: it.kind, atts: it.draft_attachments }); // ui6
+    const used = new Set();
+    for (const d of drafts) {
+      const sub = th.filter(e => e.kind === "event" && /submitted for review/.test(e.text) && !used.has(e._i) && Math.abs(ms(e.t) - ms(d.t)) < 10 * 60e3)
+        .sort((a, b) => Math.abs(ms(a.t) - ms(d.t)) - Math.abs(ms(b.t) - ms(d.t)))[0];
+      if (sub) { used.add(sub._i); d.who = sub.who; d.t = sub.t > d.t ? sub.t : d.t; } else d.who = it.owner;
+    }
+    return th.filter(e => !used.has(e._i)).concat(drafts).sort((a, b) => ms(a.t) - ms(b.t));
+  }
+  // ui6: files bound to a version render in that version's card; the top list only keeps unbound ones (collapsed once any are bound)
+  function topFiles(it) {
+    const all = it.attachments || [];
+    if (!all.length) return "";
+    const bound = new Set((it.versions || []).concat([{ attachments: it.draft_attachments }]).flatMap(v => v.attachments || []));
+    if (!bound.size) return `<div class="sec-h">${t("attachments")}</div>${attHTML(all)}`;
+    const rest = all.filter(x => !bound.has(x));
+    if (!rest.length) return "";
+    return `<details class="topfiles"><summary>${t("attachments")} · ${rest.length}</summary>${attHTML(rest)}</details>`;
+  }
+  // ===== t-imp-p2: 这一版改了什么 — the current draft diffed against an older version (default: the one right before it).
+  // Lives inside the current draft card, above the text. Open by default while the item waits for review; the base version is picked with a native select.
+  function vdBlock(it) {
+    const vs = it.versions || []; if (!vs.length || !it.draft || !window.VDiff) return "";
+    const zh = UI.lang !== "en";
+    if (!DW.vd || DW.vd.id !== it.id) DW.vd = { id: it.id, base: vs.length - 1, open: it.stage === "review" };
+    const st = DW.vd, bi = Math.min(st.base, vs.length - 1), base = vs[bi], r = VDiff.html(base.draft || "", it.draft, zh);
+    const sel = `<select class="vd-base" data-vd-base aria-label="${zh ? "对比哪一版" : "Compare with"}">${vs.map((v, i) => `<option value="${i}" ${i === bi ? "selected" : ""}>${esc((`v${i + 1}` + (v.label ? " · " + v.label : "")).slice(0, 42))}</option>`).join("")}</select>`;
+    const t0 = base.t || "", t1 = it.draft_at || it.updated || "";   // what the user said between the two drafts (usually the reject reason): the newest one
+    const said = (it.thread || []).filter(x => x.who === "me" && x.kind !== "event" && x.t > t0 && x.t <= t1).pop();
+    return `<div class="vd${st.open ? " open" : ""}"><button type="button" class="vd-h" data-vd-toggle aria-expanded="${st.open}"><b>${zh ? "这一版改了什么" : "What changed"}</b><span class="vd-n"><i class="a">+${r.add}</i><i class="d">−${r.del}</i></span><span class="sp"></span><span class="vd-tg">${st.open ? (zh ? "收起" : "Hide") : (zh ? "看改动" : "Show")}</span></button>
+      ${st.open ? `<div class="vd-sub">${zh ? "对比" : "Base"} ${sel}<span>→ ${zh ? "当前这一版" : "current"}</span></div>${said ? `<div class="vd-said"><span>${zh ? "你说过" : "You said"}</span>${esc(String(said.text || "").slice(0, 160))}</div>` : ""}
+      <div class="vd-body">${r.add + r.del ? r.html : `<div class="vd-l vd-gap">${zh ? "和这一版内容一样" : "Same text"}</div>`}</div>` : ""}</div>`;
+  }
+  function entryHTML(e, it) {
+    const acc = e.who && e.who !== "me" ? (agent(e.who).color || "") : "";
+    if (e.kind === "draft") {
+      const open = e.old ? DW.open.has(e.vkey) : !DW.open.has("x" + e.vkey);
+      const dk = e.dkind && e.dkind !== "task" ? t("k_" + e.dkind) : (e.old ? "" : t("k_task"));
+      const conf = !e.old && it.confidence ? `<div class="conf">${t("confidence")} <b>${esc(it.confidence)}</b>${it.confidence_note ? ": " + esc(it.confidence_note) : ""}</div>` : "";
+      return `<div class="cs-card draftc ${e.dkind === "deliverable" ? "deliverable" : ""} ${e.old ? "old" : ""} ${open ? "" : "folded"}" data-vkey="${e.vkey}">
+        <div class="cs-h">${av(agent(e.who), "sm")}<span class="nm">${esc(whoName(e.who))}</span><span class="at">@${esc(whoName("me"))}</span><span class="tm">· ${hm(e.t)}</span>
+          ${dk ? `<span class="dtag">${esc(dk)}</span>` : ""}${e.label ? `<span class="dlabel">${esc(e.label)}</span>` : ""}<span class="sp"></span><button data-copy-v="${e.vkey}">${t("copy")}</button></div>
+        ${conf}${e.vkey === "cur" ? vdBlock(it) : ""}<div class="md">${md(e.text)}</div>${(e.atts || []).length ? `<div class="vatt">${attHTML(e.atts)}</div>` : ""}<button class="cs-more" data-fold="${e.vkey}">${open ? t("collapse") + " ▴" : t("expand") + " ▾"}</button></div>`;
+    }
+    if (e.kind === "msg" && e.who === "me") {
+      const to = e.to || "manager";
+      return `<div class="cs-me"><div class="cs-h"><span class="nm">${esc(whoName("me"))}</span><span class="at">@${esc(whoName(to))}</span><span class="tm">· ${hm(e.t)}</span></div>
+        <div class="md">${md(e.text)}</div>${attHTML(e.attachments)}</div>`;
+    }
+    if (e.kind === "msg") {
+      return `<div class="cs-card" style="--acc:${esc(acc)}"><div class="cs-h">${av(agent(e.who), "sm")}<span class="nm">${esc(whoName(e.who))}</span><span class="at">@${esc(whoName(e.to || "me"))}</span><span class="tm">· ${hm(e.t)}</span></div>
+        <div class="md">${md(e.text)}</div>${attHTML(e.attachments)}</div>`;
+    }
+    return `<div class="cs-line ${esc(e.kind || "")}"><div class="in"><span class="tm">${hm(e.t)}</span>${e.who === "me" ? av("me", "sm") : av(agent(e.who), "sm")}<span class="nm">${esc(whoName(e.who))}</span><span class="tx">${md.refs(esc(e.kind === "event" ? evText(e.text) : e.text))}${attHTML(e.attachments)}</span></div></div>`;
+  }
+  // t-event-zh: system lines in a card's 动态 read in Chinese (display only; state keeps the original text).
+  // "stage todo → doing" -> 「开工 · 待办 → 进行中」 (verb by the target stage), "created · X" -> 「建卡 · X」. English UI keeps the original.
+  const EV_VERB = { doing: "开工", done: "关单", todo: "放回待办", review: "交审", waiting: "转为等别人" };
+  function evText(x) {
+    x = String(x || ""); if (UI.lang === "en") return x;
+    let m = x.match(/^stage (\S+) → (\S+)(.*)$/s);
+    if (m) return `${m[1] === "done" && m[2] !== "done" ? "重开" : EV_VERB[m[2]] || "改阶段"} · ${stageLabel(m[1])} → ${stageLabel(m[2])}${m[3]}`;
+    m = x.match(/^created( · .*)?$/s); if (m) return "建卡" + (m[1] || "");
+    return x;
+  }
+  // ui1-B: the detail is a slide-over. open = add .open (transform transition); close = remove it, then hide after the exit animation.
+  // The list behind is never re-rendered on close, so its scroll position stays put.
+  function scrim() {
+    let sc = $("#scrim");
+    if (!sc) { sc = document.createElement("div"); sc.id = "scrim"; sc.hidden = true; $("#main").insertBefore(sc, $("#drawer")); sc.addEventListener("click", () => closeItem()); }
+    return sc;
+  }
+  // ui1b: drag the drawer's left edge to resize (desktop). Width lives in --dw-w on #drawer (class .sized); saved in localStorage.
+  const DW_MIN = 520, DW_KEY = "dwWidth";
+  function dwMax() { const m = $("#main"); return Math.max(DW_MIN, (m ? m.clientWidth : 1200) - 80); }
+  function dwApply(dw, w) { if (w == null) { dw.classList.remove("sized"); dw.style.removeProperty("--dw-w"); return; } dw.style.setProperty("--dw-w", Math.round(Math.min(dwMax(), Math.max(DW_MIN, w))) + "px"); dw.classList.add("sized"); }
+  function dwSaved() { try { const v = parseFloat(localStorage.getItem(DW_KEY)); return v > 0 ? v : null; } catch (e) { return null; } }
+  function dwSave(w) { try { if (w == null) localStorage.removeItem(DW_KEY); else localStorage.setItem(DW_KEY, String(Math.round(w))); } catch (e) {} }
+  function dwGrip(dw) {
+    let g = $("#dw-grip", dw);
+    if (g) return g;
+    g = document.createElement("div"); g.id = "dw-grip"; g.title = "拖动调宽 · 双击恢复默认"; dw.appendChild(g);
+    let sx = 0, sw = 0, id = null;
+    g.addEventListener("pointerdown", e => {
+      if (e.button != null && e.button > 0) return;
+      id = e.pointerId; sx = e.clientX; sw = dw.getBoundingClientRect().width;
+      try { g.setPointerCapture(id); } catch (_) {}
+      g.classList.add("drag"); dw.classList.add("resizing"); document.body.classList.add("dw-resizing"); e.preventDefault();
+    });
+    g.addEventListener("pointermove", e => { if (id !== e.pointerId) return; dwApply(dw, sw + (sx - e.clientX)); });
+    const end = e => {
+      if (id !== e.pointerId) return; id = null;
+      g.classList.remove("drag"); dw.classList.remove("resizing"); document.body.classList.remove("dw-resizing");
+      const w = dw.getBoundingClientRect().width; if (dw.classList.contains("sized")) dwSave(w);
+    };
+    g.addEventListener("pointerup", end); g.addEventListener("pointercancel", end);
+    g.addEventListener("dblclick", () => { dwApply(dw, null); dwSave(null); });
+    return g;
+  }
+  window.addEventListener("resize", () => { const dw = $("#drawer"); if (dw && dw.classList.contains("sized")) { const w = dwSaved(); if (w) dwApply(dw, w); } });
+  PHONE.addEventListener && PHONE.addEventListener("change", () => { const dw = $("#drawer"); if (UI.item && dw && !dw.hidden) renderDrawer(); });
+  function slideIn(dw, wasOpen) {
+    const sc = scrim(); sc.hidden = false;
+    dwGrip(dw); { const w = dwSaved(); if (w) dwApply(dw, w); else dwApply(dw, null); }
+    if (!wasOpen) { void dw.offsetWidth; void sc.offsetWidth; }
+    dw.classList.add("open"); sc.classList.add("open");
+  }
+  function closeItem(silent) {
+    const back = VT.back; VT.back = false;   // t-m2-b ①: only the back button shrinks the page into its card
+    const d0 = $("#drawer"), id0 = UI.item;
+    if (back && id0 && !d0.hidden && vtOK()) {
+      const card = [...document.querySelectorAll(`#page [data-item="${CSS.escape(id0)}"]`)].find(vtSeen);
+      if (card) return vtRun(() => { closeItemNow(silent); clearTimeout(DW.ct); d0.hidden = true; d0.innerHTML = ""; scrim().hidden = true; }, d0, card);
+    }
+    return closeItemNow(silent);
+  }
+  function closeItemNow(silent) {
+    UI.item = null; dwStack = []; $("#drawer").classList.remove("dw-has-back");
+    const dw = $("#drawer"), sc = scrim();
+    if (dw.hidden) return;
+    dw.classList.remove("open"); sc.classList.remove("open");
+    clearTimeout(DW.ct);
+    DW.ct = setTimeout(() => { if (UI.item) return; dw.hidden = true; dw.innerHTML = ""; sc.hidden = true; }, 260);
+  }
+  // P1 / D4 review desk: owner / stage are pills; the native select sits invisibly on top of the pill, so tapping still opens the system picker and the change handler is untouched
+  const dwChev = `<svg class="chev" viewBox="0 0 10 6" width="9" height="6" aria-hidden="true"><path d="M1 1l4 4 4-4" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+  const dwPill = (k, face, sel) => `<label class="dw-pill"><span class="k">${k}</span>${face}${dwChev}${sel}</label>`;
+  // ===== t-imp29-p2: 草稿批注. Select text in a draft -> 批注 / 引用回复 / 复制. Notes are kept per item on this device (rt.anno) until they go out
+  // with the next 回复 / 驳回 / 批准, as "> 原句" + note, so the agent sees exactly which sentence is meant. No server change: it is an ordinary comment.
+  const ANN = { all: LS.get("anno", {}), cand: null, hideT: 0, showT: 0, deferred: false };
+  const annList = id => ANN.all[id || UI.item] || [];
+  const annSave = () => { for (const k of Object.keys(ANN.all)) if (!ANN.all[k].length) delete ANN.all[k]; LS.set("anno", ANN.all); };
+  const annSquash = s => String(s || "").replace(/\s+/g, " ").trim();
+  function annWrap(text) {   // the notes block that goes in front of what you typed
+    const L = annList(); if (!L.length) return text;
+    const zh = UI.lang !== "en";
+    const block = L.map(n => `> ${n.q}\n\n${n.t}`).join("\n\n");
+    return `**${zh ? `批注 · ${L.length} 条` : `${L.length} note${L.length > 1 ? "s" : ""}`}**\n\n${block}` + (text ? `\n\n${text}` : "");
+  }
+  function annClear(id) { delete ANN.all[id]; annSave(); if (id === UI.item) annPaint(); }
+  function annSelInDraft() {   // the current selection, if it sits inside one draft card's text in the open drawer
+    const s = getSelection(); if (!s || s.isCollapsed || !s.rangeCount) return null;
+    const md = n => n && (n.nodeType === 1 ? n : n.parentElement)?.closest("#drawer .cs-card.draftc .md");
+    const a = md(s.anchorNode), b = md(s.focusNode); if (!a || a !== b) return null;
+    const q = annSquash(s.toString()); if (q.length < 2) return null;
+    return { q: q.slice(0, 240), rect: s.getRangeAt(0).getBoundingClientRect() };
+  }
+  function annPop() {
+    let p = $("#an-pop"); if (p) return p;
+    const zh = UI.lang !== "en";
+    document.body.insertAdjacentHTML("beforeend", `<div id="an-pop" role="toolbar" hidden><button data-an="note">${zh ? "批注" : "Note"}</button><button data-an="quote">${zh ? "引用回复" : "Quote"}</button><button data-an="copy">${zh ? "复制" : "Copy"}</button></div>`);
+    p = $("#an-pop");
+    p.addEventListener("pointerdown", e => e.preventDefault());   // keep the text selected while tapping the menu
+    p.addEventListener("click", e => {
+      const b = e.target.closest("[data-an]"), c = ANN.cand; if (!b || !c) return;
+      const k = b.dataset.an; annHide(true);
+      if (k === "copy") { (navigator.clipboard ? navigator.clipboard.writeText(c.q) : Promise.reject()).then(() => toast(UI.lang === "en" ? "Copied" : "已复制"), () => { }); }
+      if (k === "quote") { const ta = $("#drawer .composer textarea"); if (ta) { ta.value = `> ${c.q}\n\n` + ta.value; ta.dispatchEvent(new Event("input", { bubbles: true })); ta.focus(); ta.setSelectionRange(ta.value.length, ta.value.length); } }
+      if (k === "note") annEdit(c.q);
+      try { getSelection().removeAllRanges(); } catch { }
+    });
+    return p;
+  }
+  function annShow(c) {
+    ANN.cand = c; const p = annPop(), touch = matchMedia("(pointer: coarse)").matches;
+    p.hidden = false; const w = p.offsetWidth, h = p.offsetHeight, dock = $("#drawer .dw-dock"), lim = (dock ? dock.getBoundingClientRect().top : innerHeight) - 8;
+    // phones: iOS draws its own callout ABOVE the selection, so ours goes below it (flipped up if the dock is in the way); desktop: above
+    let top = touch ? c.rect.bottom + 12 : c.rect.top - h - 10;
+    if (touch && top + h > lim) top = c.rect.top - h - 56;
+    if (!touch && top < 8) top = c.rect.bottom + 10;
+    p.style.left = Math.round(Math.min(innerWidth - w - 8, Math.max(8, c.rect.left + c.rect.width / 2 - w / 2))) + "px";
+    p.style.top = Math.round(Math.max(8, top)) + "px";
+    requestAnimationFrame(() => p.classList.add("on"));
+  }
+  function annHide(now) {
+    const p = $("#an-pop"); if (!p || p.hidden) return;
+    p.classList.remove("on"); clearTimeout(ANN.hideT);
+    ANN.hideT = setTimeout(() => { p.hidden = true; }, now ? 0 : 160);
+  }
+  document.addEventListener("selectionchange", () => {
+    clearTimeout(ANN.showT);
+    const c = annSelInDraft();
+    if (!c) {   // selection gone: hide shortly (a tap on the menu itself keeps the selection), then catch up a drawer render we held back
+      ANN.showT = setTimeout(() => { if (annSelInDraft()) return; annHide(); ANN.cand = null; if (ANN.deferred) { ANN.deferred = false; if (UI.item) renderDrawer(); } }, 250);
+      return;
+    }
+    annHide(true);
+    ANN.showT = setTimeout(() => { const c2 = annSelInDraft(); if (c2) annShow(c2); }, 320);   // wait until the handles stop moving
+  });
+  addEventListener("scroll", () => annHide(true), { capture: true, passive: true });
+  function annEdit(q, idx) {   // new note (idx undefined) or edit / delete an existing one
+    const zh = UI.lang !== "en", L = annList(), cur = idx != null ? L[idx] : null;
+    openModal(`<h2>${zh ? (cur ? "改批注" : "写批注") : (cur ? "Edit note" : "Add a note")}</h2><div class="an-q">${esc(q)}</div>
+      <textarea placeholder="${zh ? "这一句哪里要改？" : "What should change here?"}">${cur ? esc(cur.t) : ""}</textarea>
+      <div class="foot">${cur ? `<button class="btn danger" data-del>${zh ? "删除" : "Delete"}</button><span style="flex:1"></span>` : ""}<button class="btn" data-x>${t("cancel")}</button><button class="btn primary" data-ok>${zh ? "保存" : "Save"}</button></div>`, m => {
+      const ta = $("textarea", m), id = UI.item;
+      const ok = () => { const v = ta.value.trim(); if (!v) return ta.focus(); const L2 = ANN.all[id] = annList(id).slice();
+        if (cur) L2[idx] = Object.assign({}, cur, { t: v }); else L2.push({ id: Math.random().toString(36).slice(2, 8), q, t: v, at: new Date().toISOString() });
+        annSave(); closeModal(); annPaint(); };
+      $("[data-ok]", m).onclick = ok; $("[data-x]", m).onclick = closeModal;
+      const del = $("[data-del]", m); if (del) del.onclick = () => { ANN.all[id] = annList(id).filter((_, i) => i !== idx); annSave(); closeModal(); annPaint(); };
+      ta.addEventListener("keydown", e => { if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) { e.preventDefault(); ok(); } });
+      ta.focus();
+    });
+  }
+  function annMark(md, q, cls) {   // wrap the first match of q (whitespace-insensitive, may cross inline tags) in <mark>; returns the last mark
+    const want = q.replace(/\s+/g, ""); if (!want) return null;
+    const walk = document.createTreeWalker(md, NodeFilter.SHOW_TEXT), map = []; let flat = "";
+    for (let n; (n = walk.nextNode());) { if (n.parentElement.closest("mark.an-hl, .an-note")) continue; const s = n.nodeValue; for (let i = 0; i < s.length; i++) if (!/\s/.test(s[i])) { map.push([n, i]); flat += s[i]; } }
+    const at = flat.indexOf(want); if (at < 0) return null;
+    const segs = new Map();
+    for (let k = at; k < at + want.length; k++) { const [n, i] = map[k]; const g = segs.get(n); if (g) g[1] = i + 1; else segs.set(n, [i, i + 1]); }
+    let last = null;
+    for (const [n, [a, b]] of segs) { const r = document.createRange(); r.setStart(n, a); r.setEnd(n, b); const m = document.createElement("mark"); m.className = cls; r.surroundContents(m); last = m; }
+    return last;
+  }
+  function annPaint() {   // highlights + inline notes in the draft, and the 「N 条批注」 tray in the dock. Runs after every drawer render.
+    const dw = $("#drawer"); if (!dw || dw.hidden || !UI.item) return;
+    const zh = UI.lang !== "en", L = annList();
+    $$(".an-note", dw).forEach(x => x.remove());
+    $$("mark.an-hl", dw).forEach(m => m.replaceWith(...m.childNodes));
+    const cards = [...$$('.cs-card.draftc[data-vkey="cur"] .md', dw), ...$$(".cs-card.draftc .md", dw)];
+    L.forEach((n, i) => {
+      let m = null; for (const md of cards) { m = annMark(md, n.q, "an-hl"); if (m) break; }
+      n.lost = !m;
+      if (m) { const blk = m.closest("p, li, blockquote, h1, h2, h3, h4, pre, tr") || m; blk.insertAdjacentHTML("afterend", `<button type="button" class="an-note" data-an-edit="${i}"><small>${zh ? "我的批注" : "My note"} · ${i + 1}</small>${esc(n.t)}</button>`);
+        const c = m.closest(".cs-card.draftc.folded"); if (c) c.classList.remove("folded"); }
+    });
+    const dock = $(".dw-dock", dw); if (!dock) return;
+    let tr = $(".an-tray", dock);
+    if (!L.length) { if (tr) tr.remove(); return; }
+    if (!tr) { dock.insertAdjacentHTML("afterbegin", `<div class="an-tray"></div>`); tr = $(".an-tray", dock); }
+    const open = tr.classList.contains("open"), lost = L.filter(n => n.lost).length;
+    tr.innerHTML = `<button type="button" class="an-head" data-an-tray><span class="n">${L.length}</span><span class="tx"><b>${zh ? `${L.length} 条批注` : `${L.length} note${L.length > 1 ? "s" : ""}`}</b><small>${zh ? `点「回复」或「驳回」时一起发给${esc(aname(agent((ST.items.find(x => x.id === UI.item) || {}).owner)))}，带原句` : "Sent with your next reply or reject, with the quoted lines"}${lost ? (zh ? ` · ${lost} 条原句在新版里找不到了` : ` · ${lost} not in this version`) : ""}</small></span><em aria-hidden="true">${open ? "⌄" : "›"}</em></button>
+      <div class="an-list">${L.map((n, i) => `<div class="an-li"><button type="button" data-an-edit="${i}"><q>${esc(n.q.slice(0, 60))}</q><span>${esc(n.t)}</span></button><button type="button" class="x" data-an-del="${i}" aria-label="${zh ? "删除" : "Delete"}">✕</button></div>`).join("")}</div>`;
+  }
+  document.addEventListener("click", e => {
+    if (!e.target.closest("#drawer, #modal")) return;
+    const ed = e.target.closest("[data-an-edit]"); if (ed) { const n = annList()[+ed.dataset.anEdit]; if (n) annEdit(n.q, +ed.dataset.anEdit); return; }
+    const dl = e.target.closest("[data-an-del]"); if (dl) { ANN.all[UI.item] = annList().filter((_, i) => i !== +dl.dataset.anDel); annSave(); annPaint(); return; }
+    if (e.target.closest("[data-an-tray]")) { const tr = e.target.closest(".an-tray"); tr.classList.toggle("open"); annPaint(); }
+  });
+
+  // t-m2-a ③: skeleton while a slim card's drafts load (/api/item). CSS keeps it invisible for the first 150 ms (a LAN answer never shows it);
+  // ONE sweep for the whole block (.sk::after), gone with the block when the full card renders.
+  const skDraft = () => `<div class="sk sk-dw" data-sk aria-busy="true" aria-label="${UI.lang === "en" ? "Loading drafts" : "草稿加载中"}"><div class="sk-c"><i style="width:34%"></i><i></i><i style="width:92%"></i><i style="width:78%"></i><i style="width:56%"></i></div><div class="sk-c"><i style="width:28%"></i><i style="width:86%"></i><i style="width:64%"></i></div></div>`;
+  function renderDrawer(first) {
+    if (!first && annSelInDraft()) { ANN.deferred = true; return; }   // t-imp29-p2: a poll must not wipe the text you are selecting
+    const it = (ST.items || []).find(i => i.id === UI.item);
+    const dw = $("#drawer");
+    if (!it) { closeItem(true); return; }
+    if (it.slim) { fullItem(it.id).then(ok => { const n = (ST.items || []).find(i => i.id === it.id); if (ok && UI.item === it.id && n && !n.slim) renderDrawer(first);
+      else if (!ok && UI.item === it.id) { const s = $("#drawer .dw-scroll [data-sk]"); if (s) s.outerHTML = `<div class="sk-fail">${UI.lang === "en" ? "Drafts did not load · close and reopen the card to retry" : "草稿没加载出来 · 关掉再打开这张卡重试"}</div>`; } }); if (!first) return; }   // t-mobile-crash-state: draft + versions arrive a moment later
+    const opts = (list, cur) => list.map(([v, n]) => `<option value="${v}" ${v === cur ? "selected" : ""}>${esc(n)}</option>`).join("");
+    const ownerOpts = opts(agents().map(a => [a.id, `${aname(a)} · ${atitle(a)}`]), it.owner);
+    $(".dw-top", dw).innerHTML = `<div class="dw-lead"><button class="dw-back" data-close aria-label="${UI.lang === "en" ? "Back" : "返回"}"><svg viewBox="0 0 12 20" width="12" height="20" aria-hidden="true"><path d="M10 2 2 10l8 8" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg><span>${UI.lang === "en" ? "Back" : "返回"}</span></button><span class="tag ${it.stage === "review" || awaitsUser(it) ? it.kind : ""}"><span class="gl" aria-hidden="true">◆</span>${it.stage === "review" || awaitsUser(it) ? t(it.kind === "task" ? "deliverable" : it.kind) : stageLabel(it.stage)}</span> <button type="button" class="mono dim dw-id" data-copy-id="${esc(it.id)}" title="${UI.lang === "en" ? "Copy card id" : "复制卡号"}"><span>${esc(it.id)}</span><svg viewBox="0 0 16 16" width="11" height="11" aria-hidden="true"><rect x="5" y="5" width="8.5" height="8.5" rx="1.6" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M10.5 3.2V3a1.5 1.5 0 0 0-1.5-1.5H3A1.5 1.5 0 0 0 1.5 3v6A1.5 1.5 0 0 0 3 10.5h.2" fill="none" stroke="currentColor" stroke-width="1.4"/></svg></button>${wkTag(workersOf(it.id), "dw-wk")}</div>
+      <div class="r"><select data-f="category">${opts(CATS.map(c => [c, t(c)]), it.category)}</select><button data-close title="close">✕</button></div>`;
+    const sc = $(".dw-scroll", dw); const keep = sc.scrollTop;
+    let lastDay = "";
+    const stream = streamOf(it);
+    const eh = ringOnce(() => stream.slice().reverse().map(e => entryHTML(e, it))).reverse();   // t-m2-a ⓪: built newest first so only the newest line keeps a ring
+    const tl = stream.map((e, i) => {
+      const d = dayKey(new Date(e.t)); const sep = d !== lastDay ? `<div class="cs-day">${when(e.t).split(" ")[0]}</div>` : ""; lastDay = d;
+      return sep + eh[i];
+    }).join("");
+    const wasEnd = !first && nearEnd(sc), grew = !first && stream.length > DW.n; DW.n = stream.length;
+    const wsD = workersOf(it.id);   // t-working-item-highlight: phone shows this row under the glass header (desktop keeps the tag in .dw-top)
+    const par = parentOf(it), kids = childrenOf(it), en = UI.lang === "en";
+    const parHTML = par ? `<button class="dw-parent" data-dw-nav="${esc(par.id)}"><span class="k">${en ? "Part of" : "属于"}</span><b>${esc(par.title)}</b><span class="st">${esc(rowLabel(par))}</span><svg viewBox="0 0 8 14" width="7" height="12" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1.5 1.5 6.5 7l-5 5.5"/></svg></button>` : "";
+    const kidsHTML = kids.length ? `<div class="sec-h">${en ? "Sub-items" : "子单"} · ${kids.length}</div><div class="dw-kids">${kids.map(k => `<button class="dw-kid${k.stage === "done" ? " done" : ""}" data-dw-nav="${esc(k.id)}">${av(agent(k.owner), "sm")}<span class="t">${esc(k.title)}</span><span class="st s-${esc(grpOf(k))}">${esc(rowLabel(k))}</span><svg viewBox="0 0 8 14" width="7" height="12" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1.5 1.5 6.5 7l-5 5.5"/></svg></button>`).join("")}</div>` : "";
+    const dwTags = [...(it.platforms || []).map(p => `<span class="tag pf">${PLAT[p] || p}</span>`), ...(it.due ? [`<span class="tag">${t("due")} ${esc(it.due)}</span>`] : []),
+      ...(it.tags || []).filter(x => !par || x !== par.id).map(x => `<span class="tag">#${esc(x)}</span>`)].join("");
+    sc.innerHTML = `${wsD.length ? `<div class="dw-wkrow">${wkTag(wsD, "dw-wk2")}</div>` : ""}${parHTML}<div class="dw-title">${esc(it.title)}</div>${it.summary ? `<div class="dw-sum${DW.sumOpen.has(it.id) ? "" : " uin-clamp"}">${esc(it.summary)}</div><button type="button" class="uin-more" data-uin-sum hidden>${DW.sumOpen.has(it.id) ? (UI.lang === "en" ? "Show less ▴" : "收起 ▴") : (UI.lang === "en" ? "Show all ▾" : "展开全文 ▾")}</button>` : ""}
+      <div class="dw-meta">${dwPill(t("owner"), `${av(agent(it.owner), "sm", it.id)}<b>${esc(aname(agent(it.owner)))}<i> · ${esc(atitle(agent(it.owner)))}</i></b>`, `<select data-f="owner" aria-label="${t("owner")}">${ownerOpts}</select>`)}
+        ${dwPill(t("stage"), `<b>${esc(stageLabel(it.stage))}</b>`, `<select data-f="stage" aria-label="${t("stage")}">${opts(STAGES.map(s => [s, stageLabel(s)]), it.stage)}</select>`)}</div>
+      ${dwTags ? `<div class="dw-tags">${dwTags}</div>` : ""}${askBlock(it)}
+      ${rtLine(it)}${kidsHTML}
+      ${(it.evidence || []).length ? `<div class="sec-h">${t("evidence")}</div><ul class="ev md">${it.evidence.map(e => `<li>${md(e).replace(/^<p>|<\/p>$/g, "")}</li>`).join("")}</ul>` : ""}
+      ${(it.links || []).length ? `<div class="sec-h">${t("links")}</div><ul class="ev md">${it.links.map(l => `<li>${md(l).replace(/^<p>|<\/p>$/g, "")}</li>`).join("")}</ul>` : ""}
+      ${topFiles(it)}
+      <div class="sec-h">${t("thread")}</div>${it.slim ? skDraft() : ""}<div class="cs">${tl}</div>
+      <div class="cs-jump"><div class="wrap"><button data-jump="top" hidden><span class="ic">↑</span><span class="lb">${t("jump_top")}<small>TOP</small></span></button><button data-jump="end" hidden><span class="ic">↓</span><span class="lb">${t("jump_new")}<small>LATEST</small></span><i class="new" hidden></i></button></div></div>`;
+    { const sm = $(".dw-sum", sc), sb = $("[data-uin-sum]", sc);   // t-ui-next 4: the toggle only shows when the 3-line clamp actually cuts text (or it is open)
+      if (sm && sb) sb.hidden = !DW.sumOpen.has(it.id) && sm.scrollHeight <= sm.clientHeight + 2; }
+    // folded cards only need the toggle when they actually overflow
+    $$(".cs-card.draftc", sc).forEach(c => { const m = $(".md", c), b = $(".cs-more", c); if (!c.classList.contains("folded")) { c.classList.add("folded"); const long = m.scrollHeight > m.clientHeight + 4; c.classList.remove("folded"); b.hidden = !long; } else b.hidden = m.scrollHeight <= m.clientHeight + 4; });
+    if (first) {
+      const cur = it.stage === "review" && $('.cs-card[data-vkey="cur"]', sc);
+      sc.scrollTop = cur ? Math.max(0, cur.offsetTop - sc.offsetTop - 16) : 0;
+    } else if (grew && wasEnd) sc.scrollTop = sc.scrollHeight;
+    else { sc.scrollTop = keep; if (grew) DW.fresh = true; }
+    jumpState(); drawTo();
+    const done = it.stage === "done";
+    const acts = $(".dw-acts", dw);
+    {   // D4: desktop now uses the phone's dock (same state logic, same two pills); before it always showed 批准 / 驳回 / 完成 with ornaments
+      // phone: the actions follow the state. review plan / deliverable = 驳回 + 批准; any other review, or not in review yet = a single 完成; done = stamp + 重开.
+      // data-act names are unchanged (the completion splash and the stamp key off them).
+      const zh = UI.lang !== "en", st = done ? "done" : it.stage === "review" && (it.kind === "plan" || it.kind === "deliverable") ? it.kind : "solo";
+      acts.dataset.st = st;
+      const rt = !done && routineOf(it);   // t-routine-close: a routine's card is never "done"; it is stopped / resumed instead
+      if (rt) { acts.dataset.st = rt.paused ? "rt-off" : "rt"; acts.innerHTML = rt.paused
+        ? `<span class="rt-off">${zh ? "已停止" : "Stopped"}</span><button class="ab ok" data-rt="resume"><b>${zh ? "恢复常驻任务" : "Resume routine"}</b></button>`
+        : `<button class="ab no solo" data-rt="pause">${zh ? "停止常驻任务" : "Stop routine"}</button>`; }
+      else acts.innerHTML = st === "done" ? `<button class="ab re" data-act="reopen"><span aria-hidden="true">↺</span>${t("reopen")}</button>${stampHTML(it)}`
+        : st === "solo" ? `<button class="ab ok solo${openAsks(it).length ? " has-ask" : ""}" data-act="done"><b>${zh ? "完成委托" : "Mark done"}</b>${askLeft(it) ? `<small class="ok-ask">${askLeft(it)}</small>` : ""}</button>`
+        : `<button class="ab no" data-act="reject">${t("reject")}</button><button class="ab ok${openAsks(it).length ? " has-ask" : ""}" data-act="approve">${okBtnIn(it)}</button>`;
+      // t-btn-names: open questions show as a line under the button label (desktop and phone); before it was a .dock-note to the left, desktop only
+    }
+    annPaint();   // t-imp29-p2
+    if (window.Preview) Preview.decorate($('.cs-card.draftc[data-vkey="cur"]', sc), it);   // t-imp29-p3: 文稿 / 平台预览 on the current draft
+  }
+  // ===== t-routine-close: routine cards (config.routines -> meta.routines[].item). Before the server restart meta.routines is missing:
+  // then an ongoing "r-*" card with no parent is treated as a routine with an unknown schedule, and the buttons say a restart is needed.
+  function routineOf(it) {
+    if (!it) return null;
+    const rs = ST.meta && ST.meta.routines;
+    if (Array.isArray(rs)) return rs.find(r => r.item === it.id) || null;
+    return it.category === "ongoing" && /^r-/.test(it.id) && !parentOf(it) ? { id: it.id.slice(2), item: it.id, unknown: true } : null;
+  }
+  function rtLine(it) {
+    const r = routineOf(it); if (!r) return "";
+    const en = UI.lang === "en";
+    if (r.unknown) return `<div class="dw-rt"><b>${en ? "Routine" : "常驻任务"}</b><span>${en ? "Schedule shows after the dashboard restarts" : "看板重启后显示定时和下次时间"}</span></div>`;
+    if (r.paused) return `<div class="dw-rt off"><b>${en ? "Stopped" : "已停止"}</b><span>${en ? `since ${when(r.paused)} · no new runs` : `${when(r.paused)} 停的 · 不再开新的子卡`}</span></div>`;
+    const nd = r.next && new Date(r.next), tmr = dayKey(new Date(Date.now() + 864e5));
+    const nx = !nd ? "—" : dayKey(nd) === tmr ? `${en ? "tomorrow" : "明天"} ${hm(r.next)}` : when(r.next);
+    return `<div class="dw-rt"><b>${en ? `Daily ${r.time}` : `每天 ${esc(r.time)}`}</b><span>${en ? "next" : "下次"} ${esc(nx)}</span></div>`;
+  }
+  $("#drawer").addEventListener("click", e => {
+    const b = e.target.closest("[data-rt]"); if (!b) return;
+    const it = curItem(), r = routineOf(it), zh = UI.lang !== "en"; if (!r) return;
+    if (r.unknown) return toast(zh ? "这个按钮要等看板重启后才能用" : "Needs a dashboard restart first", true);
+    const pause = b.dataset.rt === "pause";
+    if (pause && !confirm(zh ? `停止常驻任务「${it.title}」？\n停了以后每天 ${r.time} 不再自动开子卡；已有的子卡不受影响。随时可以恢复。` : `Stop "${it.title}"? No new daily runs until you resume.`)) return;
+    api(pause ? "routine_pause" : "routine_resume", { routine: r.id, item: it.id })
+      .then(() => toast(pause ? (zh ? "已停止 · 不会再定时触发" : "Stopped") : (zh ? "已恢复 · 每天 " + r.time : "Resumed")));
+  });
+  // persistent done marker: owner avatar + 委托完成 + when (replaces the faint "✦ 完成 · time" line). .pre = hidden until the splash ends, then it stamps in once.
+  function stampHTML(it) {
+    const own = agent(it.owner);
+    return `<div class="dw-stamp${DW.stampPre === it.id ? " pre" : ""}"><span class="st-av">${av(own)}</span><span class="st-tx"><b>${UI.lang === "en" ? "Mission Complete" : "委托完成"}</b><i>${esc(aname(own))} · ${when(it.closed)}</i></span></div>`;
+  }
+  $("#drawer").addEventListener("change", e => {
+    if (e.target.matches && e.target.matches("[data-vd-base]")) { if (DW.vd) DW.vd.base = +e.target.value; renderDrawer(); return; }   // t-imp-p2
+    const f = e.target.dataset && e.target.dataset.f; if (!f) return;
+    const v = e.target.value;
+    if (f === "owner") api("reassign", { item: UI.item, owner: v });
+    if (f === "category") api("set_category", { item: UI.item, category: v });
+    if (f === "stage") {
+      const sid = UI.item, cur = ST.items.find(i => i.id === sid);
+      if (v === "done" && openAsks(cur).length) { e.target.value = cur.stage; return askGuard(sid, "done", skip => api("set_stage", { item: sid, stage: v, skip_asks: skip || undefined })); }
+      api("set_stage", { item: sid, stage: v });
+    }
+  });
+  $("#drawer").addEventListener("click", e => {
+    if (e.target.closest(".dw-back[data-close]")) return backItem();   // t-parent-links: back = previous card if you came from one, else close
+    if (e.target.closest("[data-close]")) return closeItem();
+    const nv = e.target.closest("[data-dw-nav]"); if (nv) { navItem(nv.dataset.dwNav); return; }
+    const ci = e.target.closest("[data-copy-id]");   // t-id-copy: tap the card id to copy it
+    if (ci) { const id = ci.dataset.copyId; copyText(id).then(ok => toast(ok ? (UI.lang === "en" ? `Copied ${id}` : `已复制 ${id}`) : (UI.lang === "en" ? "Copy failed" : "复制失败"), !ok)); return; }
+    const cp = e.target.closest("[data-copy-v]");
+    if (cp) { const it = curItem(), k = cp.dataset.copyV; const txt = k === "cur" ? it.draft : ((it.versions || [])[+k.slice(1)] || {}).draft; navigator.clipboard.writeText(txt || "").then(() => toast(t("copied"))); return; }
+    if (e.target.closest("[data-vd-toggle]")) { if (DW.vd) DW.vd.open = !DW.vd.open; renderDrawer(); return; }   // t-imp-p2
+    if (e.target.closest("[data-uin-asks]")) { const id = UI.item; DW.askOpen.has(id) ? DW.askOpen.delete(id) : DW.askOpen.add(id); renderDrawer(); return; }   // t-ui-next 1
+    if (e.target.closest("[data-uin-sum]")) { const id = UI.item; DW.sumOpen.has(id) ? DW.sumOpen.delete(id) : DW.sumOpen.add(id); renderDrawer(); return; }   // t-ui-next 4
+    const fo = e.target.closest("[data-fold]");
+    if (fo) { const k = fo.dataset.fold, key = k === "cur" ? "x" + k : k; DW.open.has(key) ? DW.open.delete(key) : DW.open.add(key); renderDrawer(); return; }
+    const jp = e.target.closest("[data-jump]");
+    if (jp) { const sc = $("#drawer .dw-scroll"); sc.scrollTo({ top: jp.dataset.jump === "top" ? 0 : sc.scrollHeight, behavior: "smooth" }); return; }
+    if (e.target.closest("[data-to-reset]")) { DW.to = null; drawTo(); return; }
+    const a = e.target.closest("[data-act]"); if (!a) return;
+    const k = a.dataset.act;
+    if (k === "reject") {
+      const reason = annWrap($(".composer textarea").value.trim()), aid = UI.item;   // t-imp29-p2: notes alone are a reason
+      if (!reason) return modalReject();
+      return api("reject", { item: UI.item, reason }).then(() => { annClear(aid); DRAFT.set("item:" + aid, ""); $(".dr-tag") && $(".dr-tag").remove(); $(".composer textarea").value = ""; toast(UI.lang === "en" ? "Rejected · reason sent" : "已驳回 · 原因已发出"); });
+    }
+    if ((k === "approve" || k === "done") && openAsks(ST.items.find(i => i.id === UI.item)).length) return askGuard(UI.item, k, skip => drawerAct(k, a, skip));
+    drawerAct(k, a, false);
+  });
+  function drawerAct(k, a, skip) {
+    if (!a.isConnected) a = $(`#drawer [data-act="${k}"]`) || a;   // the dock may have been redrawn while the sheet was open
+    const typed = $(".composer textarea").value.trim(), note = k === "approve" ? annWrap(typed) : typed;   // t-imp29-p2: notes ride along with 批准 too
+    const it = ST.items.find(i => i.id === UI.item), wasPlan = it && it.kind === "plan";
+    const b = a.getBoundingClientRect(), cx = b.left + b.width / 2, cy = b.top + b.height / 2;
+    // a fresh completion = this click moves a not-yet-done item to done (never for an item that was already done, never on page load / state refresh)
+    const id = UI.item, fresh = !!it && it.stage !== "done" && (k === "done" || (k === "approve" && !wasPlan));
+    const clearPre = () => { if (DW.stampPre === id) { DW.stampPre = null; const s = $("#drawer .dw-stamp"); if (s) s.classList.remove("pre"); } };
+    if (fresh && window.FX) { DW.stampPre = id; setTimeout(clearPre, 3800); }
+    api(k, { item: id, note: note || undefined, skip_asks: skip || undefined }).then(() => {
+      if (note && k === "approve") { $(".composer textarea").value = ""; annClear(id); DRAFT.set("item:" + id, ""); $(".dr-tag") && $(".dr-tag").remove(); }
+      if (!window.FX) return;
+      if (fresh) {
+        FX.burst(cx, cy, { n: 46, spread: 180 });
+        FX.missionComplete({ key: id + "|" + (it.updated || ""), owner: it.owner, title: it.title, time: when(new Date().toISOString()),
+          onEnd: () => { const s = $("#drawer .dw-stamp"); DW.stampPre = null; if (s) { s.classList.remove("pre"); if (!FX.reduce) s.classList.add("fresh"); } } });
+      }
+      else if (k === "approve") { FX.burst(cx, cy, { n: 28 }); toast(okDone(it)); }
+      else if (k === "reopen") toast(UI.lang === "en" ? "Reopened" : "已重开");
+    }).catch(clearPre);
+  }
+  document.addEventListener("keydown", e => {
+    if (e.key === "Escape") { if (!$("#modal").hidden) closeModal(); else if (document.body.classList.contains("chat-pop")) chatPop(false); else if (MB.open) closeMailbox(); else if (UI.item) closeItem(); }
+  });
+
+  // ---------- chat (right) ----------
+  const chatAtt = [];
+  let chatBuilt = false, chatRenderedFor = null, chatCount = 0;
+  // t-mobile-crash B: a thread renders only from chatFrom on (the newest CHAT_N when it opens; 「加载更早的消息」 moves it back by CHAT_N).
+  // chatFrom stays put while new messages arrive (so the phone still sees the count grow and plays m-new); it re-anchors on a chat switch or past CHAT_N + 60.
+  const CHAT_N = 20; let chatFrom = 0;
+  // ui10 (t-pixel-click): a click on a pixel character opens the detail of the item they are on now.
+  // Before: it opened that character's DM chat (setChat). The DM is still one tap away via the chat-head avatar row, the Team page 私信 button, and Shift/Alt-click on the sprite.
+  function pixelOpen(id, e) {
+    if (e && (e.shiftKey || e.altKey)) return setChat(id);
+    const a = agent(id), its = items();
+    let it = a.item && its.find(i => i.id === a.item && i.stage !== "done");
+    if (!it) it = its.filter(i => i.owner === id && (i.stage === "doing" || i.stage === "review")).sort((x, y) => (y.updated || "").localeCompare(x.updated || ""))[0];
+    if (it) return openItem(it.id);
+    toast(UI.lang === "en" ? `${aname(a)} has nothing in progress` : `${aname(a)} 现在没有在办的单子`);
+  }
+  function setChat(id) { UI.chat = id; LS.set("chat", id); chatRenderedFor = null; renderLeft(); renderChat(); chatDraftLoad(); $("#right textarea") && $("#right textarea").focus(); }
+  function chatDraftLoad() {   // t-draft-keep: the DM box shows this partner's own draft (never the previous partner's text)
+    const ta = $("#right .ch-comp textarea"); if (!ta) return; const d = DRAFT.get("dm:" + UI.chat), v = d ? d.t : "";
+    if (ta.value === v) return; ta.value = v; ta.style.height = ""; ta._dmLoad = true; ta.dispatchEvent(new Event("input", { bubbles: true })); ta._dmLoad = false;
+  }
+  function chatList(id) { return id === "manager" ? (ST.chat || []) : ((ST.dms || {})[id] || []); }
+  function buildChat() {
+    const r = $("#right");
+    r.innerHTML = `<div class="ch-grip" title="${UI.lang === "en" ? "Drag to resize" : "拖动调整宽度"}"></div>
+      <button class="ch-fold" title="${UI.lang === "en" ? "Collapse" : "收起 / 展开"}"><span></span></button>
+      <div class="ch-head"><div class="ch-who"></div>${orn(160)}<div class="ch-roster"></div></div><div class="ch-msgs"></div>
+      <div class="pending-att" style="padding:0 16px"></div>
+      <div class="ch-comp"><button title="${t("file")}">+</button><input type="file" multiple hidden><textarea></textarea><span class="ch-kb" aria-hidden="true">${UI.lang === "en" ? "⌘/Ctrl ↵ send · ↵ new line" : "⌘/Ctrl ↵ 发送 · ↵ 换行"}</span></div>`;
+    const ta = $("textarea", r), fi = $("input[type=file]", r);
+    const showAtt = () => attTiles($(".pending-att", r), chatAtt, showAtt);   // ui19
+    const add = wireUploads(ta, chatAtt, showAtt);
+    ta.addEventListener("input", () => { if (!ta._dmLoad) DRAFT.set("dm:" + UI.chat, ta.value); });   // t-draft-keep
+    $(".ch-comp button", r).onclick = () => fi.click();
+    fi.onchange = () => { add(Array.from(fi.files)); fi.value = ""; };
+    ta.addEventListener("input", () => { if (matchMedia("(max-width: 760px)").matches) return; ta.style.height = "auto"; ta.style.height = Math.min(200, ta.scrollHeight) + "px"; });   // jit: on the phone mobile.js fit() is the only owner of this height (a second measure here flushed height:auto = 62px and re-animated it on every keystroke)
+    ta.addEventListener("keydown", async e => {
+      if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
+        e.preventDefault(); const text = ta.value.trim(); if (!text && !chatAtt.length) return;
+        if (stillUploading(chatAtt)) return toast(UI.lang === "en" ? "Still uploading…" : "文件还在上传……");
+        const dmTo = UI.chat; await sendChat(text || "📎", chatAtt.slice()); DRAFT.set("dm:" + dmTo, ""); ta.value = ""; ta.style.height = ""; chatAtt.length = 0; showAtt();
+      }
+    });
+    r.addEventListener("click", e => {
+      const o = e.target.closest("[data-opt]"); if (o) sendChat(o.dataset.opt, []);
+      const p = e.target.closest("[data-pick]"); if (p) { if (UI.chatFold) foldChat(false); setChat(p.dataset.pick); }
+      if (e.target.closest("[data-more]")) { moreChat($(".ch-msgs", r)); return; }
+      if (e.target.closest(".ch-fold")) { if (document.body.classList.contains("chat-pop")) chatPop(false); else foldChat(!UI.chatFold); }
+    });
+    const grip = $(".ch-grip", r);
+    grip.addEventListener("pointerdown", e => {
+      if (UI.chatFold) return;
+      e.preventDefault(); grip.setPointerCapture(e.pointerId); document.body.classList.add("resizing");
+      const move = ev => { UI.chatW = Math.max(300, Math.min(760, window.innerWidth - ev.clientX)); applyChatW(); };
+      const up = () => { grip.removeEventListener("pointermove", move); document.body.classList.remove("resizing"); LS.set("chatW", UI.chatW); dispatchEvent(new Event("resize")); };
+      grip.addEventListener("pointermove", move); grip.addEventListener("pointerup", up, { once: true });
+    });
+    grip.addEventListener("dblclick", () => { UI.chatW = 420; LS.set("chatW", 420); applyChatW(); });
+    applyChatW();
+    chatBuilt = true;
+  }
+  // t-web-audit 01: the board and the production line fold the chat on their own while #main is under 900px (not saved; unfolds when you leave)
+  function autoFold() {
+    if (MOBQ.matches || NARROWQ.matches) return;   // at <=1180px the chat is a pop-over, nothing to fold
+    const wide = UI.page === "board" || UI.page === "pipe", main = $("#main");
+    if (wide && !UI.chatFold && !UI.autoFold && !LS.get("wideChat", false) && main && main.clientWidth < 900) { UI.autoFold = true; UI.chatFold = true; applyChatW(); setTimeout(() => dispatchEvent(new Event("resize")), 520); }
+    else if (!wide && UI.autoFold) { UI.autoFold = false; UI.chatFold = false; applyChatW(); setTimeout(() => dispatchEvent(new Event("resize")), 520); }
+  }
+  // t-web-audit 06: under 900px the detail drawer covers the whole middle column
+  try { const mn = $("#main"); new ResizeObserver(() => document.body.classList.toggle("main-narrow", mn.clientWidth < 900)).observe(mn); } catch { }
+  // t-web-audit-2 05: at 761-1180px the chat column is hidden; the top bar's 聊天 button (or a teammate row) slides it in over the page
+  const NARROWQ = matchMedia("(max-width: 1180px)");
+  function chatPop(on) {
+    document.body.classList.toggle("chat-pop", on);
+    if (on && UI.chatFold) { UI.popUnfold = true; UI.chatFold = false; applyChatW(); }   // the pop-over always shows the full chat; the saved fold is untouched
+    if (!on && UI.popUnfold) { UI.popUnfold = false; UI.chatFold = LS.get("chatFold", false); applyChatW(); }
+    const b = $("#hdrctrl .hc-chat"); if (b) b.setAttribute("aria-expanded", on);
+    if (on) setTimeout(() => { const ta = $("#right textarea"); if (ta) ta.focus({ preventScroll: true }); }, 60);
+  }
+  document.addEventListener("click", e => {   // a click outside the pop-over closes it (dialogs and the viewer opened from it do not)
+    if (!document.body.classList.contains("chat-pop")) return;
+    if (e.target.closest("#right, #modal, #lb, #toast, .hc-chat, [data-chat]")) return;
+    chatPop(false);
+  }, true);
+  NARROWQ.addEventListener("change", () => { if (!NARROWQ.matches) chatPop(false); });
+  function applyChatW() {
+    document.documentElement.style.setProperty("--chat-w", UI.chatFold ? "64px" : UI.chatW + "px");
+    document.body.classList.toggle("chat-folded", UI.chatFold);
+  }
+  function foldChat(on) {
+    const wide = UI.page === "board" || UI.page === "pipe";
+    if (UI.autoFold) { UI.autoFold = false; if (!on) LS.set("wideChat", true); }   // opened it again on the board: remember, stop folding there
+    else if (on && wide) LS.set("wideChat", false);
+    UI.chatFold = on; LS.set("chatFold", on); applyChatW();
+    setTimeout(() => dispatchEvent(new Event("resize")), 520);  // let the office canvas refit after the slide
+  }
+  function sendChat(text, attachments) {
+    return UI.chat === "manager" ? api("chat", { text, attachments }) : api("dm", { agent: UI.chat, text, attachments });
+  }
+  // ===== t-web-dm: the desktop chat panel (and its <=1180px pop-over) gets the phone thread's major design (P3): a stamp only after a 5-minute gap,
+  // one avatar per run of messages, my avatar on the right, a typing bubble, and the exact time on hover. Same class names as mobile.js decorateThread(),
+  // styled only under @media (min-width: 761px). It must never run on a phone: decorateThread() skips any thread that already has a .m-tsep.
+  function deskStamp(iso) {
+    const d = new Date(iso), p2 = n => String(n).padStart(2, "0"), hm = `${p2(d.getHours())}:${p2(d.getMinutes())}`, en = UI.lang === "en";
+    const day = x => new Date(x.getFullYear(), x.getMonth(), x.getDate()), diff = Math.round((day(new Date()) - day(d)) / 864e5);
+    if (diff === 0) return hm;
+    if (diff === 1) return (en ? "Yesterday " : "昨天 ") + hm;
+    if (diff < 7) return (en ? ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"] : ["星期日", "星期一", "星期二", "星期三", "星期四", "星期五", "星期六"])[d.getDay()] + " " + hm;
+    return `${d.getMonth() + 1}/${d.getDate()} ${hm}`;
+  }
+  function deskMeAv() {
+    const f = (ST.meta.avatars || {}).me;
+    if (f) return `<span class="av m-meav" style="background-image:url('/avatars/${encodeURIComponent(f)}')"></span>`;
+    const o = ST.meta.owner, ch = o && !o.startsWith("<") ? [...o.trim()][0] : (UI.lang === "en" ? "Me" : "我");
+    return `<span class="av m-meav ph"><b>${esc(ch)}</b></span>`;
+  }
+  function decorateDesk(box, list) {
+    if (MOBQ.matches || !box) return;
+    const msgs = [...box.querySelectorAll(".msg[data-t]")];
+    if (msgs.length && !box.querySelector(".m-tsep")) {   // renderChat rebuilt the box: decorate once
+      const atBottom = box.scrollHeight - box.scrollTop - box.clientHeight < 80;
+      let prev = null, pw = null;
+      msgs.forEach(m => {
+        const t0 = m.dataset.t, w = m.classList.contains("me") ? "\u0001me" : (m.dataset.who || "");
+        if (!prev || new Date(t0) - new Date(prev) > 5 * 60e3) m.insertAdjacentHTML("beforebegin", `<div class="m-tsep">${esc(deskStamp(t0))}</div>`);
+        const pe = m.previousElementSibling; m.classList.toggle("m-cont", !!pe && pe.classList.contains("msg") && w === pw);
+        prev = t0; pw = w;
+        m.title = new Date(t0).toLocaleString(UI.lang === "en" ? "en-US" : "zh-CN", { month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit" });
+        if (m.classList.contains("me")) m.insertAdjacentHTML("beforeend", deskMeAv());
+        else if (m.dataset.who && m.dataset.who !== UI.chat) { const mb = m.querySelector(".mb"); if (mb) mb.insertAdjacentHTML("beforebegin", `<div class="m-nm">${esc(aname(agent(m.dataset.who)))}</div>`); }
+      });
+      if (atBottom) box.scrollTop = box.scrollHeight;
+    }
+    // typing: the agent is working and you spoke last. The dots get a negative animation-delay from the clock, so a rebuilt bubble keeps its phase.
+    const a = agent(UI.chat), last = list && list[list.length - 1], on = a.status === "working" && !!last && last.who === "me";
+    let tb = box.querySelector(".m-typing");
+    if (on && !tb) {
+      const ph = Date.now() % 1200;
+      box.insertAdjacentHTML("beforeend", `<div class="m-typing">${av(a)}<div class="mb"><span class="m-dots">${[0, 1, 2].map(i => `<i style="animation-delay:${i * 160 - ph}ms"></i>`).join("")}</span></div></div>`);
+      if (box.scrollHeight - box.scrollTop - box.clientHeight < 120) box.scrollTop = box.scrollHeight;
+    } else if (!on && tb) tb.remove();
+  }
+  MOBQ.addEventListener("change", () => { chatRenderedFor = null; if (ST) renderChat(); });   // crossing 760px: rebuild so the other layout decorates from scratch
+  // t-mobile-crash B: 「加载更早的消息」. Keeps the message that was on top where it was: re-aligned after the render, the phone's stamps (hooks)
+  // and every frame for ~1.5 s while thumbnails above it load. The browser's own scroll anchoring is off meanwhile (Chromium's picks another node and fights us;
+  // iOS Safari may have none). Stops at the user's first touch / wheel. _n huge = no m-new pop for the older messages.
+  function moreChat(box) {
+    const top = box.querySelector(".msg[data-t]"); if (!top) return;
+    const key = top.dataset.t, off = top.getBoundingClientRect().top - box.getBoundingClientRect().top;
+    box.style.overflowAnchor = "none";
+    chatFrom = Math.max(0, chatFrom - CHAT_N); box._n = 1e9; chatCount = -1; renderChat(); hooks.forEach(f => f("all"));
+    let live = true;
+    const align = () => { if (!live) return; const el = box.querySelector(`.msg[data-t="${CSS.escape(key)}"]`); if (el) box.scrollTop += el.getBoundingClientRect().top - box.getBoundingClientRect().top - off; };
+    const stop = () => { if (!live) return; live = false; box.style.overflowAnchor = ""; box.removeEventListener("touchstart", stop); box.removeEventListener("wheel", stop); };
+    const loop = () => { if (live) { align(); requestAnimationFrame(loop); } };   // one rect read per frame for 1.5 s: covers stamps, thumbnails and a poll re-render alike
+    align(); requestAnimationFrame(loop);
+    box.addEventListener("touchstart", stop, { passive: true }); box.addEventListener("wheel", stop, { passive: true }); setTimeout(stop, 1500);
+  }
+  function renderChat() {
+    const firstBuild = !chatBuilt; if (!chatBuilt) buildChat();
+    const r = $("#right");
+    if (!ST.agents[UI.chat]) UI.chat = "manager";
+    if (firstBuild) chatDraftLoad();   // t-draft-keep: restore this partner's unsent text after a reload
+    const a = agent(UI.chat);
+    const ms = mgrState();
+    const st = a.id === "manager" ? (ms.on ? `<span class="on">▶ ${t("online")}</span>` : ms.sleep ? `<span class="zz">☾ ${esc(ms.txt)}</span>` : `<span class="off">● ${t("offline")}</span>`)
+      : a.status === "working" ? `<span class="on">▶ ${t("working")}</span>` : `<span class="idle">${t(a.status || "idle")}</span>`;
+    $(".ch-who", r).innerHTML = `${av(a, "lg")}<span class="nm">${esc(aname(a))}</span><span class="ti">${esc(atitle(a))}</span>${st}<span class="sp"></span>`;
+    $(".ch-roster", r).innerHTML = agents().filter(x => x.enabled !== false).map(x => {
+      const l = chatList(x.id); const last = l[l.length - 1];
+      const unread = last && last.who !== "me" && (last.t > (UI.seen["chat." + x.id] || "")) && x.id !== UI.chat;
+      return `<button data-pick="${x.id}" class="${x.id === UI.chat ? "on" : ""}">${av(x)}<span>${esc(aname(x))}</span>${unread ? `<i class="unread"></i>` : ""}</button>`;
+    }).join("");
+    $("textarea", r).placeholder = MOBQ.matches ? t("chat_ph", { n: aname(a) }) : (UI.lang === "en" ? `Message ${aname(a)}…` : `对${aname(a)}说……`);   // t-web-dm: desktop moves the shortcut hint below the field
+    const list = chatList(UI.chat);
+    const box = $(".ch-msgs", r);
+    if (chatRenderedFor === UI.chat && chatCount === list.length) { decorateDesk(box, list); return; }
+    if (chatRenderedFor !== UI.chat || chatFrom > list.length || list.length - chatFrom > CHAT_N + 60) chatFrom = Math.max(0, list.length - CHAT_N);
+    const view = list.slice(chatFrom);
+    // t-mobile-crash A: the manager is "working" whenever it is online, and each ring is 3 infinite animations (= composited layers on iOS).
+    // One ring per thread: only the newest message from someone else keeps it, older avatars are drawn idle.
+    let ringAt = -1; for (let i = view.length - 1; i >= 0; i--) if (view[i].who !== "me") { ringAt = i; break; }
+    const mav = (m, i) => { const x = agent(m.who); return av(i === ringAt ? x : Object.assign({}, x, { status: "idle" }), "sm"); };
+    const more = chatFrom > 0 ? `<button class="ch-more" data-more>${UI.lang === "en" ? `Load earlier messages (${chatFrom})` : `加载更早的消息（还有 ${chatFrom} 条）`}</button>` : "";
+    const nearBottom = box.scrollHeight - box.scrollTop - box.clientHeight < 80 || chatRenderedFor !== UI.chat;
+    box.innerHTML = list.length ? more + view.map((m, i) => m.who === "me"
+      ? `<div class="msg me" data-t="${esc(m.t)}"><div class="mb">${md(m.text)}${attHTML(m.attachments)}</div><div class="mt">${whenH(m.t)}</div></div>`
+      : `<div class="msg" data-t="${esc(m.t)}" data-who="${esc(m.who)}"><div class="mh">${mav(m, i)}${esc(aname(agent(m.who)))} <small>${whenH(m.t)}</small></div><div class="mb md">${md(m.text)}</div>${attHTML(m.attachments)}
+         ${m.options ? optChips(m.options) : ""}</div>`).join("")
+      : `<div class="empty">${UI.chat === "manager" ? (UI.lang === "en" ? "Tell the manager what you want done." : "跟管家说你想做什么。") : (UI.lang === "en" ? "DM goes through the manager to this agent." : "私信会由管家转给这个角色。")}</div>`;
+    if (nearBottom) box.scrollTop = box.scrollHeight;
+    chatRenderedFor = UI.chat; chatCount = list.length;
+    decorateDesk(box, list);
+    if (list.length && (!document.body.dataset.mtab || (document.body.dataset.mtab === "chat" && document.body.dataset.cv === "thread"))) { UI.seen["chat." + UI.chat] = list[list.length - 1].t; LS.set("seen", UI.seen); }  // phones: only an open thread counts as read
+  }
+
+  // ---------- modals ----------
+  function openModal(html, onMount) { const m = $("#modal"); m.innerHTML = `<div class="mdl frame">${html}</div>`; m.hidden = false; onMount && onMount($(".mdl", m)); }
+  function closeModal() { $("#modal").hidden = true; $("#modal").innerHTML = ""; }
+  $("#modal").addEventListener("mousedown", e => { if (e.target.id === "modal") closeModal(); });
+  function modalReject() {
+    const pre = $(".composer textarea") ? $(".composer textarea").value.trim() : "";
+    openModal(`<h2>${t("reject_t")}</h2>${orn(140)}<label>${t("reject_reason")}</label><textarea>${esc(pre)}</textarea>
+      <div class="foot"><button class="btn" data-x>${t("cancel")}</button><button class="btn primary danger" data-ok>${t("reject")}</button></div>`, m => {
+      const ta = $("textarea", m);
+      const submit = async () => { const reason = annWrap(ta.value.trim()), aid = UI.item; if (!reason) return ta.focus(); await api("reject", { item: UI.item, reason }); annClear(aid); DRAFT.set("item:" + aid, ""); closeModal(); if ($(".composer textarea")) $(".composer textarea").value = ""; if ($(".dr-tag")) $(".dr-tag").remove(); };
+      $("[data-ok]", m).onclick = submit; $("[data-x]", m).onclick = closeModal;
+      ta.addEventListener("keydown", e => { if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) { e.preventDefault(); submit(); } });
+      ta.focus();
+    });
+  }
+  // ---------- t-imp-p4: 系统状态 panel (replaces the old 体力 modal; desktop orb / SYNC row, phone orb / 菜单 row) ----------
+  // Server-side facts come from /api/health (cached, not in /api/state). Before the server restart that adds it,
+  // those rows are hidden and a one-line note says why.
+  const HL = { data: null, at: 0, missing: false, busy: null };
+  function loadHealth(maxAge = 0) {
+    if (HL.busy) return HL.busy;
+    if (maxAge && Date.now() - HL.at < maxAge) return null;   // fresh enough: nothing fetched (callers must not re-render then)
+    HL.busy = fetch("/api/health").then(r => r.ok ? r.json() : Promise.reject(r.status))
+      .then(d => { HL.data = d; HL.missing = false; }, () => { HL.data = null; HL.missing = true; })
+      .finally(() => { HL.at = Date.now(); HL.busy = null; });
+    return HL.busy;
+  }
+  const gb = n => n >= 1e12 ? (n / 1e12).toFixed(1) + " TB" : n >= 1e9 ? Math.round(n / 1e9) + " GB" : Math.round(n / 1e6) + " MB";
+  function upTxt(sec) {
+    const en = UI.lang === "en", d = Math.floor(sec / 86400), h = Math.floor(sec % 86400 / 3600), m = Math.floor(sec % 3600 / 60);
+    if (en) return d ? `${d}d ${h}h` : h ? `${h}h ${m}m` : `${m}m`;
+    return d ? `${d} 天 ${h} 小时` : h ? `${h} 小时 ${m} 分` : `${m} 分钟`;
+  }
+  // one row per system: {k, lv: ok|warn|bad|unk, t, s, act?}
+  function statusRows() {
+    const en = UI.lang === "en", U = usage(), H = HL.data, rows = [];
+    // 1. usage data (the bars are drawn above the rows)
+    rows.push({ k: "usage", t: en ? "Usage data" : "用量数据",
+      lv: U.none ? "unk" : U.stale || U.lost5 ? "warn" : "ok",
+      s: U.none ? (en ? "Not connected yet" : "还没接入")
+        : (en ? `${hm(U.at)} · ${U.age}${U.stale ? " · may be out of date" : ""}` : `${hm(U.at)} 读取 · ${U.age}${U.stale ? " · 可能已过期" : ""}`) + ` · ${usageSrc(U.src)}`,
+      act: U.none ? null : { k: "usage", l: en ? "Ask to refresh" : "叫管家刷新" } });
+    // 2. manager heartbeat
+    const m = mgrState(), ma = agent("manager");
+    rows.push({ k: "mgr", t: en ? "Manager heartbeat" : "管家心跳", lv: m.on ? "ok" : m.sleep ? "warn" : "bad",
+      s: (m.since ? `${m.txt} · ${en ? "last seen" : "最后心跳"} ${hm(m.since)}（${ageTxt(m.since)}）` : m.txt)
+        + ` · ${en ? "inbox" : "信箱待处理"} ${ST.meta.inbox_unacked || 0}` + (ma.activity && m.on ? ` · ${ma.activity}` : "") });
+    // 3. dashboard server (needs /api/health)
+    if (H) {
+      const sv = H.server;
+      rows.push({ k: "srv", t: en ? "Dashboard server" : "看板服务器", lv: sv.loops ? "ok" : "warn",
+        s: (en ? `up ${upTxt(sv.uptime)} · started ${hm(sv.started)}` : `已运行 ${upTxt(sv.uptime)} · ${hm(sv.started)} 启动`) + ` · rev ${sv.rev}` + (sv.loops ? "" : (en ? " · background loops off" : " · 后台循环未开（测试模式）")) });
+    }
+    // 4. ComfyUI tunnel (already in /api/state)
+    const c = (H && H.comfy) || ST.meta.comfy || {};
+    rows.push({ k: "comfy", t: "5090 · ComfyUI", lv: c.online ? "ok" : c.online === false ? "warn" : "unk",
+      s: (c.online ? (en ? "Tunnel up" : "隧道已连") : c.online === false ? (en ? "Tunnel down · image jobs will wait" : "隧道未连 · 出图会排队") : (en ? "Not probed yet" : "还没探测"))
+        + (c.at ? ` · ${en ? "checked" : "探测于"} ${ageTxt(c.at)}` : "") });
+    // 5. push (needs /api/health; this device's own state comes from push.js)
+    if (H) {
+      const p = H.push, me = window.Push ? Push.status() : null, ok = p.last_code >= 200 && p.last_code < 300;
+      rows.push({ k: "push", t: en ? "Push" : "推送",
+        lv: !p.devices ? "warn" : p.failing ? "bad" : "ok",
+        s: (p.devices ? (en ? `${p.devices} device${p.devices > 1 ? "s" : ""} subscribed` : `${p.devices} 台设备已订阅`) : (en ? "No device subscribed" : "没有设备订阅"))
+          + (p.last_at ? ` · ${en ? "last send" : "上次发送"} ${hm(p.last_at)}（${ok ? (en ? "delivered" : "已送达推送服务") : `HTTP ${p.last_code}`}）` : "")
+          + (p.failing ? (en ? ` · ${p.failing} failing` : ` · ${p.failing} 台失败`) : "")
+          + (me && matchMedia("(max-width: 760px)").matches ? ` · ${en ? "this phone" : "本机"}：${me.label}` : "") });
+    }
+    // 6. daily report
+    const today = dayKey(new Date()), rt = (H && H.report && H.report.time) || "18:00", last = ST.meta.last_report_date;
+    const due = new Date(`${today}T${rt}`) <= new Date();
+    rows.push({ k: "report", t: en ? "Daily report" : "日报",
+      lv: last === today ? "ok" : due ? "warn" : "ok",
+      s: last === today ? (en ? "Today's report is in" : "今天的已写好")
+        : (en ? `Last: ${last || "never"} · today's ${due ? "is late (due " + rt + ")" : "due " + rt}` : `最近一份 ${last || "没有"} · 今天 ${rt} ${due ? "已到点，还没写" : "待写"}`) });
+    // 7. disk (needs /api/health)
+    if (H && H.disk) {
+      const d = H.disk, pct = d.free / d.total;
+      rows.push({ k: "disk", t: en ? "Disk" : "磁盘", lv: d.free < 10e9 || pct < .05 ? "bad" : d.free < 30e9 || pct < .1 ? "warn" : "ok",
+        s: (en ? `${gb(d.free)} free of ${gb(d.total)}` : `剩 ${gb(d.free)} / 共 ${gb(d.total)}`) + (d.work != null ? ` · work/ ${gb(d.work)}` : "") });
+    }
+    return rows;
+  }
+  function statusSummary(rows) {
+    const en = UI.lang === "en", w = rows.filter(r => r.lv === "warn").length, b = rows.filter(r => r.lv === "bad").length;
+    if (!w && !b) return { lv: "ok", txt: en ? "All good" : "一切正常" };
+    return { lv: b ? "bad" : "warn", txt: [w && (en ? `${w} to watch` : `${w} 项要留意`), b && (en ? `${b} down` : `${b} 项断开`)].filter(Boolean).join(" · ") };
+  }
+  function statusHTML() {
+    const en = UI.lang === "en", U = usage(), rows = statusRows(), sm = statusSummary(rows);
+    const bar = (label, v, sub) => `<div class="sy-u${v == null ? " nil" : ""}"><span>${label}</span><b>${v == null ? "—" : `${U.stale ? "≈" : ""}${v}<small>%</small>`}</b><div class="sy-bar"><i style="width:${v ?? 0}%"></i></div><em>${sub || ""}</em></div>`;
+    const bars = U.none
+      ? `<div class="sy-setup md"><p>${en ? "No usage yet. Make <code>tools/statusline.py</code> the manager's statusLine:" : "还没有用量数据。把 <code>tools/statusline.py</code> 配成管家 session 的 statusLine："}</p>
+         <pre class="code"><code>{"statusLine": {"type": "command", "command": "python3 tools/statusline.py"}}</code></pre></div>`
+      : `<div class="sy-use${U.stale ? " old" : ""}">`
+        + bar(en ? "5-hour window" : "5 小时窗口", U.left, U.lost5 ? (en ? "Reset after the last reading · unknown until new data" : "上次读数之后已重置 · 等新数据，暂时未知")
+            : U.reset5 ? (en ? `used ${U.used5}% · full at ${U.at5}` : `已用 ${U.used5}% · ${U.at5} 复活`) : "")
+        + bar(en ? "This week" : "本周", U.week, U.lostW ? (en ? "Reset after the last reading" : "上次读数之后已重置")
+            : U.resetW ? (en ? `used ${U.usedW}% · resets ${U.atW}` : `已用 ${U.usedW}% · ${U.atW} 重置`) : "")
+        + (U.context != null ? bar(en ? "Manager context" : "管家上下文", 100 - U.context, en ? "left before compaction" : "剩余上下文") : "")
+        + (U.stale ? `<div class="sy-stale">${en ? `As of ${hm(U.at)} · ${U.age} · may be out of date` : `${hm(U.at)} 的数据 · ${U.age} · 可能已过期`}</div>` : "")
+        + `</div>`;
+    const list = rows.map(r => `<div class="sy-row ${r.lv}"><i class="sy-dot"></i><div class="sy-m"><b>${esc(r.t)}</b><span>${esc(r.s)}</span></div>${r.act ? `<button type="button" class="sy-btn" data-sy="${r.act.k}">${esc(r.act.l)}</button>` : ""}</div>`).join("");
+    const note = HL.missing ? `<p class="sy-note">${en ? "Server, push and disk rows appear after the dashboard server restarts (new /api/health)." : "看板服务器、推送、磁盘这几行，要等看板重启（新接口 /api/health）后才显示。"}</p>` : "";
+    return `<div class="sy-hd"><h3>${en ? "System status" : "系统状态"}</h3><span class="sy-sum ${sm.lv}">${sm.txt}</span><button type="button" class="sy-x" data-x aria-label="${en ? "Close" : "关闭"}">${en ? "Done" : "完成"}</button></div>`
+      + bars + `<div class="sy-list">${list}</div>` + note;
+  }
+  function modalStatus() {
+    openModal(statusHTML(), m => {
+      m.classList.remove("frame"); m.classList.add("sys");
+      const paint = () => { if (!m.isConnected) return; const h = statusHTML(); if (m._html === h) return; const st = m.scrollTop; m.innerHTML = m._html = h; m.scrollTop = st; };
+      m.addEventListener("click", e => {
+        if (e.target.closest("[data-x]")) return closeModal();
+        const b = e.target.closest("[data-sy]"); if (!b) return;
+        if (b.dataset.sy === "usage") { b.disabled = true; api("ping", { note: UI.lang === "en" ? "refresh usage" : "刷新用量" }).then(() => toast(UI.lang === "en" ? "Asked the manager to refresh usage" : "已请管家刷新用量")); }
+      });
+      loadHealth().then(paint);
+      const tick = setInterval(() => { if (!m.isConnected) return clearInterval(tick); loadHealth().then(paint); }, 15000);
+      m._paint = paint;
+    });
+  }
+  hooks.push(k => { if (k !== "all") return; const m = $("#modal .mdl.sys"); if (m && m._paint) m._paint(); });
+
+  // ===== t-new-ver: the page keeps running the JS/CSS it loaded; after a web/ release (?v bump in index.html) it says so with a pill.
+  // Checks when the page comes back to the foreground and every 5 min while visible; never reloads on its own (drafts survive anyway). =====
+  const VER = { mine: "", t: 0, shown: false };
+  const verSig = html => (String(html).match(/\/static\/[\w.-]+\.(?:js|css)\?v=[\w.]+/g) || []).sort().join(" ");
+  const verMine = () => VER.mine || (VER.mine = verSig([...document.querySelectorAll("script[src],link[rel=stylesheet][href]")].map(e => e.getAttribute("src") || e.getAttribute("href")).join(" ")));   // read after load: the scripts below app.js are not parsed yet when it runs
+  async function verCheck(force) {
+    if (document.readyState !== "complete") return;
+    if (VER.shown || !verMine() || document.visibilityState !== "visible" || (!force && Date.now() - VER.t < 60e3)) return;
+    VER.t = Date.now();
+    try { const r = await fetch("/", { cache: "no-store" }); if (!r.ok) return; const sig = verSig(await r.text()); if (sig && sig !== VER.mine) verShow(); } catch (_) { }
+  }
+  function verShow() {
+    if (VER.shown) return; VER.shown = true; const en = UI.lang === "en";
+    const b = document.createElement("button"); b.type = "button"; b.id = "newver";
+    b.innerHTML = `<i aria-hidden="true"></i>${en ? "Dashboard updated" : "看板更新了"}<b>${en ? "Tap to reload" : "点一下刷新"}</b>`;
+    b.addEventListener("click", () => location.reload()); document.body.appendChild(b);
+  }
+  document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") verCheck(); });
+  setInterval(() => verCheck(true), 5 * 60e3);
+
+  // t-id-copy: clipboard API where the page is a secure context (127.0.0.1); the phone over plain-http Tailscale has no navigator.clipboard,
+  // so fall back to a hidden textarea + execCommand("copy"), which iOS allows inside a tap.
+  function copyText(s) {
+    if (navigator.clipboard && window.isSecureContext) return navigator.clipboard.writeText(s).then(() => true, () => copyOld(s));
+    return Promise.resolve(copyOld(s));
+  }
+  function copyOld(s) {
+    const ta = document.createElement("textarea"); ta.value = s; ta.setAttribute("readonly", ""); ta.style.cssText = "position:fixed;top:0;left:0;opacity:0;font-size:16px";
+    document.body.appendChild(ta); ta.select(); ta.setSelectionRange(0, s.length); let ok = false; try { ok = document.execCommand("copy"); } catch (_) { } ta.remove(); return ok;
+  }
+
+  // ===== t-lib-attach: 「附到回复…」 from the phone viewer. The sheet offers the current DM partner, the last card opened, and the other team members;
+  // picking one opens that thread / card and puts the file in its pending attachments (the same path, nothing uploaded). =====
+  const ATT = { lastCard: null };
+  function attachTo(dest, p) {
+    if (dest.dm) { route("#dm=" + encodeURIComponent(dest.dm)); attachPath(chatAtt, p); return; }
+    route("#item=" + encodeURIComponent(dest.item));
+    let n = 0; const put = () => { if (UI.item === dest.item && $("#drawer .composer textarea")) attachPath(drawerAtt, p); else if (++n < 20) setTimeout(put, 150); };   // the drawer may load the full card first
+    setTimeout(put, 120);
+  }
+  function attachPick(p) {
+    const en = UI.lang === "en", old = $("#att-pick"); if (old) old.remove();
+    const me = agent(UI.chat) || agent("manager"), card = ATT.lastCard && (ST.items || []).find(i => i.id === ATT.lastCard);
+    const rest = agents().filter(a => a.enabled !== false && a.id !== (me && me.id));
+    const row = (k, v, lead, txt, sub) => `<button type="button" class="ap-row" data-ap-${k}="${esc(v)}"><small>${lead}</small><span>${esc(txt)}</span>${sub ? `<em>${sub}</em>` : ""}</button>`;
+    const el = document.createElement("div"); el.id = "att-pick";
+    el.innerHTML = `<div class="ap-scrim" data-ap-x></div><div class="ap-sheet" role="dialog" aria-label="${en ? "Attach to" : "附到哪里"}"><b class="ap-h">${en ? "Attach to" : "附到哪里"}</b>
+      ${me ? row("dm", me.id, en ? "Chat" : "对话", (en ? "To " : "对") + aname(me) + (en ? "" : "说"), en ? "current chat" : "最近的对话") : ""}
+      ${card ? row("item", card.id, en ? "Card" : "卡片", card.title || card.id, en ? "last opened" : "刚才看的卡") : ""}
+      <button type="button" class="ap-row ap-more" data-ap-more><span>${en ? "Someone else…" : "发给别人…"}</span></button>
+      <div class="ap-others" hidden>${rest.map(a => row("dm", a.id, en ? "Chat" : "对话", aname(a))).join("")}</div>
+      <button type="button" class="ap-row ap-cancel" data-ap-x><span>${en ? "Cancel" : "取消"}</span></button></div>`;
+    document.body.appendChild(el);
+    el.addEventListener("click", e => {
+      if (e.target.closest("[data-ap-more]")) { $(".ap-others", el).hidden = false; $(".ap-more", el).hidden = true; return; }
+      const d = e.target.closest("[data-ap-dm]"), c = e.target.closest("[data-ap-item]");
+      if (d || c || e.target.closest("[data-ap-x]")) el.remove();
+      if (d) attachTo({ dm: d.dataset.apDm }, p); else if (c) attachTo({ item: c.dataset.apItem }, p);
+    });
+  }
+
+  // ---------- API for the mobile layer (mobile.js) ----------
+  window.App = {
+    okLabel, okDone, askLeft, openAsks: it => openAsks(it),   // t-btn-names
+    rvApprove: id => rvApprove(id, null), rvCanApprove: it => rvCanApprove(it), awaitsUser: it => awaitsUser(it), decisions: () => decisions(),   // t-imp-p5 (palette)
+    UI, get ST() { return ST; }, roll, modalStatus: () => modalStatus(), statusSummary: () => statusSummary(statusRows()), loadHealth: a => loadHealth(a), refreshPage: () => renderPage(), pixelOpen, avatarUrl, t, items, agent, aname, atitle, av, when, whenH, agoH, ago, byAct, PLAT, stageLabel,
+    refresh: async () => { await poll(true); return !UI.down; },   // t-m2-c ④ pull-to-refresh: a forced full fetch; false = the server did not answer
+    tablePv: s => tablePv(s),   // t-chat-table (mobile.js chat list preview)
+    verCheck: () => verCheck(true), attachPick: p => attachPick(p),   // t-lib-attach (viewer.js)   // t-new-ver (tests)
+    draft: k => DRAFT.get(k), liveItem: a => liveItem(a), mgrOnline: a => mgrOnline(a),   // t-now-closed (home.js hero, office.js bubble)   // t-draft-keep (mobile.js chat list marks [草稿])
+    go: p => go(p), openItem: id => openItem(id), closeItem: () => closeItem(), backItem: () => backItem(), setChat: id => setChat(id), api: (k, b) => api(k, b), toast: (m, e) => toast(m, e),
+    rejectItem(id) { openItem(id); modalReject(); }, on: fn => hooks.push(fn), inkEb, route: (P, via) => route(P, via),
+  };
+
+  // ---------- t-push-deeplink: one router for "go to this target" (cold-start hash, or a tapped notification while the app is open) ----------
+  // P: URLSearchParams with item= | dm=<agent> | rep=<report id> | page=<page>, plus mail=<ids> (mark read) and push=<id> (a notification tap: route once, then drop the hash).
+  const routed = new Set();
+  function route(P, via) {
+    if (typeof P === "string") P = new URLSearchParams(P.replace(/^[^#]*#?/, ""));
+    const pid = P.get("push");
+    if (pid) {
+      if (routed.has(pid)) return "dup";
+      routed.add(pid);
+      if (/[#&](push|mail)=/.test(location.hash)) { try { history.replaceState(history.state, "", location.pathname + location.search); } catch (_) { } }
+      if (P.get("mail")) api("mail_read", { ids: P.get("mail").split(",") }).catch(() => { });
+    }
+    const item = P.get("item"), dm = P.get("dm"), rep = P.get("rep"), page = P.get("page");
+    const kind = item ? "item" : dm ? "dm" : rep ? "rep" : page ? "page" : "";
+    if (!kind) return "none";
+    if (dm && !(ST && ST.agents && ST.agents[dm])) return "no-agent";
+    if (item && !(ST.items || []).some(i => i.id === item)) return "no-item";
+    if (MB.open) closeMailbox();
+    if (rep) UI.openRep = rep;
+    if (PHONE.matches && window.MRoute) { MRoute({ item, dm, page: rep ? "reports" : pid ? page : null }); return kind; }
+    if ($("#modal") && !$("#modal").hidden) closeModal();
+    if (dm) { closeItem(true); setChat(dm); }
+    else if (rep || (page && pid)) go(rep ? "reports" : page);   // a plain #page= is already applied at boot; only a push re-applies it
+    if (item) openItem(item);
+    return kind;
+  }
+
+  // ---------- boot ----------
+  // deep links: #page=board  #item=<id>  #theme=light  #lang=en
+  const H = new URLSearchParams(location.hash.slice(1));
+  if (H.get("page")) UI.page = H.get("page");
+  if (H.get("theme")) UI.theme = H.get("theme");
+  if (H.get("lang")) UI.lang = H.get("lang");
+  if (H.get("fold")) UI.chatFold = H.get("fold") === "1";
+  document.documentElement.dataset.theme = UI.theme;
+  // t-visual-ink: empty-state line art slot (--es-<key> + html.es-art). The open-source build ships no art, so the empty states stay typographic.
+  poll(true).then(() => {
+    window.FX && FX.enter($("#pagebody"));
+    if (H.get("item") || H.get("dm") || H.get("rep") || H.get("push")) { const r = route(H, "cold"); document.dispatchEvent(new CustomEvent("rt:routed", { detail: { via: "cold", result: r, push: H.get("push") } })); }
+  });
+  setInterval(poll, 2500);
+  setInterval(() => { if (ST) renderLeft(); }, 60000);
+})();
+
+/* ===== ui4: segmented switch (.seg) — sliding indicator for filters. Pure presentation: finds .seg containers after any render,
+   measures the .on item and slides an <i.seg-ind> from where the previous render left it. No filtering logic touched. ===== */
+(() => {
+  const POS = {}, reduce = matchMedia("(prefers-reduced-motion: reduce)");
+  function sync(seg, force) {
+    const on = seg.querySelector(".seg-i.on"), key = seg.dataset.seg || "";
+    let ind = seg.querySelector(".seg-ind");
+    if (!ind) { ind = document.createElement("i"); ind.className = "seg-ind"; ind.setAttribute("aria-hidden", "true"); seg.prepend(ind); }
+    if (!on || !on.offsetWidth) { ind.style.opacity = 0; return false; }
+    const x = on.offsetLeft, w = on.offsetWidth, prev = POS[key];
+    const set = (px, pw) => { ind.style.width = pw + "px"; ind.style.transform = `translateX(${px}px)`; };
+    ind.style.opacity = 1;
+    if (prev && !force && !reduce.matches && (prev.x !== x || prev.w !== w)) {
+      ind.style.transition = "none"; set(prev.x, prev.w); void ind.offsetWidth; ind.style.transition = ""; set(x, w);
+    } else { ind.style.transition = "none"; set(x, w); void ind.offsetWidth; ind.style.transition = ""; }
+    POS[key] = { x, w };
+    // keep the selected item in view when the track scrolls (phone / narrow dropdown)
+    if (seg.scrollWidth > seg.clientWidth + 1) {
+      const target = Math.max(0, x + w / 2 - seg.clientWidth / 2);
+      seg.scrollTo({ left: target, behavior: prev && !reduce.matches ? "smooth" : "auto" });
+    }
+    return true;
+  }
+  let q = 0;
+  function run(force) { cancelAnimationFrame(q); q = requestAnimationFrame(() => document.querySelectorAll(".seg").forEach(s => { if (force || !s._ui4 || s._ui4 !== s.querySelector(".seg-i.on")) { if (sync(s, force)) s._ui4 = s.querySelector(".seg-i.on"); } })); }
+  new MutationObserver(() => run(false)).observe(document.body, { childList: true, subtree: true });
+  addEventListener("resize", () => run(true));
+  document.fonts && document.fonts.ready.then(() => run(true));
+  run(false);
+})();

@@ -1,0 +1,138 @@
+/* t-visual-ink: skin 「墨刊」 (Editorial Ink), approved plan t-visual-dir A.
+   Every rule is scoped to html[data-skin="ink"]; the inline boot script in index.html sets it (default on).
+   Off switches: 更多 → 外观 / header ink button (localStorage rt.skin = "classic"), URL #skin=classic (this load only),
+   light theme back to warm paper: rt.inkLight = false (html[data-ink-light="0"]).
+   Loaded after mobile.css on purpose (mobile.css :root rules would beat a token placed earlier). */
+
+/* elements this skin adds to the DOM: hidden unless the skin is on, so skin-off renders exactly as before */
+.ink-eb, .ink-hello { display: none; }
+/* the 墨 header switch must also work while the skin is off, so it is styled unscoped (header only exists on desktop) */
+.hc-ink { position: relative; font-weight: 700; color: var(--dim); }
+.hc-ink.on { color: var(--ink); }
+.hc-ink.on::after { content: ""; position: absolute; right: -6px; top: 2px; width: 5px; height: 5px; border-radius: 50%; background: var(--dot); }
+
+/* ---------- light theme: warm paper → neutral paper ---------- */
+html[data-skin="ink"][data-theme="light"]:not([data-ink-light="0"]) {
+  --void: #ebeae6; --bg: #f4f3f0; --bg2: #ebeae6; --panel: rgba(255,255,255,.72); --panel2: #ecebe7; --solid: #f7f6f3;
+  --line: rgba(20,20,20,.10); --line2: rgba(20,20,20,.18); --line3: rgba(20,20,20,.42);
+  --ink: #141414; --ink2: #3a3a3a; --dim: #6e6c67; --faint: #a3a19c; --chip: rgba(0,0,0,.035);
+  --shadow: 0 20px 50px rgba(0,0,0,.14);
+  --bub: #ffffff; --bub-me: #e6e6e3; --bub-line: rgba(0,0,0,.12);
+  --gl: rgba(247,246,243,.70); --glb: rgba(0,0,0,.13); --gsh: 0 8px 22px rgba(0,0,0,.14); --chip2: rgba(0,0,0,.06);
+  --glass-fx: linear-gradient(135deg, rgba(255,255,255,.55) 0, transparent 46%), rgba(250,250,248,.46);
+  --glass-solid: rgba(248,247,245,.96); --glass-line: rgba(0,0,0,.09); --glass-lite: rgba(0,0,0,.06);
+  --glass-rim: inset 0 1px 0 rgba(255,255,255,1), inset 1px 0 0 rgba(0,0,0,.07), inset 0 -1px 0 rgba(0,0,0,.07), inset 0 0 18px rgba(255,255,255,.3);
+  --glass-shadow: 0 10px 28px rgba(0,0,0,.13);
+  --glass-panel-fx: linear-gradient(135deg, rgba(255,255,255,.45) 0, transparent 40%), rgba(248,247,245,.74);
+  --sk-hi: rgba(255,255,255,.6);
+}
+html[data-skin="ink"][data-theme="light"]:not([data-ink-light="0"]) body::after { background: radial-gradient(ellipse 120% 90% at 50% 40%, transparent 60%, rgba(0,0,0,.08)); }
+html[data-skin="ink"][data-theme="light"]:not([data-ink-light="0"]) #ambience { background: radial-gradient(ellipse 90% 60% at 50% -10%, #fbfbfa, transparent 60%), var(--bg); }
+html[data-skin="ink"][data-theme="light"]:not([data-ink-light="0"]) .fog.f1,
+html[data-skin="ink"][data-theme="light"]:not([data-ink-light="0"]) .fog.f2 { background: radial-gradient(circle, rgba(0,0,0,.045), transparent 65%); }
+html[data-skin="ink"][data-theme="light"]:not([data-ink-light="0"]) .shafts { background: repeating-linear-gradient(105deg, transparent 0 140px, rgba(255,255,255,.4) 160px 230px, transparent 260px 420px); }
+html[data-skin="ink"][data-theme="light"]:not([data-ink-light="0"]) #drawer,
+html[data-skin="ink"][data-theme="light"]:not([data-ink-light="0"]) .mdl { background: var(--bg); }
+html[data-skin="ink"][data-theme="light"]:not([data-ink-light="0"]) #modal { background: rgba(0,0,0,.24); }
+html[data-skin="ink"][data-theme="light"]:not([data-ink-light="0"]) #modal::before { background: rgba(0,0,0,.2); }
+html[data-skin="ink"][data-theme="light"]:not([data-ink-light="0"]) #scrim { background: rgba(0,0,0,.28); }
+html[data-skin="ink"][data-theme="light"]:not([data-ink-light="0"]) #mailscrim { background: rgba(0,0,0,.18); }
+html[data-skin="ink"][data-theme="light"]:not([data-ink-light="0"]) #pal { background: rgba(0,0,0,.2); }
+html[data-skin="ink"][data-theme="light"]:not([data-ink-light="0"]) #toast { background: radial-gradient(ellipse at center, rgba(244,243,240,.96), rgba(244,243,240,.8) 70%, transparent); }
+html[data-skin="ink"][data-theme="light"]:not([data-ink-light="0"]) .title-card { background: radial-gradient(ellipse 50% 32% at 50% 50%, rgba(240,239,236,.9), transparent 75%); }
+html[data-skin="ink"][data-theme="light"]:not([data-ink-light="0"]) .cs-jump button { box-shadow: 0 4px 12px rgba(0,0,0,.14); }
+html[data-skin="ink"][data-theme="light"]:not([data-ink-light="0"]) .dk-card { background: linear-gradient(180deg, #fafaf8, #ecebe7 70%); }
+html[data-skin="ink"][data-theme="light"]:not([data-ink-light="0"]) #tabbar { background: linear-gradient(to top, rgba(244,243,240,.98), rgba(244,243,240,.94) 72%, rgba(244,243,240,.6)); }
+html[data-skin="ink"][data-theme="light"]:not([data-ink-light="0"]) .office-frame { box-shadow: 0 1px 0 var(--line), 0 12px 26px -14px rgba(0,0,0,.25); }
+html[data-skin="ink"][data-theme="light"]:not([data-ink-light="0"]) .rv-card { box-shadow: inset 0 0 0 1px var(--line), 0 12px 28px -16px rgba(0,0,0,.22); }
+
+html[data-skin="ink"]:not([data-ink-light="0"]) .hdr-ctrl .hc-th.light i { background: #f4f3f0; box-shadow: inset 0 0 0 1px rgba(0,0,0,.15); }
+
+/* ---------- motion (added, nothing removed) ---------- */
+@keyframes inkDot { from { opacity: 0; transform: scale(.2); } to { opacity: 1; transform: none; } }
+@keyframes inkBar { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+
+/* ---------- typography: page titles, eyebrow ---------- */
+html[data-skin="ink"] .ph h1 { font-family: var(--f-sys); font-size: 60px; font-weight: 800; letter-spacing: -.035em; line-height: 1.02; text-shadow: none; }
+html[data-skin="ink"] .ph h1::after { content: ""; display: inline-block; width: .16em; height: .16em; border-radius: 50%; background: var(--dot); margin-left: .06em; animation: inkDot .4s var(--ease) .1s backwards; }
+html[data-skin="ink"] .ph .en, html[data-skin="ink"] .ph .orn { display: none; }
+html[data-skin="ink"] .ink-eb { display: flex; gap: 10px; align-items: center; font: 600 12px/1 var(--f-sys); letter-spacing: .18em; color: var(--dim); margin: 0 0 12px; text-transform: uppercase; }
+html[data-skin="ink"] .ink-eb i { flex: 1; height: 1px; background: var(--line2); }
+
+/* ---------- lists: hairline rows, ink section rules ---------- */
+html[data-skin="ink"] .ph-bar { border-bottom: 1px solid var(--line); padding-bottom: 10px; }
+html[data-skin="ink"] .dc-h { border-top: 1px solid var(--ink); padding-top: 12px; margin-top: 26px; font-size: 12px; font-weight: 700; letter-spacing: .14em; }
+html[data-skin="ink"] .dc-h small { font-weight: 500; color: var(--dim); letter-spacing: 0; }
+html[data-skin="ink"] .dc-h .r { letter-spacing: 0; font-weight: 500; }
+html[data-skin="ink"] .dc-row { background: transparent; border: 0; border-bottom: 1px solid var(--line); border-radius: 0; box-shadow: none; padding-left: 0; padding-right: 0; -webkit-backdrop-filter: none; backdrop-filter: none; }
+html[data-skin="ink"] .dc-row .dc-t { font-size: 17px; font-weight: 650; letter-spacing: -.01em; }
+html[data-skin="ink"] .dc-row .dc-s { font-size: 12.5px; color: var(--dim); font-variant-numeric: tabular-nums; }
+html[data-skin="ink"] .dc-btn { border-radius: 999px; background: var(--ink); color: var(--bg); border-color: transparent; font-weight: 650; padding: 0 16px; height: 34px; box-shadow: none; }
+html[data-skin="ink"] .dc-ship .dc-sh { border-radius: 10px; }
+
+/* ---------- board: hairline columns ---------- */
+html[data-skin="ink"] .board { gap: 0; border-top: 1px solid var(--ink); }
+html[data-skin="ink"] .board .col { background: transparent; border: 0; border-left: 1px solid var(--line); border-radius: 0; box-shadow: none; padding: 0 10px; }
+html[data-skin="ink"] .board .col:first-child { border-left: 0; padding-left: 0; }
+html[data-skin="ink"] .board .col-h { background: transparent; border: 0; font-size: 11.5px; letter-spacing: .14em; color: var(--dim); padding: 12px 0 10px; }
+html[data-skin="ink"] .board .mini { background: transparent; border: 0; border-bottom: 1px solid var(--line); border-radius: 0; box-shadow: none; padding: 12px 2px; margin: 0; }
+html[data-skin="ink"] .board .mini .t { font-size: 14.5px; font-weight: 650; line-height: 1.35; }
+
+/* ---------- card detail ---------- */
+html[data-skin="ink"] .dw-title { font-size: 32px; font-weight: 800; letter-spacing: -.03em; line-height: 1.12; }
+html[data-skin="ink"] .dw-title::after { content: ""; display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: var(--dot); margin-left: 4px; animation: inkDot .4s var(--ease) .1s backwards; }
+html[data-skin="ink"] .sec-h { border-top: 1px solid var(--ink); padding-top: 10px; font-size: 11.5px; letter-spacing: .14em; color: var(--dim); }
+html[data-skin="ink"] .dw-pill { background: transparent; border: 1px solid var(--line2); box-shadow: none; }
+html[data-skin="ink"] .dw-parent { background: transparent; border: 0; border-bottom: 1px solid var(--line); border-radius: 0; padding-left: 0; }
+
+/* ---------- empty states: typographic, with an optional line-art slot (html.es-art set by app.js when the art exists) ---------- */
+html[data-skin="ink"] .empty, html[data-skin="ink"] .dc-none.top, html[data-skin="ink"] .pl-none {
+  text-align: center; color: var(--dim); font-size: 14px; letter-spacing: .02em; padding: 46px 12px 40px; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); background: transparent; box-shadow: none; }
+html[data-skin="ink"] .empty::before, html[data-skin="ink"] .dc-none.top::before, html[data-skin="ink"] .pl-none::before {
+  content: ""; display: block; width: 7px; height: 7px; border-radius: 50%; background: var(--dot); margin: 0 auto 14px; animation: inkDot .4s var(--ease) .1s backwards; }
+html[data-skin="ink"].es-art .empty::before, html[data-skin="ink"].es-art .dc-none.top::before, html[data-skin="ink"].es-art .pl-none::before {
+  width: 140px; height: 104px; border-radius: 0; background: var(--es-img, var(--es-quests)) center / contain no-repeat; margin-bottom: 16px; }
+html[data-skin="ink"].es-art .dc-none.top { --es-img: var(--es-review); }
+html[data-skin="ink"].es-art .empty.calm { --es-img: var(--es-activity); }
+html[data-skin="ink"].es-art .ms-res .empty, html[data-skin="ink"].es-art .pl-none { --es-img: var(--es-search); }
+html[data-skin="ink"][data-theme="dark"].es-art .empty::before, html[data-skin="ink"][data-theme="dark"].es-art .dc-none.top::before, html[data-skin="ink"][data-theme="dark"].es-art .pl-none::before { filter: invert(1); }
+
+/* ---------- desktop ---------- */
+@media (min-width: 761px) {
+  html[data-skin="ink"] #top { padding: 10px 28px; gap: 24px; }
+  html[data-skin="ink"] #top .brand img { height: 34px; width: auto; }
+  html[data-skin="ink"] #top .sync .row + .row { display: none; }
+  html[data-skin="ink"] #top .sync { font-size: 12.5px; }
+  html[data-skin="ink"] #layout { --left-w: 216px; }
+  html[data-skin="ink"] #left { padding: 26px 10px 18px 22px; }
+  html[data-skin="ink"] .nav-i { font-size: 13.5px; padding: 6px 10px; border-radius: 0 8px 8px 0; font-weight: 500; }
+  html[data-skin="ink"] .nav-i.on { font-weight: 650; background: transparent; box-shadow: inset 2px 0 0 var(--ink); }
+  html[data-skin="ink"] .nav-i:hover { background: var(--chip); }
+  html[data-skin="ink"] .nav-sep { margin-top: 10px; margin-bottom: 10px; }
+  html[data-skin="ink"] #team .side-h, html[data-skin="ink"] #cal .side-h { font-size: 11px; letter-spacing: .16em; color: var(--dim); }
+  html[data-skin="ink"] .team-i { border-bottom: 0; padding-top: 5px; padding-bottom: 5px; }
+  html[data-skin="ink"] #officebox.office { border-radius: 14px; box-shadow: none; border: 1px solid var(--line2); margin-bottom: 26px; }
+  html[data-skin="ink"] #officebox.office::before, html[data-skin="ink"] #officebox.office::after { box-shadow: none; }
+}
+
+/* ---------- phone ---------- */
+@media (max-width: 760px) {
+  html[data-skin="ink"] .ph h1 { font-size: 40px; }
+  html[data-skin="ink"] .ink-hello { display: block; margin: 6px 2px 14px; }
+  html[data-skin="ink"] .ink-hello[hidden] { display: none; }
+  html[data-skin="ink"] .ink-hello .ink-eb { margin: 0 0 4px; }
+  html[data-skin="ink"] .ink-hello b { display: block; font: 800 38px/1.05 var(--f-sys); letter-spacing: -.035em; color: var(--ink); }
+  html[data-skin="ink"] .ink-hello b::after { content: ""; display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: var(--dot); margin-left: 3px; animation: inkDot .4s var(--ease) .1s backwards; }
+  html[data-skin="ink"] .office .hd { background: transparent; border: 0; box-shadow: none; padding: 0; -webkit-backdrop-filter: none; backdrop-filter: none; }
+  html[data-skin="ink"] .office .hd::before, html[data-skin="ink"] .office .hd::after { display: none; }
+  html[data-skin="ink"] .hd-h { padding: 0 2px; }
+  html[data-skin="ink"] .dp-strip { border-radius: 16px; overflow: hidden; margin: 0; }
+  html[data-skin="ink"] .hd-stats { border-top: 1px solid var(--ink); border-bottom: 1px solid var(--line); margin-top: 14px; padding: 0; gap: 0; }
+  html[data-skin="ink"] .hd-stat { position: relative; background: transparent; border-radius: 0; box-shadow: none; border-left: 1px solid var(--line); padding: 10px 0 8px; height: auto; }
+  html[data-skin="ink"] .hd-stat:first-child { border-left: 0; }
+  html[data-skin="ink"] .hd-stat b { font-size: 30px; font-weight: 300; letter-spacing: -.03em; font-variant-numeric: tabular-nums; color: var(--ink); }
+  html[data-skin="ink"] .hd-stat.on b { font-weight: 700; }
+  html[data-skin="ink"] .hd-stat span, html[data-skin="ink"] .hd-stat small { color: var(--dim); }
+  html[data-skin="ink"] .hd-stat.on::after { content: ""; position: absolute; left: 50%; bottom: -1px; width: 22px; margin-left: -11px; height: 2px; background: var(--dot); animation: inkBar .35s var(--ease) backwards; }
+  html[data-skin="ink"] .dc-h { margin-top: 22px; }
+}

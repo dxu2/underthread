@@ -1,0 +1,1630 @@
+/* iPhone layer. Loaded with media="(max-width: 760px)". One screen at a time (body[data-mtab]),
+   plus three layout variants on body[data-mv]: tabs (A), chat-first (B), deck (C). */
+
+body { font-size: 15px; grid-template-rows: auto auto 1fr; height: var(--app-h, 100dvh); -webkit-tap-highlight-color: transparent; }
+body::after { background: radial-gradient(ellipse 140% 100% at 50% 40%, transparent 60%, rgba(0,0,0,.45)); }
+button { touch-action: manipulation; }
+
+/* ---------- header ---------- */
+#top { grid-template-columns: auto 1fr auto; gap: 10px; padding: calc(env(safe-area-inset-top) + 8px) 16px 10px; }
+#top::before, #top::after { display: none; }   /* P2: no ◆ / ornament rule under the header */
+.brand { font-size: 15px; }
+.sync { display: none; }
+.stamina { padding: 0 4px 0 0; gap: 8px; justify-self: end; }
+.stamina .lbl { display: none; }
+.orb { width: 38px; height: 38px; }
+.stamina .pct { min-width: 0; } .stamina .pct b { font-size: 19px; } .stamina .pct > small { font-size: 9.5px; }
+.stamina .focus { left: 46px; right: 4px; bottom: -4px; }
+.hdr-ctrl { gap: 12px; font-size: 13px; }
+.hdr-ctrl button:not([data-h="mail"]):not([data-h="theme"]) { display: none; }
+.hdr-ctrl button[data-h="mail"] { font-size: 0; } .hdr-ctrl button[data-h="mail"]::before { content: "✉"; font-size: 16px; }
+.hdr-ctrl .badge { font-size: 10px; }
+
+#ticker { padding: 6px 16px 4px; font-size: 12.5px; min-height: 30px; gap: 8px; }
+#ticker .k { font-size: 11px; letter-spacing: .15em; } #ticker .k::before, #ticker .pager { display: none; }
+#ticker .msg { max-width: 100%; }
+
+/* ---------- one screen at a time ---------- */
+#layout { display: block; position: relative; min-height: 0; overflow: hidden; }
+#left, #main, #right { position: absolute; inset: 0; display: none !important; }
+body[data-mtab="menu"] #left { display: flex !important; }
+body[data-mtab="page"] #main { display: block !important; }
+body[data-mtab="chat"] #right { display: flex !important; }
+body[data-mtab] #layout > * { animation: m-in .45s var(--ease) backwards; }  /* backwards: no lingering transform, so fixed sheets stay full-screen */
+@keyframes m-in { from { opacity: 0; transform: translateY(8px); } }
+#main::before, #main::after { display: none; }
+#page { padding: 8px 16px calc(96px + env(safe-area-inset-bottom)); -webkit-overflow-scrolling: touch; }
+
+/* ---------- pages ---------- */
+.ph { margin: 10px 0 14px; } .ph h1 { font-size: 25px; letter-spacing: .45em; } .ph .en { font-size: 9.5px; }
+.ph-bar { flex-wrap: wrap; gap: 14px; justify-content: space-between; } .ph-bar .count b { font-size: 26px; }
+/* office-fit: the pixel office is a rounded card on the same 16px gutter as the cards below; JS sizes the canvas to the card exactly */
+.office { margin: -4px 0 16px; }
+.office-frame { border: 1px solid var(--line2); border-radius: 20px; overflow: hidden; box-sizing: border-box; background: #0b0c14;
+  box-shadow: 0 1px 0 var(--line), 0 12px 28px -14px rgba(0,0,0,.55); }
+[data-theme="light"] .office-frame { box-shadow: 0 1px 0 var(--line), 0 12px 26px -14px rgba(70,50,20,.38); }
+.office-frame::before, .office-frame::after { display: none; }
+.grp-h { margin: 22px 0 10px; }
+.card { grid-template-columns: 1fr; gap: 6px; padding: 16px 14px 16px 16px; margin-bottom: 12px; }
+.card:hover { transform: none; }
+.card .meta { display: flex; flex-wrap: wrap; gap: 4px 10px; align-items: center; order: 2; font-size: 11px; }
+.card .body { order: 1; padding-right: 34px; } .card .body h3 { font-size: 16.5px; } .card .body p { -webkit-line-clamp: 2; font-size: 13px; }
+.card .owner { position: absolute; right: 12px; top: 14px; } .card .owner span:not(.av) { display: none; }
+.card .acts { display: none; }
+.board { grid-template-columns: repeat(5, 80vw); overflow-x: auto; scroll-snap-type: x mandatory; margin: 0 -16px; padding: 0 16px 8px; }
+.col { scroll-snap-align: center; min-height: 55vh; }
+.roster, .plats, .docs { grid-template-columns: 1fr; } .docs .dl::after { display: none; }
+.log-i { grid-template-columns: 70px 22px 1fr; } .log-i > span:nth-child(3) { display: none; }
+.mail-i { grid-template-columns: 8px 70px 22px 1fr; }
+.empty { padding: 40px 0; }
+
+/* ---------- item detail = full-screen sheet ---------- */
+#drawer { position: fixed; z-index: 30; padding-top: env(safe-area-inset-top); animation: sheet-up .45s var(--ease) both; }
+@keyframes sheet-up { from { transform: translateY(24px); opacity: 0; } }
+.dw-top { padding: 10px 16px; } .dw-top::after { left: 16px; right: 16px; }
+.dw-scroll { padding: 14px 16px 20px; } .dw-title { font-size: 27px; line-height: 1.22; } .dw-sum { font-size: 15px; }
+.dw-pill .av.sm { width: 26px; height: 26px; }
+.draft { padding: 16px 16px; } .md { font-size: 14.5px; } .md table { font-size: 12.5px; } .md th, .md td { padding: 6px 8px; }
+/* (old .tl timeline rules removed: the thread is a chat stream now, see .cs-* at the end) */
+.composer { padding: 8px 16px 6px; } .composer textarea { min-height: 54px; font-size: 16px; }
+.composer .cm-row > span.dim { display: none; }
+.dw-acts { padding: 10px 16px calc(12px + env(safe-area-inset-bottom)); gap: 10px; } .dw-acts::before { left: 16px; right: 16px; }
+.btn { font-size: 15px; letter-spacing: .2em; } .btn.primary { padding: 6px 28px; }
+.btn.big { font-size: 18px; } .btn.big small { display: none; }
+
+/* ---------- chat ---------- */
+#right { flex-direction: column; } .ch-grip, .ch-fold { display: none; }
+.ch-head { padding: 10px 16px 0; } .ch-who .nm { font-size: 20px; } .av.lg { width: 42px; height: 42px; }
+.ch-head .orn { display: none; }
+.ch-roster { flex-wrap: nowrap; overflow-x: auto; gap: 6px; padding: 10px 0 12px; scrollbar-width: none; } .ch-roster::-webkit-scrollbar { display: none; }
+.ch-msgs { padding: 12px 16px 16px; }
+.ch-comp { padding: 10px 14px calc(88px + env(safe-area-inset-bottom)); } .ch-comp textarea { font-size: 16px; }
+
+/* ---------- menu screen (the left rail, full screen) ---------- */
+#left { padding: 14px 22px calc(96px + env(safe-area-inset-bottom)); overflow-y: auto !important; }
+#left > #team { overflow: visible; -webkit-mask-image: none; mask-image: none; flex: none; }
+.nav-i { padding: 9px 4px 9px 22px; font-size: 17px; }
+
+/* ---------- bottom sheets for dialogs ---------- */
+#modal { align-items: flex-end; }
+.mdl { width: 100%; max-height: 92dvh; overflow-y: auto; padding: 24px 18px calc(18px + env(safe-area-inset-bottom)); animation: sheet-up .5s var(--ease) both; }
+.mdl.frame::before, .mdl.frame::after { display: none; }
+.mdl .row { grid-template-columns: 1fr; gap: 0; }
+.mdl textarea, .mdl input, .mdl select { font-size: 16px; }
+#toast { bottom: calc(96px + env(safe-area-inset-bottom)); max-width: 92vw; }
+
+/* category chips (A) */
+.m-seg { display: flex; gap: 8px; overflow-x: auto; margin: 4px -16px 6px; padding: 4px 16px 8px; scrollbar-width: none; } .m-seg::-webkit-scrollbar { display: none; }
+.m-seg .btn-s { flex: none; }
+
+/* ---------- B: chat-first, review strip on top of the chat ---------- */
+.m-strip { display: flex; gap: 10px; overflow-x: auto; padding: 4px 16px 12px; scroll-snap-type: x mandatory; scrollbar-width: none; position: relative; }
+.m-strip::-webkit-scrollbar { display: none; }
+.m-strip::after { content: ""; position: absolute; left: 16px; right: 16px; bottom: 0; height: 1px; background: linear-gradient(90deg, transparent, var(--line2), transparent); }
+.m-strip-h { display: flex; justify-content: space-between; align-items: baseline; padding: 4px 16px 6px; font-family: var(--f-cjk); font-size: 12px; letter-spacing: .25em; color: var(--ink2); }
+.m-strip-h b { font-family: var(--f-display); font-size: 16px; color: var(--ink); letter-spacing: 0; }
+.m-chip { flex: none; width: 72vw; max-width: 300px; scroll-snap-align: start; text-align: left; padding: 12px 14px; position: relative; background: var(--panel2); border: 1px solid var(--line2); }
+.m-chip::before { content: ""; position: absolute; left: -4px; top: -4px; width: 16px; height: 16px; background: var(--ink2); -webkit-mask: var(--hook) center/contain no-repeat; mask: var(--hook) center/contain no-repeat; }
+.m-chip .t { font-weight: 700; font-variant: small-caps; font-size: 15px; line-height: 1.3; margin: 6px 0 4px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.m-chip .m { display: flex; gap: 8px; align-items: center; font-size: 11px; color: var(--dim); }
+.m-chip.none { width: auto; color: var(--dim); font-style: italic; border-style: dashed; }
+
+/* ---------- C: deck ---------- */
+body[data-mv="deck"] #left { justify-content: flex-start; padding-top: 6px; }
+body[data-mv="deck"] .nav-i { justify-content: center; gap: 14px; font-size: 21px; padding: 11px 0; letter-spacing: .45em; }
+body[data-mv="deck"] .nav-i .n { position: absolute; right: 8px; }
+body[data-mv="deck"] .nav-sep { margin: 12px 30%; background: linear-gradient(90deg, transparent, var(--line3), transparent); }
+body[data-mv="deck"] #cal, body[data-mv="deck"] #team { margin-top: 18px; }
+.m-hero { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 6px 0 16px; }
+.m-hero .orn { margin: 6px auto 0; }
+.deck { position: relative; height: min(64dvh, 540px); margin: 6px 0 18px; touch-action: none; }
+.dk-card { position: absolute; inset: 0; display: flex; flex-direction: column; padding: 20px 18px 16px; background: linear-gradient(180deg, #18181a, #0b0b0c 70%);
+  box-shadow: inset 0 0 0 1px var(--line2), inset 0 0 0 6px var(--bg2), inset 0 0 0 7px var(--line), 0 20px 50px rgba(0,0,0,.55); will-change: transform; user-select: none; }
+[data-theme="light"] .dk-card { background: linear-gradient(180deg, #f6f0e2, #e9e0ca 70%); }
+.dk-card.back { transform: translateY(14px) scale(.95); opacity: .55; pointer-events: none; }
+.dk-card.back2 { transform: translateY(26px) scale(.9); opacity: .25; pointer-events: none; }
+.dk-card.fly { transition: transform .45s var(--ease), opacity .45s; }
+.dk-card .dk-meta { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; font-size: 11px; color: var(--ink2); }
+.dk-card h3 { font-variant: small-caps; font-size: 21px; line-height: 1.3; margin: 12px 0 6px; text-align: center; text-shadow: 0 0 22px var(--glow-a); }
+.dk-card .dk-sum { font-size: 13.5px; color: var(--ink2); text-align: center; margin: 0 0 8px; }
+.dk-card .dk-draft { flex: 1; overflow: hidden; position: relative; padding-top: 10px; border-top: 1px solid var(--line); -webkit-mask-image: linear-gradient(black 70%, transparent); mask-image: linear-gradient(black 70%, transparent); }
+.dk-card .dk-who { display: flex; align-items: center; justify-content: center; gap: 8px; font-family: var(--f-cjk); font-size: 13px; color: var(--ink2); padding-top: 10px; }
+.dk-stamp { position: absolute; top: 26px; padding: 4px 14px; font-family: var(--f-cjk); font-size: 20px; font-weight: 700; letter-spacing: .4em; border: 2px solid; opacity: 0; pointer-events: none; }
+.dk-stamp.ok { left: 18px; color: var(--ok); transform: rotate(-12deg); text-shadow: 0 0 14px rgba(163,207,147,.6); }
+.dk-stamp.no { right: 18px; color: var(--urgent); transform: rotate(12deg); text-shadow: 0 0 14px rgba(227,115,93,.6); }
+.dk-stamp.skip { left: 50%; top: auto; bottom: 60px; transform: translateX(-50%); color: var(--glow); }
+.dk-count { text-align: center; font-family: var(--f-display); font-size: 12px; letter-spacing: .3em; color: var(--ink2); margin-top: -4px; }
+.dk-btns { display: flex; justify-content: center; align-items: center; gap: 22px; margin: 4px 0 6px; }
+.dk-btns button { width: 56px; height: 56px; border-radius: 50%; display: grid; place-items: center; font-size: 20px; color: var(--ink2);
+  box-shadow: inset 0 0 0 1px var(--line2), 0 6px 18px rgba(0,0,0,.35); transition: transform .3s var(--ease), color .3s, box-shadow .3s; background: var(--panel); }
+.dk-btns button:active { transform: scale(.92); }
+.dk-btns .no { color: var(--urgent); } .dk-btns .ok { color: var(--ok); width: 64px; height: 64px; font-size: 24px; box-shadow: inset 0 0 0 1px rgba(163,207,147,.5), 0 0 22px rgba(163,207,147,.18); }
+.dk-btns .sk { width: 44px; height: 44px; font-size: 15px; }
+.dk-hint { text-align: center; font-size: 11px; color: var(--dim); letter-spacing: .15em; }
+
+body[data-mv="chat"] .m-stripwrap { display: block; }
+body[data-mv="deck"] #officebox { display: none; }
+
+/* keep everything inside the phone's width: the body grid must not grow to fit nowrap text */
+body { grid-template-columns: minmax(0, 1fr); width: 100vw; overflow: hidden; }
+#top, #ticker, #layout { min-width: 0; max-width: 100vw; }
+#ticker { overflow: hidden; } #ticker .msg { min-width: 0; flex: 1; text-align: center; }
+#top > * { min-width: 0; }
+/* the deck fits above the tab bar */
+.deck { height: max(320px, calc(100dvh - 400px - env(safe-area-inset-top) - env(safe-area-inset-bottom))); }
+
+/* =====================================================================
+   Polish pass (layout A): every pixel on the phone
+   ===================================================================== */
+:root { --tb-h: calc(66px + env(safe-area-inset-bottom)); }
+html, body { overscroll-behavior: none; }
+#page, #left, .ch-msgs, .dw-scroll, .mdl { overscroll-behavior: contain; -webkit-overflow-scrolling: touch; }
+button, .card, .nav-i, .team-i, .m-chip, #tabbar { -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
+@media (hover: none) {
+  .card:hover, .rc:hover, .mini:hover { transform: none; background: none; box-shadow: none; }
+  .card:hover .body h3 { color: inherit; text-shadow: none; }
+  .card:hover::after { transform: none; filter: none; }
+  .card:active { background: radial-gradient(circle 200px at var(--mx, 50%) var(--my, 50%), var(--glow-b), transparent 70%); transform: scale(.992); }
+  .nav-i:active, .team-i:active, .m-set:active { background: var(--glow-b); }
+  .btn-s:active, .btn:active { transform: scale(.96); }
+}
+
+/* header: one quiet line */
+#top { padding: calc(env(safe-area-inset-top) + 6px) max(16px, env(safe-area-inset-right)) 10px max(16px, env(safe-area-inset-left)); gap: 12px; }
+.brand { flex-direction: row; gap: .32em; font-size: 14px; letter-spacing: .14em; align-self: center; }
+.brand span::first-letter { font-size: 1.28em; }
+/* brand1 (t-brand-assets): image wordmark in the phone header (shrinks with the column, never touches orb / mail) */
+.brand img { height: 38px; width: auto; max-width: 100%; }
+.hdr-ctrl button[data-h="theme"] { display: none; } .hdr-ctrl .hc-theme { display: none; }   /* D2: desktop header theme picker; the phone keeps its 菜单 theme row */
+.hdr-ctrl button[data-h="mail"] { width: 30px; height: 30px; justify-content: center; position: relative; }
+.hdr-ctrl button[data-h="mail"]::before { content: ""; width: 19px; height: 15px; background: currentColor;
+  -webkit-mask: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 16'><g fill='none' stroke='black' stroke-width='1.2' stroke-linejoin='round'><rect x='1' y='1' width='18' height='14' rx='1.5'/><path d='M1.5 2 L10 9 L18.5 2'/></g></svg>") center/contain no-repeat;
+          mask: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 16'><g fill='none' stroke='black' stroke-width='1.2' stroke-linejoin='round'><rect x='1' y='1' width='18' height='14' rx='1.5'/><path d='M1.5 2 L10 9 L18.5 2'/></g></svg>") center/contain no-repeat; }
+.hdr-ctrl button[data-h="mail"]::after { display: none; }
+.hdr-ctrl .badge { position: absolute; top: -2px; right: -5px; min-width: 15px; text-align: center; font-size: 9px; line-height: 15px; padding: 0 4px; }
+.stamina { gap: 7px; }
+.orb { width: 34px; height: 34px; }
+.stamina .pct b { font-size: 17px; } .stamina .pct b small { font-size: 10px; } .stamina .pct > small { font-size: 9px; letter-spacing: .02em; }
+.stamina .focus { left: 41px; height: 1.5px; bottom: -3px; }
+
+#ticker { padding: 6px max(16px, env(safe-area-inset-right)) 2px max(16px, env(safe-area-inset-left)); font-size: 12px; min-height: 28px; }
+#ticker .k { display: none; }
+#ticker .msg { font-weight: 500; color: var(--ink2); text-align: left; }
+#ticker .msg::before { content: "◆"; font-size: 7px; color: var(--glow); margin-right: 8px; vertical-align: 2px; text-shadow: 0 0 6px var(--glow); }
+#ticker button.dim { font-size: 11px; padding: 4px; }
+
+/* screens leave room for the bar */
+#page { padding: 6px max(16px, env(safe-area-inset-right)) calc(var(--tb-h) + 26px) max(16px, env(safe-area-inset-left)); }
+#left { padding: 4px 22px calc(var(--tb-h) + 26px); }
+.ch-comp { padding: 10px 14px calc(var(--tb-h) + 8px); }
+body.kb .ch-comp { padding-bottom: 10px; }
+body.kb #page, body.kb #left { padding-bottom: 24px; }
+#toast { bottom: calc(var(--tb-h) + 16px); }
+
+/* review page */
+.office { margin: -4px 0 16px; }
+.room-label { display: none; }
+.seat-name { font-size: 8px; padding: .05em .4em; }
+.ov-neon { white-space: nowrap; font-size: 6.5px; letter-spacing: 0; } .ov-screen b { font-size: 7px; letter-spacing: 0; white-space: nowrap; } .ov-screen span { font-size: 6px; text-align: center; text-wrap: balance; }
+.bubble { font-size: 7.5px; }
+.ph { margin: 14px 0 12px; } .ph h1 { font-size: 24px; } .ph .orn { width: 170px; margin-top: 6px; }
+.ph-bar { margin-bottom: 0; font-size: 12.5px; } .ph-bar .count b { font-size: 24px; }
+.grp-h { margin: 20px 0 8px; font-size: 12px; }
+.card { padding: 15px 14px 14px 16px; margin-bottom: 10px; }
+.card .body h3 { font-size: 16px; margin-bottom: 5px; }
+.card .meta { gap: 3px 9px; }
+.card .meta > span:nth-child(4) { display: none; }  /* "activity" timestamp: one time is enough on a phone */
+
+/* menu screen */
+.m-hero { padding: 18px 0 8px; }
+.m-hero .tc-sub { font-size: 9.5px; letter-spacing: .5em; color: var(--dim); }
+.m-hero .brand { font-size: 21px !important; margin-top: 6px; }
+.m-hero .orn { margin: 10px auto 2px; }
+#nav { margin-bottom: 18px; }
+.nav-i { padding: 11px 6px 11px 26px; font-size: 16.5px; border-bottom: 1px solid var(--line); }
+.nav-i.on { background: linear-gradient(90deg, var(--glow-b), transparent 70%); }
+.nav-sep { margin: 14px 0; height: 0; }
+.side-h { margin-top: 6px; }
+#cal { margin: 18px 0 22px; }
+.m-settings { margin-top: 26px; }
+.m-set { width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 13px 4px; border-bottom: 1px solid var(--line); text-align: left; }
+.m-set b { display: block; font-family: var(--f-cjk); font-size: 14.5px; font-weight: 600; letter-spacing: .1em; }
+.m-set small { display: block; font-size: 11.5px; color: var(--dim); margin-top: 2px; letter-spacing: .04em; }
+.m-set em { font-style: normal; color: var(--dim); font-size: 20px; }
+.sw { flex: none; position: relative; width: 44px; height: 24px; border-radius: 12px; border: 1px solid var(--line2); background: var(--chip); transition: background .4s, border-color .4s, box-shadow .4s; }
+.sw i { position: absolute; top: 50%; left: 5px; width: 11px; height: 11px; transform: translateY(-50%) rotate(45deg); border: 1px solid var(--ink2); background: var(--bg);
+  transition: left .45s var(--ease), background .4s, box-shadow .4s, border-color .4s; }
+.sw.on { border-color: var(--glow); background: var(--glow-b); box-shadow: 0 0 14px var(--glow-b); }
+.sw.on i { left: 25px; background: var(--soul); border-color: var(--soul); box-shadow: 0 0 10px var(--glow); }
+.m-foot { text-align: center; font-family: var(--f-display); font-size: 9.5px; letter-spacing: .3em; color: var(--faint); margin: 26px 0 0; text-transform: uppercase; }
+
+/* item sheet */
+.dw-top { position: sticky; top: 0; background: var(--bg); z-index: 2; }
+.dw-top .tag { font-size: 10.5px; } .dw-top .mono { display: none; }
+.composer { padding: 8px max(16px, env(safe-area-inset-right)) 4px max(16px, env(safe-area-inset-left)); }
+.composer textarea { min-height: 42px; height: 42px; padding: 10px 12px; resize: none; transition: height .35s var(--ease), border-color .4s, box-shadow .4s; }
+.composer textarea:focus { height: 96px; }
+.composer .cm-row { margin-top: 6px; font-size: 12px; } .composer .cm-row > span:last-child { display: none; }
+.dw-acts { justify-content: space-between; gap: 6px; }
+.dw-acts .sp { display: none; }
+.dw-acts .btn.big { gap: 8px; } .dw-acts .btn.big::before { font-size: 13px; }
+body.kb .dw-acts { display: none; }
+
+/* chat */
+.ch-head { padding: 12px max(16px, env(safe-area-inset-right)) 0 max(16px, env(safe-area-inset-left)); }
+.ch-who { gap: 12px; } .ch-who .nm { font-size: 19px; letter-spacing: .12em; } .ch-who .ti { font-size: 11px; }
+.ch-roster button { width: 50px; } .ch-roster button > span:not(.av) { font-size: 9.5px; }
+.msg .mb { font-size: 14.5px; line-height: 1.65; }
+.msg.me { max-width: 84%; }
+.ch-comp textarea { min-height: 42px; border-radius: 0; }
+
+/* bottom sheets get an iOS grabber */
+.mdl::before { content: ""; display: block !important; position: absolute; left: 50%; top: 8px; width: 38px; height: 4px; border-radius: 2px; background: var(--line3);
+  transform: translateX(-50%); -webkit-mask: none; mask: none; }
+.mdl h2 { font-size: 21px; margin-top: 6px; }
+
+/* ---------- the tab bar ---------- */
+#tabbar { display: block; position: fixed; left: 0; right: 0; bottom: 0; z-index: 25; height: var(--tb-h);
+  padding: 0 max(8px, env(safe-area-inset-right)) env(safe-area-inset-bottom) max(8px, env(safe-area-inset-left));
+  background: linear-gradient(to top, rgba(3,3,3,.98) 0%, rgba(4,4,4,.94) 72%, rgba(4,4,4,.6) 100%);
+  -webkit-backdrop-filter: blur(18px) saturate(1.2); backdrop-filter: blur(18px) saturate(1.2);
+  transition: transform .45s var(--ease), opacity .3s; }
+[data-theme="light"] #tabbar { background: linear-gradient(to top, rgba(236,228,209,.98), rgba(236,228,209,.94) 72%, rgba(236,228,209,.6)); }
+body.kb #tabbar { transform: translateY(100%); opacity: 0; pointer-events: none; }
+/* filigree rule along the top, parting around the crest */
+#tabbar::before { content: ""; position: absolute; left: 0; right: 0; top: 0; height: 1px;
+  background: linear-gradient(90deg, transparent 0%, var(--line2) 14%, var(--line3) 36%, transparent 41%, transparent 59%, var(--line3) 64%, var(--line2) 86%, transparent 100%); }
+.tb-orn { position: absolute; left: 50%; top: -9px; width: 128px; height: 18px; transform: translateX(-50%); background: var(--ink2); pointer-events: none; opacity: .85;
+  -webkit-mask: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 128 18'><g fill='none' stroke='black' stroke-width='1.1' stroke-linecap='round'><path d='M0 9 H22 C28 9 31 4 35 4 C38.5 4 39.5 8 37 9.2 C35.3 10 34 8.8 34.6 7.6'/><path d='M22 9 C27 9 29 14 33.5 14.6'/><path d='M128 9 H106 C100 9 97 4 93 4 C89.5 4 88.5 8 91 9.2 C92.7 10 94 8.8 93.4 7.6'/><path d='M106 9 C101 9 99 14 94.5 14.6'/></g></svg>") center/contain no-repeat;
+          mask: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 128 18'><g fill='none' stroke='black' stroke-width='1.1' stroke-linecap='round'><path d='M0 9 H22 C28 9 31 4 35 4 C38.5 4 39.5 8 37 9.2 C35.3 10 34 8.8 34.6 7.6'/><path d='M22 9 C27 9 29 14 33.5 14.6'/><path d='M128 9 H106 C100 9 97 4 93 4 C89.5 4 88.5 8 91 9.2 C92.7 10 94 8.8 93.4 7.6'/><path d='M106 9 C101 9 99 14 94.5 14.6'/></g></svg>") center/contain no-repeat; }
+/* the soul-light that slides to the active tab */
+.tb-ind { position: absolute; top: -1px; width: 56px; height: 3px; transform: translateX(-50%); pointer-events: none; transition: left .6s var(--ease), opacity .3s; }
+.tb-ind::before { content: ""; position: absolute; inset: 1px 0; background: linear-gradient(90deg, transparent, var(--glow) 35%, var(--soul) 50%, var(--glow) 65%, transparent); box-shadow: 0 0 12px var(--glow); }
+.tb-ind b { position: absolute; left: 50%; top: 50%; width: 6px; height: 6px; transform: translate(-50%, -50%) rotate(45deg); background: var(--soul); box-shadow: 0 0 10px var(--glow), 0 0 2px #fff; }
+.tb-row { display: grid; height: 100%; height: 66px; align-items: center; }
+#tabbar button { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 5px; height: 100%; padding-top: 4px;
+  color: var(--dim); transition: color .4s; }
+#tabbar button svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 1.15; stroke-linecap: round; stroke-linejoin: round; transition: transform .5s var(--ease), filter .4s; }
+#tabbar button .l { font-family: var(--f-cjk); font-size: 10px; letter-spacing: .32em; padding-left: .32em; line-height: 1; transition: letter-spacing .5s var(--ease); }
+html[lang="en"] #tabbar button .l { font-family: var(--f-display); font-size: 8.5px; letter-spacing: .18em; padding-left: .18em; text-transform: uppercase; }
+#tabbar button.on { color: var(--ink); }
+#tabbar button.on svg { filter: drop-shadow(0 0 6px var(--glow-a)) drop-shadow(0 0 1px var(--glow)); transform: translateY(-1px); }
+#tabbar button.on .l { font-weight: 600; }
+#tabbar button:active svg { transform: scale(.88); }
+#tabbar .tb-badge { position: absolute; top: 10px; left: calc(50% + 7px); min-width: 15px; height: 15px; padding: 0 4px; border-radius: 8px; font-style: normal;
+  background: var(--urgent); color: #fff; font-family: var(--f-display); font-size: 9px; line-height: 15px; text-align: center; letter-spacing: 0; box-shadow: 0 0 0 2px var(--bg), 0 0 10px rgba(227,115,93,.55); }
+@keyframes crest { 50% { box-shadow: inset 0 0 0 1px var(--line3), inset 0 0 0 4px #060606, inset 0 0 0 5px var(--line2), 0 0 0 5px var(--bg), 0 10px 24px rgba(0,0,0,.55), 0 0 34px var(--glow-a); } }
+
+/* landscape / wide phones: keep content readable */
+@media (orientation: landscape) and (max-height: 500px) {
+  .office { display: none; }
+  #page { padding-left: max(24px, env(safe-area-inset-left)); padding-right: max(24px, env(safe-area-inset-right)); }
+}
+
+/* send buttons (phones have no ⌘+Enter) */
+.m-send { flex: none; width: 42px; height: 42px; display: grid; place-items: center; color: var(--ink); align-self: flex-end; }
+.m-send svg { width: 30px; height: 30px; fill: none; stroke: currentColor; stroke-width: 1.1; stroke-linecap: round; stroke-linejoin: round; filter: drop-shadow(0 0 6px var(--glow-a)); transition: transform .4s var(--ease); }
+.m-send:active svg { transform: scale(.86) rotate(45deg); }
+.composer .cm-row .m-send { margin-left: auto; width: 36px; height: 30px; } .composer .cm-row .m-send svg { width: 26px; height: 26px; }
+.ch-comp > button:first-child { padding-bottom: 10px; }
+
+/* an open item is a full-screen sheet: the tab bar steps aside */
+body.sheet #tabbar { transform: translateY(100%); opacity: 0; pointer-events: none; }
+#drawer { z-index: 35; }
+#tabbar .tb-badge { top: 9px; left: calc(50% + 5px); min-width: 13px; height: 13px; line-height: 13px; font-size: 8.5px; padding: 0 3px; box-shadow: 0 0 0 1.5px var(--bg), 0 0 8px rgba(227,115,93,.45); }
+@keyframes crest { 50% { box-shadow: inset 0 0 0 1px var(--line3), inset 0 0 0 4px #060606, inset 0 0 0 5px var(--line2), 0 0 0 3px var(--bg), 0 10px 24px rgba(0,0,0,.55), 0 0 34px var(--glow-a); } }
+
+/* long sheets: Cancel / Send stay pinned to the bottom */
+.mdl .foot { position: sticky; bottom: calc(-18px - env(safe-area-inset-bottom)); margin: 18px -18px calc(-18px - env(safe-area-inset-bottom));
+  padding: 12px 18px calc(12px + env(safe-area-inset-bottom)); background: linear-gradient(to top, var(--bg) 70%, transparent); z-index: 2; }
+
+/* iOS standalone: the viewport came up short by the safe areas; pin everything to the measured screen height (mobile.js sets --app-h, body.vp-fix) */
+html:has(body.vp-fix) { height: var(--app-h); background: var(--bg); }
+body.vp-fix { height: var(--app-h); }
+body.vp-fix #tabbar { bottom: auto; top: calc(var(--app-h) - var(--tb-h)); }
+body.vp-fix::after, body.vp-fix #ambience, body.vp-fix #modal, body.vp-fix #drawer, body.vp-fix .title-card { bottom: auto; height: var(--app-h); }
+body.vp-fix #toast { bottom: auto; top: calc(var(--app-h) - var(--tb-h) - 56px); }
+
+/* B: clean top on phones. No fog or light shafts, solid header strip; motes + grain stay */
+#ambience .fog, #ambience .shafts { display: none; }
+#ambience { background: var(--bg); }
+#top, #ticker { background: var(--bg); }
+
+/* Top-right corner, phones only (user chose all four, 2026-10-27) */
+/* A: the vignette no longer darkens the status bar / header / ticker strip */
+body::after { -webkit-mask-image: linear-gradient(to bottom, transparent calc(env(safe-area-inset-top) + 90px), black calc(env(safe-area-inset-top) + 150px));
+                      mask-image: linear-gradient(to bottom, transparent calc(env(safe-area-inset-top) + 90px), black calc(env(safe-area-inset-top) + 150px)); }
+/* B: mail badge is plain red, no glow or pulse */
+.hdr-ctrl .badge { box-shadow: none; animation: none; }
+/* C: no glow around the orb */
+.orb { filter: none; }
+/* D: (t-stamina-stale) the old "% stays bright when stale" rule is gone; stale greys out everywhere (style.css) */
+
+/* ---------- phone (<= 760px): chat stream tweaks, appended to web/mobile.css ---------- */
+.cs { gap: 12px; }
+.cs-card { max-width: 100%; align-self: stretch; padding: 9px 12px 10px 12px; }
+.cs-card .md { font-size: 14.5px; }
+.cs-h { flex-wrap: wrap; row-gap: 0; }
+.cs-me { max-width: 88%; }
+.cs-line { font-size: 12.5px; gap: 6px; }
+.cs-line::before, .cs-line::after { flex-basis: 14px; }
+.cs-line .in { justify-content: flex-start; flex-wrap: wrap; column-gap: 6px; }
+.cs-line .tx { flex-basis: 100%; padding-left: 0; }
+.cs-jump { bottom: 6px; } .cs-jump .wrap { right: -13px; gap: 6px; }
+.cs-jump .lb, .cs-jump button:hover .lb { display: none; }
+.at-pop { left: 16px; right: 16px; min-width: 0; }
+.at-pop div { padding: 10px 14px; font-size: 15px; }
+.cs-card .dlabel { max-width: 12em; }
+
+/* ---------- chat list: WeChat-style conversations (t-mobile-chat-list). body[data-cv] = list | thread, set by mobile.js ---------- */
+.cl, .cl-back { display: none; }
+body[data-cv="list"] .cl { display: flex; flex-direction: column; flex: 1; min-height: 0; }
+body[data-cv="list"] #right > :not(.cl):not(.m-stripwrap) { display: none !important; }
+body[data-cv="list"] .m-stripwrap { order: -1; }
+body[data-cv="thread"] .m-stripwrap { display: none; }
+
+.cl-h { padding: 8px 16px 6px; text-align: center; font-family: var(--f-cjk); font-size: 16px; font-weight: 600; letter-spacing: .3em; color: var(--ink); }
+.cl-search { display: flex; align-items: center; gap: 8px; margin: 4px 16px 6px; padding: 0 12px; height: 36px; background: var(--chip); border: 1px solid var(--line); color: var(--dim); }
+.cl-search svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 1.4; stroke-linecap: round; flex: none; }
+.cl-search input { flex: 1; min-width: 0; background: none; border: 0; outline: 0; color: var(--ink); font: inherit; font-size: 16px; -webkit-appearance: none; appearance: none; }
+.cl-search input::placeholder { color: var(--dim); }
+.cl-search input::-webkit-search-cancel-button { -webkit-appearance: none; }
+.cl-rows { flex: 1; overflow-y: auto; padding-bottom: calc(var(--tb-h) + 12px); overscroll-behavior: contain; -webkit-overflow-scrolling: touch; }
+body.kb .cl-rows { padding-bottom: 24px; }
+
+.cl-row { display: flex; align-items: center; gap: 12px; width: 100%; min-height: 70px; padding: 0 0 0 16px; text-align: left; position: relative; background: none; border: 0; font: inherit; color: inherit; }
+.cl-row:active, .cl-row.pin { background: var(--chip); }
+.cl-av { position: relative; flex: none; padding: 11px 0; }
+.cl-av .av { display: block; width: 48px; height: 48px; min-width: 48px; border-radius: 6px; box-shadow: none; }
+/* t-working-avatar, phone: rounded-square avatars can't spin a ring (a rotating square would swing its corners), so their ring is the same two layers, flat: a steady ring that breathes + the sonar ring */
+.cl-av .av.working::before, #right .msg .mh .av.working::before, .m-typing > .av.working::before, .ms-av .av.working::before { background: var(--wk-ring); animation: wk-glow var(--wk-breath) var(--wk-ease) var(--wp, 0s) infinite; }
+.cl-av .av.working::before, .ms-av .av.working::before, #right .msg .mh .av.working::before, .m-typing > .av.working::before { border-radius: calc(var(--wk-r, 6px) + var(--wk-gap) + var(--wk-w)); }
+.cl-av .av.working::after, .ms-av .av.working::after, #right .msg .mh .av.working::after, .m-typing > .av.working::after { border-radius: calc(var(--wk-r, 6px) + var(--wk-gap)); }
+.cl-av .av { --wk-r: 6px; } .ms-av .av { --wk-r: 8px; } #right .msg .mh .av, .m-typing > .av { --wk-r: 7px; }
+.cl-n { position: absolute; top: 5px; right: -7px; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 9px; background: var(--dot); color: #fff;
+  font: 600 11px/18px var(--f-display); text-align: center; box-shadow: 0 0 0 1.5px var(--bg); font-style: normal; }
+.cl-m { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 5px; align-self: stretch; justify-content: center; padding-right: 16px; position: relative; }
+.cl-row + .cl-row .cl-m::before { content: ""; position: absolute; left: 0; right: 0; top: 0; height: 1px; background: var(--line); }
+.cl-t { display: flex; align-items: baseline; gap: 8px; }
+.cl-t .nm { font-family: var(--f-cjk); font-size: 16.5px; font-weight: 600; color: var(--ink); letter-spacing: .06em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cl-t .st, .cl-back .st { font-style: normal; font-size: 11px; color: var(--accent); white-space: nowrap; }
+.cl-t time { margin-left: auto; font-size: 12px; color: var(--dim); font-family: var(--f-display); letter-spacing: .03em; white-space: nowrap; }
+.cl-p { font-size: 13.5px; color: var(--dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cl-p em { font-style: normal; color: var(--faint); }
+
+/* thread: a back bar replaces the big header + avatar strip; the tab bar steps aside like it does for an open item */
+body[data-cv="thread"] .cl-back { display: flex; align-items: center; gap: 4px; padding: 6px max(16px, env(safe-area-inset-right)) 8px max(4px, env(safe-area-inset-left)); position: relative; flex: none; }
+body[data-cv="thread"] .cl-back::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 1px; background: var(--line); }
+.cl-back button { display: flex; align-items: center; gap: 2px; height: 40px; min-width: 44px; padding: 0 6px; color: var(--ink); background: none; border: 0; }
+.cl-back button svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
+.cl-back .n { font-style: normal; font-size: 13px; color: var(--dim); font-family: var(--f-display); }
+.cl-back .who { flex: 1; min-width: 0; text-align: center; margin-right: 44px; display: flex; flex-direction: column; align-items: center; line-height: 1.25; }
+.cl-back .who .nm { font-family: var(--f-cjk); font-size: 16px; font-weight: 600; letter-spacing: .14em; color: var(--ink); }
+.cl-back .who .ti { font-size: 10.5px; color: var(--dim); letter-spacing: .1em; }
+body[data-cv="thread"] .ch-head { display: none; }
+body[data-mtab="chat"][data-cv="thread"] #tabbar { transform: translateY(100%); opacity: 0; pointer-events: none; }
+body[data-cv="thread"] .ch-comp { padding-bottom: calc(10px + env(safe-area-inset-bottom)); }
+body.kb[data-cv="thread"] .ch-comp { padding-bottom: 10px; }
+
+/* ---------- chat bubbles + motion (t-mobile-chat-bubbles, plan v3). Phone chat panel only; desktop chat untouched ---------- */
+:root { --bub: #141416; --bub-me: #22252b; --bub-line: rgba(232,229,221,.16);
+  --f-sys: -apple-system, BlinkMacSystemFont, "SF Pro Text", "PingFang SC", "Helvetica Neue", sans-serif; }
+[data-theme="light"] { --bub: #f6f1e4; --bub-me: #dde4ee; --bub-line: rgba(48,36,18,.18); }
+
+/* Apple system font in the chat panel (list, thread, composer); header, tab bar and other pages keep the house serif */
+#right, #right .md, #right textarea, #right input, #right button, #right .cl-t .nm, #right .cl-t time, #right .cl-back .who .nm, #right .m-tsep, #right .m-nm,
+#right .msg .mb, #right .opts .btn-s { font-family: var(--f-sys); }
+#right .cl-h { letter-spacing: .08em; font-size: 17px; }
+#right .cl-t .nm { letter-spacing: 0; font-weight: 500; }
+#right .cl-t time { letter-spacing: 0; }
+#right .cl-p { font-size: 14px; }
+#right .cl-back .who .nm { letter-spacing: .02em; font-size: 17px; }
+#right .cl-back .who .ti { letter-spacing: .02em; font-size: 11px; }
+#right .ch-comp textarea { line-height: 1.4; }
+
+/* bubbles: others left with avatar, me right with avatar; 10px corners, small softened tail */
+#right .ch-msgs { gap: 12px; padding: 10px 12px 16px; }
+#right .msg { position: relative; display: flex; flex-direction: column; align-items: flex-start; padding-left: 48px; max-width: 100%; animation: none; }
+#right .msg .mh { position: absolute; left: 0; top: 0; margin: 0; font-size: 0; }
+#right .msg .mh small { display: none; }
+#right .msg .mh .av, .m-typing > .av, #right .m-meav { width: 38px; height: 38px; border-radius: 7px; box-shadow: none; }
+#right .msg .m-nm { font-size: 11px; color: var(--dim); margin: 0 0 3px 2px; letter-spacing: .02em; }
+#right .msg .mb, .m-typing .mb { position: relative; max-width: calc(100vw - 112px); padding: 9px 14px; border: 1px solid var(--bub-line); border-radius: 10px;
+  background: var(--bub); font-size: 16px; line-height: 1.55; letter-spacing: .01em; overflow-wrap: anywhere; }
+#right .msg:not(.me) > .mb { padding-left: 14px; border-left: 1px solid var(--bub-line); }
+#right .msg:not(.me) > .mb::before, .m-typing .mb::before { content: ""; position: absolute; left: -4px; top: 13px; width: 7px; height: 7px; background: var(--bub);
+  border-left: 1px solid var(--bub-line); border-bottom: 1px solid var(--bub-line); border-radius: 0 0 0 1.5px; transform: rotate(45deg); }
+#right .msg.me { align-self: flex-end; align-items: flex-end; padding-left: 0; padding-right: 48px; max-width: 100%; }
+#right .msg.me .mb { background: var(--bub-me); border-color: var(--line3); }
+#right .msg.me .mb::after { right: -4px; top: 13px; bottom: auto; width: 7px; height: 7px; background: var(--bub-me); -webkit-mask: none; mask: none;
+  border-top: 1px solid var(--line3); border-right: 1px solid var(--line3); border-radius: 0 1.5px 0 0; transform: rotate(45deg); }
+#right .msg.me .mt { display: none; }
+#right .msg .mb p { margin: 4px 0; } #right .msg .mb > :first-child { margin-top: 0; } #right .msg .mb > :last-child { margin-bottom: 0; }
+#right .msg .md code { font-size: .9em; }
+#right .msg .atts { margin-top: 6px; } #right .msg.me .atts { justify-content: flex-end; }
+#right .msg .atts a:has(img) { padding: 0; border: 0; }
+#right .msg .atts img { max-width: min(220px, 60vw); max-height: 220px; border-radius: 8px; border: 1px solid var(--bub-line); }
+#right .msg .opts { padding-left: 0; margin-top: 8px; }
+/* "me" avatar: avatars/me.* when present, else a placeholder tile (mobile.js meAv) */
+#right .m-meav { position: absolute; right: 0; top: 0; margin: 0; }
+#right .m-meav:not(.ph) { image-rendering: auto; }
+#right .m-meav.ph { display: grid; place-items: center; background: linear-gradient(160deg, var(--bub-me), var(--bub)); border: 1px solid var(--line3); }
+#right .m-meav.ph b { font-family: var(--f-cjk); font-weight: 600; font-size: 17px; color: var(--ink2); line-height: 1; }
+#right .m-meav.ph::after { display: none; }   /* P3: the ◆ corner mark is gone (round avatar, no ornaments) */
+/* centred time stamps, typing bubble, working dots */
+.m-tsep { align-self: center; font-size: 11.5px; color: var(--dim); padding: 10px 0 2px; }
+.m-typing { display: flex; align-items: flex-start; gap: 10px; }
+.m-dots { display: inline-flex; gap: 3px; margin-left: 4px; vertical-align: middle; }
+.m-dots i { width: 4px; height: 4px; background: currentColor; transform: rotate(45deg); opacity: .35; animation: m-dot 1.2s infinite; }
+.m-typing .m-dots { color: var(--ink2); margin: 6px 2px; } .m-typing .m-dots i { width: 5px; height: 5px; }
+.m-dots i:nth-child(2) { animation-delay: .2s; } .m-dots i:nth-child(3) { animation-delay: .4s; }
+@keyframes m-dot { 0%, 60%, 100% { opacity: .3; transform: rotate(45deg) translateY(0); } 30% { opacity: 1; transform: rotate(45deg) translate(-2px, -2px); } }
+
+/* motion: short (<= 250ms), transform/opacity only; all off under prefers-reduced-motion */
+#layout > #right.cv-push { animation: cv-push .24s var(--ease) both; }
+#layout > #right.cv-pop { animation: cv-pop .22s var(--ease) both; }
+@keyframes cv-push { from { transform: translateX(28%); opacity: .2; } }
+@keyframes cv-pop { from { transform: translateX(-12%); opacity: .4; } }
+#right .msg.m-new { animation: bub-in .22s var(--ease) both; transform-origin: 0 100%; }
+#right .msg.me.m-new { transform-origin: 100% 100%; }
+@keyframes bub-in { from { opacity: 0; transform: translateY(8px) scale(.94); } }
+.m-typing { animation: bub-in .2s var(--ease) both; }
+.ch-comp.sending .m-send svg { animation: send-fly .25s var(--ease); filter: drop-shadow(0 0 10px var(--glow)); }
+.ch-comp.sending textarea { opacity: .55; transition: opacity .15s; }
+@keyframes send-fly { 40% { transform: translateX(6px) rotate(45deg) scale(.86); } }
+.cl-row { transition: background-color .12s; }
+.cl-row:active .cl-av .av { transform: scale(.94); transition: transform .12s; }
+.cl-n.pop, #tabbar .tb-badge { animation: badge-pop .24s var(--ease); }
+@keyframes badge-pop { 0% { transform: scale(.4); } 70% { transform: scale(1.18); } }
+@media (prefers-reduced-motion: reduce) {
+  #layout > #right.cv-push, #layout > #right.cv-pop, #right .msg.m-new, .m-typing, .cl-n.pop, #tabbar .tb-badge, .ch-comp.sending .m-send svg, .m-dots i { animation: none !important; }
+  .m-dots i { opacity: .7; }
+}
+
+/* ---------- Apple system font across the phone UI (t-mobile-sysfont). The house serif stays only on the brand:
+   the UNDERTHREAD wordmark, page titles (審核 / PENDING REVIEW), modal titles, the splash title card, deck stamps and the menu footer ---------- */
+:root {
+  --f-brand-display: "Cinzel", "Trajan Pro", "Noto Serif SC", serif;
+  --f-brand-cjk: "Noto Serif SC", "Songti SC", "STSong", "EB Garamond", serif;
+  --f-display: var(--f-sys); --f-body: var(--f-sys); --f-cjk: var(--f-sys);
+}
+.brand, .m-hero .tc-sub, .ph .en, .m-foot, .title-card .tc-sub, .title-card .tc-main { font-family: var(--f-brand-display); }
+.ph h1, .mdl h2, .dk-stamp, .title-card.cjk .tc-main, #right .m-meav.ph b { font-family: var(--f-brand-cjk); }
+/* serif-era spacing and small caps read too loose in sans: tighten */
+.card .body h3, .dw-title, .md h1, .md h2, .md h3, .md h4 { font-variant: normal; letter-spacing: 0; }
+.card .body h3 { font-weight: 600; }
+.btn { letter-spacing: .08em; } .btn.big { letter-spacing: .1em; } .btn.big small { letter-spacing: .2em; }
+.btn-s { letter-spacing: .04em; }
+.nav-i { letter-spacing: .12em; } body[data-mv="deck"] .nav-i { letter-spacing: .2em; }
+.grp-h { letter-spacing: .08em; } .col-h { letter-spacing: .08em; }
+.side-h .sc { letter-spacing: .2em; } .ver-h { letter-spacing: .1em; } .conf b { letter-spacing: .04em; }
+.m-strip-h { letter-spacing: .08em; } .m-set b { letter-spacing: .02em; } .mdl label { letter-spacing: .06em; }
+.cs-day { letter-spacing: .15em; } .cs-more { letter-spacing: .05em; } .dk-count { letter-spacing: .1em; }
+.tag { letter-spacing: .03em; } .tag.pf { letter-spacing: .06em; }
+#tabbar button .l { letter-spacing: .12em; padding-left: .12em; }
+.md th { letter-spacing: .04em; }
+.ch-who .nm { letter-spacing: .04em; }
+
+/* ===== ui1-A: team rows 56px touch targets (left rail is already one scroll column on phones) ===== */
+.team-i { min-height: 56px; }
+
+/* ===== ui1-B: phone detail = full-screen push from the right (replaces sheet-up); no scrim; page scroll locked while open ===== */
+#drawer { animation: none; inset: 0; width: auto; border-left: 0; box-shadow: none; transition: transform .24s cubic-bezier(.4,0,1,1); }
+#drawer.open { transition: transform .32s var(--ease); }
+#scrim { display: none !important; }
+html:has(body.sheet), body.sheet { overflow: hidden; overscroll-behavior: none; }
+.dw-scroll { min-height: 0; }
+
+/* ===== ui1-C: phone mailbox = full-width drop-down (max 75dvh); no blur in entry animations (it stutters on phones) ===== */
+@keyframes rise { from { opacity: 0; transform: translateY(14px); } }
+#mailbox { left: 8px; right: 8px; width: auto; max-height: 75dvh; top: calc(var(--mb-top, 56px) + 6px); z-index: 70; }
+#mailscrim { z-index: 69; }
+body.vp-fix #mailscrim { bottom: auto; height: var(--app-h); }
+.mb-i { padding: 12px 14px; } .mb-h { padding: 14px 14px 6px; } .mb-f { padding: 6px 14px 10px; }
+
+/* ===== ui2-A composer (WeChat-style bar). Phone chat only; appended, older rules untouched ===== */
+body #right .ch-comp { position: relative; align-items: flex-end; gap: 8px; background: var(--bg2); border-top: .5px solid var(--line2); padding: 8px 10px calc(var(--tb-h) + 8px); }
+body.kb #right .ch-comp { padding-bottom: 8px; }
+body[data-cv="thread"] #right .ch-comp { padding-bottom: calc(8px + env(safe-area-inset-bottom)); }
+body.kb[data-cv="thread"] #right .ch-comp { padding-bottom: 8px; }
+body #right .ch-comp::before { display: none; }
+body #right .ch-comp textarea { height: 38px; min-height: 38px; max-height: 120px; overflow-y: auto; padding: 8px 12px; border: 0; border-radius: 8px; font-size: 16px; line-height: 22px;
+  background: rgba(255,255,255,.09); box-shadow: none; }
+[data-theme="light"] body #right .ch-comp textarea, [data-theme="light"] #right .ch-comp textarea { background: rgba(255,255,255,.7); }
+body #right .ch-comp textarea:focus { height: auto; box-shadow: none; background: rgba(255,255,255,.12); }
+[data-theme="light"] #right .ch-comp textarea:focus { background: #fff; }
+/* + (left of nothing, right of the box) and 发送 swap places via .has-text */
+body #right .ch-comp > button:first-child { order: 3; flex: none; width: 36px; height: 36px; margin: 1px 0; padding: 0; display: grid; place-items: center; border: 1.5px solid var(--ink2); border-radius: 50%;
+  font-size: 22px; line-height: 1; color: var(--ink2); transform: none; transition: transform .14s var(--ease); }
+body #right .ch-comp > button:first-child:hover { transform: none; }
+body #right .ch-comp.panel-on > button:first-child { transform: rotate(45deg); }
+body #right .ch-comp textarea { order: 1; }
+body #right .ch-comp .m-send { order: 4; width: auto; height: 36px; margin: 1px 0; padding: 0 14px; border-radius: 6px; background: var(--glow); color: #0b0b0c; font-size: 15px; font-weight: 600; display: none; }
+[data-theme="light"] #right .ch-comp .m-send { color: #fff; }
+body #right .ch-comp .m-send svg { display: none; }
+body #right .ch-comp .m-send::after { content: attr(data-t); }
+body #right .ch-comp.has-text > button:first-child { display: none; }
+body #right .ch-comp.has-text .m-send { display: block; animation: ui2-pop .16s var(--ease); }
+body #right .ch-comp:not(.has-text) > button:first-child { animation: ui2-pop .16s var(--ease); }
+body #right .ch-comp .m-send:active { filter: brightness(1.15); }
+body #right .ch-comp.sending .m-send svg { animation: none; }
+@keyframes ui2-pop { from { opacity: 0; transform: scale(.8); } }
+/* + panel: 相册 / 拍照 / 文件 / @ */
+.ui2-panel { position: absolute; left: 0; right: 0; bottom: 100%; display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; padding: 14px 10px 16px; background: var(--bg2); border-top: .5px solid var(--line2);
+  transform: translateY(8px); opacity: 0; pointer-events: none; visibility: hidden; transition: transform .24s var(--ease), opacity .24s var(--ease), visibility 0s .24s; z-index: 3; }
+.ch-comp.panel-on .ui2-panel { transform: none; opacity: 1; pointer-events: auto; visibility: visible; transition-delay: 0s; }
+.ui2-panel button { display: flex; flex-direction: column; align-items: center; gap: 6px; font-size: 12px; color: var(--ink2); padding: 6px 0; }
+.ui2-panel button b { width: 54px; height: 54px; border-radius: 12px; display: grid; place-items: center; background: rgba(255,255,255,.09); font-size: 24px; font-weight: 400; color: var(--ink); }
+[data-theme="light"] .ui2-panel button b { background: rgba(255,255,255,.7); }
+.ui2-panel button:active b { filter: brightness(1.3); }
+
+/* ===== ui2-B bubbles: flat, no outline. P3 (t-aes-p3): round 34px avatars; 20px bubbles whose corner beside the avatar stays 6px as the tail (no drawn tail);
+   mine = solid --accent; a run of messages from the same speaker shows the avatar once (.m-cont, set in mobile.js decorateThread) ===== */
+#right .msg .mh .av, .m-typing > .av, #right .m-meav { width: 34px; height: 34px; border-radius: 50%; --wk-r: 17px; }
+#right .msg { padding-left: 44px; } #right .msg.me { padding-left: 0; padding-right: 44px; }
+#right .msg .mb, .m-typing .mb { border: 0; border-radius: 6px 20px 20px 20px; padding: 10px 15px; font-size: 15.5px; line-height: 1.6; background: #1f1f22; max-width: calc(100vw - 104px); }
+[data-theme="light"] #right .msg .mb, [data-theme="light"] .m-typing .mb { background: rgba(255,255,255,.82); }
+#right .msg:not(.me) > .mb { border-left: 0; }
+#right .msg:not(.me) > .mb::before, .m-typing .mb::before { display: none; }
+#right .msg.me .mb { border-radius: 20px 6px 20px 20px; background: var(--accent); color: var(--accent-ink); border: 0; }
+#right .msg.me .mb a, #right .msg.me .mb code { color: inherit; }
+#right .msg.me .mb::after { display: none; }
+#right .msg .atts img { border: 0; border-radius: 14px; }
+#right .msg.m-cont { margin-top: -6px; }
+#right .msg.m-cont .mh .av, #right .msg.m-cont .m-meav { visibility: hidden; }
+#right .msg.m-cont .m-nm { display: none; }
+@media (prefers-reduced-motion: reduce) { .ui2-panel, body #right .ch-comp.has-text .m-send, body #right .ch-comp:not(.has-text) > button:first-child { transition: none !important; animation: none !important; } }
+
+/* ===== ui3: WeChat-style back — top-left chevron + label, no ✕; page follows the finger on swipe ===== */
+#drawer .dw-top button[data-close]:not(.dw-back) { display: none; }
+#drawer .dw-top button.dw-back[data-close] { display: inline-flex; width: auto; height: auto; border: 0; border-radius: 0; background: none; transform: none !important; white-space: nowrap; flex: none; align-items: center; gap: 6px; min-height: 44px; margin: -10px 4px -10px -12px; padding: 0 12px 0 10px; color: var(--ink); font-size: 16px; letter-spacing: 0; -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
+#drawer .dw-top button.dw-back[data-close]:active { opacity: .55; }
+#drawer .dw-lead { display: flex; align-items: center; gap: 4px; min-width: 0; }
+#drawer .dw-top { min-height: 44px; }
+#drawer.swiping { will-change: transform; box-shadow: -10px 0 28px rgba(0,0,0,.35); }
+#drawer.swiping .dw-scroll { overflow: hidden; }
+
+/* ===== ui4: phone category switch = .seg, scrolls inside its own track; ≥36px touch height ===== */
+.m-seg { display: block; overflow: visible; margin: 4px 0 8px; padding: 0; }
+.m-seg .seg { display: flex; width: 100%; }
+.seg-i { min-height: 36px; display: inline-flex; align-items: center; justify-content: center; padding: 0 16px; }
+.seg-i:active { transform: scale(.96); }
+
+/* ===== ui5: phone detail top bar flush at the very top (real-iPhone "floating bar" fix, t-mobile-back / t-drawer-sticky) =====
+   Before: #drawer had padding-top: safe-area-inset-top, so the bar sat 47px below the screen top and the strip above it was
+   un-owned drawer padding (page content showed through / scrolled into it on iOS). Now the safe-area lives INSIDE the bar:
+   bar is flush at top:0, opaque, covers the status-bar strip; scroller is paint-contained so nothing escapes above it. */
+#drawer { padding-top: 0; }
+#drawer .dw-top { position: relative; top: auto; z-index: 3; flex: none; box-sizing: border-box; background: var(--bg); padding-top: calc(env(safe-area-inset-top) + 10px); min-height: calc(44px + env(safe-area-inset-top)); }
+#drawer .dw-top::before { content: ""; position: absolute; left: 0; right: 0; bottom: 100%; height: 120px; background: var(--bg); pointer-events: none; } /* overscroll / rubber-band cover above the bar */
+#drawer .dw-scroll { contain: paint; position: relative; z-index: 1; }
+
+/* ===== ui7: pill .btn-s on phones — 40px tap target (same pill as desktop, just taller) ===== */
+.btn-s { min-height: 40px; padding: 0 18px; font-size: 13px; letter-spacing: .04em; }
+.msg .opts, #right .msg .opts { gap: 8px; }
+#right .msg .opts .btn-s { min-height: 34px; padding: 0 14px; border-radius: 17px; background: var(--glass-lite); border: 1px solid var(--glass-line); box-shadow: none; font-size: 13px; font-weight: 600; letter-spacing: 0; color: var(--ink); }   /* P3: quick replies = tinted glass pills (no blur: list content) */
+#right .msg .opts .btn-s.rec { border-color: var(--accent); box-shadow: inset 0 0 0 .5px var(--accent); }   /* t-opt-star */
+
+/* ===== ui8 (t-composer-fix): + stays beside 发送; no 90° spin; panel = 拍照 / 上传媒体 =====
+   Spin cause: style.css `.ch-comp > button:hover { transform: rotate(90deg) }` also matched .m-send; on touch the :hover sticks after the tap. */
+body #right .ch-comp > button, body #right .ch-comp > button:hover, body #right .ch-comp > button:active, body #right .ch-comp .m-send:hover, body #right .ch-comp .m-send:active { transform: none; }
+body #right .ch-comp.panel-on > button:first-child { transform: rotate(45deg); }  /* + -> x while the panel is open (intended, reset on close) */
+body #right .ch-comp.has-text > button:first-child { display: grid; animation: none; }
+body #right .ch-comp.has-text .m-send { animation: none; margin-left: 2px; }
+body #right .ch-comp.has-text { gap: 8px; }
+.ui2-panel { grid-template-columns: repeat(2, minmax(0, 96px)); justify-content: center; gap: 28px; }
+
+/* ===== ui9 (t-bold-titles, plan option A) phone: system-sans menu/tab labels, card + page titles ===== */
+.nav-i { font-weight: 600; } .nav-i.on { font-weight: 700; }
+#tabbar button .l { font-weight: 500; } #tabbar button.on .l { font-weight: 700; }
+.card .body h3 { font-weight: 700; }
+.cl-h { font-weight: 700; }
+
+/* ===== ui11 (t-composer-left): ＋ sits LEFT of the input; right side is only 发送 (when there is text). Panel opens from the ＋ (bottom-left). ===== */
+body #right .ch-comp > button:first-child { order: 0; }
+body #right .ch-comp textarea { order: 1; }
+body #right .ch-comp .m-send { order: 4; }
+body #right .ch-comp.has-text { gap: 8px; }
+.ui2-panel { justify-content: start; grid-template-columns: repeat(2, 96px); gap: 12px; padding-left: max(12px, env(safe-area-inset-left));
+  transform-origin: 30px 100%; transform: translateY(8px) scale(.94); }
+.ch-comp.panel-on .ui2-panel { transform: none; }
+
+/* ===== ui12b (t-composer-oneline): phone chat composer is ONE row (40px) by default; grows upward with the text (JS sets inline height, max 120px, then scrolls).
+   Cause of the old two-row look: ui2 `textarea:focus { height:auto }` = the textarea's default rows=2 (~60px) once focused. ＋ / 发送 are 40px = same height family, bottom-aligned (so they sit centred on the one-row field). ===== */
+body #right .ch-comp { align-items: flex-end; }
+body #right .ch-comp textarea, body #right .ch-comp textarea:focus { box-sizing: border-box; height: 40px; min-height: 40px; max-height: 120px; padding: 9px 12px; line-height: 22px; overflow-y: auto; transition: height .12s var(--ease), background .2s; }
+body #right .ch-comp > button:first-child { width: 40px; height: 40px; margin: 0; }
+body #right .ch-comp .m-send { height: 40px; margin-top: 0; margin-bottom: 0; }
+
+/* ===== ui13 (t-slack-ios P1): third theme "white" (Slack-style white surface, ink accent). Mobile only (this file is media-limited to <=760px).
+   Selected with data-theme="white"; dark stays the default and is untouched. Text colours are the contrast-checked ones from t-ios-light v2:
+   ink #111 18.9:1, dim #6B6B6B 5.33:1, ink accent #111 18.9:1 on white; pills #8A5300/#FFF3E0 5.77, #067A3C/#E8F8EE 4.95, #C0281E/#FDECEB 5.16. ===== */
+/* white theme tokens + the rules shared with desktop moved to style.css (t-web-d2). Phone-only white rules (tab bar, bubbles, cards...) stay here. */
+[data-theme="white"] { --bub: #ffffff; --bub-me: #efefef; --bub-line: rgba(0,0,0,.12); }   /* bubble tokens are phone-only (mobile.css :root defines the dark ones) */
+/* tab bar: flat white, hairline on top */
+[data-theme="white"] #tabbar { background: rgba(255,255,255,.97); box-shadow: 0 -1px 0 var(--line); }
+[data-theme="white"] #tabbar::before, [data-theme="white"] #tabbar .tb-orn { display: none; }
+[data-theme="white"] #tabbar button { color: var(--dim); }
+[data-theme="white"] #tabbar button.on { color: var(--accent); }
+[data-theme="white"] #tabbar button.on svg { filter: none; }
+[data-theme="white"] .tb-ind b { background: var(--accent); box-shadow: none; }
+[data-theme="white"] #tabbar .tb-badge, [data-theme="white"] .hdr-ctrl .badge, [data-theme="white"] .cl-n { box-shadow: 0 0 0 1.5px #fff; animation: none; color: #fff; }
+/* chat: bubbles + composer */
+[data-theme="white"] #right .msg .mb, [data-theme="white"] .m-typing .mb { background: #f1f1f2; border: 0; color: var(--ink); }
+[data-theme="white"] #right .msg:not(.me) > .mb::before, [data-theme="white"] .m-typing .mb::before { background: var(--bub); border: 0; box-shadow: -1px 1px 0 var(--bub-line); }
+[data-theme="white"] #right .msg.me .mb { background: var(--accent); color: var(--accent-ink); border: 0; }
+/* status pills: P2 (t-aes-p2) moved them to one scheme for all three themes, see the P2 section at the end (soft fill; solid ink only for what waits on you) */
+/* theme switch row in the mobile menu (all themes) */
+.m-theme { display: block; cursor: default; }
+.m-theme > span { display: block; margin-bottom: 10px; }
+.m-theme-seg { display: flex; width: 100%; }
+.m-theme-seg .seg-i { flex: 1; white-space: nowrap; min-height: 36px; }
+[data-theme="white"] .seg { background: #f0f0f0; box-shadow: none; }
+[data-theme="white"] .seg .seg-i { color: var(--ink2); }
+[data-theme="white"] .seg .seg-i.on { color: var(--accent-ink); }
+[data-theme="white"] .seg .seg-ind { background: var(--accent); box-shadow: none; }
+/* PWA status bar is black-translucent (white clock/battery): give the white theme an ink band under it so they stay readable. Zero height in a normal tab. */
+html[data-theme="white"]::before { content: ""; position: fixed; left: 0; right: 0; top: 0; height: env(safe-area-inset-top); background: var(--accent); z-index: 45; pointer-events: none; }
+
+/* ===== ui15 (t-slack-p2): Slack-style floating glass chrome. Phone only (this file is media-limited to <=760px); desktop untouched.
+   (1) pill tab bar: #tabbar is now a transparent full-width carrier (keeps the body.vp-fix / kb / sheet logic and the --tb-h reservation); the visible pill is .tb-row.
+   (2) floating header: chat-thread back + name pill; detail-page back circle + status pill (detail bar stays flush + opaque at the top, see ui5).
+   (3) composer pill above the tab bar. Blur has an opaque-ish fallback; @supports lowers the alpha only where backdrop-filter exists. ===== */
+:root { --tb-h: calc(70px + env(safe-area-inset-bottom)); --pill-h: 56px; }
+html[data-theme="dark"]  { --gl: rgba(26,26,30,.94); --glb: rgba(255,255,255,.14); --sel: var(--accent-soft); --selc: var(--accent); --dotc: var(--accent); --gsh: 0 8px 24px rgba(0,0,0,.45); --chip2: rgba(255,255,255,.10); }
+html[data-theme="light"] { --gl: rgba(244,238,224,.95); --glb: rgba(48,36,18,.18); --sel: var(--accent-soft); --selc: var(--accent); --dotc: var(--accent); --gsh: 0 8px 22px rgba(60,44,12,.18); --chip2: rgba(48,36,18,.08); }
+html[data-theme="white"] { --gl: rgba(255,255,255,.95); --glb: rgba(0,0,0,.13); --sel: var(--accent-soft); --selc: var(--accent); --dotc: var(--accent); --gsh: 0 8px 22px rgba(0,0,0,.14); --chip2: #efefef; }
+@supports ((-webkit-backdrop-filter: blur(1px)) or (backdrop-filter: blur(1px))) {
+  html[data-theme="dark"]  { --gl: rgba(26,26,30,.66); }
+  html[data-theme="light"] { --gl: rgba(244,238,224,.68); }
+  html[data-theme="white"] { --gl: rgba(255,255,255,.70); }
+}
+.tb-glass, .tb-row, .ui15-glass { -webkit-backdrop-filter: blur(16px) saturate(1.5); backdrop-filter: blur(16px) saturate(1.5); }
+
+/* --- tab bar --- */
+html[data-theme] #tabbar { display: flex; align-items: flex-end; background: none; box-shadow: none; -webkit-backdrop-filter: none; backdrop-filter: none; pointer-events: none; padding: 0; height: var(--tb-h); }
+html[data-theme] #tabbar::before { display: block; content: ""; position: absolute; inset: 0; height: auto; z-index: 0; pointer-events: none;
+  background: linear-gradient(to top, var(--bg) 0, var(--bg) 38%, transparent 100%); }
+html[data-theme] #tabbar .tb-orn, #tabbar .tb-ind { display: none; }
+#tabbar .tb-row { position: relative; z-index: 1; flex: 1; pointer-events: auto; height: var(--pill-h); box-sizing: border-box; padding: 4px;
+  margin: 0 max(12px, env(safe-area-inset-right)) calc(env(safe-area-inset-bottom) + 6px) max(12px, env(safe-area-inset-left));
+  background: var(--gl); border: 1px solid var(--glb); border-radius: 30px; box-shadow: var(--gsh); }
+#tabbar button { height: 100%; padding: 0; gap: 3px; border-radius: 24px; color: var(--dim); transition: background .25s, color .25s; }
+#tabbar button svg { width: 23px; height: 23px; stroke-width: 1.7; }
+#tabbar button .l, html[lang="en"] #tabbar button .l { font-family: var(--f-sys); font-size: 11px; font-weight: 600; letter-spacing: 0; padding-left: 0; text-transform: none; }
+html[data-theme] #tabbar button.on { color: var(--selc); background: var(--sel); }
+#tabbar button.on svg { filter: none; transform: none; fill: currentColor; fill-opacity: .16; stroke-width: 1.9; }
+#tabbar button.on .l { font-weight: 700; }
+#tabbar button[data-k="more"] svg { fill: none !important; }
+#tabbar .tb-dot { position: absolute; top: 7px; left: calc(50% + 7px); width: 9px; height: 9px; border-radius: 50%; background: var(--dot); box-shadow: 0 0 0 1.5px var(--bg); }
+html[data-theme="white"] #tabbar .tb-dot { box-shadow: 0 0 0 1.5px #fff; }
+#tabbar .tb-badge { display: none; }
+body.vp-fix #tabbar { top: calc(var(--app-h) - var(--tb-h)); }
+@media (hover: none) { #tabbar button:hover { color: var(--dim); } html[data-theme] #tabbar button.on:hover { color: var(--selc); } }
+/* the chat thread keeps the bar now (Slack does); the old "hide in thread" rule from the WeChat layout is released */
+body[data-mtab="chat"][data-cv="thread"] #tabbar { transform: none; opacity: 1; pointer-events: none; }
+body.kb[data-mtab="chat"][data-cv="thread"] #tabbar, body.kb #tabbar { transform: translateY(110%); opacity: 0; pointer-events: none; }
+body.sheet #tabbar { transform: translateY(110%); opacity: 0; pointer-events: none; }
+
+/* --- floating header: chat thread --- */
+body[data-cv="thread"] .cl-back { position: absolute; left: 0; right: 0; top: 0; z-index: 6; box-sizing: border-box; padding: calc(env(safe-area-inset-top) + 8px) max(12px, env(safe-area-inset-right)) 14px max(12px, env(safe-area-inset-left)); gap: 8px; pointer-events: none;
+  background: linear-gradient(to bottom, var(--bg) 0, var(--bg) 55%, transparent 100%); }
+body[data-cv="thread"] .cl-back::after { display: none; }
+body[data-cv="thread"] .cl-back > * { pointer-events: auto; }
+.cl-back button { position: relative; width: 40px; height: 40px; min-width: 40px; padding: 0; justify-content: center; border-radius: 50%; background: var(--gl); border: 1px solid var(--glb); box-shadow: var(--gsh); -webkit-backdrop-filter: blur(16px) saturate(1.5); backdrop-filter: blur(16px) saturate(1.5); }
+.cl-back button .n { position: absolute; top: -5px; right: -5px; min-width: 18px; height: 18px; padding: 0 5px; box-sizing: border-box; border-radius: 9px; background: var(--dot); color: #fff; font: 600 11px/18px var(--f-display); text-align: center; }
+.cl-back button .n:empty { display: none; }
+.cl-back .who { flex: 1; min-width: 0; margin-right: 0; height: 40px; flex-direction: row; justify-content: flex-start; gap: 10px; padding: 0 16px 0 5px; border-radius: 20px; text-align: left;
+  background: var(--gl); border: 1px solid var(--glb); box-shadow: var(--gsh); -webkit-backdrop-filter: blur(16px) saturate(1.5); backdrop-filter: blur(16px) saturate(1.5); align-items: center; }
+.cl-back .who .av { width: 30px; height: 30px; min-width: 30px; border-radius: 50%; flex: none; }
+.cl-back .who .wt { display: flex; flex-direction: column; min-width: 0; line-height: 1.2; }
+.cl-back .who .nm { font-family: var(--f-sys); font-size: 15px; font-weight: 700; letter-spacing: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cl-back .who .ti { font-family: var(--f-sys); font-size: 10.5px; letter-spacing: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+body[data-cv="thread"] #right .ch-msgs { padding-top: calc(env(safe-area-inset-top) + 62px); }   /* P3: the thread starts at the screen top (no app header above it) */
+
+/* --- floating header: detail page. Bar stays flush at the very top + opaque (ui5 / t-drawer-sticky); only the controls inside become pills. --- */
+#drawer .dw-top { padding-bottom: 8px; min-height: calc(var(--pill-h) + env(safe-area-inset-top)); padding-left: max(12px, env(safe-area-inset-left)); padding-right: max(12px, env(safe-area-inset-right)); }
+#drawer .dw-lead { gap: 8px; }
+#drawer .dw-top button.dw-back[data-close] { width: 40px; height: 40px; min-height: 40px; margin: 0; padding: 0; justify-content: center; border-radius: 50%; background: var(--gl); border: 1px solid var(--glb); box-shadow: var(--gsh); }
+#drawer .dw-top button.dw-back[data-close] span { display: none; }
+#drawer .dw-top button.dw-back[data-close] svg { width: 11px; height: 18px; }
+#drawer .dw-lead .tag { display: inline-flex; align-items: center; height: 40px; box-sizing: border-box; padding: 0 16px; border-radius: 20px; background: var(--gl); border: 1px solid var(--glb); box-shadow: var(--gsh); font-size: 12px; font-weight: 600; color: var(--ink); }   /* P2: glass pill keeps ink text (the solid-ink tag colours are for list tags) */
+
+/* --- composer pill (thread), above the tab bar; keyboard up -> bar hidden, pill drops to the bottom --- */
+body[data-cv] #right .ch-comp { position: relative; margin: 0 max(12px, env(safe-area-inset-right)) var(--tb-h) max(12px, env(safe-area-inset-left)); padding: 5px; gap: 6px; align-items: center;
+  background: var(--gl); border: 1px solid var(--glb); border-radius: 27px; box-shadow: var(--gsh); -webkit-backdrop-filter: blur(16px) saturate(1.5); backdrop-filter: blur(16px) saturate(1.5); }
+body.kb[data-cv] #right .ch-comp { margin-bottom: calc(8px + env(safe-area-inset-bottom) * 0); }
+html[data-theme] body #right .ch-comp textarea, html[data-theme] body #right .ch-comp textarea:focus { background: transparent; box-shadow: none; border: 0; border-radius: 0; padding: 9px 6px; }
+html[data-theme] body #right .ch-comp > button:first-child { border: 0; width: 40px; height: 40px; background: var(--chip2); color: var(--ink); font-size: 24px; }
+html[data-theme] body #right .ch-comp .m-send { border-radius: 20px; padding: 0 18px; }
+.ui2-panel { bottom: calc(100% + 8px); border: 1px solid var(--glb); border-radius: 22px; background: var(--gl); box-shadow: var(--gsh); -webkit-backdrop-filter: blur(16px) saturate(1.5); backdrop-filter: blur(16px) saturate(1.5); }
+.cs-jump { bottom: 10px; }
+
+/* --- 搜索 sheet: above the page, below the tab bar --- */
+#msearch { position: fixed; left: 0; right: 0; top: 0; bottom: 0; z-index: 24; display: flex; flex-direction: column; background: var(--bg); padding-top: calc(env(safe-area-inset-top) + 8px); }
+#msearch[hidden] { display: none; }
+body.vp-fix #msearch { bottom: auto; height: var(--app-h); }
+.ms-bar { flex: none; padding: 6px max(16px, env(safe-area-inset-right)) 10px max(16px, env(safe-area-inset-left)); }
+/* .ms-in now IS a .cl-search (same pill, ring, focus, ✕; see the css block) -- only the sheet-specific bits stay here */
+.ms-in input { font: 16px var(--f-sys); }
+.ms-res { flex: 1; overflow-y: auto; padding: 0 0 calc(var(--tb-h) + 12px); overscroll-behavior: contain; -webkit-overflow-scrolling: touch; }
+body.kb .ms-res { padding-bottom: 24px; }
+.ms-h { padding: 12px max(16px, env(safe-area-inset-left)) 6px; font: 700 13px var(--f-sys); color: var(--dim); letter-spacing: .04em; }
+.ms-row { display: flex; align-items: center; gap: 12px; width: 100%; padding: 10px max(16px, env(safe-area-inset-right)) 10px max(16px, env(safe-area-inset-left)); text-align: left; background: none; border: 0; border-bottom: 1px solid var(--line); font: inherit; color: inherit; }
+.ms-row:active { background: var(--chip); }
+.ms-av .av { display: block; width: 40px; height: 40px; min-width: 40px; border-radius: 8px; box-shadow: none; }
+.ms-m { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; font-family: var(--f-sys); }
+.ms-m b { font-size: 15px; font-weight: 700; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ms-m > span { font-size: 12.5px; color: var(--dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ms-m .tag { font-style: normal; }
+/* page chips (首页 now also carries 审核 first): nothing to style, they reuse .seg */
+
+/* ===== ui16 (t-slack-p2 v2): leading line icons on the 菜单/更多 rows. Phone only; same stroke style as the tab bar. ===== */
+.m-ic { order: -1; flex: none; display: inline-flex; align-items: center; justify-content: center; width: 26px; height: 22px; margin-right: 12px; color: var(--dim); }
+.m-ic svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 1.35; stroke-linecap: round; stroke-linejoin: round; }
+#nav .nav-i { justify-content: flex-start; padding-left: 8px; }
+#nav .nav-i > span:first-child { min-width: 0; }
+#nav .nav-i .n { margin-left: auto; padding-left: 8px; }
+#nav .nav-i.on .m-ic { color: var(--glow); filter: drop-shadow(0 0 5px var(--glow-a)); }
+#nav .nav-i.urgent .m-ic { color: var(--urgent); }
+.m-settings .m-set > .m-ic { margin-right: 0; }
+.m-settings .m-set { justify-content: flex-start; gap: 12px; }
+.m-settings .m-set > span:not(.m-ic):not(.sw) { flex: 1; min-width: 0; }
+.m-settings .m-set > .sw, .m-settings .m-set > em { margin-left: auto; flex: none; }
+.m-settings .m-theme { display: grid; grid-template-columns: 26px minmax(0, 1fr); column-gap: 12px; row-gap: 10px; align-items: center; }
+.m-settings .m-theme > .m-ic { grid-column: 1; grid-row: 1; }
+.m-settings .m-theme > span:not(.m-ic) { grid-column: 2; grid-row: 1; }
+.m-settings .m-theme .m-theme-seg { grid-column: 1 / -1; grid-row: 2; width: 100%; }
+@media (max-width: 340px) { .m-ic { margin-right: 9px; width: 24px; } .m-settings .m-set { gap: 9px; } .m-settings .m-theme { grid-template-columns: 24px minmax(0, 1fr); column-gap: 9px; } }
+
+/* ===== ui17 (t-slack-p2 v3): no curly flourishes around the active/hovered 菜单 row on the phone. Desktop keeps them (they live in style.css). ===== */
+.nav-i > span:first-child::before, .nav-i > span:first-child::after { content: none; display: none; }
+
+/* ===== ui18 (t-slack-p2 v4): the 菜单 page no longer repeats the logo masthead (top bar already shows it). Hidden here, not in style.css; desktop never shows .m-hero anyway. ===== */
+.m-hero { display: none !important; }
+
+/* ===== ui21 (t-slack-p2 v5): narrow phones (<=360px). Top bar keeps its height; logo / stamina orb / mail never touch.
+   Flex-ish on purpose: the logo column can shrink (min-width:0) so a future image wordmark drops in without fixed positions. ===== */
+@media (max-width: 360px) {
+  #top { grid-template-columns: minmax(0, auto) minmax(0, 1fr) auto; gap: 8px; }
+  .brand { min-width: 0; font-size: 12.5px; letter-spacing: .09em; white-space: nowrap; }
+  .brand > * { min-width: 0; }
+  .brand img { max-width: 100%; height: 33px; width: auto; }
+  .stamina { min-width: 0; gap: 6px; padding-right: 0; }
+  .stamina .pct { white-space: nowrap; }
+  .hdr-ctrl button[data-h="mail"] { width: 40px; height: 40px; margin: -5px -4px -5px 0; }
+  .hdr-ctrl .badge { top: 3px; right: 0; }
+}
+
+/* ===== ui23 (t-liquid-glass M1): variant B "标准 iOS 26" glass on THREE surfaces only: bottom tab bar, chat composer pill, floating header pills
+   (chat header back + name pill, detail back circle + status pill). Phone only (this file is media-limited to <=760px); desktop untouched.
+   Re-usable material: tokens --glass-bg / --glass-blur / --glass-sat / --glass-bri / --glass-line / --glass-rim / --glass-shadow / --glass-lite,
+   and a .glass class (any element can opt in later: M2/M3 = add the selector to the list below, or add class="glass").
+   Accent colours stay on the live --accent* / --sel variables (nothing here defines a colour of its own for "selected").
+   Rules of the material: (1) never put blur on list items / cards; (2) never nest a blurred element inside another blurred one (the inner one sees nothing: use --glass-lite);
+   (3) at most 4 blurred layers on screen (thread = tab row + composer + 2 header pills; detail = 2 pills).
+   Fallbacks: no backdrop-filter -> solid translucent fill; prefers-reduced-transparency -> solid fill, blur off.
+   Why the old pills showed no blur: composer sat IN FLOW below the message list (nothing scrolled under it) and the header / tab-bar scrims were opaque var(--bg),
+   so the blur only ever sampled a flat colour. Here the composer floats over the list, the scrims are 50% fades, and the detail bar floats over the scroller. ===== */
+html[data-theme] { --glass-blur: 26px; --glass-sat: 1.7; --glass-bri: 1.05; }
+html[data-theme="dark"] {
+  --glass-fx: linear-gradient(135deg, rgba(255,255,255,.16) 0, transparent 46%), rgba(44,44,52,.36);
+  --glass-solid: rgba(34,34,40,.94);
+  --glass-line: rgba(255,255,255,.12); --glass-lite: rgba(255,255,255,.10);
+  --glass-rim: inset 0 1px 0 rgba(255,255,255,.45), inset 1px 0 0 rgba(255,255,255,.12), inset 0 -1px 0 rgba(255,255,255,.12), inset 0 0 18px rgba(255,255,255,.07);
+  --glass-shadow: 0 10px 30px rgba(0,0,0,.34);
+}
+html[data-theme="light"] {
+  --glass-fx: linear-gradient(135deg, rgba(255,255,255,.5) 0, transparent 46%), rgba(252,249,241,.44);
+  --glass-solid: rgba(250,246,236,.95);
+  --glass-line: rgba(40,36,30,.10); --glass-lite: rgba(40,36,30,.07);
+  --glass-rim: inset 0 1px 0 rgba(255,255,255,.95), inset 1px 0 0 rgba(40,36,30,.08), inset 0 -1px 0 rgba(40,36,30,.08), inset 0 0 18px rgba(255,255,255,.3);
+  --glass-shadow: 0 10px 28px rgba(40,36,30,.16);
+}
+html[data-theme="white"] {
+  --glass-fx: linear-gradient(135deg, rgba(255,255,255,.6) 0, transparent 46%), rgba(255,255,255,.52);
+  --glass-solid: rgba(255,255,255,.96);
+  --glass-line: rgba(0,0,0,.09); --glass-lite: rgba(0,0,0,.05);
+  --glass-rim: inset 0 1px 0 rgba(255,255,255,1), inset 1px 0 0 rgba(0,0,0,.07), inset 0 -1px 0 rgba(0,0,0,.07), inset 0 0 18px rgba(255,255,255,.35);
+  --glass-shadow: 0 10px 28px rgba(0,0,0,.13);
+}
+/* default = the fallback (solid translucent colour); real glass only where backdrop-filter exists and the user has not asked for less transparency */
+html[data-theme] { --glass-bg: var(--glass-solid); --glass-bf: none; }
+@supports ((-webkit-backdrop-filter: blur(1px)) or (backdrop-filter: blur(1px))) {
+  html[data-theme] { --glass-bg: var(--glass-fx); --glass-bf: blur(var(--glass-blur)) saturate(var(--glass-sat)) brightness(var(--glass-bri)); }
+}
+@media (prefers-reduced-transparency: reduce) {
+  html[data-theme] { --glass-bg: var(--glass-solid); --glass-bf: none; }
+}
+
+/* ---------- the material ---------- */
+.glass, #tabbar .tb-row, .cl-back button, .cl-back .who, body[data-cv] #right .ch-comp, #drawer .dw-top button.dw-back[data-close], #drawer .dw-lead .tag, #drawer .dw-top .r select[data-f="category"] {
+  background: var(--glass-bg); border: 1px solid var(--glass-line); box-shadow: var(--glass-rim), var(--glass-shadow);
+  -webkit-backdrop-filter: var(--glass-bf); backdrop-filter: var(--glass-bf);
+}
+
+/* ---------- 1. bottom tab bar: the opaque scrim becomes a faint fade so content can show through the glass row ---------- */
+html[data-theme] #tabbar::before { background: linear-gradient(to top, color-mix(in srgb, var(--bg) 50%, transparent) 0, transparent 100%); }
+html[data-theme] #tabbar button.on { box-shadow: inset 0 0 0 1px var(--glass-line); }
+#tabbar .tb-dot { box-shadow: 0 0 0 1.5px var(--bg); }
+
+/* ---------- 2. chat header pills: scrim is a fade, not an opaque block ---------- */
+body[data-cv="thread"] .cl-back { background: linear-gradient(to bottom, var(--bg) 0, var(--bg) env(safe-area-inset-top), color-mix(in srgb, var(--bg) 55%, transparent) calc(env(safe-area-inset-top) + 14px), transparent 100%); }   /* P3: solid across the status-bar strip (same as the detail page bar), so it reads the same with or without iOS's own frosted layer */
+
+/* ---------- 3. composer pill floats OVER the message list (absolute), list gets bottom padding so the last message can still be read ---------- */
+body[data-cv] #right .ch-comp { position: absolute; left: max(12px, env(safe-area-inset-left)); right: max(12px, env(safe-area-inset-right)); bottom: var(--tb-h); margin: 0; z-index: 6; }
+body.kb[data-cv] #right .ch-comp { bottom: 8px; margin: 0; }
+body[data-cv="thread"] #right .ch-msgs { padding-bottom: calc(var(--tb-h) + var(--comp-h, 66px)); }
+body.kb[data-cv="thread"] #right .ch-msgs { padding-bottom: calc(8px + var(--comp-h, 66px)); }
+html[data-theme] body #right .ch-comp > button:first-child { background: var(--glass-lite); }   /* the + inside the pill: tint only, no nested blur */
+
+/* ---------- detail page: bar floats over the scroller (opaque only across the status-bar strip), pills are the glass ---------- */
+#drawer .dw-top { position: absolute; top: 0; left: 0; right: 0; background: linear-gradient(to bottom, var(--bg) 0, var(--bg) env(safe-area-inset-top), color-mix(in srgb, var(--bg) 55%, transparent) calc(env(safe-area-inset-top) + 14px), transparent 100%); }
+#drawer .dw-top::after { display: none; }
+#drawer .dw-scroll { padding-top: calc(var(--pill-h) + env(safe-area-inset-top) + 12px); }
+
+/* ===== t-agent-memory v2: pills tap target on phones (colours come from theme vars, so white/light need no extra rules) ===== */
+.rf-pill { min-height: 36px; padding: 0 16px; }
+.rf-tabs .rf-pill { min-height: 32px; padding: 0 12px; }
+.rf-pill.on b { color: inherit; }
+.rf-body { max-height: 52vh; }
+
+/* ===== mbx (t-mailbox-fix): 动态 (full mailbox page) no longer pans sideways, and loses its 信箱/MAILBOX masthead (the top bar already carries the logo; desktop keeps it).
+   Cause: .mail-i's last grid column was 1fr (= minmax(auto,1fr)), so one long URL/path in a message forced the whole row, and with it #page, wider than the screen.
+   Fix = minmax(0,1fr) + overflow-wrap on the text, and the page itself is locked sideways. The .seg filter keeps scrolling inside its own track. ===== */
+html, body { max-width: 100%; overflow-x: hidden; overscroll-behavior-x: none; }
+#page { overflow-x: hidden; overscroll-behavior-x: none; }
+#page > * { min-width: 0; max-width: 100%; }
+.mail-i { grid-template-columns: 8px 70px 22px minmax(0, 1fr); }
+.mail-i > * { min-width: 0; }
+.mail-i .tx { overflow-wrap: anywhere; word-break: break-word; }
+.mb-i { grid-template-columns: 22px minmax(0, 1fr) 8px; }
+.mb-i > * { min-width: 0; overflow-wrap: anywhere; }
+.filters { min-width: 0; max-width: 100%; }
+.filters .seg { max-width: 100%; }
+.ph-mail { display: none; }
+.ph-mail + .ph-bar { margin-top: 8px; }
+
+/* ===== tabmo (t-tabbar-motion): the bottom glass pill comes alive. Phone only. transform / opacity only; .tb-row's backdrop-filter is never touched or animated.
+   Final values: selection block = ONE element (.tb-sel) moved by translateX in JS (WAAPI, 330ms, damped-spring linear() easing ~4% overshoot, cubic-bezier(.2,.8,.2,1) fallback),
+   squash scale(1.05-1.14, .95-.94) at 42% of the move; press = scale .92 in 80ms, release 220ms with a light overshoot; icon pop 1 -> 1.12 -> 1 in 240ms;
+   label = two stacked text layers cross-fading in 240ms (width reserved by the bold layer, so no layout shift); dot pop 260ms in / fade 180ms out; page-in = 8px up + fade, 190ms (JS, WAAPI).
+   Colours all come from --sel / --selc / --glass-line / --dim (accent variables), so dark / 浅色 / 白 follow their theme. ===== */
+:root { --tbm-spring: var(--m-spring); }
+#tabbar .tb-sel { position: absolute; left: 0; top: 4px; bottom: 4px; width: 0; z-index: 0; pointer-events: none; border-radius: 24px; background: var(--sel); box-shadow: inset 0 0 0 1px var(--glass-line); transform: translateX(0); transform-origin: 50% 50%; scale: 1; transition: scale var(--m-release) var(--m-spring); }
+#tabbar .tb-sel.tbm-down { scale: .94; transition-duration: .08s; transition-timing-function: ease-out; }
+html[data-theme] #tabbar .tb-row button, html[data-theme] #tabbar .tb-row button.on { background: none; box-shadow: none; }   /* the highlight now lives on .tb-sel */
+#tabbar .tb-row button { z-index: 1; -webkit-tap-highlight-color: transparent; touch-action: manipulation; transition: color var(--m-base) ease, transform var(--m-release) var(--m-spring); }
+#tabbar .tb-row button.tbm-down { transform: scale(.92); transition: color var(--m-base) ease, transform .08s ease-out; }
+#tabbar .tb-row button svg { fill: currentColor; fill-opacity: 0; transition: fill-opacity var(--m-base) ease, stroke-width var(--m-base) ease; }
+#tabbar .tb-row button.on svg { fill-opacity: .16; }
+#tabbar .tb-row button[data-k="more"] svg { fill: none !important; }
+#tabbar .tb-row button:active svg { transform: none; }   /* replaces the old .88 svg-only press; the whole item scales now */
+#tabbar .tb-row button .l { position: relative; display: inline-block; white-space: nowrap; font-weight: 700; -webkit-text-fill-color: transparent; transition: none; }
+#tabbar .tb-row button .l::before, #tabbar .tb-row button .l::after { content: attr(data-t); position: absolute; left: 0; right: 0; top: 0; text-align: center; -webkit-text-fill-color: currentColor; transition: opacity var(--m-base) ease; }
+#tabbar .tb-row button .l::before { font-weight: 500; opacity: 1; }
+#tabbar .tb-row button .l::after { font-weight: 700; opacity: 0; }
+#tabbar .tb-row button.on .l::before { opacity: 0; }
+#tabbar .tb-row button.on .l::after { opacity: 1; }
+#tabbar .tb-dot.tbm-in { animation: tbm-dot-in .26s var(--tbm-spring) both; }
+#tabbar .tb-dot.tbm-out { animation: tbm-dot-out .18s ease-out both; }
+@keyframes tbm-dot-in { from { transform: scale(.2); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+@keyframes tbm-dot-out { to { transform: scale(.6); opacity: 0; } }
+@media (prefers-reduced-motion: reduce) {
+  #tabbar .tb-sel, #tabbar .tb-row button, #tabbar .tb-row button svg { transition: none; }
+  #tabbar .tb-sel.tbm-down { scale: 1; }
+  #tabbar .tb-row button.tbm-down { transform: none; }
+  #tabbar .tb-row button .l::before, #tabbar .tb-row button .l::after { transition: opacity .12s linear; }
+  #tabbar .tb-dot.tbm-in { animation: tbm-dot-fade .14s linear both; }
+  #tabbar .tb-dot.tbm-out { animation: tbm-dot-out-rm .14s linear both; }
+  @keyframes tbm-dot-fade { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes tbm-dot-out-rm { to { opacity: 0; } }
+}
+
+/* ===== p3 (t-slack-p3): Slack-Activity-style list rows for 动态 (mailbox page) and 审核 (home). Phone only; the markup is only emitted at <=760px.
+   Row = avatar (+unread dot) | line 1: bold name, item title, time on the right | line 2: one-line preview, stage chip, count pill. Hairline separators start under the text, not the avatar.
+   Everything is min-width:0 / ellipsis so a long URL or path can never widen the page (keeps the mbx lock). Colours are theme variables only, so dark / 浅色 / 白 follow. ===== */
+.act-list { margin-top: 4px; min-width: 0; }
+.act-row { position: relative; display: grid; grid-template-columns: 42px minmax(0, 1fr); gap: 12px; align-items: center; min-height: 64px; padding: 10px 0; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.act-row::after { content: ""; position: absolute; left: 54px; right: 0; bottom: 0; height: 1px; background: var(--line); }
+.act-row:last-child::after { display: none; }
+.act-row:active { background: var(--chip); }
+.act-av { position: relative; width: 42px; height: 42px; }
+.act-av .av { width: 42px; height: 42px; display: block; box-shadow: none; }
+.act-dot { position: absolute; top: -1px; right: -2px; width: 11px; height: 11px; border-radius: 50%; background: var(--dot); box-shadow: 0 0 0 1.5px var(--bg); }
+.act-main { min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.act-l1, .act-l2 { display: flex; align-items: baseline; gap: 6px; min-width: 0; }
+.act-l2 { align-items: center; gap: 6px; }
+.act-nm { flex: 0 1 auto; max-width: 46%; font-size: 15px; font-weight: 400; color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.act-row.unread .act-nm { font-weight: 700; }
+.act-ti { flex: 1 1 0; min-width: 0; font-size: 13px; color: var(--dim); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.act-tm { flex: none; margin-left: auto; padding-left: 4px; font-size: 12px; color: var(--dim); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.act-row.unread .act-tm { color: var(--ink2); }
+.act-pv { flex: 1 1 0; min-width: 0; font-size: 13.5px; line-height: 1.35; color: var(--ink2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.act-row.unread .act-pv { color: var(--ink); }
+.act-chip { flex: none; max-width: 84px; padding: 0 8px; line-height: 18px; font-size: 11px; border-radius: 9px; border: 1px solid var(--line2); color: var(--ink2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.act-n { flex: none; min-width: 19px; padding: 0 6px; box-sizing: border-box; line-height: 18px; text-align: center; font-size: 11px; font-weight: 600; border-radius: 9px; border: 1px solid var(--line2); color: var(--ink2); }
+.act-n.on { background: var(--dotc); border-color: transparent; color: var(--accent-ink); }
+/* the bottom 未读 toggle: a small pill that floats above the tab bar while the list scrolls */
+.act-foot { position: sticky; bottom: 6px;  /* sticky measures from the scroller's content edge, #page's bottom padding already clears the tab bar */
+  z-index: 5; display: flex; justify-content: center; margin-top: 18px; pointer-events: none; }
+.act-tog { pointer-events: auto; min-height: 34px; padding: 0 16px; border-radius: 17px; font-size: 13px; color: var(--ink2); background: var(--glass-solid); border: 1px solid var(--glass-line); box-shadow: var(--glass-rim), var(--glass-shadow); -webkit-backdrop-filter: var(--glass-bf); backdrop-filter: var(--glass-bf); }
+.act-tog.on { background: var(--accent); color: var(--accent-ink); border-color: transparent; box-shadow: var(--glass-shadow); -webkit-backdrop-filter: none; backdrop-filter: none; }
+.act-tog:active { transform: scale(.96); }
+/* calm empty state: no ornament, no italics */
+.empty.calm { padding: 56px 0 40px; font-style: normal; letter-spacing: 0; font-size: 14px; }
+.empty.calm::before { display: none; }
+
+/* ===== t-done-splash: white theme. (1) the old title card (still used for the opening splash) had no white override: its dark radial backdrop turned into a grey blob under dark text.
+   (2) 委托完成 splash: dark-ink streaks and a dim shutter flash instead of white ones (white on white would be invisible). ===== */
+
+
+/* ===== mo1 (t-tabbar-motion M1): motion system foundations on the phone. Tokens live in style.css (--m-*). transform / opacity only; blur and backdrop-filter are never animated.
+   (1) list rows / category cards / pills get a press state: scale .98 + soft ring in 90ms, spring release in 220ms (iOS needs the no-op touchstart in mobile.js for :active)
+   (2) no more blurred, 55ms-stepped CSS entrance on phones for cards: fx.js rows() does the entrance (WAAPI, <= 8 rows, 30ms steps); headings keep a plain rise
+   (3) detail slide-over, search, inbox drop-down, composer + panel and the chat-thread push all use the spring tokens; CSS transitions retarget from the current value, so a tap or swipe mid-flight never snaps
+   (4) the page under the detail recedes 24% and dims while the detail slides over it. (White-theme needs no extra rules: only theme variables are used.) ===== */
+.act-row { transition: transform var(--m-release) var(--m-spring), background-color var(--m-quick) ease-out; }
+.act-row:active { transform: scale(var(--m-press-row)); background: var(--chip); transition-duration: var(--m-instant), var(--m-instant); transition-timing-function: ease-out; }
+.card { transition: transform var(--m-release) var(--m-spring), background-color var(--m-quick) ease-out, box-shadow var(--m-quick) ease-out; }
+.card:active { transform: scale(var(--m-press-card)); box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent) 24%, transparent), 0 10px 24px -14px color-mix(in srgb, var(--ink) 36%, transparent); transition-duration: var(--m-instant), var(--m-instant), var(--m-instant); transition-timing-function: ease-out; }
+.act-tog { transition: transform var(--m-release) var(--m-spring), background-color var(--m-quick) ease-out, color var(--m-quick) ease-out; }
+.act-tog:active { transform: scale(var(--m-press-pill)); transition-duration: var(--m-instant), var(--m-quick), var(--m-quick); transition-timing-function: ease-out; }
+.enter .card { animation: none; }   /* fx.js rows() animates cards on phones */
+.enter .grp-h, .enter .ph-bar, .enter .filters { animation: m-rise var(--m-base) var(--m-ease-emph) both; animation-delay: calc(min(var(--i, 0), 8) * var(--m-stagger) + 60ms); }
+@keyframes m-rise { from { opacity: 0; transform: translateY(var(--m-rise)); } }
+#drawer { transition: transform var(--m-quick) var(--m-ease-in); }
+#drawer.open { transition: transform var(--m-slow) var(--m-spring-soft); }
+#page { transition: transform var(--m-slow) var(--m-ease-ios), opacity var(--m-slow) var(--m-ease-ios); }
+body:has(#drawer.open) #page { transform: translateX(var(--m-recede)); opacity: .55; }   /* keyed to .open (not body.sheet): it returns as soon as the close starts, not after the 260ms hide */
+#mailbox { will-change: auto; transition: transform var(--m-quick) var(--m-ease-in), opacity var(--m-quick) linear; }
+#mailbox.open { transition: transform var(--m-base) var(--m-spring-soft), opacity var(--m-quick) linear; }
+#msearch:not([hidden]) { animation: m-sheet var(--m-base) var(--m-ease-emph) both; }
+@keyframes m-sheet { from { opacity: 0; transform: translateY(var(--m-rise-page)); } }
+.ui2-panel { transition: transform var(--m-base) var(--m-spring-soft), opacity var(--m-quick) var(--m-ease-emph), visibility 0s var(--m-base); }
+.ch-comp.panel-on .ui2-panel { transition-delay: 0s; }
+#layout > #right.cv-push { animation: cv-push var(--m-base) var(--m-ease-ios) both; }
+#layout > #right.cv-pop { animation: cv-pop var(--m-base) var(--m-ease-ios) both; }
+@media (prefers-reduced-motion: reduce) { #page { transition: none; } body:has(#drawer.open) #page { transform: none; opacity: 1; } #msearch:not([hidden]) { animation: none; } }
+
+/* ===== t-detail-bottom (B 行动优先): the detail page's composer + actions become ONE glass dock at the thumb. Phone only (this file is media-limited to <=760px).
+   Material = the live --glass-* tokens (one blurred layer; with the two header pills that is 3 on screen), accent = --accent / --accent-ink, motion = --m-* tokens.
+   Composer collapsed (nothing typed, not focused, default recipient) = a one-line pill; typing, focusing or picking an @ expands it: grid rows 0fr -> 1fr and the send column 0 -> 40px.
+   Where grid-template-rows cannot animate the two states simply swap (instant); reduced motion cuts every transition via the global rule. Done = the live stamp + 重开. ===== */
+#drawer .dw-dock { display: flex; flex-direction: column; gap: 10px; position: absolute; left: 0; right: 0; bottom: 0; z-index: 5;
+  padding: 10px max(12px, env(safe-area-inset-right)) calc(10px + env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left));
+  background: var(--glass-bg); border-top: 1px solid var(--glass-line); border-radius: 26px 26px 0 0; box-shadow: var(--glass-rim), 0 -10px 30px rgba(0,0,0,.18);
+  -webkit-backdrop-filter: var(--glass-bf); backdrop-filter: var(--glass-bf); }
+body.kb #drawer .dw-dock { padding-bottom: 10px; }
+#drawer .dw-scroll { padding-bottom: calc(var(--dock-h, 150px) + 22px); }
+/* floating TOP / LATEST ride above the dock; no blur of their own (blur budget) */
+#drawer .cs-jump { bottom: calc(var(--dock-h, 150px) + 14px); }
+#drawer .cs-jump button { background: var(--glass-solid); -webkit-backdrop-filter: none; backdrop-filter: none; border-color: var(--glass-line); box-shadow: var(--glass-shadow); }
+
+#drawer .composer { --r-to: 0fr; --r-att: 0fr; --c-send: 0px; position: relative; padding: 0; margin: 0; display: grid; grid-template-columns: 40px minmax(0, 1fr) var(--c-send); grid-template-rows: var(--r-to) var(--r-att) auto;
+  grid-template-areas: "to to to" "att att att" "plus ta send"; column-gap: 6px; align-items: end;
+  transition: grid-template-rows var(--m-base) var(--m-ease-emph), grid-template-columns var(--m-base) var(--m-ease-emph); }
+#drawer .composer::before { display: none; }
+#drawer .composer:focus-within, #drawer .composer.has, #drawer .composer.to-set { --r-to: 1fr; --c-send: 40px; }
+#drawer .composer:has(.pending-att.has) { --r-att: 1fr; }
+#drawer .composer .cm-row { display: contents; }
+#drawer .composer .cm-row > .dim, #drawer .composer .cm-row > span[style] { display: none; }
+#drawer .composer textarea, #drawer .composer textarea:focus { grid-area: ta; width: 100%; min-height: 0; height: 40px; padding: 10px 16px; border: 0; border-radius: 20px; box-shadow: none; resize: none; transition: none;
+  background: var(--glass-lite); color: var(--ink); font-size: 16px; line-height: 20px; }
+#drawer .composer textarea::placeholder { color: var(--dim); }
+#drawer .composer .dw-file { grid-area: plus; width: 40px; height: 40px; border-radius: 50%; background: var(--glass-lite); color: var(--ink); display: grid; place-items: center; font-size: 0; flex: none; }
+#drawer .composer .dw-file::before { content: "+"; font-size: 26px; font-weight: 300; line-height: 1; transform: translateY(-1px); }
+#drawer .composer .cm-to { grid-area: to; justify-self: start; min-height: 0; max-width: 100%; overflow: hidden; margin-bottom: 6px; opacity: 0; border: 0; border-radius: 15px; background: var(--glass-lite);
+  padding: 3px 10px 3px 4px; gap: 6px; font-size: 13px; color: var(--ink2); white-space: nowrap; transition: opacity var(--m-base) var(--m-ease-emph); }
+#drawer .composer:focus-within .cm-to, #drawer .composer.has .cm-to, #drawer .composer.to-set .cm-to { opacity: 1; }
+#drawer .composer .cm-to .av.sm { width: 22px; height: 22px; }
+#drawer .composer .cm-to button { width: 20px; height: 20px; border-radius: 50%; background: var(--glass-lite); color: var(--ink2); font-size: 10px; display: grid; place-items: center; margin-left: 2px; }
+#drawer .composer .pending-att { grid-area: att; min-height: 0; overflow: hidden; margin: 0 0 6px; padding: 2px 0; gap: 8px; flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; }
+#drawer .composer .pending-att::-webkit-scrollbar { display: none; }
+#drawer .composer .ap-tile { width: 60px; height: 60px; border-radius: 14px; border-color: var(--glass-line); }
+#drawer .composer .m-send { grid-area: send; flex: none; width: 40px; height: 40px; margin: 0; padding: 0; border-radius: 50%; background: var(--accent); color: var(--accent-ink); display: grid; place-items: center; font-size: 0; overflow: hidden;
+  transition: background-color var(--m-quick) ease-out, color var(--m-quick) ease-out, scale var(--m-release) var(--m-spring); }
+#drawer .composer .m-send svg { display: none; }
+#drawer .composer .m-send::after { content: ""; width: 18px; height: 18px; background: currentColor;
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 20V5M5.5 11.5 12 5l6.5 6.5'/%3E%3C/svg%3E") center/contain no-repeat;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 20V5M5.5 11.5 12 5l6.5 6.5'/%3E%3C/svg%3E") center/contain no-repeat; }
+#drawer .composer:not(.has) .m-send { background: var(--glass-lite); color: var(--dim); scale: .92; }
+#drawer .composer:not(:focus-within):not(.has):not(.to-set) .m-send { opacity: 0; visibility: hidden; }
+#drawer .at-pop { left: 0; right: 0; min-width: 0; bottom: calc(100% + 8px); border-radius: 20px; background: var(--glass-solid); border: 1px solid var(--glass-line); box-shadow: var(--glass-shadow); padding: 6px; }
+#drawer .at-pop div { border-radius: 14px; padding: 9px 12px; box-shadow: none; }
+
+/* actions */
+#drawer .dw-acts { display: flex; gap: 8px; justify-content: stretch; align-items: center; padding: 0; }
+#drawer .dw-acts::before { display: none; }
+body.kb #drawer .dw-acts { display: flex; }   /* keyboard up: the live rule hides the bar; B keeps a compact one so "write the reason, tap 驳回" works without closing the keyboard */
+#drawer .dw-acts .ab { position: relative; display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 54px; padding: 0 18px; border: 0; border-radius: 18px; background: transparent; color: var(--ink);
+  font: 600 16px var(--f-sys); letter-spacing: 0; -webkit-tap-highlight-color: transparent; touch-action: manipulation; transition: scale var(--m-release) var(--m-spring), background-color var(--m-quick) ease-out; }
+body.kb #drawer .dw-acts .ab { height: 46px; }
+#drawer .dw-acts .ab.no { flex: 1; color: var(--ink); border: 1px solid var(--line2); }
+#drawer .dw-acts .ab.ok { flex: 2; background: var(--accent); color: var(--accent-ink); }
+#drawer .dw-acts .ab.ok.solo { flex: 1; }
+#drawer .dw-acts .ab.ok b { font-weight: 700; font-size: 17px; letter-spacing: .02em; }
+#drawer .dw-acts .ab.re { flex: none; background: var(--chip2); }
+#drawer .dw-acts .ab.re span { font-size: 18px; line-height: 1; }
+#drawer .dw-acts .dw-stamp { flex: 1; min-width: 0; }
+/* press language of the live motion system: instant press, spring release */
+#drawer .dw-acts .ab:active, #drawer .composer .dw-file:active, #drawer .composer .m-send:active { scale: var(--m-press-pill); transition-duration: var(--m-instant); transition-timing-function: ease-out; }
+#drawer .composer .dw-file { transition: scale var(--m-release) var(--m-spring); }
+@media (prefers-reduced-transparency: reduce) { #drawer .dw-dock { -webkit-backdrop-filter: none; backdrop-filter: none; background: var(--glass-solid); } }
+
+/* ===== mp (t-mailbox-polish) =====
+   (4) chat composer: an EMPTY field is always one row, whatever JS did to the inline height (guard for the transition/scrollHeight ratchet fixed in mobile.js fit()).
+   (3) upload tiles sit INSIDE the glass pill, above the one-row field (mobile.js moves .pending-att in): the pill grows upward, --comp-h includes the strip, nothing covers the tab bar.
+   (1)(2) 动态: 全部已读 is a small pill on the filter row; the empty #ticker no longer reserves 28px under the header. ===== */
+body[data-cv] #right .ch-comp textarea:placeholder-shown, body[data-cv] #right .ch-comp textarea:placeholder-shown:focus { height: 40px !important; }
+body[data-cv] #right .ch-comp textarea::placeholder { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+body[data-cv] #right .ch-comp { flex-wrap: wrap; }
+body[data-cv] #right .ch-comp > textarea { min-width: 0; }
+body[data-cv] #right .ch-comp > .pending-att { order: -1; flex: 0 0 100%; box-sizing: border-box; min-width: 0; max-height: 72px; margin: 0; padding: 4px 6px !important; gap: 8px;
+  flex-wrap: nowrap; overflow-x: auto; overflow-y: hidden; scrollbar-width: none; overscroll-behavior-x: contain; }
+body[data-cv] #right .ch-comp > .pending-att::-webkit-scrollbar { display: none; }
+body[data-cv] #right .ch-comp > .pending-att .ap-tile { width: 60px; height: 60px; border-radius: 14px; border-color: var(--glass-line); }
+#ticker:empty { min-height: 0; height: 0; padding: 0; }   /* NOT display:none: body is a 3-row grid (top / ticker / layout) and layout would slide into the auto row */
+.filters.mb-row { display: flex; flex-wrap: nowrap; align-items: center; justify-content: flex-start; gap: 8px; margin: 8px 0 12px; }
+.filters.mb-row .seg { flex: 1 1 auto; min-width: 0; margin: 0; }
+.filters.mb-row .seg-i { padding: 0 10px; letter-spacing: .04em; }
+.filters.mb-row .mb-readall { flex: none; height: 36px; min-height: 0; padding: 0 12px; border-radius: 999px; font-size: 12px; white-space: nowrap; }
+
+/* ===== ct (t-chat-title): the 对话 list no longer repeats its 「对话」 title (the tab bar already names the page). Same as 菜单 (.m-hero) and 动态 (.ph-mail). Phone only (this file is max-width:760px). Hide only the .cl-h text row; .cl stays a flex column, so the search field and rows just move up. ===== */
+.cl-h { display: none !important; }
+.cl-search { margin-top: 8px; }
+
+/* ===== cnn (t-chat-nonav): inside a character chat thread the 5-tab bar slides down + fades out (phone). The 对话 list keeps it.
+   transform / opacity only, --m-* tokens, no blur animation; the bar's DOM and --tb-h are untouched (the bar is only translated, so nothing re-lays out).
+   Replaces the "thread keeps the bar" rule from ui P2. The composer drops to the bottom safe area; the list padding follows. body.kb keeps its own 8px rules. ===== */
+body[data-cv] #tabbar { transition: transform var(--m-base) var(--m-ease-ios), opacity var(--m-quick) linear; }
+body[data-mtab="chat"][data-cv="thread"] #tabbar { transform: translateY(110%); opacity: 0; pointer-events: none; }
+body[data-mtab="chat"][data-cv="thread"] #tabbar .tb-row { pointer-events: none; }
+body:not(.kb)[data-mtab="chat"][data-cv="thread"] #right .ch-comp { bottom: calc(env(safe-area-inset-bottom) + 8px); }
+body:not(.kb)[data-mtab="chat"][data-cv="thread"] #right .ch-msgs { padding-bottom: calc(env(safe-area-inset-bottom) + 8px + var(--comp-h, 66px)); }
+@media (prefers-reduced-motion: reduce) { body[data-cv] #tabbar { transition: opacity .12s linear; } }
+
+/* ===== css (t-chat-search-style): the 对话 search field joins the 动态 .seg pill family. Same track as .seg: full pill, --chip fill, inset --line2 ring, 42px (= 3px pad + 36px seg-i + 3px pad). No glass / blur layer.
+   Focus = the ring turns --accent-line (same accent family as the selected block), no outline. Clear (✕) shows only while there is text. White theme overrides live here (white vars exist only in this file). ===== */
+.cl-search { position: relative; box-sizing: border-box; height: 42px; padding: 0 6px 0 16px; gap: 8px; border: 0; border-radius: 999px; background: var(--chip); box-shadow: inset 0 0 0 1px var(--line2); transition: box-shadow var(--m-quick) var(--m-ease-std), color var(--m-quick) var(--m-ease-std); }
+.cl-search svg { width: 16px; height: 16px; stroke-width: 1.6; }
+.cl-search:focus-within { color: var(--ink2); box-shadow: inset 0 0 0 1px var(--accent-line); }
+.cl-x { display: none; flex: none; align-items: center; justify-content: center; width: 30px; height: 30px; padding: 0; border: 0; border-radius: 999px; background: var(--accent-soft); color: var(--ink2); -webkit-tap-highlight-color: transparent; touch-action: manipulation; transition: transform var(--m-release) var(--m-spring), background-color var(--m-quick) ease-out; }
+.cl-x svg { width: 12px; height: 12px; stroke-width: 1.8; }
+.cl-search.has-q .cl-x { display: inline-flex; }
+.cl-x:active { transform: scale(var(--m-press-pill)); }
+[data-theme="white"] .cl-search { background: #f0f0f0; box-shadow: none; }
+[data-theme="white"] .cl-search:focus-within { box-shadow: inset 0 0 0 1px var(--accent-line); }
+@media (prefers-reduced-motion: reduce) { .cl-search, .cl-x { transition: none !important; } }
+
+/* ===== ss (t-search-sheet-style): the 搜索 sheet input reuses .cl-search (class on the label), so pill / fill / ring / focus / ✕ / white overrides are shared with the 对话 list. Only the outer margins are reset (the sheet bar provides its own padding). ===== */
+.cl-search.ms-in { margin: 0; }
+
+/* ===== ht (t-home-title): phone pages no longer repeat their masthead (Chinese title + English small caps + ornament rule): the tab bar / pills / drawer already name the page. Phone only (this file is max-width:760px). Same as 动态 (.ph-mail). Applies to every pageHead() page: 审核(首页) / 主线 / 支线 / 日常委托 / 紧急活动 / 常驻活动 / 委托板 / 日志 / 报告 / 文档 / 角色 / 渠道. Scoped to #pagebody > .ph (NOT .m-meav.ph, the avatar placeholder). .ph is a plain block inside #pagebody (not a body grid row), so display:none collapses cleanly. The controls row that follows (pills / filters / .ph-bar) gets one consistent top gap. ===== */
+#pagebody > .ph { display: none; }
+#pagebody > .ph + .m-seg { margin-top: -2px; }
+
+/* ===== t-office-d1-s12: phone home strip "D1 角色选择条" (home.js). Phone only: this file is media-limited to <=760px, desktop untouched.
+   Seven slanted bust panels, the working / tapped one expands. Panel art = web/art/panels/<id>.webp (540x630). --c-<id> = the art's own background colour:
+   used for panel base, the "just assigned" halo and the working glow ONLY; every piece of chrome (edge, buttons, stats, pills) stays on the neutral --accent* / --glass* tokens.
+   Blur budget: no blur here except the long-press sheet while it is open. White-theme rules live here on purpose (the white variables exist only in this file). ===== */
+:root { --c-manager: #8f3a3a; --c-scout: #8c6fb0; --c-writer: #6a4e9a; --c-director: #243a66; --c-artist: #d58f98; --c-ops: #44444a; --c-smith: #7fa8d8; }
+.office > .hd { width: 100%; }
+.hd { --sk: 24px; --pg: 3px; --edge: rgba(255,255,255,.30); position: relative; border: 1px solid var(--line2); border-radius: 20px; background: var(--panel); padding: 10px 12px 12px; box-sizing: border-box;
+  box-shadow: 0 1px 0 var(--line), 0 12px 28px -14px rgba(0,0,0,.55); overflow: hidden; -webkit-user-select: none; user-select: none; }
+[data-theme="light"] .hd { --edge: rgba(40,36,30,.30); box-shadow: 0 1px 0 var(--line), 0 12px 26px -14px rgba(70,50,20,.38); }
+[data-theme="white"] .hd { --edge: rgba(0,0,0,.22); border-color: rgba(0,0,0,.14); background: #fff; box-shadow: 0 1px 2px rgba(0,0,0,.06), 0 12px 26px -14px rgba(20,24,40,.35); }
+.hd [role="button"], .hd button { cursor: pointer; -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
+.hd-enter { animation: hd-card-in var(--m-slow) var(--m-ease-emph) backwards; }
+@keyframes hd-card-in { from { opacity: 0; transform: translateY(var(--m-rise)) scale(.985); } }
+.hd-h { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 30px; margin-bottom: 6px; }
+.hd-sum { font-family: var(--f-cjk); font-size: 13px; color: var(--dim); letter-spacing: .04em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.hd-sum b { color: var(--ink); font-family: var(--f-display); font-size: 15px; margin-right: 2px; }
+.hd-rd { display: inline-flex; align-items: center; gap: 5px; color: var(--ink2); }
+.hd-rd i, .hd-red, .hd-rdot { width: 7px; height: 7px; border-radius: 50%; background: var(--dot); box-shadow: 0 0 0 1.5px var(--bg); flex: none; }
+/* t-office-d1-s3: the 「像素办公室」 pill. Quiet: neutral glass, constant label (no width jump), pixel glyph + a chevron that turns over when open.
+   Visual 30pt, hit area 44pt via ::after. */
+.hd-pill { position: relative; display: inline-flex; align-items: center; gap: 7px; height: 30px; padding: 0 11px 0 11px; border-radius: 15px; border: 1px solid var(--glass-line); background: var(--glass-lite);
+  color: var(--ink2); font-family: var(--f-cjk); font-size: 12px; letter-spacing: .04em; white-space: nowrap; flex: none;
+  transition: transform var(--m-quick) var(--m-ease-std), background var(--m-base) var(--m-ease-std), color var(--m-base) var(--m-ease-std), border-color var(--m-base) var(--m-ease-std); }
+.hd-pill::after { content: ""; position: absolute; inset: -7px -4px; }
+html[lang="en"] .hd-pill { font-family: var(--f-body); letter-spacing: .01em; }
+.hd-pill:active { transform: scale(var(--m-press-pill)); }
+.hd-pill .hd-px { opacity: .8; } .hd-pill .hd-pc { opacity: .6; margin-left: -1px; transition: transform var(--m-slow) var(--m-ease-ios), opacity var(--m-base) var(--m-ease-std); }
+.hd.open .hd-pill { color: var(--ink); background: var(--accent-soft); border-color: var(--accent-line); }
+.hd.open .hd-pill .hd-pc { transform: rotate(180deg); opacity: .9; }
+/* the unfold: the row opens (grid rows, one small layout per frame), the scene grows out of the pill's corner (transform + opacity only, compositor) */
+.hd-exp { display: grid; grid-template-rows: 0fr; transition: grid-template-rows var(--m-release) var(--m-ease-in); }
+.hd.open .hd-exp { grid-template-rows: 1fr; transition: grid-template-rows var(--m-slow) var(--m-ease-ios); }
+.hd-exp-in { min-height: 0; overflow: hidden; }
+.hd-office { padding: 4px 0 10px; opacity: 0; transform: translate3d(0, calc(var(--m-rise) * -1), 0) scale(.96); transform-origin: 100% 0;
+  transition: opacity var(--m-quick) var(--m-ease-std), transform var(--m-release) var(--m-ease-in); }
+.hd.open .hd-office { opacity: 1; transform: none; transition: opacity var(--m-base) var(--m-ease-std) 60ms, transform var(--m-slow) var(--m-ease-emph) 20ms; }
+.hd-office .office-frame { border-radius: 14px; box-shadow: none; border: 1px solid var(--line2); }
+.hd.hd-still .hd-exp, .hd.hd-still .hd-office, .hd.hd-still .hd-pill, .hd.hd-still .hd-pill .hd-pc { transition: none !important; }
+.hd-mini { display: block; width: 36px; height: 36px; border-radius: 50%; flex: none; background-size: cover; background-position: center; background-color: var(--panel2); box-shadow: inset 0 0 0 1px var(--line2); }
+.hd-chev { color: var(--faint); flex: none; }
+/* the strip: the strip is 16px wider than the card's content so the slanted panels use the full card width */
+.dp-strip { display: flex; height: 176px; margin: 2px -8px; touch-action: pan-y; }
+.dp { position: relative; flex: 1 1 0; min-width: 0; margin-left: calc(var(--pg) - var(--sk)); transition: flex-grow var(--m-slow) var(--m-ease-ios); -webkit-tap-highlight-color: transparent; outline: none; -webkit-touch-callout: none; }
+.dp:first-child { margin-left: 0; }
+.dp.act { flex-grow: 3.15; z-index: 2; }
+.dp-edge, .dp-art, .dp-fx { position: absolute; inset: 0; clip-path: polygon(var(--sk) 0, 100% 0, calc(100% - var(--sk)) 100%, 0 100%); }
+.dp-edge { background: var(--edge); transition: background var(--m-base) var(--m-ease-std); }
+.dp.w .dp-edge { background: var(--wk-ring); animation: wk-glow var(--wk-breath) var(--wk-ease) infinite; }   /* t-working-avatar: shared tokens with App.av rings */
+.dp:focus-visible .dp-edge { background: var(--ink); }
+.dp-art { inset: 1.5px 1px; overflow: hidden; background: color-mix(in srgb, var(--tint) 60%, #000); filter: saturate(.3) brightness(.64); transition: filter var(--m-slow) var(--m-ease-std); }
+.dp-img { position: absolute; inset: -17% -4% -4%; background-size: cover; background-position: 50% 0; transform-origin: 50% 40%; }
+[data-theme="white"] .dp-art { filter: saturate(.3) brightness(.96); background: color-mix(in srgb, var(--tint) 45%, #fff); }
+.dp.act .dp-art { filter: saturate(.62) brightness(.88); } [data-theme="white"] .dp.act .dp-art { filter: saturate(.75) brightness(1); }
+.dp.w .dp-art, [data-theme="white"] .dp.w .dp-art { filter: none; }
+.dp.w { filter: drop-shadow(0 0 8px color-mix(in srgb, var(--tint) 55%, transparent)); }
+/* idle = calm: the picture breathes (scale + a hair of drift), out of phase per panel. Working ones stand still and lit. */
+.dp:not(.w) .dp-img { animation: dp-breathe 7s ease-in-out infinite; animation-delay: var(--ph, 0s); }
+@keyframes dp-breathe { 0%, 100% { transform: scale(1) translate3d(0, 0, 0); } 50% { transform: scale(1.045) translate3d(-1.2%, -.8%, 0); } }
+.dp-art::after { content: ""; position: absolute; inset: 0; background: linear-gradient(to top, rgba(0,0,0,.78), rgba(0,0,0,.1) 58%, transparent); opacity: 0; transition: opacity var(--m-base) var(--m-ease-std); }
+.dp.act .dp-art::after { opacity: 1; }
+.dp-vn { position: absolute; left: calc(50% + 4px); bottom: 12px; transform: translateX(-50%); writing-mode: vertical-rl; font-family: var(--f-cjk); font-size: 11px; letter-spacing: .14em; color: #fff; text-shadow: 0 1px 3px rgba(0,0,0,.85); white-space: nowrap; opacity: .92; transition: opacity var(--m-quick) var(--m-ease-std); z-index: 2; }
+.dp.act .dp-vn { opacity: 0; }
+html[lang="en"] .dp-info .n { flex-wrap: wrap; column-gap: 7px; row-gap: 1px; }   /* English names run long (e.g. "Steward", "Signal" in longer rosters): the status drops under the name instead of off the panel */
+html[lang="en"] .dp-info .n b { font-family: var(--f-body); letter-spacing: .01em; max-width: 100%; overflow: hidden; text-overflow: ellipsis; }
+html[lang="en"] .dp-info .rl, html[lang="en"] .dp-t, html[lang="en"] .hd-st { font-family: var(--f-body); }
+html[lang="en"] .dp-vn { font-family: var(--f-display); font-size: 10px; letter-spacing: .16em; text-transform: uppercase; }
+.dp-un { position: absolute; top: 9px; right: calc(var(--sk) * .5 + 5px); width: 9px; height: 9px; border-radius: 50%; background: var(--dot); box-shadow: 0 0 0 1.5px rgba(0,0,0,.55); transform: scale(0); transition: transform var(--m-base) var(--m-spring); z-index: 4; }
+.dp-un.on { transform: scale(1); animation: pulse 2s infinite; }
+.dp.act .dp-un { right: auto; left: calc(var(--sk) + 9px); top: 12px; }   /* t-office-d1-s3: the expanded panel's top-right holds the two round keys */
+.dp-rg { position: absolute; left: calc(50% + 2px); top: 10px; width: 14px; height: 14px; margin-left: -7px; opacity: 0; transform: scale(.6); transition: opacity var(--m-base) var(--m-ease-std), transform var(--m-slow) var(--m-spring); z-index: 3; }
+.dp.w .dp-rg { opacity: 1; transform: none; } .dp.act .dp-rg { opacity: 0; }
+.dp-rg i { position: absolute; inset: 0; border-radius: 50%; background: conic-gradient(from 0deg, transparent 0 35%, #fff 100%); -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 2px), #000 calc(100% - 1.5px)); mask: radial-gradient(farthest-side, transparent calc(100% - 2px), #000 calc(100% - 1.5px)); animation: hd-spin var(--wk-period) linear infinite; }
+@keyframes hd-spin { to { transform: rotate(360deg); } }
+.dp-info { position: absolute; left: calc(var(--sk) + 6px); right: calc(var(--sk) + 2px); bottom: 12px; display: flex; flex-direction: column; gap: 3px; opacity: 0; transform: translateY(8px); pointer-events: none; color: #fff; z-index: 3;
+  transition: opacity var(--m-quick) var(--m-ease-std), transform var(--m-base) var(--m-ease-emph); }
+.dp.act .dp-info { opacity: 1; transform: none; transition-delay: 110ms; pointer-events: auto; }
+.dp-info .n { display: flex; align-items: center; gap: 7px; } .dp-info .n b { font-family: var(--f-cjk); font-size: 16px; letter-spacing: .06em; text-shadow: 0 1px 4px rgba(0,0,0,.7); white-space: nowrap; }
+.dp-info .rl { font-family: var(--f-cjk); font-size: 11px; color: rgba(255,255,255,.72); margin-top: -1px; white-space: nowrap; }
+.hd-st { color: #fff; font-size: 10.5px; opacity: .95; white-space: nowrap; display: inline-flex; align-items: center; gap: 5px; font-family: var(--f-cjk); } .hd-st i { width: 5px; height: 5px; border-radius: 50%; background: #fff; box-shadow: 0 0 6px rgba(255,255,255,.8); animation: wk-dot var(--wk-breath) var(--wk-ease) infinite; }
+.hd-st.idle { opacity: .66; }
+.dp-t { display: flex; align-items: center; gap: 4px; height: 26px; margin-top: 3px; padding: 0 9px; border-radius: 13px; background: rgba(0,0,0,.5); border: 1px solid rgba(255,255,255,.24); font-family: var(--f-cjk); font-size: 11.5px; }
+.dp-t span { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; } .dp-t .hd-chev { width: 6px; color: #fff; opacity: .8; } .dp-t.chat { background: rgba(255,255,255,.14); }
+.dp-m { display: flex; flex-direction: column; gap: 4px; font-family: var(--f-display); font-size: 10.5px; letter-spacing: .02em; color: rgba(255,255,255,.8); }
+.dp-m em { font-style: normal; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.dp-bar { display: block; height: 3px; border-radius: 2px; background: rgba(255,255,255,.22); overflow: hidden; } .dp-bar.off { visibility: hidden; }
+.dp-bar u { display: block; height: 100%; background: #fff; transform-origin: 0 50%; transform: scaleX(var(--p, 0)); transition: transform var(--m-slow) var(--m-ease-std); text-decoration: none; }
+.dp-btns { position: absolute; top: 9px; right: 9px; display: flex; flex-direction: row-reverse; gap: 7px; opacity: 0; transform: scale(.8); pointer-events: none; z-index: 5; transition: opacity var(--m-quick) var(--m-ease-std), transform var(--m-base) var(--m-spring); }
+.dp.act .dp-btns { opacity: 1; transform: none; pointer-events: auto; transition-delay: 140ms; }
+.dp-b { position: relative; width: 34px; height: 34px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #fff; background: rgba(0,0,0,.46); border: 1px solid rgba(255,255,255,.3); padding: 0; transition: transform var(--m-quick) var(--m-ease-std), background var(--m-base) var(--m-ease-std); }
+.dp-b::after { content: ""; position: absolute; inset: -5px; }   /* 44pt hit area, same look */
+.dp-b:active { transform: scale(var(--m-press-pill)); background: rgba(255,255,255,.28); } .dp-b.off { display: none; }
+.dp:active:not(.act) .dp-art { filter: saturate(.9) brightness(1); }
+.hd-enter .dp { animation: dp-in var(--m-slow) var(--m-ease-emph) backwards; animation-delay: calc(var(--i, 0) * var(--m-stagger) * 1.6 + 60ms); }
+@keyframes dp-in { from { opacity: 0; translate: calc(var(--m-rise) * -3) calc(var(--m-rise) * 2); } }
+.dp-fx { pointer-events: none; overflow: hidden; z-index: 6; }
+.dp.lit .dp-edge { animation: dp-litedge 1.5s var(--m-ease-std); } .dp.lit .dp-art { animation: dp-lit 1.5s var(--m-ease-std); }
+@keyframes dp-litedge { 0%, 30% { background: #fff; } }
+@keyframes dp-lit { 0% { filter: saturate(1.4) brightness(1.7); } 100% { filter: none; } }
+.dp.lit::before { content: ""; position: absolute; inset: -6px; z-index: 0; border-radius: 6px; background: radial-gradient(60% 70% at 50% 55%, color-mix(in srgb, var(--tint) 80%, transparent), transparent 70%); animation: dp-halo 1.5s var(--m-ease-std) both; pointer-events: none; }
+@keyframes dp-halo { 0% { opacity: 0; transform: scale(.6); } 25% { opacity: .95; } 100% { opacity: 0; transform: scale(1.35); } }
+.dp.mc .dp-fx .s1, .dp.mc .dp-fx .s2 { position: absolute; top: -10%; bottom: -10%; right: -40%; width: 40%; transform: skewX(-16deg); background: linear-gradient(90deg, transparent, rgba(255,255,255,.7), transparent); animation: dp-streak .7s var(--m-ease-emph) both; }
+.dp.mc .dp-fx .s2 { width: 14%; animation-delay: .08s; opacity: .8; }
+@keyframes dp-streak { from { transform: translateX(0) skewX(-16deg); opacity: 0; } 15% { opacity: 1; } to { transform: translateX(-420%) skewX(-16deg); opacity: 0; } }
+.dp.mc .dp-fx .fl { position: absolute; inset: 0; background: #fff; opacity: 0; animation: dp-flash .5s ease-out both; }
+@keyframes dp-flash { 0% { opacity: 0; } 14% { opacity: .85; } 100% { opacity: 0; } }
+.dp.mc .dp-fx .pl { position: absolute; left: -6%; right: -6%; bottom: 20%; height: 40px; padding: 0 0 0 calc(var(--sk) + 4px); display: flex; flex-direction: column; justify-content: center; background: var(--accent); color: var(--accent-ink);
+  font: 800 13px/1 var(--f-display); letter-spacing: .2em; clip-path: polygon(0 12%, 100% 0, 100% 88%, 0 100%); animation: dp-plate 2.3s var(--m-ease-emph) both; }
+.dp.mc .dp-fx .pl small { font: 600 9.5px var(--f-cjk); letter-spacing: .3em; opacity: .7; margin-top: 3px; }
+@keyframes dp-plate { 0% { transform: translateX(-110%); } 14%, 80% { transform: none; } 100% { transform: translateX(110%); } }
+.dp.mc .dp-art { animation: dp-mcart 2.3s var(--m-ease-std); } @keyframes dp-mcart { 10%, 75% { filter: none; } }
+/* urgent line (>= 3 waiting or oldest > 12h) */
+.hd-alert { display: grid; grid-template-rows: 0fr; opacity: 0; transition: grid-template-rows var(--m-base) var(--m-ease-ios), opacity var(--m-base) var(--m-ease-std); }
+.hd-alert.on { grid-template-rows: 1fr; opacity: 1; } .hd-alert-in { min-height: 0; overflow: hidden; }
+.hd-chip { display: flex; align-items: center; gap: 8px; height: 34px; margin-top: 8px; padding: 0 12px; border-radius: 17px; background: var(--accent-soft); border: 1px solid var(--accent-line); font-family: var(--f-cjk); font-size: 12.5px; color: var(--ink2); transition: transform var(--m-quick) var(--m-ease-std); }
+.hd-chip:active, .hd-stat:active { transform: scale(var(--m-press-row)); } .hd-chip b { color: var(--ink); font-weight: 600; white-space: nowrap; } .hd-chip .t { flex: 1; min-width: 0; color: var(--dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.hd-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; margin-top: 10px; padding-top: 8px; border-top: 1px solid var(--line); }
+.hd-stat { position: relative; display: flex; flex-direction: column; align-items: center; gap: 1px; padding: 5px 0; border-radius: 12px; transition: background var(--m-base) var(--m-ease-std), transform var(--m-quick) var(--m-ease-std); }
+.hd-stat b { font-family: var(--f-display); font-weight: 600; font-size: 21px; line-height: 1.15; color: var(--ink2); transition: color var(--m-base) var(--m-ease-std); font-variant-numeric: tabular-nums; }
+.hd-stat b.bump { animation: hd-bump var(--m-base) var(--m-spring); } @keyframes hd-bump { 0% { transform: scale(var(--m-pop)); } }
+.hd-stat span { font-family: var(--f-cjk); font-size: 11px; color: var(--dim); letter-spacing: .06em; }
+.hd-stat.on { background: var(--accent-soft); } .hd-stat.on b { color: var(--ink); }
+.hd-rdot { position: absolute; top: 7px; left: calc(50% + 14px); transform: scale(0); transition: transform var(--m-base) var(--m-spring); }
+.hd-stat.alert .hd-rdot { transform: scale(1); animation: pulse 2s infinite; }
+.hd-stat:focus-visible, .hd-pill:focus-visible, .hd-chip:focus-visible, .dp-b:focus-visible { outline: 2px solid var(--ink); outline-offset: 1px; }
+/* long-press quick sheet: the only blurred layer, and only while open */
+.dp-sheet-w { position: fixed; inset: 0; z-index: 80; display: flex; align-items: flex-end; padding: 0 12px calc(env(safe-area-inset-bottom, 0px) + 12px); opacity: 0; transition: opacity var(--m-base) var(--m-ease-std); }
+.dp-sheet-w.in { opacity: 1; }
+.dp-scrim { position: absolute; inset: 0; background: rgba(0,0,0,.4); } [data-theme="white"] .dp-scrim { background: rgba(0,0,0,.22); }
+.dp-sheet { position: relative; width: 100%; padding: 8px; border-radius: 26px; background: var(--glass-bg); -webkit-backdrop-filter: var(--glass-bf); backdrop-filter: var(--glass-bf); border: 1px solid var(--glass-line); box-shadow: var(--glass-rim), var(--glass-shadow);
+  transform: translateY(24px); transition: transform var(--m-slow) var(--m-ease-ios); display: flex; flex-direction: column; gap: 2px; }
+.dp-sheet-w.in .dp-sheet { transform: none; }
+.sh-h { display: flex; align-items: center; gap: 12px; padding: 10px 12px 12px; } .sh-h b { display: block; font-family: var(--f-cjk); font-size: 16px; color: var(--ink); } .sh-h span:not(.hd-mini) { font-family: var(--f-cjk); font-size: 12px; color: var(--dim); }
+.sh-i { display: flex; align-items: center; gap: 12px; min-height: 52px; padding: 0 14px; border-radius: 18px; background: var(--glass-lite); color: var(--ink); font-family: var(--f-cjk); font-size: 15px; text-align: left; transition: transform var(--m-quick) var(--m-ease-std); margin-top: 4px; }
+.sh-i:active { transform: scale(var(--m-press-row)); } .sh-i em { margin-left: auto; font-style: normal; font-size: 12px; color: var(--dim); max-width: 48%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sh-i.cancel { justify-content: center; background: transparent; color: var(--dim); }
+@media (max-width: 340px) { .hd { --sk: 20px; } .dp.act { flex-grow: 2.7; } .dp-strip { height: 168px; } .dp-info .n b { font-size: 15px; } .dp-info .n .hd-st { display: none; } }
+@media (prefers-reduced-motion: reduce) {
+  .dp, .dp-art, .dp-info, .dp-btns, .hd-exp, .hd.open .hd-exp, .hd-alert, .hd-pill .hd-pc { transition: none; }
+  .hd-office, .hd.open .hd-office { transform: none; transition: opacity var(--m-quick) linear; } .dp-rg i, .dp:not(.w) .dp-img, .dp.lit::before, .dp-un.on, .hd-st i, .hd-stat.alert .hd-rdot, .dp.w .dp-edge { animation: none; }
+  .dp.mc .dp-fx .s1, .dp.mc .dp-fx .s2 { display: none; } .hd-enter, .hd-enter .dp { animation: none; }
+}
+
+/* ===== oof v2 (t-chat-open-feel): opening a character chat is a WeChat-style push. Phone only (this file is max-width:760px); desktop untouched.
+   mobile.js drives the travelling layers with WAAPI (translate + opacity only, compositor; no blur is animated): the thread surface (.oof-sheet + .cl-back pills + .ch-msgs + .ch-comp)
+   comes in from the right edge in --m-move (330ms) on --m-ease-std, the conversation list under it (.cl) recedes 28% and a black scrim goes 0 -> .2 behind the surface.
+   Then, on top of that (CSS, below): pills cross-fade 90-290ms, the latest 6 messages rise 80ms + i*30ms (--m-stagger, 190ms each, --m-rise), the composer rises 190-420ms on --m-spring-soft.
+   Back = the same layers in reverse in --m-release (220ms) with the tab bar returning in parallel; a swipe right drives the same layers by hand. Reduced motion: 140ms cross-fade.
+   #hc=cur in the URL: mobile.js uses the old cv-push / cv-pop (.24s / .22s) untouched. ===== */
+#right > .oof-sheet, #right > .oof-scrim { display: none; }
+#right.oof-on > .oof-sheet, #right.oof-on > .oof-scrim { display: block; position: absolute; inset: 0; pointer-events: none; }
+#right.oof-on > .oof-scrim { z-index: 1; background: #000; opacity: 0; }
+#right.oof-on > .oof-sheet { z-index: 2; background: var(--bg); }
+#right.oof-on > .cl { display: flex; flex-direction: column; position: absolute; inset: 0; z-index: 0; pointer-events: none; }
+#right.oof-on > .ch-msgs { position: relative; z-index: 3; }
+body.oof-leave[data-mtab="chat"][data-cv="thread"] #tabbar { transform: none; opacity: 1; }
+/* t-dm-back-nav: a thread opened from outside the chat tab (body[data-ret]) keeps its origin screen mounted under #right: hidden while the thread rests,
+   visible only while the surface is moving (#right.oof-on), where it is the layer that recedes (mobile.js translates it) instead of the conversation list.
+   visibility, never display: the origin keeps its scroll position and live state (D1 strip, office fold, an open detail page) and nothing replays its m-in. */
+body[data-ret="main"][data-mtab="chat"] #main { display: block !important; visibility: hidden; z-index: 0; }
+body[data-ret="left"][data-mtab="chat"] #left { display: flex !important; visibility: hidden; z-index: 0; }
+body[data-ret][data-mtab="chat"] #right { z-index: 1; }
+body[data-ret][data-mtab="chat"]:has(#right.oof-on) #main, body[data-ret][data-mtab="chat"]:has(#right.oof-on) #left { visibility: visible; }
+body[data-ret] #right.oof-on { background: transparent; }
+body[data-ret] #right.oof-on > .cl { visibility: hidden; }
+body.sheet.oof-leave[data-ret][data-mtab="chat"][data-cv="thread"] #tabbar { transform: translateY(110%); opacity: 0; }   /* back to a detail page: its sheet hides the tab bar, so it must not slide in */
+#right.oof-run .msg.oof-i, #right.oof-run .m-tsep.oof-i, #right.oof-run .m-typing.oof-i { animation: oof-msg 190ms var(--m-ease-emph) calc(80ms + var(--i, 0) * var(--m-stagger)) backwards; }
+@keyframes oof-msg { from { opacity: 0; transform: translateY(var(--m-rise)); } }
+#right.oof-run .cl-back button, #right.oof-run .cl-back .who { animation: oof-pill 200ms linear 90ms backwards; }
+@keyframes oof-pill { from { opacity: 0; } }
+#right.oof-run .ch-comp { animation: oof-comp 230ms var(--m-spring-soft) 190ms backwards; }
+@keyframes oof-comp { from { opacity: 0; transform: translateY(calc(var(--m-rise) * 1.8)); } }
+#layout > #right.oof-f { animation: oof-fade .14s linear both; }
+@keyframes oof-fade { from { opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { #right.oof-run .msg, #right.oof-run .m-tsep, #right.oof-run .m-typing, #right.oof-run .cl-back button, #right.oof-run .cl-back .who, #right.oof-run .ch-comp { animation: none !important; } }
+
+/* ===== t-working-item-highlight (phone): the tint bleeds 8px into the page gutter like a selected row; the tag takes the stage chip's place on line 2. ===== */
+.act-row.wk-on .wk-fx { inset: 2px -8px; border-radius: 12px; }
+.act-row.wk-on .wk-bar { left: 0; top: 10px; bottom: 10px; }
+.act-row.wk-on::after { left: 54px; }
+.act-l2 .wk-tag { flex: 0 1 auto; max-width: 64%; height: 20px; padding: 0 8px 0 4px; gap: 6px; font-size: 11px; }
+.act-l2 .wk-tag .wk-avs { gap: 6px; }
+.act-l2 .wk-tag .av.sm { width: 13px; height: 13px; }
+.card.wk-on { border-radius: 20px; }   /* P2: same radius as every card */
+.card.wk-on .wk-tag { margin-top: 8px; }
+/* detail page: the header is a row of glass pills that is already full at 320-390, so the working pill sits centred right under it, above the title */
+#drawer .dw-top .wk-tag.dw-wk { display: none; }
+.dw-wkrow { display: flex; justify-content: center; margin: 2px 0 10px; }
+.dw-wkrow .wk-tag { height: 32px; padding: 0 14px 0 10px; gap: 9px; border-radius: 16px; font-size: 12.5px; max-width: 100%; }
+.dw-wkrow .wk-tag .av.sm { width: 20px; height: 20px; }
+.dw-wkrow .wk-tag .wk-avs { gap: 9px; }
+@media (max-width: 360px) { .act-l2 .wk-tag .wk-tx b { display: none; } }
+
+/* ===== t-vis-b1 (visual batch 1: the visible bugs). Phone only (this file is media-limited to <= 760px); desktop untouched.
+   1. light theme: --soul / --glow were a blue (#2b4a7a / #3f68a8), the only blue in the app: my chat bubble, the stamina liquid, hovers. Back to the neutral ink of --accent.
+   2. white theme: my bubble's tail took var(--glow) (#111) while the bubble is --bub-me, so it showed as a black diamond beside the bubble.
+   3. white theme: the opening splash had no backdrop (the white title-card gradient overrode .splash's --void), so the title sat on top of the home page.
+   4. no synthesized italics: CJK fonts have no italic, the browser just slants them.
+   5. detail page: the top bar was transparent, so text scrolled under the back / stage pills and overlapped. Once scrolled (mobile.js sets #drawer.dw-scrolled) a glass layer
+      fades in behind the bar (opacity only; the blur itself is never animated), and the pills inside drop their own blur (never nest blurred layers: --glass-lite). ===== */
+html[data-theme="light"] .orb .w1 { fill: var(--soul); } html[data-theme="light"] .orb .w2 { fill: var(--glow); }   /* style.css hard-codes the light liquid as #4d6fa8 / #7f9ccc */
+html[data-theme="white"] #right .msg.me .mb::after { background: var(--bub-me); box-shadow: 1px -1px 0 rgba(0,0,0,.14); }
+.empty, .cs-line.event .tx, .m-chip.none { font-style: normal; }
+.empty { letter-spacing: .04em; }
+#drawer .dw-top::after { display: block; content: ""; position: absolute; inset: 0; left: 0; right: 0; height: auto; z-index: -1;   /* style.css gives this pseudo height:1px (it was the old divider) */
+  pointer-events: none; opacity: 0;
+  background: color-mix(in srgb, var(--bg) 80%, transparent); -webkit-backdrop-filter: var(--glass-bf); backdrop-filter: var(--glass-bf); border-bottom: 1px solid var(--glass-line);   /* a bar with text under it: iOS-nav-bar density, not the thin pill glass */
+  transition: opacity var(--m-base) var(--m-ease-std); }
+#drawer.dw-scrolled .dw-top::after { opacity: 1; }
+#drawer.dw-scrolled .dw-top button.dw-back[data-close], #drawer.dw-scrolled .dw-lead .tag, #drawer.dw-scrolled .dw-top .r select[data-f="category"] { background: var(--glass-lite); -webkit-backdrop-filter: none; backdrop-filter: none; box-shadow: none; }
+@media (prefers-reduced-motion: reduce) { #drawer .dw-top::after { transition: none; } }
+
+/* ===== t-parent-links (phone): rows are tap targets (>= 44pt), press state like other rows ===== */
+.dw-parent { min-height: 44px; border-color: var(--glass-line); background: var(--glass-lite); }
+.dw-kid { min-height: 52px; }
+.dw-parent:active, .dw-kid:active { transform: scale(var(--m-press-row)); transition: transform var(--m-instant) var(--m-ease-std); }
+.dw-kids { border-color: var(--glass-line); }
+
+/* ===== t-vis-b2 (方案 A): 委托 tab. Home keeps only the stats row as its filter, in the same solid pill as every segmented control; the category bar + search live on the 委托 page.
+   更多 drops its category entries (they live on 委托 now); 委托板 and the rest stay. ===== */
+.hd-stat.on { background: var(--accent); } .hd-stat.on b, .hd-stat.on span { color: var(--accent-ink); }
+.ph-review ~ .ph-bar .count { display: none; }   /* 「待审核 0」 repeated the stats row */
+#left .nav-i[data-go="review"], #left .nav-i[data-go="main"], #left .nav-i[data-go="side"], #left .nav-i[data-go="daily"], #left .nav-i[data-go="urgent"], #left .nav-i[data-go="ongoing"] { display: none; }
+.q-search { display: flex; align-items: center; gap: 8px; width: 100%; height: 40px; margin: 4px 0 8px; padding: 0 14px; border-radius: 20px; border: 1px solid var(--glass-line); background: var(--glass-lite);
+  color: var(--dim); font: inherit; font-size: 14px; text-align: left; cursor: text; transition: transform var(--m-quick) var(--m-ease-std); }
+.q-search svg { width: 16px; height: 16px; flex: none; }
+.q-search:active { transform: scale(var(--m-press-row)); }
+.m-seg.q { overflow-x: auto; margin: 0 -16px 8px; padding: 0 16px; scrollbar-width: none; } .m-seg.q::-webkit-scrollbar { display: none; }
+.m-seg.q .seg { width: max-content; min-width: 100%; }
+.m-seg.q .seg-i { flex: 1 0 auto; padding: 0 14px; white-space: nowrap; }
+.q-search svg { fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; }
+
+/* ===== P5 (t-aes-p5): phone home 待审 = review cards. Image first (the first image attachment, 150px), then owner · category · time, title, two-line summary,
+   看详情 / 批准. Cards are solid surfaces (no blur, rule 1 of the glass material); glass only on the floating kind tag over the image and on the undo pill.
+   Radius 26 (large card tier), buttons are pills. Colours: --accent* / --ink / --dim / --dot only. Motion: --m-* press tokens; fold-out / undo are WAAPI in app.js. ===== */
+.rv-list { margin-top: 6px; min-width: 0; }
+.rv-card { position: relative; margin: 0 0 14px; border-radius: 26px; overflow: hidden; background: var(--accent-soft); box-shadow: inset 0 0 0 1px var(--line);
+  cursor: pointer; -webkit-tap-highlight-color: transparent; transition: transform var(--m-release) var(--m-spring); }
+.rv-card:active:not(:has(button:active)) { transform: scale(var(--m-press-card)); transition-duration: var(--m-instant); transition-timing-function: ease-out; }
+[data-theme="white"] .rv-card { background: var(--solid); box-shadow: 0 0 0 1px rgba(0,0,0,.06), 0 14px 36px rgba(0,0,0,.08); }
+[data-theme="light"] .rv-card { background: var(--panel); box-shadow: inset 0 0 0 1px var(--line), 0 12px 28px -16px rgba(60,44,12,.35); }
+.rv-media { position: relative; height: 150px; overflow: hidden; background: var(--bg2); }
+.rv-media img { width: 100%; height: 100%; object-fit: cover; object-position: 50% 0; display: block; }
+.rv-media::after { content: ""; position: absolute; inset: auto 0 0 0; height: 40%; background: linear-gradient(transparent, rgba(0,0,0,.28)); pointer-events: none; }
+.rv-kind { position: absolute; left: 12px; top: 12px; z-index: 1; height: 26px; padding: 0 11px; display: inline-flex; align-items: center; border-radius: 13px;
+  font-size: 12px; font-weight: 650; letter-spacing: 0; color: var(--ink); background: var(--glass-bg); -webkit-backdrop-filter: var(--glass-bf); backdrop-filter: var(--glass-bf); box-shadow: var(--glass-rim); }
+.rv-kind.sm { position: static; height: 20px; padding: 0 8px; margin-left: auto; font-size: 11px; background: none; box-shadow: inset 0 0 0 1px var(--line2); -webkit-backdrop-filter: none; backdrop-filter: none; color: var(--ink2); }
+.rv-body { padding: 14px 16px 16px; }
+.rv-meta { display: flex; align-items: center; gap: 7px; min-width: 0; font-size: 12.5px; color: var(--dim); white-space: nowrap; }
+.rv-meta .av { width: 22px; height: 22px; flex: none; box-shadow: none; }
+.rv-meta b { color: var(--ink); font-weight: 650; overflow: hidden; text-overflow: ellipsis; }
+.rv-meta span:not(.rv-kind) { overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.rv-dot { flex: none; width: 8px; height: 8px; margin-left: -3px; border-radius: 50%; background: var(--dot); }
+.rv-card h3 { margin: 9px 0 6px; font-size: 19px; line-height: 1.3; font-weight: 750; letter-spacing: -.01em; color: var(--ink);
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; overflow-wrap: anywhere; }
+.rv-card p { margin: 0; font-size: 13.5px; line-height: 1.55; color: var(--dim); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; overflow-wrap: anywhere; }
+.rv-acts { display: flex; gap: 10px; margin-top: 14px; }
+.rv-acts button { flex: 1; min-width: 0; height: 44px; border-radius: 22px; border: 0; font-size: 15px; font-weight: 650; letter-spacing: 0; cursor: pointer;
+  -webkit-tap-highlight-color: transparent; touch-action: manipulation; transition: transform var(--m-release) var(--m-spring), filter var(--m-quick) ease-out; }
+.rv-acts button:active { transform: scale(var(--m-press-pill)); filter: brightness(.92); transition-duration: var(--m-instant); transition-timing-function: ease-out; }
+.rv-open { background: var(--accent-soft); color: var(--ink); }
+[data-theme="white"] .rv-open { background: var(--chip2); }
+.rv-ok { background: var(--accent); color: var(--accent-ink); }
+/* undo pill: floats above the tab bar (same spot as #toast), glass, with a hairline that runs out while the approve is held */
+#rv-undo { position: fixed; left: 16px; right: 16px; bottom: calc(var(--tb-h) + 14px); z-index: 61; display: flex; align-items: center; gap: 12px; min-height: 50px; padding: 0 6px 0 18px;
+  border-radius: 25px; overflow: hidden; background: var(--glass-bg); -webkit-backdrop-filter: var(--glass-bf); backdrop-filter: var(--glass-bf); box-shadow: var(--glass-rim), var(--glass-shadow);
+  opacity: 0; transform: translateY(12px) scale(.96); transition: opacity var(--m-quick) ease-out, transform var(--m-base) var(--m-ease-emph); pointer-events: none; }
+#rv-undo.on { opacity: 1; transform: none; pointer-events: auto; transition: opacity var(--m-quick) ease-out, transform var(--m-slow) var(--m-spring); }
+#rv-undo[hidden] { display: none; }
+body.vp-fix #rv-undo { bottom: auto; top: calc(var(--app-h) - var(--tb-h) - 64px); }
+#rv-undo .rv-u-tx { flex: 1; min-width: 0; font-size: 14px; color: var(--dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#rv-undo .rv-u-tx b { color: var(--ink); font-weight: 650; margin-right: 8px; }
+#rv-undo button { flex: none; height: 38px; padding: 0 18px; border: 0; border-radius: 19px; background: var(--accent); color: var(--accent-ink); font-size: 14px; font-weight: 650; cursor: pointer;
+  -webkit-tap-highlight-color: transparent; transition: transform var(--m-release) var(--m-spring); }
+#rv-undo button:active { transform: scale(var(--m-press-pill)); transition-duration: var(--m-instant); }
+#rv-undo .rv-u-bar { position: absolute; left: 18px; right: 18px; bottom: 0; height: 2px; border-radius: 1px; background: var(--ink); opacity: .28; transform-origin: 0 50%; }
+#rv-undo.on .rv-u-bar { animation: rv-hold var(--hold, 4500ms) linear forwards; }
+@keyframes rv-hold { from { transform: scaleX(1); } to { transform: scaleX(0); } }
+@media (prefers-reduced-motion: reduce) { #rv-undo, #rv-undo.on { transform: none; } }
+
+/* ===== P1 (t-aes-p1): phone detail = review desk. Shared rules live in style.css (#drawer is the same markup on both ends); here only phone sizes.
+   Category select = a glass pill like the stage pill on the left (it is in the material list above). ===== */
+#drawer .dw-top .r select[data-f="category"] { height: 40px; padding: 0 30px 0 16px; border-radius: 20px; font-size: 12.5px; color: var(--ink); background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%23888' stroke-width='1.6' stroke-linecap='round'/%3E%3C/svg%3E") right 13px center / 9px 6px no-repeat, var(--glass-bg); }
+#drawer.dw-scrolled .dw-top .r select[data-f="category"] { background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%23888' stroke-width='1.6' stroke-linecap='round'/%3E%3C/svg%3E") right 13px center / 9px 6px no-repeat, var(--glass-lite); }
+.dw-meta { margin-top: 18px; }
+.dw-pill { height: 38px; border-radius: 19px; }
+.cs-card.draftc { padding: 16px 18px 14px; }
+
+/* ===== P4 (t-aes-p4): phone 角色页 = portrait as the card header. Phone only (this file is max-width:760px); desktop roster keeps ui20/ui22 for the D-series.
+   Replaces the watermark set in style.css (ui20/ui22: right-side art at .27-.46 opacity, left scrim .rc::after, text halos) by specificity, no !important:
+   .roster > .rc (0,2,0) beats .rc and the (hover:none) .rc:hover reset above; .roster > .rc > .rc-art (0,3,0) beats [data-theme] .rc > .rc-art (0,2,1).
+   Art = full opacity, 290px, fades into the card. Dark: name sits on the fade (30px/800). Light / white: the art has a dark backdrop, so the name goes below it on the card face.
+   Card = solid face, radius 26 (large tier), no corner ornaments. Stats get plain hairlines. Colours: --accent* / --ink / --dim / --line only. ===== */
+.roster { gap: 16px; }
+.roster > .rc, .roster > .rc:hover { --rc-bg: color-mix(in srgb, var(--accent) 12%, var(--bg)); background: var(--rc-bg); border: 0; border-radius: 26px; box-shadow: inset 0 0 0 1px var(--line); padding: 232px 18px 16px; }
+[data-theme="light"] .roster > .rc, [data-theme="light"] .roster > .rc:hover { --rc-bg: color-mix(in srgb, var(--accent) 6%, var(--bg)); padding-top: 226px; }
+[data-theme="white"] .roster > .rc, [data-theme="white"] .roster > .rc:hover { --rc-bg: #fff; box-shadow: 0 0 0 1px rgba(0,0,0,.06), 0 10px 30px rgba(0,0,0,.06); padding-top: 226px; }
+.roster > .rc.frame::before, .roster > .rc.frame::after { display: none; }
+.roster > .rc > .rc-art { inset: 0 0 auto; width: 100%; height: 290px; max-width: none; aspect-ratio: auto; object-fit: cover; object-position: 50% 12%; opacity: 1; mix-blend-mode: normal; filter: none;
+  -webkit-mask-image: linear-gradient(#000 50%, transparent 96%); mask-image: linear-gradient(#000 50%, transparent 96%); -webkit-mask-composite: source-over; mask-composite: add; }
+[data-theme="light"] .roster > .rc > .rc-art, [data-theme="white"] .roster > .rc > .rc-art { height: 250px; -webkit-mask-image: linear-gradient(#000 40%, transparent 98%); mask-image: linear-gradient(#000 40%, transparent 98%); }
+/* no art (onerror removes the img): back to the plain header with the avatar */
+.roster > .rc:not(:has(> .rc-art)) { padding-top: 18px; }
+/* clean type: no halos */
+.roster > .rc > :not(.rc-art), .roster > .rc .stats small, .roster > .rc .now .dim { text-shadow: none; }
+.roster > .rc .rc-h { margin: -28px 0 0; }
+[data-theme="light"] .roster > .rc .rc-h, [data-theme="white"] .roster > .rc .rc-h { margin-top: 6px; }
+.roster > .rc:not(:has(> .rc-art)) .rc-h { margin-top: 0; }
+.roster > .rc:has(> .rc-art) .rc-h .av.lg { display: none; }
+.roster > .rc .rc-h .nm { font-size: 30px; font-weight: 800; letter-spacing: -.01em; line-height: 1.1; }
+.roster > .rc .rc-h .ti { font-size: 12.5px; color: var(--ink2); margin-top: 4px; letter-spacing: .02em; }
+.roster > .rc .du { font-size: 14px; color: var(--ink2); margin: 10px 0 12px; }
+.roster > .rc .stats { padding: 12px 0; margin: 14px 0; }
+.roster > .rc .stats::before, .roster > .rc .stats::after { background: var(--line); }
+.roster > .rc .stats b { font-size: 26px; font-weight: 700; letter-spacing: -.02em; }
+/* labels: --ink2 on dark / light (--dim is ~3.6:1 on those faces), --dim on white (5.3:1) */
+.roster > .rc .stats small, .roster > .rc .now .dim { color: var(--ink2); }
+[data-theme="white"] .roster > .rc .rc-h .ti, [data-theme="white"] .roster > .rc .stats small, [data-theme="white"] .roster > .rc .now .dim { color: var(--dim); }
+.roster > .rc .stats small { font-size: 11.5px; }
+.roster > .rc .rt-s { background: var(--accent-soft); }
+.roster > .rc .rt:not(.all) .rt-b:has(~ .rt-more)::after { background: linear-gradient(transparent, var(--rc-bg)); }
+.roster > .rc .rf-pill { min-height: 32px; padding: 0 12px; border: 0; background: var(--accent-soft); }
+
+/* ===== P2 (t-aes-p2): one clean visual language on the phone. Phone only (this file is max-width:760px); desktop ornaments are D1.
+   Gone: the ◆ + ornament rule under the header (#top, above), the ◇ before group headers and their fading rule, the hook corner and gradient frame on cards,
+   the ◆ / ▼ glyphs JS writes into tags and the sort button (wrapped in .gl in app.js / mobile.js, hidden here; desktop still shows them).
+   Cards = solid face, radius 20 (P5 review cards / P4 role cards are the 26 tier). Same surfaces as P5: dark --accent-soft + hairline, light --panel + hairline, white --solid + soft shadow.
+   Tags: soft fill, no border; only the ones waiting on you (待验收 / 待拍板 / 待回答) are solid ink. The detail header's tag stays the P1 glass pill (#drawer .dw-lead .tag wins).
+   Text stays --ink2 on card faces (--dim is ~3.6:1 on dark / light faces). Motion untouched: m-rise entrance, --m-press-card press, wk-on breathing. ===== */
+.gl { display: none; }
+/* group header: quiet bold label + count, no diamond, no rule */
+.grp-h { gap: 6px; margin: 22px 2px 10px; font-size: 13px; letter-spacing: .02em; color: var(--ink2); }
+.grp-h::before { display: none; }
+.grp-h::after { background: none; }
+.grp-h b { font-size: 15px; font-weight: 700; letter-spacing: 0; color: var(--ink); }
+/* cards: hover/active keep the face (the (hover:none) block above resets background; only the colour is set here so the press glow image still layers on top) */
+.card { --card-bg: var(--accent-soft); border-radius: 20px; padding: 16px 16px 14px; margin-bottom: 10px; box-shadow: inset 0 0 0 1px var(--line); }
+.card, .card:hover, .card:active { background-color: var(--card-bg); }
+[data-theme="light"] .card { --card-bg: var(--panel); }
+[data-theme="white"] .card { --card-bg: var(--solid); }
+[data-theme="white"] .card:not(:active) { box-shadow: 0 0 0 1px rgba(0,0,0,.06), 0 6px 18px rgba(0,0,0,.05); }
+.card::before, .card::after { display: none; }
+.card .body h3 { font-size: 16.5px; line-height: 1.35; letter-spacing: -.005em; margin-bottom: 6px; }
+.card .body p { font-size: 13.5px; line-height: 1.55; }
+.card .meta { margin-top: 8px; }
+.card .owner .av.sm { width: 30px; height: 30px; }
+.card .owner { right: 14px; top: 14px; }
+/* tags */
+.tag, .tag.plan, .tag.question, .tag.deliverable { border-color: transparent; background: var(--accent-soft); color: var(--ink2); box-shadow: none; }
+.tag.urgent { border-color: transparent; background: var(--accent-soft); color: var(--urgent); }
+.card .meta .tag { height: 20px; padding: 0 9px; font-weight: 650; }
+.tag.deliverable, .tag.plan, .tag.question { background: var(--accent); color: var(--accent-ink); }
+/* legacy review strip chip (m-chip): same card language */
+.m-chip { border: 0; border-radius: 20px; background: var(--accent-soft); box-shadow: inset 0 0 0 1px var(--line); }
+.m-chip::before { display: none; }
+/* sort bar: plain words */
+.ph-bar button { letter-spacing: 0; }
+
+/* ===== P3 (t-aes-p3): one header in a chat thread. The app header (#top logo + stamina, #ticker) is covered, not removed: #layout spans all three body grid rows
+   (top / ticker / layout stay sized as before, so nothing reflows) and sits above them; the thread's own .cl-back pills are the only header and own the status-bar strip.
+   While the surface moves (swipe back / push, #right.oof-on) the header shows again under it, and the screen being revealed (the conversation list, or the origin page
+   of a DM opened elsewhere) is pushed down by --top-h (= #top + #ticker height, mobile.js) so it sits exactly where it lands. Status-bar band / meta untouched.
+   Revert = delete this block + the three P3-marked .cl-back / .ch-msgs lines above. ===== */
+body[data-mtab="chat"][data-cv="thread"] #layout { grid-row: 1 / -1; grid-column: 1; z-index: 2; background: transparent; }
+body[data-mtab="chat"][data-cv="thread"] #top { grid-row: 1; grid-column: 1; } body[data-mtab="chat"][data-cv="thread"] #ticker { grid-row: 2; grid-column: 1; }   /* pinned, or auto-placement would push them into new rows below #layout */
+body[data-mtab="chat"][data-cv="thread"] #top, body[data-mtab="chat"][data-cv="thread"] #ticker { visibility: hidden; }
+body[data-mtab="chat"][data-cv="thread"]:has(#right.oof-on) #top, body[data-mtab="chat"][data-cv="thread"]:has(#right.oof-on) #ticker { visibility: visible; }
+body[data-mtab="chat"][data-cv="thread"] #right.oof-on { background: transparent; }
+body[data-mtab="chat"][data-cv="thread"] #right.oof-on > .cl { top: var(--top-h, 0px); }
+body[data-ret="main"][data-mtab="chat"][data-cv="thread"] #main, body[data-ret="left"][data-mtab="chat"][data-cv="thread"] #left { top: var(--top-h, 0px); }
+
+/* ===== t-imp-p4: stale usage greyed on the phone orb too (overrides D's "stays bright"), 系统状态 sheet ===== */
+.stamina.stale .pct b { color: var(--dim); }
+.st-age { display: none !important; }
+.mdl.sys { width: 100%; max-height: 88dvh; border-radius: 22px 22px 0 0; padding: 26px 18px calc(18px + env(safe-area-inset-bottom)); }
+.sy-hd { flex-wrap: wrap; }
+.m-sys small { font-weight: 600; }
+
+/* ===== t-imp-p5: home search button (opens the shared search sheet, which now also lists actions) ===== */
+.hd-srch { display: inline-grid; place-items: center; flex: none; width: 30px; height: 30px; margin-left: auto; border-radius: 15px; padding: 0;
+  border: 1px solid var(--glass-line); background: var(--glass-lite); color: var(--ink2); }
+.hd-srch svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; }
+.hd-srch:active { transform: scale(.94); }
+.ms-ic { display: grid; place-items: center; width: 34px; height: 34px; border-radius: 10px; background: var(--chip); box-shadow: inset 0 0 0 1px var(--line); color: var(--ink2); font: 600 15px var(--f-sys); }
+@media (max-width: 360px) { .hd-srch { display: none; } }   /* too narrow next to the summary + 像素办公室 pill; the 委托 page search field stays */
+
+/* ===== t-imp-p3: 制作线 on phones = week strip (swipe) + stage sections stacked; empty stages fold to one line */
+.pl-week { grid-template-columns: repeat(7, 38vw); margin: 4px 0 14px; padding: 0 0 6px; scroll-snap-type: x proximity; }
+.pl-day { scroll-snap-align: start; min-height: 74px; }
+.pl-board { display: block; overflow: visible; }
+.pl-col { min-height: 0; margin-bottom: 10px; }
+.pl-col.none { padding: 7px 9px; }
+.pl-col.none .pl-d { margin-bottom: 0; }
+.pl-card { cursor: pointer; }
+
+/* t-routine-close */
+.dw-rt { border-color: var(--glass-line, var(--line2)); }
+#drawer .dw-acts .ab.no.solo { flex: 1; }
+#drawer .dw-acts .rt-off { font-size: 15px; padding: 0 10px; }
+
+/* ---------- t-open-questions (phone): bigger tap targets; the dock keeps its two buttons (the block above already counts what is open) ---------- */
+.ask-o { padding: 8px 14px; font-size: 14px; }
+.ask-opts.sm .ask-o { padding: 7px 13px; font-size: 13.5px; }
+.rv-card .ask-row { margin: 10px 0 2px; padding: 10px 12px; border: 1px solid var(--line2); border-radius: 12px; }
+.rv-card .ask-row .ask-opts.sm { display: flex; }
+#drawer .dock-note { display: none; }
+
+/* ===== t-ui-next (2026-10-28): phone side of the detail polish (rules in style.css) ===== */
+.cs-line { gap: 6px; margin-left: 7px; padding-left: 14px; font-size: 12px; }
+.cs-line + .cs-line::before { top: -12px; }   /* .cs gap is 12px here */
+.cs-card:not(.draftc) { padding: 11px 14px 12px; }
+.cs-me { padding: 9px 14px 11px; }
+
+/* ---------- t-imp29-p1: 推送分级 + 夜间免打扰 + 早报 (设置 → 推送通知, only while push is on) ---------- */
+.pz { margin: 0 4px 0 42px; padding: 2px 0 12px; border-bottom: 1px solid var(--line); }
+.pz-l { font-size: 11.5px; color: var(--dim); margin: 12px 0 8px; letter-spacing: .04em; }
+.pz-seg { display: flex; gap: 2px; padding: 3px; border: 1px solid var(--line2); border-radius: 999px; }
+.pz-seg button { flex: 1; min-height: 34px; border-radius: 999px; font-size: 12.5px; color: var(--ink2); transition: background-color .22s var(--ease), color .22s var(--ease); }
+.pz-seg button.on { background: var(--accent); color: var(--accent-ink); font-weight: 600; }
+.pz-r { border-top: 1px solid var(--line); margin-top: 12px; }
+.pz-r + .pz-r { margin-top: 0; }
+.pz-tg { width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 11px 0; text-align: left; }
+.pz-tg b { display: block; font-size: 14px; font-weight: 600; }
+.pz-tg small { display: block; font-size: 11.5px; color: var(--dim); margin-top: 2px; }
+.pz-span { display: flex; align-items: center; gap: 8px; padding: 0 0 11px; color: var(--dim); }
+.pz-time { appearance: none; -webkit-appearance: none; font: inherit; font-size: 13px; font-variant-numeric: tabular-nums; color: var(--ink); background: var(--chip); border: 1px solid var(--line2); border-radius: 999px; padding: 6px 14px; min-height: 32px; }
+.pz-ch { display: flex; align-items: flex-end; gap: 3px; height: 56px; margin-top: 4px; }
+.pz-ch i { flex: 1; border-radius: 2px 2px 0 0; background: var(--ink2); opacity: .8; }
+.pz-ch i.q { background: var(--dot); opacity: .9; }
+.pz-ax { display: flex; justify-content: space-between; margin-top: 4px; font-size: 10px; color: var(--dim); font-variant-numeric: tabular-nums; }
+.pz-cap { margin-top: 8px; font-size: 12px; color: var(--ink2); line-height: 1.5; }
+
+/* ===== t-imp29-p4: 素材库 on phones — chips scroll sideways inside their row (never the page), two tiles per row */
+.lib-bar { flex-direction: column; align-items: stretch; gap: 8px; }
+.lib-chips { flex: none; width: 100%; }
+.lib-seg { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
+.lib-seg::-webkit-scrollbar { display: none; }
+.lib-q { flex: none; width: 100%; height: 38px; font-size: 16px; }
+.lib-g { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.lib-cap { padding: 6px 8px; font-size: 11.5px; }
+
+/* ===== t-imp29-p5: chips wrap inside phone bubbles; bigger picker rows for touch */
+.idc b { max-width: 9.5em; }
+.hp-r { padding: 10px 8px; font-size: 15px; }
+.hp-f { display: none; }
+
+/* ===== t-m2-a ⑤ glass dialogs + toast. The scrim drops its blur(6px) and the sheet blurs instead, so the blurred-layer count on screen stays the same.
+   A denser tint than the pill glass (--glass-panel), because a sheet is full of text. Reduced transparency / no backdrop-filter: solid (same switch as --glass-bg). */
+html[data-theme="dark"] { --glass-panel-fx: linear-gradient(135deg, rgba(255,255,255,.10) 0, transparent 40%), rgba(26,26,30,.66); }
+html[data-theme="light"] { --glass-panel-fx: linear-gradient(135deg, rgba(255,255,255,.45) 0, transparent 40%), rgba(246,241,229,.72); }
+html[data-theme="white"] { --glass-panel-fx: linear-gradient(135deg, rgba(255,255,255,.6) 0, transparent 40%), rgba(255,255,255,.74); }
+html[data-theme] { --glass-panel: var(--glass-solid); }
+@supports ((-webkit-backdrop-filter: blur(1px)) or (backdrop-filter: blur(1px))) { html[data-theme] { --glass-panel: var(--glass-panel-fx); } }
+@media (prefers-reduced-transparency: reduce) { html[data-theme] { --glass-panel: var(--glass-solid); } }
+/* The scrim colour + its fade-in move to #modal::before: an element that runs an opacity animation becomes a "backdrop root", and a blurred sheet inside it
+   would only blur the flat scrim (the page would show through unblurred). #modal itself now has no background, filter or animation. */
+html[data-theme] #modal { -webkit-backdrop-filter: none; backdrop-filter: none; background: none; animation: none; }
+html[data-theme] #modal::before { content: ""; position: fixed; inset: 0; background: rgba(0,0,0,.46); animation: veil .4s ease both; }
+html[data-theme="light"] #modal::before { background: rgba(60,45,20,.22); }
+html[data-theme="white"] #modal::before { background: rgba(0,0,0,.28); }
+html[data-theme] #modal .mdl { background: var(--glass-panel); -webkit-backdrop-filter: var(--glass-bf); backdrop-filter: var(--glass-bf);
+  box-shadow: var(--glass-rim), var(--glass-shadow); border-top: 1px solid var(--glass-line); border-radius: 22px 22px 0 0; }
+html[data-theme] #modal .mdl .foot { background: linear-gradient(to top, var(--glass-solid) 62%, transparent); }
+html[data-theme] #toast { background: var(--glass-panel); -webkit-backdrop-filter: var(--glass-bf); backdrop-filter: var(--glass-bf); border: 1px solid var(--glass-line);
+  box-shadow: var(--glass-rim), var(--glass-shadow); border-radius: 22px; padding: 10px 20px; text-shadow: none; color: var(--ink); letter-spacing: .04em; }
+html[data-theme] #toast.err { color: var(--urgent); }
+/* ③ cold-start skeleton: drawn over the empty app until the first /api/state answer (app.js bootDone removes it) */
+#boot-sk { display: block; position: fixed; left: 0; right: 0; top: calc(env(safe-area-inset-top, 0px) + 60px); z-index: 1; }
+
+/* ===== t-m2-b ① shared-element push (app.js vtRun). While html.vt-run is set the browser animates snapshots, so the drawer slide and the page recede
+   jump straight to their end state underneath (no double motion). One named group (m2-card); the root cross-fades. Snapshots exist only for the transition. */
+html.vt-run #drawer, html.vt-run #page { transition: none !important; }
+::view-transition-group(m2-card) { animation-duration: .36s; animation-timing-function: cubic-bezier(.2,.8,.2,1); border-radius: 18px; overflow: clip; }
+::view-transition-old(m2-card), ::view-transition-new(m2-card) { height: 100%; width: 100%; object-fit: cover; object-position: top; }
+::view-transition-old(m2-card) { animation: vt-fade-out .12s ease-out both; }   /* the stretched card snapshot must not linger */
+::view-transition-new(m2-card) { animation: vt-fade-in .28s ease-out .04s both; }
+::view-transition-old(root), ::view-transition-new(root) { animation-duration: .3s; }
+@keyframes vt-fade-out { to { opacity: 0; } }
+@keyframes vt-fade-in { from { opacity: 0; } }
+
+/* ===== t-m2-c ④ pull-to-refresh pill (mobile.js). Fixed under the top bar of the list being pulled; only transform / opacity move.
+   --ptr-y / --ptr-o follow the finger (inline, no transition while .live); release springs to the rest spot. Idle = hidden (no layer). Ink + the red --dot. */
+#ptr { position: fixed; left: 50%; top: var(--ptr-top, 54px); z-index: 30; display: flex; align-items: center; gap: 8px; height: 34px; padding: 0 14px 0 11px;
+  border-radius: 17px; font-size: 13px; font-weight: 600; letter-spacing: .03em; color: var(--ink); pointer-events: none; white-space: nowrap;
+  background: var(--glass-panel); border: 1px solid var(--glass-line); box-shadow: var(--glass-rim), var(--glass-shadow); -webkit-backdrop-filter: var(--glass-bf); backdrop-filter: var(--glass-bf);
+  transform: translate3d(-50%, calc(var(--ptr-y, 0px) - 40px), 0); opacity: var(--ptr-o, 0);
+  transition: transform var(--m-base) var(--m-spring-soft), opacity var(--m-quick) ease-out; }
+#ptr[hidden] { display: none; }
+#ptr.live { transition: none; will-change: transform, opacity; }
+#ptr[data-s="busy"], #ptr[data-s="done"], #ptr[data-s="fail"] { --ptr-o: 1; }
+#ptr[data-s="out"] { transform: translate3d(-50%, -46px, 0); opacity: 0; transition: transform var(--m-base) var(--m-ease-in), opacity var(--m-quick) ease-in; }
+#ptr i { display: none; flex: none; }
+#ptr .ptr-ic { display: block; width: 16px; height: 16px; transition: transform var(--m-quick) var(--m-ease-std); }
+#ptr .ptr-ic svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; display: block; }
+#ptr[data-s="ready"] .ptr-ic { transform: rotate(180deg); }
+#ptr[data-s="busy"] .ptr-ic, #ptr[data-s="done"] .ptr-ic, #ptr[data-s="fail"] .ptr-ic, #ptr[data-s="out"] .ptr-ic { display: none; }
+#ptr[data-s="busy"] .ptr-sp { display: block; width: 14px; height: 14px; border-radius: 50%; border: 2px solid var(--line2, rgba(128,128,128,.35)); border-top-color: var(--ink); animation: ptr-spin .7s linear infinite; }
+#ptr[data-s="done"] .ptr-dot { display: block; width: 8px; height: 8px; border-radius: 50%; background: var(--dot); animation: ptr-pop var(--m-base) var(--m-spring) both; }
+#ptr[data-s="fail"] { color: var(--ink2); }
+@keyframes ptr-spin { to { transform: rotate(360deg); } }
+@keyframes ptr-pop { from { transform: scale(0); } }
+@media (prefers-reduced-motion: reduce) {
+  #ptr, #ptr .ptr-ic, #ptr[data-s="out"] { transition: none; }
+  #ptr[data-s="busy"] .ptr-sp { animation: none; border-top-color: var(--line2, rgba(128,128,128,.35)); }
+  #ptr[data-s="done"] .ptr-dot { animation: none; }
+}
+
+/* ---------- t-btn-names (phone): review-card button + swipe deck; the dock rule lives in style.css ---------- */
+.rv-ok b { font-weight: inherit; }
+.rv-ok.has-ask { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; line-height: 1.15; }
+.dk-who .ok-ask { display: inline-block; margin-left: 8px; font-size: 12px; font-weight: 600; opacity: 1; color: var(--accent); }
+
+/* ---------- t-ask-rec (phone): undo pill sits above the detail dock ---------- */
+#ar-undo { left: 16px; right: 16px; width: auto; bottom: calc(env(safe-area-inset-bottom) + 150px); }
+.sec-h .ask-allrec { height: 32px; font-size: 13.5px; }
+
+/* t-draft-keep: restored-draft line in the phone dock, and the [草稿] marker in the chat list */
+#drawer .dw-dock .dr-tag { padding: 0 max(16px, env(safe-area-inset-right)) 0 max(16px, env(safe-area-inset-left)); margin-bottom: -6px; }
+.cl-p .cl-dr { color: var(--dot); font-weight: 600; }
+
+#newver { top: auto; bottom: calc(var(--tb-h) + 14px); }   /* t-new-ver: above the tab bar */
+
+/* t-id-copy: the card id shows on the phone too (small grey, truncates instead of pushing the category pill off) */
+#drawer .dw-lead .dw-id { display: inline-flex; min-width: 0; max-width: 100%; font-size: 11.5px; padding: 4px 2px; }
+#drawer .dw-lead .dw-id span { min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }

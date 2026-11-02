@@ -1,0 +1,30 @@
+#!/bin/zsh
+# Install the dashboard as a macOS LaunchAgent: starts at login, restarts if it dies.
+#   tools/install_service.sh            install / reinstall
+#   tools/install_service.sh remove     uninstall
+# Note: macOS may ask to allow python3 to access the Desktop folder the first time.
+set -e
+ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+LABEL=com.underthread.server
+PLIST="$HOME/Library/LaunchAgents/$LABEL.plist"
+PY="$(command -v python3)"
+launchctl bootout "gui/$(id -u)/$LABEL" 2>/dev/null || true
+if [[ "$1" == "remove" ]]; then rm -f "$PLIST"; echo "removed"; exit 0; fi
+mkdir -p "$ROOT/logs" "$HOME/Library/LaunchAgents"
+cat > "$PLIST" <<PL
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0"><dict>
+  <key>Label</key><string>$LABEL</string>
+  <key>ProgramArguments</key><array><string>$PY</string><string>$ROOT/server.py</string></array>
+  <key>WorkingDirectory</key><string>$ROOT</string>
+  <key>RunAtLoad</key><true/>
+  <key>KeepAlive</key><true/>
+  <key>ThrottleInterval</key><integer>5</integer>
+  <key>StandardOutPath</key><string>$ROOT/logs/server.log</string>
+  <key>StandardErrorPath</key><string>$ROOT/logs/server.log</string>
+</dict></plist>
+PL
+launchctl bootstrap "gui/$(id -u)" "$PLIST"
+sleep 2
+curl -s -o /dev/null -w "dashboard: %{http_code}\n" http://127.0.0.1:8765/ || echo "not answering yet: see $ROOT/logs/server.log"
