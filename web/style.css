@@ -2141,3 +2141,10 @@ html[data-theme] #toast::before, html[data-theme] #toast::after { display: none;
 .sy-u b .sy-est { font: 600 10px/1 var(--f-sys); font-style: normal; color: var(--dim); border: 1px solid color-mix(in srgb, var(--dim) 55%, transparent); border-radius: 4px; padding: 2px 3px 1px; margin-right: 5px; vertical-align: 3px; }
 /* the pill hangs below #top; #layout (z 1, later in the DOM, opaque in white) painted over it. Lift the header only while the pill shows and the chat isn't popped out. */
 @media (min-width: 761px) { body:not(.chat-pop) #top:has(.st-age:not([hidden])) { z-index: 2; } }
+/* ===== t-select-color: under the ink skin my chat bubble (and the filled 待验收/待拍板 tags, the queue badge) are inverted against the theme:
+   light fill on dark themes, dark fill on light ones. The global ::selection (light ink on dark themes, dark ink on light) then matched the fill
+   and selected text vanished. These inverted surfaces get the opposite highlight. Shared by desktop and phone. */
+html[data-theme="dark"] #right .msg.me .mb::selection, html[data-theme="dark"] #right .msg.me .mb *::selection,
+html[data-theme="dark"] .tag.deliverable::selection, html[data-theme="dark"] .tag.plan::selection, html[data-theme="dark"] .aq-n::selection { background: rgba(17,17,17,.2); color: #111; }
+html:not([data-theme="dark"]) #right .msg.me .mb::selection, html:not([data-theme="dark"]) #right .msg.me .mb *::selection,
+html:not([data-theme="dark"]) .tag.deliverable::selection, html:not([data-theme="dark"]) .tag.plan::selection, html:not([data-theme="dark"]) .aq-n::selection { background: rgba(255,255,255,.34); color: #fff; }
