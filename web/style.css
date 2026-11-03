@@ -2170,6 +2170,15 @@ time, .nrv, .aq, .aq-n, .badge, .nav-i .n, .grp-h, .col-h span, .rf-pill b, .rt-
 /* PingFang SC stops at Semibold (600): the browser's default bold (700) only thickens the Latin and digits in a mixed line. Cap it. */
 b, strong, th, h1, h2, h3, h4, h5, h6 { font-weight: 600; }
 
+/* ri1103-P3: desktop left nav — the 8 lower pages sit in two columns so all TEAM fits one screen */
+@media (min-width: 761px) {
+  #nav { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); column-gap: 4px; }
+  #nav > .nav-i, #nav > .nav-sep { grid-column: 1 / -1; }
+  #nav > .nav-sep ~ .nav-i { grid-column: auto; min-width: 0; padding-top: 5px; padding-bottom: 5px; }
+  #nav > .nav-sep ~ .nav-i > span:first-child { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  #nav > .nav-sep ~ .nav-i .n { display: none; }
+}
+
 /* ri1103-P1: today's schedule lists the team's fixed daily routines (rows from app.js renderLeft) */
 .cal-i.cal-rt { align-items: center; gap: 8px; cursor: pointer; padding: 2px 0; }
 #cal.noev:not(.cal-empty) { margin-bottom: 12px; }
