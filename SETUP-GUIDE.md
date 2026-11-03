@@ -1,10 +1,10 @@
-# Underthread: personal content team + local review dashboard
+# Underthread: a personal AI agent team + local review dashboard
 
 One long-running Claude Code **manager** session takes your instructions from a local dashboard, sends the work to
-specialist **subagents**, and leaves you only to review and approve. Built for a 自媒体 team
-(B站 / YouTube / 小红书). There are no Slack or email collectors: you give the orders.
+specialist **subagents**, and leaves you only to review and approve. It works around the clock on whatever you hand it:
+research, writing, small fixes, planning, recurring chores. There are no Slack or email collectors: you give the orders.
 
-> Items marked **(example)** are choices you can change: roles, platforms, paths.
+> Items marked **(example)** are choices you can change: roles, categories, paths.
 
 ---
 
@@ -12,12 +12,12 @@ specialist **subagents**, and leaves you only to review and approve. Built for a
 
 | Problem | How the setup handles it |
 |---|---|
-| Too many content pieces to keep in your head | Every request becomes a card with a category, an owner and a stage |
-| Context switching between ideas, scripts, covers, posts | The manager routes each card to a specialist and you review one queue |
-| Fear of agents acting on your behalf | Agents produce **drafts, plans and files only**. You publish. Big work needs an approved plan first |
+| Too many open tasks to keep in your head | Every request becomes a card with a category, an owner and a stage |
+| Context switching between research, writing, fixes and planning | The manager routes each card to a specialist and you review one queue |
+| Fear of agents acting on your behalf | Agents produce **drafts, plans and files only**. You decide what goes out. Big work needs an approved plan first |
 | Agents repeat the same mistakes | A rejection becomes a one-line rule you adopt. Agents read their rules on every dispatch |
 
-What you do all day: open the dashboard, read the review queue, then approve, reject with a reason, or copy a draft out and publish it.
+What you do all day: open the dashboard, read the review queue, then approve, reject with a reason, or take a draft and use it.
 
 ---
 
@@ -34,7 +34,7 @@ flowchart LR
   end
   MGR[Manager session<br/>Claude Code, long-running]
   AG[Specialist subagents<br/>.claude/agents/underthread-*.md]
-  GPU[5090 · ComfyUI<br/>via SSH tunnel]
+  GPU[Optional GPU box · ComfyUI<br/>via SSH tunnel]
 
   UI <-->|/api/state, /api/action| SRV
   SRV --> SU --> ST
@@ -59,7 +59,7 @@ flowchart LR
 | `roster.json` | One entry per role: names, title, duty, specialties, skills, role notes, agent file name, optional voice | Input to `make_agents.py` and to the dashboard |
 | `make_agents.py` | Writes `.claude/agents/<agent_name>.md` (one subagent per role) from `roster.json` + shared hard rules, and refreshes the dispatch table in `manager.md` | Re-run after any roster change |
 | `roles/*.md` | Role notes: `common.md` + one per role, each ending in `## Confirmed rules` | Agents read them every dispatch. Adopted rules are appended here |
-| `tools/comfy.py` | ComfyUI client: `tunnel`, `ping`, `nodes`, `run` | For the artist role |
+| `tools/comfy.py` | ComfyUI client: `tunnel`, `ping`, `nodes`, `run` | Optional, for an image-generation role |
 
 ### Memory layers
 
@@ -74,24 +74,26 @@ flowchart LR
 
 ## 3. Roles (by function)
 
-Each role is a custom subagent generated from `roster.json`. Names are placeholders. Rename freely.
+Each role is a custom subagent generated from `roster.json`. The example roster ships one manager and six specialists with
+placeholder names; rename them, change what they do, add or remove roles. The ids below are the ones in `roster.example.json`.
 
-| Role | Id | Responsibility |
+| Role (example) | Id | Responsibility |
 |---|---|---|
-| 管家 Steward (manager) | `manager` | The long-running main session. Triage, dispatch, relay, schedule (doubles as producer), daily report. Not a subagent |
-| 研究员 Scout | `scout` | Topic pool, trend and benchmark breakdowns, research, fact-checking |
-| 编剧 Writer | `writer` | Production doc, scripts, hooks, titles, descriptions, all copy |
-| 导演 Director | `director` | Storyboard, shot list, edit plan, ffmpeg rough cut / subtitles / vertical slices |
-| 美术 Artist | `artist` | Covers, thumbnails, concept art, b-roll stills via ComfyUI on the 5090 |
-| 运营 Ops | `ops` | Per-platform packaging, publishing calendar, comment replies, analytics review |
-| 工匠 Smith | `smith` | Tooling keeper: dashboard, scripts, ComfyUI pipeline. First responder for tool errors |
+| Manager | `manager` | The long-running main session. Triage, dispatch, relay, schedule, daily report. Not a subagent |
+| Researcher | `scout` | Looks things up, compares options, fact-checks, with a source for every claim |
+| Writer | `writer` | Drafts documents, reports, messages and any other text |
+| Planner | `director` | Breaks a bigger job into steps, plans and checklists; can run local tools on your files |
+| Designer | `artist` | Images and visuals (optionally via your own ComfyUI box) |
+| Coordinator | `ops` | Follow-ups, schedules, recurring chores, summaries of what happened |
+| Tooling keeper | `smith` | The dashboard, scripts and small fixes. First responder when a tool breaks |
 
-Roles are by **function**, not by project: main / side is the item's category. That way every correction about one craft accumulates as rules on one role.
+Roles are by **function**, not by project: the category is a property of the card. That way every correction about one kind
+of work accumulates as rules on one role.
 
 ### Categories
 
-Only five: `main` 主线 (the current big production), `side` 支线 (steady updates), `daily` 日常委托 (one-offs),
-`urgent` 紧急活动 (today's deadline, trending window, broken tooling), `ongoing` 常驻活动 (evergreen; lowest priority).
+Five, all renamable in the UI strings: `main` 主线 (your current big project), `side` 支线 (smaller ongoing work),
+`daily` 日常委托 (one-offs), `urgent` 紧急活动 (today's deadline, something broken), `ongoing` 常驻活动 (recurring; lowest priority).
 
 ---
 
@@ -101,17 +103,17 @@ The UI toggles between Chinese and English, and between dark and light.
 
 | Area | What it shows / does |
 |---|---|
-| **Review queue** (default page) | Pixel office (each agent at a desk; working agents glow and show a status bubble) above every card waiting on you, grouped "new since last visit", then by category |
+| **Home** (default page) | On the desktop a grid of widgets: waiting on you, working now, new replies, shipped today, this week, routines, recent media. Edit mode lets you remove, resize, reorder and add widgets. The phone shows the team strip and the review cards |
 | **Category pages** | 主线 / 支线 / 日常委托 / 紧急活动 / 常驻活动, grouped by stage |
 | **委托板 Board** | Kanban: to do / in progress / your review / waiting / done. Drag to change stage |
 | **Item detail** (click a card) | Summary, owner / category / stage selectors, the **draft** with a copy button and older versions, **confidence**, evidence, files, the **thread**; a composer (`@agent`, paste images); **批准 Approve**, **驳回 Reject** (with a reason), **完成 Mission complete**, **重开 Reopen** |
-| **Chat panel** (right) | Direct channel to the manager, plus a DM thread per agent (relayed by the manager). Quick-reply buttons when the manager offers options |
+| **Chat panel** (right) | Direct channel to the manager, plus a DM thread per agent (relayed by the manager). Quick-reply buttons when the manager offers options; answered ones fold to one line |
 | **TEAM** (left) | Each agent's status and current activity. Click to open their DM |
 | **Ticker** | Rotating notices: manager offline with pending instructions, unowned urgent items, long waits, notices the manager pinned |
 | **Stamina** | Click to set your monthly budget %. The thin bar under it is the manager's context use (`S set-stamina --focus`) |
 | **WATCH** | Shipped this week, first-pass rate, 7-day sparkline, queue counts |
 | **今日日程** | Your schedule for today and tomorrow (add with +). The manager plans the daily report around it |
-| **日志 / 报告 / 频道 / 文档 / 角色 / 信箱** | Work log; daily reports; per-platform view; role notes and agent files; roster with stats and pending rule proposals (Adopt / Drop); mailbox of replies and updates |
+| **日志 / 报告 / 频道 / 文档 / 角色 / 信箱** | Work log; daily reports; per-channel view; role notes and agent files; roster with stats and pending rule proposals (Adopt / Drop); mailbox of replies and updates |
 | **Header** | Manager online state, next event, team count, ComfyUI tunnel state, unprocessed inbox count, theme / language, mailbox, report, ping manager |
 
 ---
@@ -120,9 +122,9 @@ The UI toggles between Chinese and English, and between dark and light.
 
 | Guardrail | How it is enforced |
 |---|---|
-| **Drafts only** | Every agent file says it: never publish, post or upload anywhere. You copy drafts out yourself |
+| **Drafts only** | Every agent file says it: never publish, post, upload or send anything to an outside service. You take the draft and act on it yourself |
 | **Plan-first** | Big work (>30 min, >20 generations, files outside `work/<item>/`) → plan → you approve → execute only what the plan lists |
-| **Your files are safe** | Agents write under `work/<item-id>/` only. Never overwrite `uploads/` or source footage |
+| **Your files are safe** | Agents write under `work/<item-id>/` only. Never overwrite `uploads/` or your own files |
 | **Close-out review → rules** | On every done or reject, the manager proposes at most 2 one-line rules. You adopt or drop. Adopted rules go to the role notes |
 | **Rights** | Only assets and models you are allowed to use. Sources and seeds are recorded in evidence |
 | **Local only** | The dashboard binds to 127.0.0.1. Never publish or deploy it |
@@ -137,8 +139,8 @@ The UI toggles between Chinese and English, and between dark and light.
 |---|---|
 | Claude Code | `claude --version` |
 | Python 3 (stdlib only) and a browser | `python3 --version` |
-| ffmpeg (for the director) | `ffmpeg -version` |
-| SSH access to the 5090 box running ComfyUI (for the artist) | `ssh <host> nvidia-smi` |
+| Optional: ffmpeg, if a role works on audio or video | `ffmpeg -version` |
+| Optional: SSH access to a GPU box running ComfyUI, for image generation | `ssh <host> nvidia-smi` |
 
 ### 6.2 Copy and adapt the files
 
@@ -146,9 +148,9 @@ The UI toggles between Chinese and English, and between dark and light.
 
 | Template | Live name | What to fill in |
 |---|---|---|
-| `config.example.json` | `config.json` | `owner.display_name`, `report_time`, platform home links, `comfy.ssh_host` / ports |
+| `config.example.json` | `config.json` | `owner.display_name`, `report_time`, optional links, `comfy.ssh_host` / ports |
 | `roster.example.json` | `roster.json` | Your roles (names, duties, specialties, voice). `"enabled": false` hides a role |
-| `state.example.json` | `state.json` | Nothing. It seeds three example cards you can archive |
+| `state.example.json` | `state.json` | Nothing. It seeds four example cards you can archive |
 
 2. Optional: copy `claude-settings.example.json` to `.claude/settings.json` so the team can run `stateutil.py`, `comfy.py` and ffmpeg without a prompt each time.
 
@@ -182,11 +184,11 @@ claude "Start the manager per manager.md"
 
 On startup the manager reads `team.md`, `policy.md`, `roles/common.md` and its handoff file, sets itself online, starts a Monitor on `tail -n0 -F inbox.jsonl` **before** reading the backlog, then works through `S inbox-pending`. The dashboard shows "管家 在线" once that first step runs.
 
-### 6.6 ComfyUI (artist)
+### 6.6 ComfyUI (optional)
 
 1. Set `comfy.ssh_host` in `config.json`.
-2. `python3 tools/comfy.py tunnel`, then `python3 tools/comfy.py ping`. The header shows "5090 在线" within a minute.
-3. In ComfyUI, export your workflows with **Save (API)** into `tools/workflows/`. `python3 tools/comfy.py nodes <wf>.json` lists which node inputs the artist can `--set`.
+2. `python3 tools/comfy.py tunnel`, then `python3 tools/comfy.py ping`. The header shows the GPU box as online within a minute.
+3. In ComfyUI, export your workflows with **Save (API)** into `tools/workflows/`. `python3 tools/comfy.py nodes <wf>.json` lists which node inputs an agent can `--set`.
 
 ### 6.7 Restart notes
 
@@ -204,7 +206,7 @@ Before restarting the manager, make sure it has written `manager-handoff.md` (�
 
 ## 7. Skins and art
 
-The kit ships an ornate dark skin and a parchment light skin, with no character art. Agents show a generated
+The kit ships a dark and a light skin, with no character art. Agents show a generated
 pixel face until you add your own image as `avatars/<id>.png`. The pixel office is drawn in code (`web/office.js`):
 rooms come from each role's `room`, colours from `color`. Use only art you are allowed to use.
 
