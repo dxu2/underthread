@@ -751,14 +751,14 @@
       const dr = App.draft ? App.draft("dm:" + x.a.id) : null;   // t-draft-keep: unsent text shows as [草稿] like WeChat
       return `<button class="cl-row ${x.a.id === "manager" ? "pin" : ""}" data-conv="${x.a.id}">
         <span class="cl-av">${App.av(x.a)}${x.n ? `<b class="cl-n${pop}">${x.n > 99 ? "99+" : x.n}</b>` : ""}</span>
-        <span class="cl-m"><span class="cl-t"><span class="nm">${esc(App.aname(x.a))}</span>${st}<time>${wtime(x.last && x.last.t)}</time></span>
+        <span class="cl-m"><span class="cl-t"><span class="nm">${esc(App.aname(x.a))}</span>${App.qBadge ? App.qBadge(x.a.id) : ""}${st}<time>${wtime(x.last && x.last.t)}</time></span>
         <span class="cl-p">${dr ? `<span class="cl-dr">${en() ? "[Draft]" : "[草稿]"}</span> ${esc(dr.t.replace(/\s+/g, " ").trim())}` : x.last ? esc(preview(x.last)) : `<em>${esc(App.atitle(x.a))}</em>`}</span></span></button>`;
     }).join("") || `<div class="empty">${App.t("empty")}</div>`;
     const box = $(".cl-rows", el);
     if (box._html !== html) { box.innerHTML = html; box._html = html; }
     const a = App.agent(App.UI.chat), others = all.filter(x => x.a.id !== App.UI.chat).reduce((n, x) => n + x.n, 0);
     $(".cl-back .n", r).textContent = others ? (others > 99 ? "99+" : others) : "";
-    $(".cl-back .who", r).innerHTML = `${App.av(a, "sm")}<span class="wt"><span class="nm">${esc(App.aname(a))}</span><span class="ti">${esc(App.atitle(a))}${a.status === "working" ? ` · <i class="st">${App.t("working")}<span class="m-dots"><i></i><i></i><i></i></span></i>` : ""}</span></span>`;
+    $(".cl-back .who", r).innerHTML = `${App.av(a, "sm")}<span class="wt"><span class="nm">${esc(App.aname(a))}${App.qBadge ? App.qBadge(a.id) : ""}</span><span class="ti">${esc(App.atitle(a))}${a.status === "working" ? ` · <i class="st">${App.t("working")}<span class="m-dots"><i></i><i></i><i></i></span></i>` : ""}</span></span>`;
     decorateThread();
   }
 

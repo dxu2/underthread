@@ -155,6 +155,7 @@
       // only the active panel carries navigation attributes (app.js listens for [data-chat] globally)
       setA(el, "data-chat", on && !it ? a.id : null); setA(el, "data-hd-open", on && it ? it.id : null);
       const op = $("[data-op]", el); setA(op, "data-hd-open", it ? it.id : null); op.classList.toggle("off", !it);
+      setH($(".rl", el), `<span class="rl-t">${esc(A().atitle(a))}</span>` + (A().qBadge ? A().qBadge(a.id) : ""));   // t-agent-queue-mobile: 「排队 N」 on the title line (the name line is full)
       const st = $(".hd-st", el); setH(st, w ? "<i></i>" + L().working : a.id === "manager" && a.status === "working" ? L().online : L().resting); st.classList.toggle("idle", !w);
       setT($(".dp-t span", el), it ? it.title : (w ? a.activity || "" : L().chat)); $(".dp-t", el).classList.toggle("chat", !it);
       setT($(".dp-m em", el), w ? (sn ? L().since(clock(sn), dur(mins(sn))) : (a.activity || L().working)) : (a.id === "manager" ? L().mgr : a.last_seen ? L().ago(durShort(mins(a.last_seen))) : L().resting));

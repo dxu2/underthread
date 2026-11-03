@@ -1632,3 +1632,11 @@ html.vt-run #drawer, html.vt-run #page { transition: none !important; }
 #drawer .dw-lead .dw-id span { min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
 /* t-stamina-stale v2: phones have no pill, so the subtitle carries the reason ("管家离线 · 33 分钟前") in the warning colour */
 #stamina.est.stale .pct > small { color: var(--warn); font-weight: 600; }
+
+/* t-agent-queue-mobile: 「排队 N」 in the chat list row, the DM header pill and the expanded home panel (base .aq / .aq-pop live in style.css) */
+.cl-t .aq { margin-left: -2px; flex: none; align-self: center; }
+.cl-back .who .wt .nm { display: inline-flex; align-items: center; }
+.cl-back .who .aq { height: 16px; font-size: 10px; padding: 0 5px; margin-left: 6px; letter-spacing: 0; }
+.dp-info .rl { display: flex; align-items: center; min-width: 0; } .dp-info .rl-t { min-width: 0; overflow: hidden; text-overflow: ellipsis; }   /* a long title gives way, the badge stays whole inside the slanted panel */
+.dp-info .rl .aq, .dp-info .rl .aq:hover { flex: none; height: 17px; padding: 0 6px; margin-left: 7px; font-size: 10.5px; background: rgba(255,255,255,.22); color: #fff; }
+.aq-pop { max-width: calc(100vw - 16px); }
