@@ -758,10 +758,19 @@ body.chat-folded .ch-grip { cursor: default; }
 .cs-jump .new { position: absolute; right: 1px; top: 1px; width: 7px; height: 7px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 8px var(--accent-line); }
 
 /* 5. composer: recipient chip + @ picker (keeps .composer / textarea / .cm-row so mobile.js still hooks in) */
-.cm-to { display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--line2); border-radius: 12px; padding: 1px 8px 1px 2px; font-size: 12.5px; }
-.cm-to .av.sm { width: 18px; height: 18px; }
+/* t-sendto-chip (2026-11-02): 「发给 [头像] @某人」 = a soft tinted pill, no border; equal 5px gaps; the avatar drops its outline and the
+   working ring (that ring belongs to the team strip, here it read as a white halo). It only looks clickable on hover: a click puts an
+   "@" at the caret and opens the same picker as typing "@". */
+.cm-to { display: inline-flex; align-items: center; gap: 5px; height: 24px; border: 0; border-radius: 999px; padding: 0 10px 0 9px; font-size: 12px; line-height: 1;
+  color: var(--dim); background: color-mix(in srgb, var(--ink) 5%, transparent); cursor: pointer; user-select: none; -webkit-user-select: none;
+  transition: background-color .15s ease, color .15s ease; }
+.cm-to:hover { background: color-mix(in srgb, var(--ink) 10%, transparent); color: var(--ink2); }
+.cm-to:has(button) { padding-right: 3px; }
+.cm-to .av.sm, .cm-to .av.sm.working { width: 18px; height: 18px; border: 0; box-shadow: none; animation: none; }
+.cm-to .av::before, .cm-to .av::after { content: none; }
 .cm-to b { font-weight: 600; color: var(--ink); }
-.cm-to button { color: var(--dim); margin-left: 2px; } .cm-to button:hover { color: var(--urgent); }
+.cm-to button { width: 18px; height: 18px; border-radius: 50%; display: grid; place-items: center; font-size: 9px; color: var(--dim); margin-left: 1px; }
+.cm-to button:hover { color: var(--urgent); background: color-mix(in srgb, var(--ink) 8%, transparent); }
 .at-pop { position: absolute; left: 30px; bottom: calc(100% - 6px); min-width: 240px; background: var(--solid); border: 1px solid var(--line2); box-shadow: var(--shadow); padding: 4px 0; z-index: 6; }
 .at-pop[hidden] { display: none; }
 .at-pop div { display: flex; align-items: center; gap: 10px; padding: 6px 14px; font-size: 13.5px; cursor: pointer; }
@@ -890,31 +899,68 @@ body.resizing #layout { transition: none; }
 .atts .lb-vid img { border: 0; }
 .lb-play { position: absolute; left: 50%; top: 50%; width: 38px; height: 38px; margin: -19px 0 0 -19px; border-radius: 50%; display: grid; place-items: center;
   background: rgba(0,0,0,.55); color: #fff; font-style: normal; font-size: 14px; padding-left: 3px; border: 1px solid rgba(255,255,255,.5); pointer-events: none; }
-#lb { position: fixed; inset: 0; z-index: 9000; display: none; touch-action: none; user-select: none; -webkit-user-select: none; }
+/* t-media-viewer (2026-11-02): the page behind turns to frosted glass, the media sits in a rounded frame.
+   ONE blur layer only (.lb-bg); the frame, buttons and dots never blur again (iPhone layer budget). #lb itself carries no
+   opacity / filter / animation, so .lb-bg is not inside a backdrop root. Solid fallback: no backdrop-filter, or 减少透明度. */
+#lb { position: fixed; inset: 0; z-index: 9000; display: none; touch-action: none; user-select: none; -webkit-user-select: none;
+  --lb-scrim: rgba(10,10,12,.42); --lb-solid: rgba(16,16,18,.85); --lb-frame: rgba(24,22,20,.80); --lb-ink: #f2efe9; --lb-dim: rgba(242,239,233,.62);
+  --lb-chip: rgba(255,255,255,.08); --lb-chip-h: rgba(255,255,255,.17); --lb-line: rgba(255,255,255,.10); --lb-shadow: 0 30px 80px rgba(0,0,0,.5); }
+[data-theme="white"] #lb, [data-theme="light"] #lb {
+  --lb-scrim: rgba(250,248,245,.38); --lb-solid: rgba(246,244,240,.85); --lb-frame: rgba(251,250,247,.86); --lb-ink: #1c1b19; --lb-dim: rgba(28,27,25,.56);
+  --lb-chip: rgba(0,0,0,.05); --lb-chip-h: rgba(0,0,0,.10); --lb-line: rgba(0,0,0,.08); --lb-shadow: 0 30px 70px rgba(40,30,15,.22); }
 #lb.on { display: block; }
-#lb .lb-bg { position: absolute; inset: 0; background: #000; opacity: 1; animation: lb-in .24s var(--ease); }
-#lb.out .lb-bg, #lb.out .lb-stage { opacity: 0; transition: opacity .18s var(--ease); }
+#lb .lb-bg { position: absolute; inset: 0; background: var(--lb-scrim); -webkit-backdrop-filter: blur(24px) saturate(1.15); backdrop-filter: blur(24px) saturate(1.15);
+  animation: lb-in .24s var(--ease) backwards; }
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) { #lb .lb-bg { background: var(--lb-solid); } }
+@media (prefers-reduced-transparency: reduce) { #lb .lb-bg { -webkit-backdrop-filter: none; backdrop-filter: none; background: var(--lb-solid); } }
+#lb .lb-frame { position: absolute; inset: 7vh 6vw; display: flex; flex-direction: column; border-radius: 26px; overflow: hidden; color: var(--lb-ink);
+  background: var(--lb-frame); box-shadow: inset 0 0 0 1px var(--lb-line), var(--lb-shadow); animation: lb-pop .26s var(--ease) backwards; }
 @keyframes lb-in { from { opacity: 0; } }
-#lb .lb-stage { position: absolute; inset: 0; display: grid; place-items: center; overflow: hidden; }
-#lb .lb-media { max-width: 100%; max-height: 100%; object-fit: contain; will-change: transform; }
-#lb video.lb-media { width: 100%; height: 100%; background: #000; }
-#lb .lb-err { color: #ddd; font-size: 15px; padding: 24px; text-align: center; font-family: var(--f-sys, sans-serif); }
-#lb .lb-err a { color: #fff; text-decoration: underline; }
-#lb .lb-top { position: absolute; left: 0; right: 0; top: 0; z-index: 2; display: flex; align-items: center; gap: 10px;
-  padding: calc(8px + env(safe-area-inset-top)) 12px 18px; background: linear-gradient(rgba(0,0,0,.65), transparent); color: #fff; transition: opacity .16s linear; }
-#lb .lb-x { width: 40px; height: 40px; font-size: 20px; color: #fff; }
-#lb .lb-cnt { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 14px; font-family: var(--f-sys, sans-serif); }
-#lb .lb-dl { color: #fff; font-size: 14px; padding: 8px 10px; font-family: var(--f-sys, sans-serif); }
-#lb .lb-nav { position: absolute; top: 50%; z-index: 2; width: 44px; height: 64px; margin-top: -32px; font-size: 40px; color: #fff; background: rgba(0,0,0,.28); }
-#lb .lb-prev { left: 0; } #lb .lb-next { right: 0; }
+@keyframes lb-pop { from { opacity: 0; transform: scale(.965); } }
+#lb.out .lb-bg, #lb.out .lb-frame { opacity: 0; transition: opacity .18s var(--ease); }
+#lb .lb-top { position: relative; z-index: 2; flex: none; display: flex; align-items: center; gap: 6px; padding: 10px 12px 8px 10px; transition: opacity .16s linear;
+  font-family: var(--f-sys, sans-serif); }
+#lb .lb-top [hidden] { display: none; }
+#lb .lb-x { width: 36px; height: 36px; flex: none; border-radius: 50%; font-size: 16px; color: var(--lb-ink); display: grid; place-items: center; }
+#lb .lb-cnt { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 13.5px; color: var(--lb-dim); padding-left: 2px; }
+#lb .lb-zm { display: inline-flex; align-items: center; gap: 2px; padding: 0 2px; border-radius: 16px; background: var(--lb-chip); margin-right: 4px; }
+#lb .lb-zm button { height: 30px; min-width: 30px; padding: 0 8px; border-radius: 15px; color: var(--lb-ink); font-size: 15px; line-height: 1; }
+#lb .lb-zm .lb-pct { min-width: 52px; font-size: 12px; font-variant-numeric: tabular-nums; color: var(--lb-dim); }
+#lb .lb-new, #lb .lb-dl, #lb .lb-go, #lb .lb-att { display: inline-flex; align-items: center; height: 30px; padding: 0 12px; border-radius: 15px; white-space: nowrap;
+  background: var(--lb-chip); color: var(--lb-ink); font-size: 13px; text-decoration: none; font-family: var(--f-sys, sans-serif); }
+#lb .lb-x:hover, #lb .lb-zm button:hover, #lb .lb-new:hover, #lb .lb-dl:hover, #lb .lb-go:hover, #lb .lb-att:hover, #lb .lb-nav:hover { background: var(--lb-chip-h); }
+#lb button:focus-visible, #lb a:focus-visible { outline: 2px solid var(--accent-line); outline-offset: 1px; }
+#lb:not(.is-img) .lb-zm { display: none; }
+#lb .lb-stage { position: relative; flex: 1; min-height: 0; display: grid; grid-template: minmax(0, 1fr) / minmax(0, 1fr); place-items: center; overflow: hidden; padding: 0 18px 20px; }
+#lb .lb-media { max-width: 100%; max-height: 100%; object-fit: contain; will-change: transform; border-radius: 12px; }
+#lb img.lb-media { cursor: zoom-in; } #lb.zoomed img.lb-media { cursor: grab; }
+#lb img.lb-alpha { background-color: #f3f1ec; background-image: conic-gradient(#e2dfd8 25%, transparent 0 50%, #e2dfd8 0 75%, transparent 0); background-size: 20px 20px; }
+#lb video.lb-media { width: 100%; height: 100%; background: transparent; }
+#lb iframe.lb-pdf { width: 100%; height: 100%; border: 0; background: #fff; }
+#lb .lb-pdfc { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px; width: 100%; height: 100%; min-height: 0; }
+#lb .lb-cover { max-width: 100%; max-height: calc(100% - 70px); min-height: 0; border-radius: 10px; background: #fff; box-shadow: 0 10px 30px rgba(0,0,0,.25); }
+#lb .lb-pdfgo { display: inline-flex; align-items: center; height: 46px; padding: 0 24px; border-radius: 23px; background: var(--accent); color: var(--accent-ink); font: 600 15px/1 var(--f-sys, sans-serif); text-decoration: none; }
+#lb .lb-err { color: var(--lb-dim); font-size: 15px; padding: 24px; text-align: center; font-family: var(--f-sys, sans-serif); }
+#lb .lb-err a { color: var(--lb-ink); text-decoration: underline; }
+#lb .lb-nav { position: absolute; top: 50%; z-index: 2; width: 42px; height: 42px; margin-top: -4px; border-radius: 50%; font-size: 26px; line-height: 1; color: var(--lb-ink);
+  background: var(--lb-chip); display: grid; place-items: center; padding-bottom: 3px; transition: opacity .16s linear; }
+#lb .lb-prev { left: 14px; } #lb .lb-next { right: 14px; }
 #lb .lb-nav[hidden] { display: none; }
-#lb .lb-dots { position: absolute; left: 0; right: 0; bottom: calc(14px + env(safe-area-inset-bottom)); display: flex; gap: 6px; justify-content: center; z-index: 2; pointer-events: none; transition: opacity .16s linear; }
-#lb .lb-dots i { width: 6px; height: 6px; border-radius: 50%; background: rgba(255,255,255,.35); } #lb .lb-dots i.on { background: #fff; }
+#lb .lb-dots { position: absolute; left: 0; right: 0; bottom: 7px; display: flex; gap: 6px; justify-content: center; z-index: 2; pointer-events: none; transition: opacity .16s linear; }
+#lb .lb-dots i { width: 6px; height: 6px; border-radius: 50%; background: var(--lb-dim); opacity: .45; } #lb .lb-dots i.on { opacity: 1; background: var(--lb-ink); }
 #lb.hide .lb-top, #lb.hide .lb-dots, #lb.hide .lb-nav { opacity: 0; pointer-events: none; }
 body.lb-open { overflow: hidden; overscroll-behavior: none; }
+body.lb-open > :not(#lb), body.lb-open > :not(#lb) *, body.lb-open > :not(#lb) *::before, body.lb-open > :not(#lb) *::after { animation-play-state: paused !important; }   /* the page under the glass stops animating */
+body.lb-open #pal { z-index: 9100; }   /* ⌘K over an open viewer shows on top, and its Esc goes first */
 @media (hover: none) { #lb:not(.is-video) .lb-nav { display: none; } }
-@media (prefers-reduced-motion: reduce) { #lb .lb-bg { animation: none; } }
-#lb.is-video .lb-dots { bottom: calc(86px + env(safe-area-inset-bottom)); }
+#lb.ph .lb-zm { display: none; }
+@media (max-width: 760px) {
+  #lb .lb-frame { inset: calc(10px + env(safe-area-inset-top)) 10px calc(10px + env(safe-area-inset-bottom)); border-radius: 22px; }
+  #lb .lb-top { padding: 8px 8px 6px 6px; gap: 5px; }
+  #lb .lb-stage { padding: 0 8px 18px; }
+  #lb .lb-new, #lb .lb-dl, #lb .lb-go, #lb .lb-att { padding: 0 10px; font-size: 12.5px; }
+}
+@media (prefers-reduced-motion: reduce) { #lb .lb-bg { animation: none; } #lb .lb-frame { animation: lb-in .14s linear backwards; } }
 
 /* ===== ui3: phone back button lives in mobile.css; hidden on desktop (slide-over keeps ✕ / Esc / scrim) ===== */
 .dw-top button.dw-back[data-close] { display: none; }
@@ -1743,7 +1789,6 @@ mark.an-hl { background: var(--accent-soft); color: inherit; border-radius: 2px;
 .lib-pvb { position: absolute; right: 8px; top: 8px; z-index: 1; padding: 2px 7px; border-radius: 6px; font: 600 11px/1.4 var(--f-sys); color: var(--warn); background: var(--solid); box-shadow: inset 0 0 0 1px var(--warn); }
 .lib-more { height: 1px; }
 .lib-none.empty { padding: 40px 0; }
-#lb .lb-go { color: #fff; font-size: 14px; padding: 8px 10px; font-family: var(--f-sys, sans-serif); white-space: nowrap; }
 #lb .lb-go[hidden] { display: none; }
 
 /* ===== t-imp29-p5: card-id chips (.idc, rendered by md.ref) and the # card picker (.hp-pop). Colours from currentColor / theme tokens only. */
@@ -1871,7 +1916,6 @@ mark.an-hl { background: var(--accent-soft); color: inherit; border-radius: 2px;
 
 /* t-lib-attach: a library tile dragged over a reply box; the phone viewer's 「附到回复…」 and its picker sheet */
 textarea.lib-drop { outline: 2px dashed var(--accent); outline-offset: 3px; }
-#lb .lb-att { color: #fff; font-size: 14px; padding: 8px 10px; font-family: var(--f-sys, sans-serif); white-space: nowrap; }
 #lb .lb-att[hidden] { display: none; }
 #att-pick { position: fixed; inset: 0; z-index: 90; }
 #att-pick .ap-scrim { position: absolute; inset: 0; background: rgba(0,0,0,.38); }
@@ -1884,3 +1928,190 @@ textarea.lib-drop { outline: 2px dashed var(--accent); outline-offset: 3px; }
 #att-pick .ap-row em { margin-left: auto; flex: none; font-style: normal; font-size: 12px; color: var(--dim); }
 #att-pick .ap-more span, #att-pick .ap-cancel span { color: var(--dim); }
 #att-pick .ap-more[hidden], #att-pick .ap-others[hidden] { display: none; }
+
+/* ===== t-detail-round (2026-11-02): desktop detail = a floating rounded panel like the DM column. Avatar + bubble messages, pill composer / buttons.
+   Look only: .dw-scroll stays the scroller (t-detail-jump pinning and nearEnd untouched). Phone untouched (mobile.css owns the phone detail). ===== */
+@media (min-width: 761px) {
+  #drawer { inset: 14px 14px 14px 4px; border-radius: 26px; overflow: hidden;
+    box-shadow: inset 0 0 0 1px var(--line2), 0 0 0 40px var(--bg), 0 24px 60px rgba(0,0,0,.28); }   /* the 40px spread hides the page behind the margin (#main clips it) */
+  html[data-stage] #drawer { box-shadow: inset 0 0 0 1px var(--stg-line, var(--line2)), 0 0 0 40px color-mix(in srgb, var(--bg) 90%, transparent), 0 24px 60px rgba(0,0,0,.32); }
+  #drawer .dw-top { padding-top: 14px; }
+  #drawer .cs-card:not(.draftc) { margin-left: 50px; max-width: min(78%, 760px); padding: 10px 16px 12px; border-radius: 6px 20px 20px 20px;
+    background: color-mix(in srgb, var(--ink) 9%, var(--bg)); box-shadow: none; }
+  #drawer .cs-card:not(.draftc) > .cs-h > .av:first-child { position: absolute; left: -50px; top: 0; width: 38px; height: 38px; border-radius: 50%; }
+  #drawer .cs-me { max-width: min(70%, 640px); border-radius: 20px 6px 20px 20px; }
+  #drawer .cs-card.draftc { border-radius: 24px; }
+  #drawer .composer textarea { border-radius: 24px; min-height: 48px; }
+  #drawer .dw-file { border-radius: 999px; padding: 4px 12px; border: 1px solid var(--line2); }
+  #drawer .cm-to, #drawer .dw-acts .ab, #drawer .dw-acts button { border-radius: 999px; }
+}
+
+/* ===== t-toast-style (2026-11-02): the desktop toast drops the ink cloud ornaments and the black radial wash for the same clean pill as the
+   DM column / rounded detail, and moves to the top centre under the header, so it never sits on the detail's bottom buttons
+   (完成委托 / 批准) or the chat composer. Phone keeps its own glass pill above the tab bar (mobile.css). ===== */
+@media (min-width: 761px) {
+  html[data-theme] #toast { top: 86px; bottom: auto; padding: 10px 20px; border-radius: 22px; font-family: var(--f-sys, -apple-system, BlinkMacSystemFont, "PingFang SC", sans-serif);
+    font-size: 13.5px; letter-spacing: .02em; text-shadow: none; color: var(--ink); gap: 0; max-width: min(560px, calc(100vw - 48px));
+    background: color-mix(in srgb, var(--bg) 86%, transparent) !important; -webkit-backdrop-filter: blur(18px) saturate(1.3); backdrop-filter: blur(18px) saturate(1.3);
+    box-shadow: inset 0 0 0 1px var(--line2), 0 10px 30px rgba(0,0,0,.22); animation: toast-drop .32s var(--ease) both; }
+  html[data-theme] #toast.err { color: var(--urgent); }
+}
+html[data-theme] #toast::before, html[data-theme] #toast::after { display: none; }   /* no cloud ornaments anywhere (phone dark showed them too) */
+@media (max-width: 760px) {   /* phone: same pill, but at the top (under the status bar) so it never covers the detail's reply box / bottom buttons or the undo pill; one line */
+  html[data-theme] body #toast { top: calc(env(safe-area-inset-top) + 58px); bottom: auto; white-space: nowrap; max-width: calc(100vw - 32px); overflow: hidden; text-overflow: ellipsis;
+    animation: toast-drop .32s var(--ease) both; }
+}
+@keyframes toast-drop { from { opacity: 0; transform: translate(-50%, -8px); } }
+@media (prefers-reduced-motion: reduce) { html[data-theme] #toast { animation: none; } }
+/* ===== t-detail-round2 (2026-11-02): same rounded detail, fewer layers (user: 「有点臃肿，套了这么多层」).
+   One outer panel only (no inset rule, no 40px spread ring: the page under an open detail is hidden instead, so nothing peeks through the margin);
+   the draft has no frame (a very faint fill); only the other side's messages are bubbles, mine are plain right-aligned text; no timeline rule,
+   no hairlines above the composer / buttons, composer and buttons pulled together. Desktop only. ===== */
+@media (min-width: 761px) {
+  #drawer, html[data-stage] #drawer { box-shadow: 0 18px 50px rgba(0,0,0,.26); }
+  #drawer { top: 14px; bottom: 14px; left: auto; right: 16px; }   /* wide main: the 760px side panel, 16px off the chat column (round 1's left: 4px pinned it to the left and ignored right) */
+  body.main-narrow #drawer { left: 16px; right: 16px; width: auto; }   /* narrow main (chat open): full width with 16px each side; width:100% there had made right do nothing */
+  #main:has(> #drawer.open) > #page { visibility: hidden; }
+  #main:has(> #drawer.open)::before, #main:has(> #drawer.open)::after { display: none; }
+  #drawer .dw-top::after, #drawer .composer::before, #drawer .dw-acts::before { display: none; }
+  #drawer .cs-card.draftc { background: color-mix(in srgb, var(--ink) 3.5%, transparent); box-shadow: none; border-radius: 20px; padding: 14px 18px 10px; }
+  #drawer .cs-me { background: none; padding: 2px 4px; border-radius: 0; text-align: right; }
+  #drawer .cs-me .cs-h { justify-content: flex-end; }
+  #drawer .cs-line { margin-left: 0; padding-left: 4px; }
+  #drawer .cs-line::before, #drawer .cs-line::after { display: none; }
+  #drawer .composer { padding-top: 6px; padding-bottom: 4px; }
+  #drawer .composer textarea { min-height: 46px; height: 46px; border-color: transparent !important; }   /* one line until you type (autosize / resize still grow it); no rule around it */
+  #drawer .composer textarea:focus { border-color: var(--line2) !important; box-shadow: none; }
+  #drawer .cm-row { margin-top: 6px; }
+  #drawer .dw-acts { padding-top: 6px; padding-bottom: 14px; }
+}
+
+
+/* ===== t-now-always (2026-11-02): 此刻 with nobody working = one faint line (phone home and the desktop app-style home) ===== */
+.dc-quiet { padding: 2px 4px 10px; font-size: 13px; color: var(--dim); }
+
+/* ===== t-hide-scrollbar (2026-11-02): desktop scroll areas keep scrolling (wheel / trackpad / keys) but draw no scrollbar:
+   the main column (#page), the detail (.dw-scroll), the chat thread and roster (#right), the left nav (#left). Phone already has overlay bars. ===== */
+@media (min-width: 761px) {
+  #page, #left, #drawer .dw-scroll, #right .ch-msgs, #right * { scrollbar-width: none; }
+  #page::-webkit-scrollbar, #left::-webkit-scrollbar, #drawer .dw-scroll::-webkit-scrollbar, #right .ch-msgs::-webkit-scrollbar, #right *::-webkit-scrollbar { display: none; width: 0; height: 0; }
+}
+
+/* ===== t-home-newreplies (2026-11-02): 「新回复 · N」 on the phone home and the desktop app-style home, the unread dot on card titles, and the
+   highlight on the reply a card opens at. Shared by both ends (style.css), so home-app.css does not need regenerating. ===== */
+.nr { margin: 4px 0 16px; }
+.nr-h { display: flex; align-items: baseline; gap: 8px; margin: 0 4px 6px; }
+.nr-h b { font: 700 15px/1.2 var(--f-sys, -apple-system, sans-serif); color: var(--ink); }
+.nr-h small { font: 700 13px/1 var(--f-sys, -apple-system, sans-serif); color: var(--accent); }
+.nr-h .sp { flex: 1; }
+.nr-all, .nr-more { padding: 0; border: 0; background: none; font-size: 12px; color: var(--dim); cursor: pointer; }
+.nr-all:hover, .nr-more:hover { color: var(--ink); }
+.nr-more { display: block; margin: 4px 12px 0; }
+.nr-r { position: relative; display: grid; grid-template-columns: 36px minmax(0, 1fr) auto; gap: 2px 12px; align-items: center; padding: 9px 12px; border-radius: 16px; cursor: pointer; }
+.nr-r:hover, .nr-r:focus-visible { background: color-mix(in srgb, var(--ink) 5%, transparent); outline: none; }
+.nr-r > .av { width: 36px; height: 36px; grid-row: span 2; }
+.nr-r b { min-width: 0; font-size: 13.5px; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.nr-r b i { font-style: normal; font-weight: 500; color: var(--dim); }
+.nr-r p { grid-column: 2; min-width: 0; margin: 0; font-size: 13px; color: var(--ink2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.nr-r time { grid-row: 1; grid-column: 3; font-size: 11.5px; color: var(--dim); white-space: nowrap; }
+.nr-r > .nr-dot { grid-column: 3; justify-self: end; margin: 0; }
+.nr-n { position: absolute; left: 38px; top: 5px; min-width: 16px; height: 16px; padding: 0 4px; border-radius: 8px; background: var(--accent); color: var(--accent-ink, #fff); font: 700 10px/16px var(--f-sys, -apple-system, sans-serif); text-align: center; }
+.nr-dot { display: inline-block; width: 8px; height: 8px; margin: 0 6px 0 0; border-radius: 50%; background: var(--accent); vertical-align: .15em; }
+#drawer .cs-card.nr-hit { box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--accent) 55%, transparent); }
+
+/* ===== t-ask-bottom (2026-11-02): the unanswered question bar right above the detail's reply box (desktop and phone). One soft rounded block, no rule lines
+   (matches t-detail-round2). The scroller shrinks for it on desktop (flex); on the phone the dock padding (--dock-h) grows and the open-pin re-pins. ===== */
+.dw-askbar[hidden] { display: none; }
+.dw-askbar { padding: 8px 22px 0; }
+.dw-askbar .ask-row { margin: 0; padding: 10px 14px 12px; border-radius: 18px; background: color-mix(in srgb, var(--accent) 7%, color-mix(in srgb, var(--ink) 4%, transparent)); }
+.dw-askbar .ask-rt { margin-bottom: 8px; }
+.dw-askbar .ask-opts { max-height: 30vh; overflow-y: auto; }
+@media (max-width: 760px) { .dw-askbar { padding: 0 0 8px; } }
+
+/* ===== t-close-bottom (2026-11-02): the small 关单 pill at the left of the detail's bottom buttons (desktop and phone): quiet outline, never wider than
+   its word, so the main button keeps its size; it sits under the ask bar (t-ask-bottom) with the usual gap. ===== */
+#drawer .dw-acts .ab.cl { flex: none; width: auto; min-width: 0; padding: 0 16px; border: 1px solid var(--line2); border-radius: 999px; background: none; color: var(--dim); font-size: 13px; font-weight: 600; }
+#drawer .dw-acts .ab.cl:hover { color: var(--ink); border-color: var(--line3, var(--ink2)); }
+#modal .cl-t { margin: 4px 0 6px; font-weight: 600; color: var(--ink); }
+#modal .cl-w { margin: 0 0 10px; font-size: 13px; color: var(--warn, var(--urgent)); }
+/* t-no-dim (2026-11-02): desktop detail opens without darkening the page behind. #scrim stays (transparent) so a click beside the panel still closes it; phones hide #scrim in mobile.css anyway. */
+@media (min-width: 761px) { #main > #scrim { background: transparent !important; } }
+/* t-dash-token (2026-11-02): GitHub push token block inside 系统状态 (#gt; filled by ghPaint() in app.js). Desktop + phone (the phone opens the same modal). */
+.mdl.sys .gt { margin: 0 0 12px; padding: 13px 14px 12px; border-radius: 16px; background: var(--chip); box-shadow: inset 0 0 0 1px var(--line); }
+.mdl.sys .gt:empty { display: none; }
+.gt h4 { margin: 0 0 4px; display: flex; align-items: center; gap: 8px; font: 650 14px/1.35 var(--f-sys); color: var(--ink); }
+.gt h4 em { font-style: normal; font: 600 11.5px/1.5 var(--f-sys); padding: 0 8px; border-radius: 99px; background: var(--accent-soft); color: var(--ink2); }
+.gt h4 em.ok { color: var(--ok); } .gt h4 em.warn { color: var(--warn); } .gt h4 em.bad { color: var(--urgent); }
+.gt p { margin: 0 0 9px; font-size: 12.5px; line-height: 1.5; color: var(--dim); overflow-wrap: anywhere; }
+.gt p code { font-size: 11.5px; }
+.gt .ok { color: var(--ok); } .gt .warn { color: var(--warn); } .gt .bad { color: var(--urgent); }
+.gt .gt-pr.ok { color: var(--ok); } .gt .gt-pr.bad { color: var(--ink2); }
+.gt .gt-msg { font-weight: 600; color: var(--ink2); } .gt .gt-msg.ok { color: var(--ok); } .gt .gt-msg.bad { color: var(--urgent); }
+.gt-r { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin: 0 0 9px; }
+.gt-in { flex: 1 1 200px; min-width: 0; height: 36px; padding: 0 12px; border-radius: 12px; border: 1px solid var(--line2); background: var(--bg); color: var(--ink); font: 13px var(--f-sys); }
+.gt-in:focus { outline: none; border-color: var(--line3); box-shadow: 0 0 0 3px var(--accent-soft); }
+.gt-b { flex: none; height: 32px; padding: 0 13px; border-radius: 99px; box-shadow: inset 0 0 0 1px var(--line2); color: var(--ink); font: 600 12.5px var(--f-sys); cursor: pointer; }
+.gt-b.pri { background: var(--accent); color: var(--accent-ink); box-shadow: none; height: 36px; }
+.gt-b.dn { color: var(--urgent); }
+.gt-b:disabled { opacity: .45; cursor: default; }
+.gt-b:active:not(:disabled) { transform: scale(.96); }
+.gt small { display: block; font-size: 11.5px; line-height: 1.45; color: var(--dim); }
+@media (max-width: 760px) { .gt-in { font-size: 16px; } }   /* iOS: no zoom on focus */
+/* t-rail-tip (2026-11-02): folded chat rail. Name tip left of the avatar, vertically centred, fixed on <body> (no clipping);
+   the expand button sits on the same centre line as the avatars. */
+#rail-tip { position: fixed; z-index: 80; transform: translate(-100%, -50%); padding: 5px 11px; border-radius: 10px; pointer-events: none; white-space: nowrap;
+  background: var(--solid, var(--bg)); color: var(--ink); font: 600 12.5px/1.3 var(--f-sys, sans-serif); box-shadow: 0 0 0 1px var(--line2), 0 8px 22px rgba(0,0,0,.22);
+  opacity: 0; transition: opacity .12s linear; }
+#rail-tip.on { opacity: 1; }
+#rail-tip::after { content: ""; position: absolute; right: -4px; top: 50%; width: 8px; height: 8px; margin-top: -4px; transform: rotate(45deg);
+  background: inherit; box-shadow: 1px -1px 0 0 var(--line2); }
+@media (min-width: 761px) { body.chat-folded .ch-fold { left: calc(50% - 13px); } }
+@media (min-width: 761px) { body.chat-folded .ch-roster button:hover .av { transform: none; } }   /* t-rail-tip: the tip is the hover cue; no lift, so tip and avatar share one centre */
+/* t-routine-btn (2026-11-02): routine main card — 暂停 / 开启 switch in the action bar instead of 完成委托 */
+#drawer .dw-acts .rt-on, #drawer .dw-acts .rt-off { flex: 1 1 auto; min-width: 0; align-self: center; display: inline-flex; align-items: center; gap: 7px; padding: 0 6px;
+  font-size: 13px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#drawer .dw-acts .rt-on { color: var(--ink2); } #drawer .dw-acts .rt-off { color: var(--warn); }
+#drawer .dw-acts .rt-dot { flex: none; width: 8px; height: 8px; border-radius: 50%; background: var(--ok); }
+#drawer .dw-acts .rt-off .rt-dot { background: transparent; box-shadow: inset 0 0 0 1.5px var(--warn); }
+#drawer .dw-acts .ab.rt-sw { flex: 0 0 auto; min-width: 104px; }
+@media (max-width: 760px) { #drawer .dw-acts .rt-on, #drawer .dw-acts .rt-off { font-size: 14px; } }
+
+/* ===== t-done-fold (2026-11-02): finished cards on the list pages fold into one quiet row at the bottom (app.js stageGroups).
+   Soft tinted pill, no border; the caret turns when open. A page with only finished cards gets one faint line above it. ===== */
+.df-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; width: 100%; margin: 30px 0 12px; padding: 0 16px; min-height: 42px;
+  border: 0; border-radius: 14px; background: color-mix(in srgb, var(--ink) 6%, transparent); color: var(--ink2); font-family: var(--f-cjk); font-size: 13px; letter-spacing: .02em;
+  text-align: left; cursor: pointer; transition: background-color .15s ease, color .15s ease; }
+.df-row:hover { background: color-mix(in srgb, var(--ink) 10%, transparent); color: var(--ink); }
+.df-row:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.df-row i { font-style: normal; font-size: 13px; transition: transform .2s ease; }
+.df-row[aria-expanded="true"] i { transform: rotate(90deg); }
+.df-row.solo { margin-top: 12px; }
+.df-empty { text-align: center; color: var(--faint); font-size: 14px; letter-spacing: .04em; padding: 56px 0 4px; font-family: var(--f-cjk); }
+.df-note { text-align: center; color: var(--faint); font-size: 12px; padding: 10px 0 4px; }
+@media (max-width: 760px) {
+  .df-row { margin: 22px 0 10px; min-height: 46px; border-radius: 16px; font-size: 13.5px; }
+  .df-row:hover { background: color-mix(in srgb, var(--ink) 6%, transparent); color: var(--ink2); }   /* no sticky hover after a tap */
+  .df-row:active { background: color-mix(in srgb, var(--ink) 11%, transparent); }
+  .df-empty { padding: 44px 0 2px; }
+}
+
+/* r-improve-1102 P1: answered quick options fold to one line under the bubble */
+.msg .opt-done { margin: 6px 0 0 14px; font-size: 12px; color: var(--dim); letter-spacing: .02em; }
+#right .msg .opt-done { margin-left: 0; }
+
+/* r-improve-1102 P2: card chips inside chat bubbles are short (≈7 characters) and show the stage as a dot; the full title and stage are in the tooltip.
+   Detail pages and drafts keep the long chip. Dot colours: waiting on you = --dot, in progress = --accent, done = --ok, otherwise dim. */
+#right .ch-msgs .idc { padding: 0 6px 0 2px; vertical-align: -0.22em; }
+#right .ch-msgs .idc b { max-width: 7.5em; }
+#right .ch-msgs .idc small { font-size: 0; opacity: 1; }
+#right .ch-msgs .idc small::before { content: ""; display: inline-block; width: 6px; height: 6px; border-radius: 50%; margin-left: 3px; vertical-align: 1px; background: var(--dim); }
+#right .ch-msgs .idc.st-review small::before { background: var(--dot); }
+#right .ch-msgs .idc.st-doing small::before { background: var(--accent); }
+#right .ch-msgs .idc.st-done small::before { background: var(--ok); }
+#right .ch-msgs .idc-nw { white-space: nowrap; }
+
+/* r-improve-1102 P4: new-message divider in the chat + 「↓ 回到最新」 pill (desktop) */
+#right .new-sep { display: flex; align-items: center; gap: 10px; margin: 14px 0 10px; font-size: 12px; color: var(--dot); letter-spacing: .02em; }
+#right .new-sep::before, #right .new-sep::after { content: ""; flex: 1; height: 1px; background: color-mix(in srgb, var(--dot) 45%, transparent); }
+#right .new-pill { position: absolute; left: 50%; transform: translateX(-50%); bottom: 112px; z-index: 5; padding: 7px 14px; border: 0; border-radius: 999px; font-size: 12.5px; cursor: pointer;
+  background: var(--ink); color: var(--bg); box-shadow: 0 6px 18px rgba(0,0,0,.25); }

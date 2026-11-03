@@ -1014,11 +1014,13 @@ body.kb #drawer .dw-dock { padding-bottom: 10px; }
 #drawer .composer textarea::placeholder { color: var(--dim); }
 #drawer .composer .dw-file { grid-area: plus; width: 40px; height: 40px; border-radius: 50%; background: var(--glass-lite); color: var(--ink); display: grid; place-items: center; font-size: 0; flex: none; }
 #drawer .composer .dw-file::before { content: "+"; font-size: 26px; font-weight: 300; line-height: 1; transform: translateY(-1px); }
-#drawer .composer .cm-to { grid-area: to; justify-self: start; min-height: 0; max-width: 100%; overflow: hidden; margin-bottom: 6px; opacity: 0; border: 0; border-radius: 15px; background: var(--glass-lite);
-  padding: 3px 10px 3px 4px; gap: 6px; font-size: 13px; color: var(--ink2); white-space: nowrap; transition: opacity var(--m-base) var(--m-ease-emph); }
-#drawer .composer:focus-within .cm-to, #drawer .composer.has .cm-to, #drawer .composer.to-set .cm-to { opacity: 1; }
-#drawer .composer .cm-to .av.sm { width: 22px; height: 22px; }
-#drawer .composer .cm-to button { width: 20px; height: 20px; border-radius: 50%; background: var(--glass-lite); color: var(--ink2); font-size: 10px; display: grid; place-items: center; margin-left: 2px; }
+#drawer .composer .cm-to { grid-area: to; justify-self: start; min-height: 0; height: 26px; max-width: 100%; overflow: hidden; margin-bottom: 6px; opacity: 0; pointer-events: none; border: 0; border-radius: 13px; background: var(--glass-lite);
+  padding: 0 11px 0 10px; gap: 5px; font-size: 12.5px; color: var(--dim); white-space: nowrap; transition: opacity var(--m-base) var(--m-ease-emph), background-color .15s ease; }
+#drawer .composer:focus-within .cm-to, #drawer .composer.has .cm-to, #drawer .composer.to-set .cm-to { opacity: 1; pointer-events: auto; }   /* t-sendto-chip: an invisible chip can't be tapped */
+#drawer .composer .cm-to:active { background: color-mix(in srgb, var(--ink) 12%, transparent); }
+#drawer .composer .cm-to:has(button) { padding-right: 3px; }
+#drawer .composer .cm-to .av.sm { width: 20px; height: 20px; }
+#drawer .composer .cm-to button { width: 20px; height: 20px; border-radius: 50%; background: transparent; color: var(--dim); font-size: 10px; display: grid; place-items: center; margin-left: 1px; }
 #drawer .composer .pending-att { grid-area: att; min-height: 0; overflow: hidden; margin: 0 0 6px; padding: 2px 0; gap: 8px; flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; }
 #drawer .composer .pending-att::-webkit-scrollbar { display: none; }
 #drawer .composer .ap-tile { width: 60px; height: 60px; border-radius: 14px; border-color: var(--glass-line); }

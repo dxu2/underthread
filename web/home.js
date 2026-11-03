@@ -143,7 +143,7 @@
   // ---------- patch ----------
   function apply(ob, d, events) {
     const root = $(".hd", ob); if (!root || !d) return;
-    const as = ordered(d.agents), waiting = new Set(A().items().filter(i => i.stage === "review").map(i => i.owner));
+    const as = ordered(d.agents), waiting = new Set(A().items().filter(i => A().onYouCard ? A().onYouCard(i) : i.stage === "review" && !(A().busy && A().busy(i))).map(i => i.owner));   // t-doing-first
     (A().ST.mail || []).forEach(m => { if (!m.read && m.agent) waiting.add(m.agent); });   // t-office-d1-s3: the dot also means "unread mail from TA" (same rule as the team list)
     as.forEach(a => {
       const el = $(`.dp[data-id="${a.id}"]`, root); if (!el) return;

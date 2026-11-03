@@ -34,9 +34,9 @@
     { k: "activity", i: "bell", zh: "动态", en: "Activity", to: ["page", "mail"] }, { k: "more", i: "more", zh: "更多", en: "More", to: ["menu"] },
     { k: "quests", i: "quests", zh: "委托", en: "Quests", to: ["page", "quests"] }];   // t-vis-b2: 委托 replaces 搜索; search lives at the top of the 委托 page
   const BARS = {
-    tabs: [{ k: "review", i: "review", zh: "审核", en: "Review", to: ["page", "review"] }, { k: "quests", i: "quests", zh: "委托", en: "Quests", to: ["page", "main"] },
+    tabs: [{ k: "review", i: "review", zh: "首页", en: "Home", to: ["page", "review"] }, { k: "quests", i: "quests", zh: "委托", en: "Quests", to: ["page", "main"] },
       { k: "chat", i: "chat", zh: "管家", en: "Steward", to: ["chat"] }, { k: "menu", i: "menu", zh: "菜单", en: "Menu", to: ["menu"] }],
-    chat: [{ k: "chat", i: "chat", zh: "对话", en: "Chat", to: ["chat"] }, { k: "review", i: "review", zh: "审核", en: "Review", to: ["page", "review"] },
+    chat: [{ k: "chat", i: "chat", zh: "对话", en: "Chat", to: ["chat"] }, { k: "review", i: "review", zh: "首页", en: "Home", to: ["page", "review"] },
       { k: "team", i: "team", zh: "团队", en: "Team", to: ["page", "roles"] }, { k: "menu", i: "menu", zh: "菜单", en: "Menu", to: ["menu"] }],
     deck: [{ k: "menu", i: "menu", zh: "菜单", en: "Menu", to: ["menu"] }, { k: "review", i: "deck", zh: "卡组", en: "Deck", to: ["page", "review"] },
       { k: "chat", i: "chat", zh: "管家", en: "Steward", to: ["chat"] }],
@@ -67,7 +67,7 @@
   }
   function badges() {
     const ST = App.ST; if (!ST) return {};
-    const review = App.items().filter(i => i.stage === "review").length;
+    const review = App.items().filter(i => App.onYouCard ? App.onYouCard(i) : i.stage === "review" && !(App.busy && App.busy(i))).length;   // t-doing-first
     const chat = convRows().reduce((n, x) => n + x.n, 0);   // unread across every conversation
     const mail = (App.ST.mail || []).filter(m => !m.read).length;
     return { home: review, dms: chat, activity: mail };   // ui15: dots, not numbers
@@ -213,7 +213,7 @@
     const r = $("#right"), msgs = r && $(".ch-msgs", r); if (!msgs) return;
     let wrap = $(".m-stripwrap", r);
     if (!wrap) { wrap = document.createElement("div"); wrap.className = "m-stripwrap"; r.insertBefore(wrap, msgs); wrap.addEventListener("click", e => { const c = e.target.closest("[data-open]"); if (c) App.openItem(c.dataset.open); }); }
-    const list = App.items().filter(i => i.stage === "review").sort(App.byAct);
+    const list = App.items().filter(i => App.onYouCard ? App.onYouCard(i) : i.stage === "review" && !(App.busy && App.busy(i))).sort(App.byAct);   // t-doing-first, t-home-newreplies
     const html = `<div class="m-strip-h"><span>${en() ? "WAITING ON YOU" : "等你拍板"}</span><b>${list.length}</b></div><div class="m-strip">` + (list.length ? list.map(it => {
       const a = App.agent(it.owner), kind = it.kind === "task" ? "deliverable" : it.kind;
       return `<button class="m-chip" data-open="${it.id}"><span class="tag ${kind}"><span class="gl" aria-hidden="true">◆</span>${App.t(kind)}</span><div class="t">${esc(it.title)}</div><div class="m">${App.av(a, "sm")}${esc(App.aname(a))} · ${App.t(it.category)} · ${App.whenH(it.activity)}</div></button>`;
@@ -221,6 +221,7 @@
     if (wrap._html !== html) { wrap.innerHTML = html; wrap._html = html; }
   }
   document.addEventListener("push:change", () => { if (mq.matches && App.ST) menuExtras(); });
+  document.addEventListener("gh:status", () => { if (mq.matches && document.querySelector("#left .m-settings")) menuExtras(); });   // t-dash-token: label of the GitHub row
   function menuExtras() {
     const left = $("#left"); if (!left) return;
     if (!$(".m-hero", left)) {
@@ -249,6 +250,7 @@
           if (k === "pdigest") Push.setPrefs({ digest: !p.digest });
         }
         if (k === "status") App.modalStatus();
+        if (k === "ghtok" && App.ghOpen) App.ghOpen();   // t-dash-token
         if (k === "mictest") location.href = "/static/mictest.html";   // t-vb-1: same-window navigation keeps the home-screen app standalone
       });
     }
@@ -258,6 +260,7 @@
     const SY = App.statusSummary();
     const html = `<div class="side-h"><span class="sc">${en() ? "SETTINGS" : "设置"}</span></div>
       <button class="m-set m-sys" data-set="status"><span><b>${en() ? "System status" : "系统状态"}</b><small class="sy-sum-t ${SY.lv}">${esc(SY.txt)}</small></span><em>›</em></button>
+      ${App.ghOpen ? `<button class="m-set" data-set="ghtok"><span><b>${en() ? "GitHub push token" : "GitHub 推送令牌"}</b><small>${esc(App.ghLabel())}</small></span><em>›</em></button>` : ""}
       <button class="m-set" data-set="push"><span><b>${en() ? "Notifications" : "推送通知"}</b><small>${esc(P.label)}</small>${P.diag ? `<small class="m-diag">${esc(P.diag)}</small>` : ""}</span>${sw(P.on)}</button>
       ${P.on ? pushPrefs() : ""}
       ${P.on ? `<button class="m-set" data-set="pushtest"><span><b>${en() ? "Send a test" : "发一条测试通知"}</b></span><em>›</em></button>` : ""}
@@ -294,7 +297,7 @@
   // ---------- C: swipe deck ----------
   function deck() {
     const body = $("#pagebody"); if (!body || dragging) return;
-    const list = App.items().filter(i => i.stage === "review").sort(App.byAct);
+    const list = App.items().filter(i => App.onYouCard ? App.onYouCard(i) : i.stage === "review" && !(App.busy && App.busy(i))).sort(App.byAct);   // t-doing-first, t-home-newreplies
     const head = `<div class="ph"><h1>${App.t("review")}</h1>${en() ? "" : '<div class="en">PENDING REVIEW</div>'}</div>`;
     if (!list.length) { body.innerHTML = head + `<div class="empty">${App.t("empty_review")}</div>`; return; }
     deckIdx = ((deckIdx % list.length) + list.length) % list.length;
@@ -513,7 +516,7 @@
   const SEARCH = '<svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="6"/><path d="M16 16 L20 20"/></svg>';
   let convQ = "";
   const convMsgs = id => id === "manager" ? (App.ST.chat || []) : ((App.ST.dms || {})[id] || []);
-  const convUnread = id => { const s = (App.UI.seen || {})["chat." + id] || ""; return convMsgs(id).filter(m => m.who !== "me" && m.t > s).length; };
+  const convUnread = id => { const s = App.seenOf ? App.seenOf(id) : ((App.UI.seen || {})["chat." + id] || ""); return convMsgs(id).filter(m => m.who !== "me" && m.t > s).length; };   // r-improve-1102 P3: server read marks count too
   const pad2 = n => String(n).padStart(2, "0");
   function wtime(iso) {   // 今天 10:40 · 昨天 · 星期二 · 10/19
     if (!iso) return "";
@@ -634,7 +637,7 @@
     App.setChat(id);   // runs while the composer is still hidden, so its focus() doesn't pop the keyboard
     history.pushState({ cv: 1 }, "");
     const l = convMsgs(id);   // renderChat ran while the list was showing, so mark this thread read here
-    if (l.length) { App.UI.seen["chat." + id] = l[l.length - 1].t; LS.set("seen", App.UI.seen); }
+    if (l.length) { App.UI.seen["chat." + id] = l[l.length - 1].t; LS.set("seen", App.UI.seen); if (App.chatMailRead) App.chatMailRead(id, l[l.length - 1].t); }
     setCv("thread"); composers(); renderBar();
   }
   // t-push-deeplink: the phone half of App.route (a tapped notification, or the cold-start hash). Same entries as a tap would use, so back behaves the same:
@@ -830,9 +833,9 @@
   }
   function syncTyping(box) {   // agent busy and you spoke last → a typing bubble at the bottom
     const a = App.agent(App.UI.chat), l = convMsgs(App.UI.chat), last = l[l.length - 1];
-    const on = a.status === "working" && last && last.who === "me";
+    const on = App.typingOn ? App.typingOn(a, last) : a.status === "working" && last && last.who === "me";   // t-typing-fix: same rule as desktop
     let tb = $(".m-typing", box);
-    if (on && !tb) { box.insertAdjacentHTML("beforeend", `<div class="m-typing">${App.av(a)}<div class="mb"><span class="m-dots"><i></i><i></i><i></i></span></div></div>`); box.scrollTop = box.scrollHeight; }
+    if (on && !tb) { box.insertAdjacentHTML("beforeend", `<div class="m-typing" data-until="${App.typingUntil ? App.typingUntil(last) : ""}">${App.av(a)}<div class="mb"><span class="m-dots"><i></i><i></i><i></i></span></div></div>`); box.scrollTop = box.scrollHeight; }
     else if (!on && tb) tb.remove();
   }
   document.addEventListener("click", e => {
@@ -1218,7 +1221,7 @@
     let h = document.getElementById("inkhello");
     if (!h) { h = document.createElement("div"); h.id = "inkhello"; h.className = "ink-hello"; }
     if (h.nextSibling !== ob) ob.parentNode.insertBefore(h, ob);
-    const show = mq.matches && App.UI.page === "review" && !ob.hidden; if (h.hidden === show) h.hidden = !show;
+    const hm = document.documentElement.dataset.home, show = (mq.matches || hm === "app" || hm === "widgets") && App.UI.page === "review" && (!ob.hidden || hm === "widgets");   // t-home-widgets: the widget home greets too (its #officebox stays hidden) if (h.hidden === show) h.hidden = !show;   // t-home-applike: the desktop app-style home greets too
     if (!show) return;
     const en = App.UI.lang === "en", busy = Object.values((App.ST && App.ST.agents) || {}).filter(a => a.status === "working" && !(App.mgrOnline && App.mgrOnline(a))).length;   // t-cal-fold: same count as 此刻 (the online-only manager is not busy)
     const html = App.inkEb(en ? `${busy} busy` : `${busy} 在忙`) + `<b>${en ? "Today" : "今天"}</b>`;

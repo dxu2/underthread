@@ -37,16 +37,23 @@
         (App.askLeft(it) ? App.askLeft(it) + " · " : "") + (zh ? "4.5 秒内可撤销" : "Undo within 4.5 s"), "approve 批准 开工 验收 关单 accept pz", () => App.rvApprove(it.id), "");
     }
     const nRev = App.items().filter(i => i.stage === "review").length, nDec = App.decisions().length;
-    add("go:review", zh ? `去审核 · 等你拍板 ${nRev + nDec}` : `Review · waiting on you ${nRev + nDec}`, zh ? "审核页" : "Review page", "review shenhe 审核 拍板 sh", () => fire("data-go", "review"));
+    add("go:review", zh ? `回首页 · 等你拍板 ${nRev + nDec}` : `Home · waiting on you ${nRev + nDec}`, zh ? "首页" : "Home page", "home shouye 首页 sy review shenhe 审核 拍板 sh", () => fire("data-go", "review"));
     for (const p of ["quests", "main", "side", "daily", "urgent", "ongoing", "board", "logs", "reports", "channels", "docs", "roles"]) {
       if (p === "quests" && !phone()) continue;
       add("go:" + p, (zh ? "跳到「" : "Go to “") + App.t(p) + (zh ? "」" : "”"), zh ? "页面" : "Page", p + " go 跳 页", () => fire("data-go", p));
     }
     add("mail", zh ? "打开信箱" : "Open mailbox", zh ? "动态" : "Activity", "mail inbox 信箱 动态 xx", () => phone() ? fire("data-go", "mail") : fire("data-h", "mail"));
+    if (App.ghOpen) add("ghtok", zh ? "GitHub 推送令牌" : "GitHub push token", zh ? "配一次，以后推送不用再输" : "Set once for pushes", "github token git push 令牌 推送 gh", () => App.ghOpen());
     add("status", zh ? "系统状态" : "System status", zh ? "用量、管家心跳、服务器、5090…" : "Usage, heartbeat, server, 5090…", "status system usage 体力 用量 状态 health xt", () => App.modalStatus());
     for (const a of Object.values(App.ST.agents || {}).filter(a => a.enabled !== false).sort((x, y) => (x.order ?? 99) - (y.order ?? 99))) {
       add("dm:" + a.id, a.id === "manager" ? (zh ? `和${App.aname(a)}（管家）对话` : `Chat with ${App.aname(a)}`) : (zh ? `给${App.aname(a)}发私信` : `Message ${App.aname(a)}`),
         App.atitle(a), `dm 私信 chat 对话 ${a.id} ${App.aname(a)} ${a.name_en || ""} ${App.atitle(a)}`, () => fire("data-chat", a.id));
+    }
+    if (!phone() && App.setHome) {   // t-home-applike / t-home-widgets: one command per other style
+      const cur = App.homeStyle(), L = { widgets: zh ? "小组件" : "widgets", app: zh ? "app 式" : "app-like", classic: zh ? "原来的" : "classic" };
+      for (const v of ["widgets", "app", "classic"].filter(v => v !== cur))
+        add("home:" + v, zh ? `首页样式：换成${L[v]}` : `Home style: ${L[v]}`, zh ? "只在这台电脑生效" : "This computer only",
+          `home 首页 样式 ${v} ${L[v]} 小组件 widget app 经典 classic 原来 sy`, () => { App.setHome(v); App.go ? App.go("review") : fire("data-go", "review"); });
     }
     add("lang", zh ? "Switch to English" : "切换到中文", zh ? "界面语言" : "Language", "lang language english 中文 语言", () => fire("data-h", "lang"));
     if (!q) return out.filter(a => a.id.startsWith("approve:") || a.id === "go:review" || a.id === "status");
