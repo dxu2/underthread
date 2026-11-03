@@ -126,6 +126,11 @@
   // the specialist answers + asks again but may not put it back to review). onYouCard = the cards listed as review cards; awaitsUser ones are the decisions list.
   const onYouCard = i => !!i && i.stage !== "done" && !busy(i) && (i.stage === "review" || (!awaitsUser(i) && openAsks(i).length > 0));
   const onYou = i => onYouCard(i) || (!!i && awaitsUser(i) && !busy(i));
+  // t-agent-queue: a role's queue = its open cards that are to do, or in progress but not the card it is on now. Routine cards (r-…) never count.
+  // Badge 「排队 N」 (hidden at 0) in the TEAM list, the chat roster, the DM header and the 此刻在忙 widget; a click lists the cards (App.queueOf / qBadge).
+  const queueOf = id => { const a = (ST && ST.agents && ST.agents[id]) || {}; return items().filter(i => i.owner === id && !i.archived && !/^r-/.test(i.id) && (i.stage === "todo" || (i.stage === "doing" && i.id !== a.item)))
+    .sort((x, y) => (Date.parse(x.updated || x.created) || 0) - (Date.parse(y.updated || y.created) || 0)); };
+  const qBadge = (id, small) => { const n = queueOf(id).length; return !n ? "" : small ? `<i class="aq-n" data-aq="${esc(id)}" title="${UI.lang === "en" ? `${n} queued` : `排队 ${n}`}">${n}</i>` : `<span class="aq" data-aq="${esc(id)}">${UI.lang === "en" ? `Queued ${n}` : `排队 ${n}`}</span>`; };
   const grpOf = i => busy(i) ? "doing" : (awaitsUser(i) || onYouCard(i)) ? "review" : idleDoing(i) ? "todo" : i.stage;
   // t-idle-pause-tag: such a card says 「暂停」 where a row shows its stage, so it stands apart from a real 待办
   const pauseL = () => UI.lang === "en" ? "Paused" : "暂停";
@@ -791,7 +796,7 @@
       const ms = a.id === "manager" && mgrState();
       const st = ms ? (ms.on ? "working" : ms.sleep ? "sleeping" : "offline") : a.status || "idle";
       const sub = mgrOnline(a) ? MGR_ON() : a.status === "working" && a.activity ? `▶ ${esc(a.activity)}` : esc(aduty(a));   // t-now-closed
-      return `<div class="team-i ${a.status === "working" && a.activity && !mgrOnline(a) ? "busy" : ""} ${a.enabled === false ? "disabled" : ""} ${UI.chat === a.id ? "on" : ""} ${unreadBy.has(a.id) ? "unread" : ""}" style="--i:${Math.min(i, 12)}" data-chat="${a.id}">${av(a)}<div><div class="nm">${esc(aname(a))}<span class="st ${st}">${ms ? (ms.on ? t("online") : ms.sleep ? ms.txt : t("offline")) : t(st)}</span></div><div class="du">${sub}</div></div></div>`;
+      return `<div class="team-i ${a.status === "working" && a.activity && !mgrOnline(a) ? "busy" : ""} ${a.enabled === false ? "disabled" : ""} ${UI.chat === a.id ? "on" : ""} ${unreadBy.has(a.id) ? "unread" : ""}" style="--i:${Math.min(i, 12)}" data-chat="${a.id}">${av(a)}<div><div class="nm">${esc(aname(a))}<span class="st ${st}">${ms ? (ms.on ? t("online") : ms.sleep ? ms.txt : t("offline")) : t(st)}</span>${qBadge(a.id)}</div><div class="du">${sub}</div></div></div>`;
     }).join("");
   }
   document.addEventListener("click", e => {
@@ -2653,11 +2658,11 @@
     const ms = mgrState();
     const st = a.id === "manager" ? (ms.on ? `<span class="on">▶ ${t("online")}</span>` : ms.sleep ? `<span class="zz">☾ ${esc(ms.txt)}</span>` : `<span class="off">● ${t("offline")}</span>`)
       : a.status === "working" ? `<span class="on">▶ ${t("working")}</span>` : `<span class="idle">${t(a.status || "idle")}</span>`;
-    $(".ch-who", r).innerHTML = `${av(a, "lg")}<span class="nm">${esc(aname(a))}</span><span class="ti">${esc(atitle(a))}</span>${st}<span class="sp"></span>`;
+    $(".ch-who", r).innerHTML = `${av(a, "lg")}<span class="nm">${esc(aname(a))}</span><span class="ti">${esc(atitle(a))}</span>${qBadge(a.id)}${st}<span class="sp"></span>`;
     $(".ch-roster", r).innerHTML = agents().filter(x => x.enabled !== false).map(x => {
       const l = chatList(x.id); const last = l[l.length - 1];
       const unread = last && last.who !== "me" && (last.t > seenOf(x.id)) && x.id !== UI.chat;   // r-improve-1102 P3
-      return `<button data-pick="${x.id}" class="${x.id === UI.chat ? "on" : ""}">${av(x)}<span>${esc(aname(x))}</span>${unread ? `<i class="unread"></i>` : ""}</button>`;
+      return `<button data-pick="${x.id}" class="${x.id === UI.chat ? "on" : ""}">${av(x)}<span>${esc(aname(x))}</span>${unread ? `<i class="unread"></i>` : ""}${qBadge(x.id, true)}</button>`;
     }).join("").replace(UI.chatFold && !MOBQ.matches ? / title="[^"]*"/g : /$^/, "");   // t-rail-tip: folded rail shows #rail-tip, never the OS tooltip
     $("textarea", r).placeholder = MOBQ.matches ? t("chat_ph", { n: aname(a) }) : (UI.lang === "en" ? `Message ${aname(a)}…` : `对${aname(a)}说……`);   // t-web-dm: desktop moves the shortcut hint below the field
     const list = chatList(UI.chat);
@@ -2707,6 +2712,24 @@
     if (!pill && r) { r.insertAdjacentHTML("beforeend", `<button type="button" class="new-pill">${UI.lang === "en" ? "↓ Latest" : "↓ 回到最新"}</button>`); pill = $(".new-pill", r);
       pill.addEventListener("click", () => { box.scrollTo({ top: box.scrollHeight, behavior: "smooth" }); }); }
   }
+
+  // t-agent-queue: the list behind a 「排队 N」 badge. Capture phase, so the row / avatar under the badge does not also open the chat.
+  const aqWait = (iso, en) => { const m = Math.max(1, Math.round((Date.now() - (Date.parse(iso) || Date.now())) / 6e4)), v = m < 60 ? [m, "分钟", "min"] : m < 1440 ? [Math.round(m / 60), "小时", "h"] : [Math.round(m / 1440), "天", "d"];
+    return en ? `waiting ${v[0]} ${v[2]}` : `等了 ${v[0]} ${v[1]}`; };
+  function aqClose() { const p = $(".aq-pop"); if (p) p.remove(); }
+  document.addEventListener("click", e => {
+    const t = e.target.closest && e.target.closest("[data-aq]"), inPop = e.target.closest && e.target.closest(".aq-pop");
+    if (inPop) { const r = e.target.closest("[data-aq-item]"); if (r) { e.preventDefault(); e.stopPropagation(); aqClose(); openItem(r.dataset.aqItem); } return; }
+    aqClose(); if (!t) return;
+    e.preventDefault(); e.stopPropagation();
+    const id = t.dataset.aq, L = queueOf(id), en = UI.lang === "en", b = t.getBoundingClientRect(), p = document.createElement("div");
+    p.className = "aq-pop"; p.setAttribute("role", "dialog");
+    p.innerHTML = `<h4>${esc(aname(agent(id)))} · ${en ? `queued ${L.length}` : `排队 ${L.length}`}</h4>` + (L.map(i => `<button type="button" data-aq-item="${esc(i.id)}"><span>${esc(i.title)}</span><time>${aqWait(i.updated || i.created, en)}</time></button>`).join("") || `<p>${en ? "Nothing queued" : "没有排队的卡"}</p>`);
+    document.body.appendChild(p);
+    const w = p.offsetWidth, h = p.offsetHeight; p.style.left = Math.max(8, Math.min(b.left, innerWidth - w - 8)) + "px"; p.style.top = (b.bottom + h + 8 > innerHeight ? Math.max(8, b.top - h - 6) : b.bottom + 6) + "px";
+  }, true);
+  document.addEventListener("keydown", e => { if (e.key === "Escape" && $(".aq-pop")) { e.stopPropagation(); aqClose(); } }, true);
+  window.addEventListener("scroll", aqClose, { capture: true, passive: true });
 
   // ---------- modals ----------
   function openModal(html, onMount) { const m = $("#modal"); m.innerHTML = `<div class="mdl frame">${html}</div>`; m.hidden = false; onMount && onMount($(".mdl", m)); }
@@ -3018,7 +3041,7 @@
     refresh: async () => { await poll(true); return !UI.down; },   // t-m2-c ④ pull-to-refresh: a forced full fetch; false = the server did not answer
     tablePv: s => tablePv(s),   // t-chat-table (mobile.js chat list preview)
     verCheck: () => verCheck(true), attachPick: p => attachPick(p),   // t-lib-attach (viewer.js)   // t-new-ver (tests)
-    setHome: v => setHome(v), homeStyle: () => UI.home, seenOf: id => seenOf(id), chatMailRead: (id, t) => chatMailRead(id, t),   // r-improve-1102 P3   // t-home-applike (palette)
+    setHome: v => setHome(v), homeStyle: () => UI.home, queueOf: id => queueOf(id), qBadge: (id, small) => qBadge(id, small),   /* t-agent-queue */ seenOf: id => seenOf(id), chatMailRead: (id, t) => chatMailRead(id, t),   /* r-improve-1102 P3, t-home-applike (palette) */
     draft: k => DRAFT.get(k), liveItem: a => liveItem(a), mgrOnline: a => mgrOnline(a), typingOn: (a, l) => typingOn(a, l), typingUntil: l => typingUntil(l),   // t-now-closed (home.js hero, office.js bubble)   // t-draft-keep (mobile.js chat list marks [草稿])
     go: p => go(p), openItem: id => openItem(id), closeItem: () => closeItem(), backItem: () => backItem(), setChat: id => setChat(id), api: (k, b) => api(k, b), toast: (m, e) => toast(m, e),
     rejectItem(id) { openItem(id); modalReject(); }, on: fn => hooks.push(fn), inkEb, route: (P, via) => route(P, via),

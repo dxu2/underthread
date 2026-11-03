@@ -159,3 +159,8 @@ html.wg-paused[data-home="widgets"] .wg-job::after { animation-play-state: pause
   html[data-home="widgets"] #wg, html[data-home="widgets"] #wg *, html[data-home="widgets"] #wg *::before, html[data-home="widgets"] #wg *::after, .wg-ghost { animation: none !important; transition: none !important; }
   .wg-ghost { display: none; }
 }
+
+/* t-agent-queue: badges inside 此刻在忙 (white on the art, accent on the split layout) */
+html[data-home="widgets"] .hero .aq { background: rgba(255,255,255,.2); color: #fff; margin-left: 8px; }
+html[data-home="widgets"] .hero.multi .aq { background: color-mix(in srgb, var(--accent) 16%, transparent); color: var(--accent); }
+html[data-home="widgets"] .wg-sr .st b { white-space: nowrap; } html[data-home="widgets"] .wg-sr .aq { height: 15px; padding: 0 5px; font-size: 10px; margin-left: 6px; }
