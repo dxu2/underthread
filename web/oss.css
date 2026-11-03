@@ -2,7 +2,7 @@
    - The original header wordmark was an image; this build ships a text wordmark instead.
    - The 舞台 (stage) theme and the terrace office need artwork that is not part of this repository,
      so their switches are hidden. Add your own art + CSS to bring them back. */
-.brand-txt { display: inline-flex; flex-direction: column; line-height: 1; font-weight: 800; letter-spacing: .08em;
+.brand-txt { display: inline-flex; flex-direction: column; line-height: 1; font-weight: 700; letter-spacing: .08em;
   font-size: 22px; color: var(--ink, currentColor); }
 .brand-txt small { font-size: 10px; font-weight: 600; letter-spacing: .32em; margin-top: 3px; color: var(--accent, currentColor); }
 .hc-stage, [data-stage-set] { display: none !important; }
