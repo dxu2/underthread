@@ -2222,3 +2222,25 @@ b, strong, th, h1, h2, h3, h4, h5, h6 { font-weight: 600; }
 .dw-toc:not(.open) .toc-box { min-width: 156px; border-radius: 14px; }
 .dw-toc:not(.open) .toc-l { display: none; }
 .dw-toc:not(.open) .toc-bar { margin-top: 0; margin-bottom: 8px; }
+
+/* ===== ri1103-P5 (2026-11-03): ⌘K also searches drafts and card talk (palette.js). Category chips under the input, 「全部 N 条 →」 on section
+   heads, and the flash on the sentence a hit jumps to (app.js seekItem / seekChat: mark.seek-hit + .seek-blk on its block). ===== */
+.pl-tabs { display: flex; align-items: center; gap: 6px; padding: 8px 14px; border-bottom: 1px solid var(--line); }
+.pl-tabs[hidden] { display: none; }
+.pl-tabs button { display: inline-flex; align-items: center; gap: 5px; height: 28px; padding: 0 12px; border: 0; border-radius: 999px; background: none; box-shadow: inset 0 0 0 1px var(--line);
+  font: 500 var(--fs-13)/1 var(--f-sys); color: var(--ink2); cursor: pointer; }
+.pl-tabs button i { font-style: normal; font-size: var(--fs-12); color: var(--dim); font-variant-numeric: tabular-nums; }
+.pl-tabs button:hover { color: var(--ink); box-shadow: inset 0 0 0 1px var(--line2); }
+.pl-tabs button.on { background: var(--accent-soft); color: var(--ink); box-shadow: inset 0 0 0 1px var(--accent-line, var(--line2)); }
+.pl-tabs .pl-tk { margin-left: auto; font-size: var(--fs-11); color: var(--dim); }
+.pl-h { display: flex; align-items: baseline; }
+.pl-more { margin-left: auto; padding: 0 2px; border: 0; background: none; font: 500 var(--fs-12) var(--f-sys); color: var(--dim); cursor: pointer; }
+.pl-more:hover { color: var(--ink); }
+.pl-m b mark { background: color-mix(in srgb, var(--warn) 28%, transparent); color: inherit; border-radius: 3px; padding: 0 1px; }
+.pl-m b { font-weight: 500; }
+.pl-m b:not(:has(mark)) { font-weight: 600; }
+mark.seek-hit { background: color-mix(in srgb, var(--warn) 42%, transparent); color: inherit; border-radius: 3px; padding: 0 1px; animation: seek-hit 2.6s ease-out both; }
+@keyframes seek-hit { 0%, 55% { background: color-mix(in srgb, var(--warn) 42%, transparent); } 100% { background: transparent; } }
+.seek-blk { animation: seek-blk 1.4s ease-out; }
+@keyframes seek-blk { 0%, 30% { box-shadow: 0 0 0 2px color-mix(in srgb, var(--warn) 55%, transparent); } 100% { box-shadow: 0 0 0 2px transparent; } }
+@media (prefers-reduced-motion: reduce) { mark.seek-hit, .seek-blk { animation: none; } }

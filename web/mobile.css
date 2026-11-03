@@ -1659,3 +1659,16 @@ html.vt-run #drawer, html.vt-run #page { transition: none !important; }
 .dw-toc.open .toc-l button.l2 { padding-left: 26px; }
 .dw-toc.open .toc-bar { margin: 2px 20px 14px; }
 body.kb .dw-toc:not(.open) { display: none; }   /* keyboard up: the pill would sit on the text being typed against */
+
+/* ===== ri1103-P5 (2026-11-03): search sheet = same categories as ⌘K (全部 / 草稿 / 卡片讨论 / 对话). Hit rows show the sentence (2 lines, words marked). ===== */
+.ms-tabs { display: flex; gap: 6px; padding: 2px max(16px, env(safe-area-inset-left)) 8px; overflow-x: auto; scrollbar-width: none; }
+.ms-tabs::-webkit-scrollbar { display: none; }
+.ms-tabs button { flex: none; display: inline-flex; align-items: center; gap: 4px; height: 32px; padding: 0 14px; border: 0; border-radius: 999px; background: var(--chip); box-shadow: inset 0 0 0 1px var(--line);
+  font: 500 var(--fs-14)/1 var(--f-sys); color: var(--ink2); }
+.ms-tabs button i { font-style: normal; font-size: var(--fs-12); color: var(--dim); font-variant-numeric: tabular-nums; }
+.ms-tabs button.on { background: var(--accent-soft); color: var(--ink); box-shadow: inset 0 0 0 1px var(--line2); }
+.ms-h { display: flex; align-items: baseline; }
+.ms-more { margin-left: auto; padding: 0; border: 0; background: none; font: 500 var(--fs-13) var(--f-sys); color: var(--dim); }
+.ms-hit { align-items: flex-start; }
+.ms-hit .ms-m b { white-space: normal; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; font-weight: 500; line-height: 1.4; }
+.ms-hit .ms-m b mark { background: color-mix(in srgb, var(--warn) 30%, transparent); color: inherit; border-radius: 3px; padding: 0 1px; }

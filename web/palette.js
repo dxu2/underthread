@@ -17,6 +17,14 @@
     const a = Math.max(0, i - 22);
     return (a ? "…" : "") + s.slice(a, a + 70) + (a + 70 < s.length ? "…" : "");
   }
+  // t-ri1103-p5: a window around the hit at raw offset i (drafts are long: clean only the window, not the whole text)
+  function aroundAt(text, i, q) {
+    const raw = String(text || ""), a = Math.max(0, i - 70), w = clean(raw.slice(a, i + q.length + 110)), j = w.toLowerCase().indexOf(q);
+    if (j < 0) return around(raw.slice(a, i + q.length + 400), q);
+    const b = Math.max(0, j - 24);
+    return (a || b ? "…" : "") + w.slice(b, b + 74) + (b + 74 < w.length || i + q.length + 110 < raw.length ? "…" : "");
+  }
+  const hlAll = (s, q) => { if (!q) return esc(s); const lc = s.toLowerCase(); let o = "", k = 0, i; while ((i = lc.indexOf(q, k)) >= 0) { o += esc(s.slice(k, i)) + "<mark>" + esc(s.slice(i, i + q.length)) + "</mark>"; k = i + q.length; } return o + esc(s.slice(k)); };
   const hl = (s, q) => { const i = s.toLowerCase().indexOf(q); return i < 0 || !q ? esc(s) : esc(s.slice(0, i)) + "<mark>" + esc(s.slice(i, i + q.length)) + "</mark>" + esc(s.slice(i + q.length)); };
   // fire a click on a throwaway node, so the app's own click handlers (both layouts) do the work
   function fire(attr, val) {
@@ -63,20 +71,72 @@
 
   // ---------- the shared search ----------
   // q: lower-case trimmed query. Items: title / id / summary / tags / owner (as the phone search always did).
+  // t-ri1103-p5: drafts (current + every older version) and card talk (thread messages / logs, no system events) are searched too.
+  // Lower-cased copies are built once per state object (a poll that changes anything swaps App.ST), so a key press only runs indexOf.
+  // Phone polls slim: a done card's drafts are not in the state until it is opened, so the phone only searches drafts of open cards.
+  const IX = { st: null, n: -1, drafts: [], talk: [], chats: null };
+  function index() {
+    const ST = App.ST, its = ST.items || [], n = its.reduce((k, it) => k + (it.draft ? 1 : 0) + (it.versions || []).length + (it.thread || []).length, 0);
+    if (IX.st === ST && IX.n === n) return IX;
+    const ms = x => Date.parse(x) || 0, drafts = [], talk = [];
+    for (const it of its) {
+      (it.versions || []).forEach((v, i) => v.draft && drafts.push({ it, vkey: "v" + i, vn: i + 1, label: v.label, text: v.draft, lc: v.draft.toLowerCase(), t: v.t, who: it.owner }));
+      if (it.draft) drafts.push({ it, vkey: "cur", vn: (it.versions || []).length + 1, label: it.draft_label, text: it.draft, lc: it.draft.toLowerCase(), t: it.draft_at || it.updated, who: it.owner, cur: true });
+      (it.thread || []).forEach((m, i) => { if (m.kind !== "event" && m.text) talk.push({ it, ti: i, m, text: String(m.text), lc: String(m.text).toLowerCase(), t: m.t }); });
+    }
+    drafts.sort((a, b) => ms(b.t) - ms(a.t)); talk.sort((a, b) => ms(b.t) - ms(a.t));
+    Object.assign(IX, { st: ST, n, drafts, talk, chats: null });
+    return IX;
+  }
+  function chatIx() {   // every chat message, newest first (built lazily, same lifetime as the index)
+    if (IX.chats) return IX.chats;
+    const out = [];
+    for (const a of Object.values(App.ST.agents || {}).filter(a => a.enabled !== false)) convMsgs(a.id).forEach(m => m && m.text && out.push({ a, m, lc: String(m.text).toLowerCase(), t: m.t }));
+    return (IX.chats = out.sort((x, y) => (Date.parse(y.t) || 0) - (Date.parse(x.t) || 0)));
+  }
+  // every hit, newest first, capped; perDoc limits how many hits one long draft can add
+  function hitsIn(list, q, cap, perDoc) {
+    const out = []; let total = 0;
+    for (const d of list) {
+      let i = d.lc.indexOf(q), k = 0, kept = 0, last = -1e9;
+      while (i >= 0) { total++; if (out.length < cap && kept < perDoc && i - last > 90) { out.push({ d, at: i, nth: k }); kept++; last = i; } k++; i = d.lc.indexOf(q, i + q.length); }   // hits closer than 90 chars share one snippet
+    }
+    return { list: out, total };
+  }
   function find(q, opt = {}) {
     const items = App.items().slice().sort(App.byAct)
       .filter(it => !q || [it.title, it.summary, it.id, (it.tags || []).join(" "), App.aname(App.agent(it.owner))].join(" ").toLowerCase().includes(q))
       .slice(0, q ? (opt.items || 30) : (opt.recent || 8));
-    const convs = !q ? [] : Object.values(App.ST.agents || {}).filter(a => a.enabled !== false).map(a => {
-      const hit = convMsgs(a.id).slice().reverse().find(m => String(m.text || "").toLowerCase().includes(q));
-      const named = (App.aname(a) + " " + App.atitle(a)).toLowerCase().includes(q);
-      return named || hit ? { a, m: hit || convMsgs(a.id).slice(-1)[0], hit: !!hit } : null;
-    }).filter(Boolean).slice(0, opt.convs || 12);
-    return { items, convs, actions: actions(q, q ? items[0] : null) };
+    const cap = opt.cap || 30;
+    let convs = [], drafts = { list: [], total: 0 }, talk = { list: [], total: 0 }, chatN = 0;
+    if (q) {
+      const X = index();
+      drafts = hitsIn(X.drafts, q, cap, 3); talk = hitsIn(X.talk, q, cap, 1);
+      // t-ri1103-p5: chats list every hit (was one per person); a name match with no hit keeps the old one-line row
+      const ch = chatIx().filter(x => x.lc.includes(q)); chatN = ch.length;
+      const named = Object.values(App.ST.agents || {}).filter(a => a.enabled !== false && (App.aname(a) + " " + App.atitle(a)).toLowerCase().includes(q) && !ch.some(x => x.a.id === a.id))
+        .map(a => ({ a, m: convMsgs(a.id).slice(-1)[0], hit: false }));
+      convs = named.concat(ch.slice(0, cap).map(x => ({ a: x.a, m: x.m, hit: true }))).slice(0, opt.convs || cap);
+    }
+    return { items, convs, drafts: drafts.list, talk: talk.list, n: { drafts: drafts.total, talk: talk.total, convs: chatN }, actions: actions(q, q ? items[0] : null) };
   }
 
   // ---------- desktop palette ----------
-  const P = { el: null, q: "", sel: 0, rows: [], last: null };
+  const P = { el: null, q: "", sel: 0, rows: [], last: null, tab: "all", deb: 0 };
+  const TABS = ["all", "drafts", "talk", "convs"];
+  const tabName = k => en() ? { all: "All", drafts: "Drafts", talk: "Card talk", convs: "Chats" }[k] : { all: "全部", drafts: "草稿", talk: "卡片讨论", convs: "对话" }[k];
+  const whoN = w => w === "me" ? (en() ? "You" : "你") : App.aname(App.agent(w));
+  // the shared row texts for a draft / talk hit (mobile.js uses them too)
+  function hitText(h, q, kind) {
+    const zh = !en(), d = h.d, it = d.it;
+    if (kind === "drafts") return { who: d.who, snip: hlAll(aroundAt(d.text, h.at, q), q),
+      sub: `${esc(zh ? `草稿 v${d.vn}${d.cur ? "" : "（旧版）"}` : `Draft v${d.vn}${d.cur ? "" : " (old)"}`)} · ${esc(it.title)} · ${esc(whoN(d.who))} · ${App.when(d.t)}` };
+    const m = d.m;
+    return { who: m.who === "me" ? "me" : m.who, snip: hlAll(aroundAt(d.text, h.at, q), q),
+      sub: `${esc(it.title)} · ${esc(whoN(m.who))}${m.to ? " → " + esc(whoN(m.to)) : ""} · ${App.when(m.t)}` };
+  }
+  const seekOf = (h, kind, q) => () => App.seekItem ? App.seekItem(h.d.it.id, kind === "drafts" ? { vkey: h.d.vkey, q, nth: h.nth } : { ti: h.d.ti, q, nth: h.nth }) : App.openItem(h.d.it.id);
+  const avOf = w => w === "me" ? App.av("me", "sm") : App.av(App.agent(w), "sm");
   const kindTag = it => {
     const k = it.kind === "task" ? "deliverable" : it.kind;
     return it.stage === "review" ? `<i class="tag ${k}">${App.t(k)}</i>` : App.awaitsUser(it) ? `<i class="tag ${k}">${en() ? "waiting on you" : "等你拍板"}</i>` : `<i class="pl-st">${esc(App.stageLabel(it.stage))}</i>`;
@@ -84,15 +144,21 @@
   function build() {
     const el = document.createElement("div"); el.id = "pal"; el.hidden = true;
     el.innerHTML = `<div class="pl-box" role="dialog" aria-modal="true"><label class="pl-in"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="M16 16 L20.5 20.5"/></svg>
-      <input type="text" autocomplete="off" spellcheck="false" role="combobox" aria-expanded="true" aria-controls="pl-res"><kbd>esc</kbd></label>
+      <input type="text" autocomplete="off" spellcheck="false" role="combobox" aria-expanded="true" aria-controls="pl-res"><kbd>esc</kbd></label><div class="pl-tabs" hidden></div>
       <div class="pl-res" id="pl-res" role="listbox"></div><div class="pl-ft"></div></div>`;
     document.body.appendChild(el);
     const inp = $("input", el);
-    inp.addEventListener("input", () => { P.q = inp.value.trim().toLowerCase(); P.sel = 0; render(); });   // input never re-rendered (IME-safe)
+    inp.addEventListener("input", () => {   // input never re-rendered (IME-safe); t-ri1103-p5: 150 ms debounce (drafts are ~0.8 MB of text)
+      clearTimeout(P.deb); const v = inp.value.trim().toLowerCase();
+      const go = () => { P.q = v; P.sel = 0; if (!v) P.tab = "all"; render(); };
+      if (!v) go(); else P.deb = setTimeout(go, 150);
+    });
+    el.addEventListener("click", e => { const t = e.target.closest("[data-pl-tab]"); if (t) { P.tab = t.dataset.plTab; P.sel = 0; render(); inp.focus(); } });
     inp.addEventListener("keydown", e => {
       if (e.isComposing) return;
       if (e.key === "ArrowDown" || e.key === "ArrowUp") { e.preventDefault(); move(e.key === "ArrowDown" ? 1 : -1); }
-      else if (e.key === "Enter") { e.preventDefault(); run(P.sel); }
+      else if (e.key === "Enter") { e.preventDefault(); if (P.deb && inp.value.trim().toLowerCase() !== P.q) { clearTimeout(P.deb); P.q = inp.value.trim().toLowerCase(); render(); } run(P.sel); }
+      else if (e.key === "Tab" && P.q) { e.preventDefault(); P.tab = TABS[(TABS.indexOf(P.tab) + (e.shiftKey ? 3 : 1)) % 4]; P.sel = 0; render(); }   // t-ri1103-p5: Tab walks the categories
     });
     el.addEventListener("mousedown", e => { if (e.target === el) { e.preventDefault(); close(); } });
     el.addEventListener("mousemove", e => { const r = e.target.closest("[data-pl]"); if (r && +r.dataset.pl !== P.sel) { P.sel = +r.dataset.pl; mark(); } });
@@ -104,18 +170,28 @@
     P.el.querySelectorAll("[data-pl]").forEach(r => { const on = +r.dataset.pl === P.sel; r.classList.toggle("on", on); r.setAttribute("aria-selected", on); if (on && scroll) r.scrollIntoView({ block: "nearest" }); });
   }
   function render() {
-    const zh = !en(), R = find(P.q, { items: 8, recent: 6, convs: 5 });
+    const zh = !en(), R = find(P.q, { items: 8, recent: 6 }), q = P.q, tab = q ? P.tab : "all", all = tab === "all";
     P.rows = []; let html = "";
+    const tabsEl = $(".pl-tabs", P.el);
+    if (tabsEl) { const cnt = k => k === "all" ? "" : ` <i>${R.n[k] > 30 ? "30+" : R.n[k]}</i>`; const th = q ? TABS.map(k => `<button type="button" class="${k === tab ? "on" : ""}" data-pl-tab="${k}">${tabName(k)}${cnt(k)}</button>`).join("") + `<span class="pl-tk"><kbd>tab</kbd></span>` : ""; if (tabsEl._h !== th) { tabsEl.innerHTML = tabsEl._h = th; } tabsEl.hidden = !q; }
     const row = (ic, title, sub, run, hint) => { const i = P.rows.push(run) - 1; return `<div class="pl-row" data-pl="${i}" role="option">${ic}<span class="pl-m"><b>${title}</b>${sub ? `<span>${sub}</span>` : ""}</span>${hint ? `<em>${hint}</em>` : ""}</div>`; };
-    if (R.items.length) html += `<div class="pl-h">${P.q ? (zh ? "单子" : "Items") : (zh ? "最近" : "Recent")}</div>` + R.items.map(it =>
+    const iCap = q && (R.drafts.length || R.talk.length) ? 4 : 8;   // t-ri1103-p5: leave room for the sentence hits
+    if (all && R.items.length) html += `<div class="pl-h">${P.q ? (zh ? "单子" : "Items") : (zh ? "最近" : "Recent")}</div>` + R.items.slice(0, iCap).map(it =>
       row(`<span class="pl-av">${App.av(App.agent(it.owner), "sm")}</span>`, esc(it.title), `${kindTag(it)} ${esc(App.aname(App.agent(it.owner)))} · ${App.t(it.category)} · ${App.when(it.activity)}`, () => App.openItem(it.id), zh ? "↵ 打开" : "↵ open")).join("");
-    if (R.convs.length) html += `<div class="pl-h">${zh ? "对话里提到" : "In chats"}</div>` + R.convs.map(x =>
-      row(`<span class="pl-av">${App.av(x.a, "sm")}</span>`, x.hit ? `「${hl(around(x.m.text, P.q), P.q)}」` : esc(App.aname(x.a)),
+    const more = (k, n) => all && n > shown[k] ? `<button type="button" class="pl-more" data-pl-tab="${k}">${zh ? `全部 ${n > 30 ? "30+" : n} 条 →` : `All ${n > 30 ? "30+" : n} →`}</button>` : "";
+    const shown = { drafts: all ? 4 : 30, talk: all ? 4 : 30, convs: all ? 4 : 30 };
+    for (const k of ["drafts", "talk"]) {
+      if ((all || tab === k) && R[k].length) html += `<div class="pl-h">${tabName(k)}${more(k, R.n[k])}</div>` + R[k].slice(0, shown[k]).map(h => { const x = hitText(h, q, k);
+        return row(`<span class="pl-av">${avOf(x.who)}</span>`, `「${x.snip}」`, x.sub, seekOf(h, k, q), zh ? "↵ 跳到原句" : "↵ jump"); }).join("");
+    }
+    if ((all || tab === "convs") && R.convs.length) html += `<div class="pl-h">${zh ? "对话里提到" : "In chats"}${more("convs", R.n.convs)}</div>` + R.convs.slice(0, shown.convs).map(x =>
+      row(`<span class="pl-av">${App.av(x.a, "sm")}</span>`, x.hit ? `「${hlAll(around(x.m.text, P.q), P.q)}」` : esc(App.aname(x.a)),
         `${x.m ? (x.m.who === "me" ? (zh ? "你" : "You") : esc(App.aname(App.agent(x.m.who) || x.a))) + " → " + esc(x.m.who === "me" ? App.aname(x.a) : (zh ? "你" : "you")) + " · " + App.when(x.m.t) : esc(App.atitle(x.a))}`,
-        () => fire("data-chat", x.a.id))).join("");
-    if (R.actions.length) html += `<div class="pl-h">${zh ? "操作" : "Actions"}</div>` + R.actions.slice(0, P.q ? 12 : 4).map(a =>
+        () => { fire("data-chat", x.a.id); if (x.hit && App.seekChat) App.seekChat(x.m.t, q); })).join("");
+    if (all && R.actions.length) html += `<div class="pl-h">${zh ? "操作" : "Actions"}</div>` + R.actions.slice(0, P.q ? 12 : 4).map(a =>
       row(`<span class="pl-ic">${a.id.startsWith("approve:") ? "✓" : a.id.startsWith("dm:") ? "@" : a.id.startsWith("theme:") ? "◐" : a.id.startsWith("go:") || a.id === "mail" ? "→" : a.id === "status" ? "♥" : "·"}</span>`, esc(a.label), esc(a.sub), a.run)).join("");
-    if (!P.rows.length) html = `<div class="pl-none">${zh ? "没有找到。换个词试试，或者输入角色名、页面名。" : "Nothing found. Try a name or a page."}</div>`;
+    if (!P.rows.length && !all) html = `<div class="pl-none">${zh ? `「${esc(tabName(tab))}」里没有找到。按 Tab 换一类。` : "Nothing here. Press Tab for another category."}</div>`;
+    if (!P.rows.length && all) html = `<div class="pl-none">${zh ? "没有找到。换个词试试，或者输入角色名、页面名。" : "Nothing found. Try a name or a page."}</div>`;
     const box = $(".pl-res", P.el); if (box._h !== html) { box.innerHTML = box._h = html; }
     $(".pl-ft", P.el).innerHTML = `<span><kbd>↑</kbd><kbd>↓</kbd> ${zh ? "选择" : "move"}</span><span><kbd>↵</kbd> ${zh ? "打开 / 执行" : "open / run"}</span><span><kbd>⌘K</kbd> ${zh ? "随时呼出" : "anywhere"}</span><span class="r">${zh ? "手机：首页右上角的搜索" : "Phone: search on home"}</span>`;
     P.sel = Math.min(P.sel, Math.max(0, P.rows.length - 1)); mark();
@@ -127,8 +203,8 @@
     P.el = P.el || build();
     P.last = document.activeElement;
     P.el.hidden = false; document.body.classList.add("pal-on");
-    const inp = $("input", P.el); inp.placeholder = en() ? "Search items, chats, or type an action…" : "搜单子、对话，或者输入要做的事…";
-    inp.value = ""; P.q = ""; P.sel = 0; render(); inp.focus();
+    const inp = $("input", P.el); inp.placeholder = en() ? "Search items, drafts, card talk, chats, or type an action…" : "搜单子、草稿、卡片讨论、对话，或者输入要做的事…";
+    clearTimeout(P.deb); inp.value = ""; P.q = ""; P.sel = 0; P.tab = "all"; render(); inp.focus();
   }
   function close(ran) {
     if (!P.el || P.el.hidden) return;
@@ -152,5 +228,5 @@
   const hook = () => { if (isOpen()) render(); };
   (function wait() { if (window.App && App.on) App.on(k => { if (k === "all") hook(); }); else setTimeout(wait, 100); })();
 
-  window.Pal = { find, actions, open, close, isOpen, around };
+  window.Pal = { find, actions, open, close, isOpen, around, hitText, seekOf, hlAll, tabName };
 })();

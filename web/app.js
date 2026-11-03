@@ -2138,6 +2138,62 @@
     sc.scrollTop = Math.max(0, h.getBoundingClientRect().top - sc.getBoundingClientRect().top + sc.scrollTop - tocOff(sc) - 14);
     tocSync(); jumpState();
   }
+  // ===== t-ri1103-p5 (2026-11-03): ⌘K hits on drafts / card talk open the card AT that sentence. sp = { vkey, q, nth } (a draft version,
+  // unfolded if needed) or { ti, q, nth } (thread entry index, data-ti). The words get a short flash (mark.seek-hit, removed after 2.6 s; a poll
+  // re-render drops it too). Unpins t-detail-jump; re-aligns twice while late images settle unless you scrolled in between.
+  function seekRange(root, q, nth) {
+    if (!q) return null;
+    const w = document.createTreeWalker(root, NodeFilter.SHOW_TEXT); let n, k = 0, first = null;
+    while ((n = w.nextNode())) { const s = n.nodeValue.toLowerCase(); let i = s.indexOf(q);
+      while (i >= 0) { const r = document.createRange(); r.setStart(n, i); r.setEnd(n, i + q.length); if (!first) first = r; if (k++ === nth) return r; i = s.indexOf(q, i + q.length); } }
+    return first;
+  }
+  function seekItem(id, sp) {
+    openItem(id);
+    let tries = 0, set = -1;
+    const find = () => {
+      const sc = $("#drawer .dw-scroll"); if (!sc || UI.item !== id) return null;
+      if (sp.vkey) {
+        const key = sp.vkey === "cur" ? "xcur" : sp.vkey, folded = sp.vkey === "cur" ? DW.open.has(key) : !DW.open.has(key);
+        if (folded && $(`.cs-card.draftc[data-vkey="${sp.vkey}"]`, sc)) { sp.vkey === "cur" ? DW.open.delete(key) : DW.open.add(key); renderDrawer(); }
+        return $(`.cs-card.draftc[data-vkey="${sp.vkey}"] .md`, sc);
+      }
+      return $(`[data-ti="${sp.ti}"]`, sc);
+    };
+    const place = (flash) => {
+      const sc = $("#drawer .dw-scroll"), blk = find(); if (!sc || !blk) return false;
+      DW.pin = false; DW.jumpT = 0;
+      if (flash && TOC.open) { TOC.open = false; tocMode(); }   // t-ri1103-p4's floating list would sit on the sentence: fold it for this visit (not remembered)
+      const old = $("mark.seek-hit", sc); if (old && flash) old.replaceWith(...old.childNodes);
+      let r = seekRange(blk, sp.q, sp.nth || 0), mk = null;
+      if (r && flash) { try { mk = document.createElement("mark"); mk.className = "seek-hit"; r.surroundContents(mk); } catch { mk = null; } }
+      const box = (mk || (r && r.getBoundingClientRect().height ? r : null) || blk).getBoundingClientRect();
+      sc.scrollTop = set = Math.max(0, sc.scrollTop + box.top - sc.getBoundingClientRect().top - Math.min(160, sc.clientHeight * 0.3));
+      jumpState();
+      if (flash) { const card = blk.closest(".cs-card, .cs-me, .cs-line") || blk; card.classList.remove("seek-blk"); void card.offsetWidth; card.classList.add("seek-blk");
+        setTimeout(() => { card.classList.remove("seek-blk"); if (mk && mk.isConnected) mk.replaceWith(...mk.childNodes); }, 2600); }
+      return true;
+    };
+    const go = () => { if (UI.item !== id) return;
+      const it = (ST.items || []).find(i => i.id === id); if (it && it.slim && ++tries < 20) return setTimeout(go, 150);   // slim (phone, done card): wait for /api/item, its re-render jumps to the end
+      if (place(true)) { [400, 1200].forEach(ms => setTimeout(() => { const sc = $("#drawer .dw-scroll"); if (sc && UI.item === id && Math.abs(sc.scrollTop - set) < 2) place(false); }, ms)); }
+      else if (++tries < 20) setTimeout(go, 150); };   // a slim (done) card's drafts arrive a moment later from /api/item
+    go();
+  }
+  // ⌘K hit in a chat: once the conversation is drawn, scroll to that message and flash it (only if it is among the rendered ones)
+  function seekChat(t0, q) {
+    let tries = 0;
+    const go = () => {
+      const box = $("#right .ch-msgs"), m = box && box.querySelector(`.msg[data-t="${CSS.escape(t0)}"]`);
+      if (!m) { if (++tries < 10) setTimeout(go, 120); return; }
+      const mb = $(".mb", m) || m, r = seekRange(mb, q, 0); let mk = null;
+      if (r) { try { mk = document.createElement("mark"); mk.className = "seek-hit"; r.surroundContents(mk); } catch { mk = null; } }
+      box.scrollTop = Math.max(0, box.scrollTop + m.getBoundingClientRect().top - box.getBoundingClientRect().top - Math.min(140, box.clientHeight * 0.3));
+      m.classList.add("seek-blk"); setTimeout(() => { m.classList.remove("seek-blk"); if (mk && mk.isConnected) mk.replaceWith(...mk.childNodes); }, 2600);
+      if (redo < 3) setTimeout(() => { if (!m.isConnected) { redo++; tries = 0; go(); } }, 350);   // the chat column re-drew right after opening: place it again
+    };
+    let redo = 0; setTimeout(go, 60);
+  }
   // one stream: thread entries + every draft version, by time; a "submitted for review" event next to a draft folds into its card
   function streamOf(it) {
     const ms = x => Date.parse(x) || 0;
@@ -2189,14 +2245,14 @@
     }
     if (e.kind === "msg" && e.who === "me") {
       const to = e.to || "manager";
-      return `<div class="cs-me"><div class="cs-h"><span class="nm">${esc(whoName("me"))}</span><span class="at">@${esc(whoName(to))}</span><span class="tm">· ${hm(e.t)}</span></div>
+      return `<div class="cs-me" data-ti="${e._i}"><div class="cs-h"><span class="nm">${esc(whoName("me"))}</span><span class="at">@${esc(whoName(to))}</span><span class="tm">· ${hm(e.t)}</span></div>
         <div class="md">${md(e.text)}</div>${attHTML(e.attachments)}</div>`;
     }
     if (e.kind === "msg") {
-      return `<div class="cs-card" data-t="${esc(e.t)}" style="--acc:${esc(acc)}"><div class="cs-h">${av(agent(e.who), "sm")}<span class="nm">${esc(whoName(e.who))}</span><span class="at">@${esc(whoName(e.to || "me"))}</span><span class="tm">· ${hm(e.t)}</span></div>
+      return `<div class="cs-card" data-t="${esc(e.t)}" data-ti="${e._i}" style="--acc:${esc(acc)}"><div class="cs-h">${av(agent(e.who), "sm")}<span class="nm">${esc(whoName(e.who))}</span><span class="at">@${esc(whoName(e.to || "me"))}</span><span class="tm">· ${hm(e.t)}</span></div>
         <div class="md">${md(e.text)}</div>${attHTML(e.attachments)}</div>`;
     }
-    return `<div class="cs-line ${esc(e.kind || "")}"><div class="in"><span class="tm">${hm(e.t)}</span>${e.who === "me" ? av("me", "sm") : av(agent(e.who), "sm")}<span class="nm">${esc(whoName(e.who))}</span><span class="tx">${md.refs(esc(e.kind === "event" ? evText(e.text) : e.text))}${attHTML(e.attachments)}</span></div></div>`;
+    return `<div class="cs-line ${esc(e.kind || "")}" data-ti="${e._i}"><div class="in"><span class="tm">${hm(e.t)}</span>${e.who === "me" ? av("me", "sm") : av(agent(e.who), "sm")}<span class="nm">${esc(whoName(e.who))}</span><span class="tx">${md.refs(esc(e.kind === "event" ? evText(e.text) : e.text))}${attHTML(e.attachments)}</span></div></div>`;
   }
   // t-event-zh: system lines in a card's 动态 read in Chinese (display only; state keeps the original text).
   // "stage todo → doing" -> 「开工 · 待办 → 进行中」 (verb by the target stage), "created · X" -> 「建卡 · X」. English UI keeps the original.
@@ -3130,7 +3186,7 @@
     verCheck: () => verCheck(true), attachPick: p => attachPick(p),   // t-lib-attach (viewer.js)   // t-new-ver (tests)
     setHome: v => setHome(v), homeStyle: () => UI.home, queueOf: id => queueOf(id), qBadge: (id, small) => qBadge(id, small),   /* t-agent-queue */ seenOf: id => seenOf(id), chatMailRead: (id, t) => chatMailRead(id, t),   /* r-improve-1102 P3, t-home-applike (palette) */
     draft: k => DRAFT.get(k), liveItem: a => liveItem(a), mgrOnline: a => mgrOnline(a), typingOn: (a, l) => typingOn(a, l), typingUntil: l => typingUntil(l),   // t-now-closed (home.js hero, office.js bubble)   // t-draft-keep (mobile.js chat list marks [草稿])
-    go: p => go(p), openItem: id => openItem(id), closeItem: () => closeItem(), backItem: () => backItem(), setChat: id => setChat(id), api: (k, b) => api(k, b), toast: (m, e) => toast(m, e),
+    go: p => go(p), openItem: id => openItem(id), seekItem: (id, sp) => seekItem(id, sp), seekChat: (t, q) => seekChat(t, q),   /* t-ri1103-p5 */ closeItem: () => closeItem(), backItem: () => backItem(), setChat: id => setChat(id), api: (k, b) => api(k, b), toast: (m, e) => toast(m, e),
     rejectItem(id) { openItem(id); modalReject(); }, on: fn => hooks.push(fn), inkEb, route: (P, via) => route(P, via),
   };
 
