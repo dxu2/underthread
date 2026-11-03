@@ -49,12 +49,15 @@
   const eb = (k, n, dot) => `<div class="wg-eb">${dot ? '<span class="wg-dot"></span>' : ""}<b>${nm(k)}</b>${n != null ? `<span class="n">${n}</span>` : ""}</div>`;
   const kindL = i => i.kind === "plan" ? (en() ? "Plan" : "方案") : i.kind === "question" || (A().openAsks(i).length && i.stage !== "review") ? (en() ? "Question" : "问题") : (en() ? "Review" : "待验收");
   const rowsFit = (s, big, small) => s === "l" ? big : small;
+  // t-home-motion: a medium widget holds two rows and nothing else. Two or fewer: both rows, no footer (each row already says how long);
+  // more: one row + 「还有 N 件 ›」 (the footer used to be clipped by ~21px under two rows)
+  const fitM = (s, len, big) => s === "l" ? { n: big, foot: true } : len <= 2 ? { n: 2, foot: false } : { n: 1, foot: true };
   const W = {
     review(s, D) {
-      const n = rowsFit(s, 5, 2), L = D.waiting;
+      const L = D.waiting, { n, foot } = fitM(s, L.length, 5);
       return eb("review", L.length, true) + L.slice(0, n).map(i => { const a = A().agent(i.owner);
         return `<div class="wg-row" data-item="${esc(i.id)}"><img class="wg-av" src="${A().avatarUrl(a)}" alt=""><div class="t">${esc(i.title)}<small>${esc(A().aname(a))} · ${en() ? "waiting" : "等了"} ${ago(i.activity || i.updated)}</small></div><span class="wg-tg${i.kind === "plan" ? "" : " hot"}">${kindL(i)}</span></div>`; }).join("") +
-        `<div class="wg-more">${L.length > n ? `<span data-go="board">${en() ? `${L.length - n} more ›` : `还有 ${L.length - n} 件 ›`}</span>` : `${en() ? "Oldest waiting" : "最久的已经等了"} ${ago(L[0].activity || L[0].updated)}`}</div>`;
+        (!foot ? "" : `<div class="wg-more">${L.length > n ? `<span data-go="board">${en() ? `${L.length - n} more ›` : `还有 ${L.length - n} 件 ›`}</span>` : `${en() ? "Oldest waiting" : "最久的已经等了"} ${ago(L[0].activity || L[0].updated)}`}</div>`);
     },
     busy(s, D) {
       const B = D.busy, m = B[0], a = m.a, side = B.slice(1, s === "l" ? 3 : 1), more = B.length - 1 - side.length, multi = B.length > 1;
@@ -62,11 +65,11 @@
       return `<div class="wg-bg" style="background-image:url('${art(a)}')"></div><div class="wg-sh"></div>
         <div class="wg-top">${eb("busy", `${B.length} ${en() ? "" : "人"}`.trim())}</div>
         <div class="wg-in"><h3 data-chat="${esc(a.id)}">${esc(A().aname(a))}<small>${esc(A().atitle(a) || "")}</small></h3>
-        <div class="wg-job" data-item="${esc(m.it.id)}"><span>${esc(m.it.title)}</span><b>${hm(m.since)} ${en() ? "start" : "起"} · ${ago(m.since)} ›</b></div>
+        <div class="wg-job" data-item="${esc(m.it.id)}" style="--wg-fd:-${Date.now() % 2400}ms"><span>${esc(m.it.title)}</span><b>${hm(m.since)} ${en() ? "start" : "起"} · ${ago(m.since)} ›</b></div>
         ${side.length || more > 0 ? `<div class="wg-side">${side.map(x => `<div class="wg-sr" data-item="${esc(x.it.id)}"><img src="${A().avatarUrl(x.a)}" alt="" data-chat="${esc(x.a.id)}"><div class="st"><b>${esc(A().aname(x.a))}</b><span>${esc(x.it.title)}</span><i><em style="width:${bar(x)}%"></em></i></div><time>${ago(x.since)}</time></div>`).join("")}${more > 0 ? `<div class="wg-sr plus" data-go="board">${en() ? `+${more} more working ›` : `+${more} 人在忙 · 看全部 ›`}</div>` : ""}</div>` : ""}</div>`;
     },
     replies(s, D) {
-      const n = rowsFit(s, 4, 2), N = D.nr.reduce((t, g) => t + g.ms.length, 0);
+      const { n } = fitM(s, D.nr.length, 4), N = D.nr.reduce((t, g) => t + g.ms.length, 0);
       return eb("replies", N) + D.nr.slice(0, n).map(g => { const m = g.ms[g.ms.length - 1], a = A().agent(m.agent);
         return `<div class="wg-row" data-item="${esc(g.it.id)}"><img class="wg-av" src="${A().avatarUrl(a)}" alt=""><div class="t">${esc(g.it.title)}<small>${esc(String(m.text || "").replace(/^[^:：\n]{1,8}[:：]\s*/, "").split(/\n/)[0])}</small></div><time>${ago(m.t)}</time></div>`; }).join("") +
         (D.nr.length > n ? `<div class="wg-more"><span data-go="mail">${en() ? `${D.nr.length - n} more cards ›` : `还有 ${D.nr.length - n} 张卡 · 去信箱 ›`}</span></div>` : "");
@@ -132,6 +135,52 @@
     redraw();
   }, true);
   document.addEventListener("keydown", e => { if (EDIT && e.key === "Escape" && document.getElementById("wg")) { EDIT = false; redraw(); } });
+  // ===== t-home-motion (tier 中, approved 11-02) + the flow sweep (item 8, asked for explicitly) =====
+  // Plays only on events: entering the home page (stagger + numbers from 0), a row arriving (drop + glow) or leaving (ghost slides out),
+  // tiles moving or resizing (FLIP glide), numbers changing (roll). A poll that returns the same data keeps the same DOM and plays nothing;
+  // a poll with new data animates only what changed. prefers-reduced-motion turns all of it off. Desktop widget home only.
+  const RMQ = matchMedia("(prefers-reduced-motion: reduce)");
+  const MV = { page: null, wg: null, rects: new Map(), rows: new Map(), nums: new Map() };
+  const rk = r => r.closest(".wg").dataset.wg + "|" + r.dataset.item;
+  function mvSnap(wg) {
+    MV.rects = new Map([...wg.querySelectorAll(".wg")].map(t => [t.dataset.wg, t.getBoundingClientRect()]));
+    MV.rows = new Map([...wg.querySelectorAll(".wg-row[data-item]")].map(r => [rk(r), { r: r.getBoundingClientRect(), html: r.outerHTML }]));
+    MV.nums = new Map([...wg.querySelectorAll(".wg-big, .wg-eb .n")].map(n => [n.closest(".wg").dataset.wg + "|" + n.className, n.textContent]));
+  }
+  function mvRoll(wg, fromZero) {
+    wg.querySelectorAll(".wg-big, .wg-eb .n").forEach(n => {
+      const to = parseInt(n.textContent, 10); if (isNaN(to)) return;
+      const from = fromZero ? 0 : parseInt(MV.nums.get(n.closest(".wg").dataset.wg + "|" + n.className), 10); if (isNaN(from) || from === to) return;
+      const suf = n.textContent.replace(/^\d+/, ""), t0 = performance.now(), dur = 600;
+      const step = t => { if (!n.isConnected) return; const p = Math.min(1, (t - t0) / dur); n.textContent = Math.round(from + (to - from) * (1 - Math.pow(1 - p, 3))) + suf; if (p < 1) requestAnimationFrame(step); };
+      requestAnimationFrame(step);
+    });
+  }
+  function mvPage() {
+    const wg = document.getElementById("wg"), page = A().UI.page, entered = page === "review" && MV.page !== "review"; MV.page = page;
+    if (!wg) { MV.wg = null; return; }
+    if (wg === MV.wg && !entered) return;   // same DOM (poll with no change): nothing to play
+    const rm = RMQ.matches;
+    [...wg.querySelectorAll(".wg")].forEach((t, i) => t.style.setProperty("--wg-i", i));
+    if (entered || !MV.wg) {
+      if (!rm) { wg.classList.add("wg-enter"); setTimeout(() => wg.classList.remove("wg-enter"), 1500); mvRoll(wg, true); }
+    } else if (!rm) {
+      const now = new Set();
+      wg.querySelectorAll(".wg-row[data-item]").forEach(r => { const k = rk(r); now.add(k); if (!MV.rows.has(k)) r.classList.add("wg-new"); });
+      MV.rows.forEach((v, k) => { if (now.has(k)) return; const g = document.createElement("div"); g.className = "wg-ghost"; g.innerHTML = v.html;
+        Object.assign(g.style, { left: v.r.left + "px", top: v.r.top + "px", width: v.r.width + "px" }); if (g.firstElementChild) g.firstElementChild.style.margin = "0";
+        document.body.appendChild(g); setTimeout(() => g.remove(), 420); });
+      wg.querySelectorAll(".wg").forEach(t => { const o = MV.rects.get(t.dataset.wg); if (!o) return; const n = t.getBoundingClientRect(); if (!n.width || !n.height) return;
+        const dx = o.left - n.left, dy = o.top - n.top, sx = o.width / n.width, sy = o.height / n.height;
+        if (Math.abs(dx) + Math.abs(dy) > 1 || Math.abs(sx - 1) + Math.abs(sy - 1) > .01)
+          t.animate([{ transformOrigin: "0 0", transform: `translate(${dx}px,${dy}px) scale(${sx},${sy})` }, { transformOrigin: "0 0", transform: "none" }], { duration: 320, easing: "cubic-bezier(.2,.8,.2,1)" }); });
+      mvRoll(wg, false);
+    }
+    MV.wg = wg; mvSnap(wg);
+  }
+  if (A() && A().on) A().on(k => { if (k === "page") try { mvPage(); } catch (_) { } });
+  const vis = () => document.documentElement.classList.toggle("wg-paused", document.hidden);   // the flow sweep pauses while the page is hidden
+  document.addEventListener("visibilitychange", vis); vis();
   window.Widgets = { html, editing: () => EDIT };
   if (A() && A().refreshPage && document.documentElement.dataset.home === "widgets") A().refreshPage();   // app.js rendered before this file parsed
 })();

@@ -129,3 +129,33 @@ html[data-home="widgets"][data-skin="ink"] .ink-hello .ink-eb { margin: 0 0 4px;
 html[data-home="widgets"][data-skin="ink"] .ink-hello b { display: block; font: 800 44px/1.05 var(--f-sys); letter-spacing: -.035em; color: var(--ink); }
 html[data-home="widgets"][data-skin="ink"] .ink-hello b::after { content: ""; display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--dot); margin-left: 3px; }
 html[data-home="widgets"] #wg.edit .wg-eb { padding-left: 22px; } html[data-home="widgets"] #wg.edit .hero.multi .wg-top .wg-eb { padding-left: 0; }
+
+/* ===== t-home-motion (tier 中 + the flow sweep, approved 11-02). Driven by widgets.js (mvPage): classes appear only on events. Only transform / opacity
+   (plus a one-off background glow on a new row). prefers-reduced-motion: everything off. ===== */
+@keyframes wg-in { from { opacity: 0; transform: translateY(12px) scale(.985); } }
+html[data-home="widgets"] #wg.wg-enter .wg { animation: wg-in 420ms cubic-bezier(.2,.8,.2,1) backwards; animation-delay: calc(var(--wg-i, 0) * 45ms); }
+html[data-home="widgets"] #wg.wg-enter .wg-hd { animation: wg-in 320ms cubic-bezier(.2,.8,.2,1) backwards; }
+html[data-home="widgets"] .wg { transition: transform 220ms cubic-bezier(.2,.8,.2,1), box-shadow 220ms ease; }
+html[data-home="widgets"] #wg:not(.edit) .wg:hover { transform: translateY(-3px); box-shadow: var(--glass-rim), 0 16px 40px rgba(0,0,0,.28); }
+html[data-home="widgets"] .wg::before { content: ""; position: absolute; inset: 0; z-index: 2; pointer-events: none; border-radius: inherit; opacity: 0;
+  background: linear-gradient(115deg, transparent 35%, rgba(255,255,255,.14) 50%, transparent 65%); transform: translateX(60%); }
+html[data-home="widgets"] #wg:not(.edit) .wg:hover::before { animation: wg-sheen 700ms ease-out 1; }
+@keyframes wg-sheen { 0% { opacity: 1; transform: translateX(60%); } 100% { opacity: 1; transform: translateX(-60%); } }
+@keyframes wg-new { 0% { opacity: 0; transform: translateY(-10px); background: color-mix(in srgb, var(--dot) 22%, transparent); } 40% { opacity: 1; transform: none; } 100% { background: transparent; } }
+html[data-home="widgets"] #wg .wg-row.wg-new { animation: wg-new 1100ms cubic-bezier(.2,.8,.2,1) 1; }
+.wg-ghost { position: fixed; z-index: 50; pointer-events: none; animation: wg-out 380ms cubic-bezier(.4,0,.2,1) forwards; }
+@keyframes wg-out { to { opacity: 0; transform: translateX(28px); } }
+html[data-home="widgets"] #wg.edit .wg-x, html[data-home="widgets"] #wg.edit .wg-sz, html[data-home="widgets"] #wg.edit .wg-mv { animation: wg-pop 260ms cubic-bezier(.2,1.4,.4,1) backwards; }
+@keyframes wg-pop { from { opacity: 0; transform: scale(.6); } }
+/* item 8, the flow sweep (asked for explicitly 11-02 20:37, the one exception to "no endless animations"): only on the newest worker's task pill,
+   transform only, phase from Date.now() so a re-render does not restart it, paused while the page is hidden */
+html[data-home="widgets"] .wg-job { position: relative; overflow: hidden; }
+html[data-home="widgets"] .wg-job::after { content: ""; position: absolute; top: 0; bottom: 0; left: 0; width: 40%; pointer-events: none;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,.22), transparent); transform: translateX(-100%);
+  animation: wg-flow 2.4s linear infinite; animation-delay: var(--wg-fd, 0s); }
+html.wg-paused[data-home="widgets"] .wg-job::after { animation-play-state: paused; }
+@keyframes wg-flow { to { transform: translateX(350%); } }
+@media (prefers-reduced-motion: reduce) {
+  html[data-home="widgets"] #wg, html[data-home="widgets"] #wg *, html[data-home="widgets"] #wg *::before, html[data-home="widgets"] #wg *::after, .wg-ghost { animation: none !important; transition: none !important; }
+  .wg-ghost { display: none; }
+}
