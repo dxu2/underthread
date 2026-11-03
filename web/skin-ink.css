@@ -136,3 +136,18 @@ html[data-skin="ink"][data-theme="dark"].es-art .empty::before, html[data-skin="
   html[data-skin="ink"] .hd-stat.on::after { content: ""; position: absolute; left: 50%; bottom: -1px; width: 22px; margin-left: -11px; height: 2px; background: var(--dot); animation: inkBar .35s var(--ease) backwards; }
   html[data-skin="ink"] .dc-h { margin-top: 22px; }
 }
+
+/* ===== t-banding-2 (approved 11-03, 普通夜间/浅色 一起处理): the desktop dark / light #ambience gradients and the two drifting fogs were CSS gradients
+   with only a few 8-bit levels over a large area -> concentric rings (browsers don't dither gradients). Same look, now baked into lossless WebP
+   with TPDF ±1 dither (web/art/ambience/, generated offline from the exact old gradient stops). The fog image carries its blur(60px)
+   and opacity .5, padded by 180px (3 sigma) so the glow is not clipped; the drift animations are unchanged. Phones already show a flat --bg, no fog. */
+@media (min-width: 761px) {
+  html[data-skin="ink"][data-theme="dark"]:not([data-stage]) #ambience { background: url(/static/art/ambience/amb-dark.webp) 0 0 / 100% 100% no-repeat, var(--bg); }
+  html[data-skin="ink"][data-theme="light"]:not([data-ink-light="0"]) #ambience { background: url(/static/art/ambience/amb-ink-light.webp) 0 0 / 100% 100% no-repeat, var(--bg); }
+  html[data-skin="ink"][data-theme="dark"]:not([data-stage]) .fog.fog, html[data-skin="ink"][data-theme="light"]:not([data-ink-light="0"]) .fog.fog {
+    width: calc(70vw + 360px); height: calc(70vh + 360px); margin: -180px; border-radius: 0; filter: none; opacity: 1; }
+  html[data-skin="ink"][data-theme="dark"]:not([data-stage]) .fog.f1.fog { background: url(/static/art/ambience/fog-dark-f1.webp) center / 100% 100% no-repeat; }
+  html[data-skin="ink"][data-theme="dark"]:not([data-stage]) .fog.f2.fog { background: url(/static/art/ambience/fog-dark-f2.webp) center / 100% 100% no-repeat; }
+  html[data-skin="ink"][data-theme="light"]:not([data-ink-light="0"]) .fog.f1.fog,
+  html[data-skin="ink"][data-theme="light"]:not([data-ink-light="0"]) .fog.f2.fog { background: url(/static/art/ambience/fog-ink-light.webp) center / 100% 100% no-repeat; }
+}
