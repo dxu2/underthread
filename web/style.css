@@ -2132,3 +2132,12 @@ html[data-theme] #toast::before, html[data-theme] #toast::after { display: none;
 .aq-pop button:hover { background: color-mix(in srgb, var(--ink) 8%, transparent); }
 .aq-pop span { flex: 1; min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; } .aq-pop time { color: var(--dim); font-size: 11.5px; flex: none; }
 .aq-pop p { margin: 6px 8px; color: var(--dim); }
+/* ===== t-stamina-stale v2: estimated usage. "估" tag instead of "≈"; a window that reset after the reading is drawn full but faded;
+   the number stays readable (ink2) because it is a real estimate, the pill alone says why the reading is old. #stamina beats mobile.css's .stamina.stale rule. */
+.stamina .pct b .ap { font: 600 9.5px/1 var(--f-sys); letter-spacing: 0; color: var(--dim); opacity: 1; border: 1px solid color-mix(in srgb, var(--dim) 55%, transparent); border-radius: 4px; padding: 2px 3px 1px; margin-right: 4px; vertical-align: 5px; }
+#stamina.est .pct b { color: var(--ink2); }
+#stamina.est .pct > small { color: var(--dim); font-weight: 500; }
+#stamina.lost .liq { opacity: .4; }
+.sy-u b .sy-est { font: 600 10px/1 var(--f-sys); font-style: normal; color: var(--dim); border: 1px solid color-mix(in srgb, var(--dim) 55%, transparent); border-radius: 4px; padding: 2px 3px 1px; margin-right: 5px; vertical-align: 3px; }
+/* the pill hangs below #top; #layout (z 1, later in the DOM, opaque in white) painted over it. Lift the header only while the pill shows and the chat isn't popped out. */
+@media (min-width: 761px) { body:not(.chat-pop) #top:has(.st-age:not([hidden])) { z-index: 2; } }

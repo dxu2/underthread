@@ -1630,3 +1630,5 @@ html.vt-run #drawer, html.vt-run #page { transition: none !important; }
 /* t-id-copy: the card id shows on the phone too (small grey, truncates instead of pushing the category pill off) */
 #drawer .dw-lead .dw-id { display: inline-flex; min-width: 0; max-width: 100%; font-size: 11.5px; padding: 4px 2px; }
 #drawer .dw-lead .dw-id span { min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+/* t-stamina-stale v2: phones have no pill, so the subtitle carries the reason ("管家离线 · 33 分钟前") in the warning colour */
+#stamina.est.stale .pct > small { color: var(--warn); font-weight: 600; }

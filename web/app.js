@@ -650,20 +650,26 @@
     const lost5 = gone(five), lostW = gone(week);
     const reset5 = five && until(five.resets_at), resetW = week && until(week.resets_at);
     const at5 = reset5 && clock(five.resets_at), atW = resetW && clock(week.resets_at);
-    const left = five && !lost5 ? Math.round(100 - five.used) : null;
-    const wk = week && !lostW ? Math.round(100 - week.used) : null;
-    const approx = stale && left != null;
-    const sub = lost5 ? (stale && u.at ? (en ? `reset · ${ageShort(u.at)}` : `已重置 · ${ageShort(u.at)}`) : (en ? "reset · no new data" : "已重置 · 等新数据"))
-      : stale ? ageShort(u.at)
+    // t-stamina-stale v2: a window that reset after the reading starts again from 0, so it is shown as an estimated 100% ("估"), not "—".
+    // Number = how much is left (估 when estimated), subtitle = the window's state, the desktop pill = why the reading is old and for how long.
+    const left = five ? (lost5 ? 100 : Math.round(100 - five.used)) : null;
+    const wk = week ? (lostW ? 100 : Math.round(100 - week.used)) : null;
+    const approx = (stale || lost5) && left != null, approxW = (stale || lostW) && wk != null;
+    const ms = mgrState(), why = ms.sleep ? (en ? "manager asleep" : "管家休眠") : !ms.on ? (en ? "manager offline" : "管家离线") : (en ? "read timed out" : "读取超时");
+    const mins = at ? Math.max(0, Math.round(ageMin)) : 0;
+    const quiet = mins < 60 ? (en ? `no update for ${mins} min` : `${mins} 分钟没更新`) : mins < 48 * 60 ? (en ? `no update for ${Math.floor(mins / 60)}h` : `${Math.floor(mins / 60)} 小时没更新`) : (en ? `no update since ${when(u.at)}` : `${when(u.at)} 起没更新`);
+    const pill = stale && u.at ? `${why} · ${quiet}` : "";
+    const sub = lost5 ? (en ? `full since ${clock(five.resets_at)}` : `${clock(five.resets_at)} 已回满`)
       : reset5 ? (en ? `full at ${at5}` : `${at5} 复活`) : "";
+    const subPh = stale && u.at ? `${why} · ${ageShort(u.at)}` : sub;   // phones have no pill: the subtitle says why instead
     const age = u.at ? ageTxt(u.at) : "";
-    const tip = [five && (lost5 ? (en ? "Session: window reset after the last reading, waiting for new data" : "5 小时窗口：上次读数之后已重置，等新数据")
+    const tip = [five && (lost5 ? (en ? `Session: reset at ${clock(five.resets_at)} after the last reading · estimated near full` : `5 小时窗口：上次读数之后已在 ${clock(five.resets_at)} 重置 · 估计接近回满`)
         : (en ? `Session: ${approx ? "≈" : ""}${left}% left${at5 ? ` · full at ${at5}` : ""}` : `5 小时窗口：剩 ${approx ? "≈" : ""}${left}%${at5 ? ` · ${at5} 回满` : ""}`)),
-      week && (lostW ? (en ? "Weekly: reset after the last reading" : "本周：上次读数之后已重置")
-        : (en ? `Weekly: ${wk}% left${atW ? ` · resets ${atW}` : ""}` : `本周：剩 ${wk}%${atW ? ` · ${atW} 重置` : ""}`)),
+      week && (lostW ? (en ? "Weekly: reset after the last reading · estimated near full" : "本周：上次读数之后已重置 · 估计接近回满")
+        : (en ? `Weekly: ${approxW ? "≈" : ""}${wk}% left${atW ? ` · resets ${atW}` : ""}` : `本周：剩 ${approxW ? "≈" : ""}${wk}%${atW ? ` · ${atW} 重置` : ""}`)),
       u.context != null && (en ? `Manager context: ${u.context}% used` : `管家上下文：已用 ${u.context}%`),
-      u.at && (en ? `Read at ${hm(u.at)} (${age})${stale ? " · may be out of date" : ""}` : `${hm(u.at)} 读取（${age}）${stale ? " · 可能已过期" : ""}`)].filter(Boolean).join("\n");
-    return { left, week: wk, sub, stale, approx, lost5, lostW, age, tip, reset5, resetW, at5, atW, src: u.source,
+      u.at && (en ? `Read at ${hm(u.at)} (${age})${stale ? ` · ${why}` : ""}` : `${hm(u.at)} 读取（${age}）${stale ? ` · ${why}` : ""}`)].filter(Boolean).join("\n");
+    return { left, week: wk, sub, subPh, pill, why, stale, approx, approxW, lost5, lostW, age, tip, reset5, resetW, at5, atW, src: u.source,
       used5: five && Math.round(five.used), usedW: week && Math.round(week.used), context: u.context, at: u.at };
   }
   function renderHeader() {
@@ -679,7 +685,7 @@
         <span class="dot">◆</span> <span class="k">${t("inbox")}</span> <b>${ST.meta.inbox_unacked || 0}</b> ${t("unacked")}</div>`;
     const U = usage();
     const sta = $("#stamina");
-    sta.className = "stamina" + (U.stale ? " stale" : "") + (U.lost5 ? " lost" : "");
+    sta.className = "stamina" + (U.stale ? " stale" : "") + (U.lost5 ? " lost" : "") + (U.approx ? " est" : "");
     sta.title = U.tip;
     // Build the soul vessel once so its waves keep flowing; later renders only move the level.
     if (!sta.querySelector(".orb")) {
@@ -698,12 +704,12 @@
       const pb = sta.querySelector(".pct b");
       if (U.left == null) { pb.innerHTML = "—"; delete NV.sta; }
       else { if (!pb.querySelector(".nrv")) pb.innerHTML = `<i class="ap"></i><span class="nrv"></span><small>%</small>`;
-        const ap = pb.querySelector(".ap"); ap.textContent = U.approx ? "≈" : ""; ap.hidden = !U.approx; roll(pb.querySelector(".nrv"), U.left, "sta"); }
+        const ap = pb.querySelector(".ap"); ap.textContent = U.approx ? (UI.lang === "en" ? "est" : "估") : ""; ap.hidden = !U.approx; roll(pb.querySelector(".nrv"), U.left, "sta"); }
     }
     const sa = sta.querySelector(".st-age");
-    sa.hidden = !(U.stale && U.at);
-    sa.textContent = U.at ? (UI.lang === "en" ? `stale · ${U.age}` : `过期 · ${U.age}`) : "";
-    sta.querySelector(".pct > small").textContent = U.sub;
+    sa.hidden = !U.pill;
+    sa.textContent = U.pill;
+    sta.querySelector(".pct > small").textContent = MOBQ.matches ? U.subPh : U.sub;
     sta.querySelector(".focus").hidden = U.week == null;
     sta.querySelector(".focus i").style.width = (U.week ?? 0) + "%";
     const unread = (ST.mail || []).filter(m => !m.read).length;
@@ -1856,7 +1862,7 @@
     if (scrollTop) page.scrollTop = 0;
     hooks.forEach(f => f("page"));
   }
-  MOBQ.addEventListener("change", () => { if (UI.page === "review" || UI.page === "mail") renderPage(); });
+  MOBQ.addEventListener("change", () => { if (ST) renderHeader(); if (UI.page === "review" || UI.page === "mail") renderPage(); });   // t-stamina-stale: the stamina subtitle differs on phones
   window.addEventListener("beforeunload", () => { if (UI.page === "review") { UI.seen.review = new Date().toISOString(); LS.set("seen", UI.seen); } });
 
   document.addEventListener("click", e => {
@@ -2848,17 +2854,17 @@
   }
   function statusHTML() {
     const en = UI.lang === "en", U = usage(), rows = statusRows(), sm = statusSummary(rows);
-    const bar = (label, v, sub) => `<div class="sy-u${v == null ? " nil" : ""}"><span>${label}</span><b>${v == null ? "—" : `${U.stale ? "≈" : ""}${v}<small>%</small>`}</b><div class="sy-bar"><i style="width:${v ?? 0}%"></i></div><em>${sub || ""}</em></div>`;
+    const bar = (label, v, sub, est) => `<div class="sy-u${v == null ? " nil" : ""}"><span>${label}</span><b>${v == null ? "—" : `${est ? `<i class="sy-est">${en ? "est" : "估"}</i>` : U.stale ? "≈" : ""}${v}<small>%</small>`}</b><div class="sy-bar"><i style="width:${v ?? 0}%"></i></div><em>${sub || ""}</em></div>`;
     const bars = U.none
       ? `<div class="sy-setup md"><p>${en ? "No usage yet. Make <code>tools/statusline.py</code> the manager's statusLine:" : "还没有用量数据。把 <code>tools/statusline.py</code> 配成管家 session 的 statusLine："}</p>
          <pre class="code"><code>{"statusLine": {"type": "command", "command": "python3 tools/statusline.py"}}</code></pre></div>`
       : `<div class="sy-use${U.stale ? " old" : ""}">`
-        + bar(en ? "5-hour window" : "5 小时窗口", U.left, U.lost5 ? (en ? "Reset after the last reading · unknown until new data" : "上次读数之后已重置 · 等新数据，暂时未知")
-            : U.reset5 ? (en ? `used ${U.used5}% · full at ${U.at5}` : `已用 ${U.used5}% · ${U.at5} 复活`) : "")
-        + bar(en ? "This week" : "本周", U.week, U.lostW ? (en ? "Reset after the last reading" : "上次读数之后已重置")
-            : U.resetW ? (en ? `used ${U.usedW}% · resets ${U.atW}` : `已用 ${U.usedW}% · ${U.atW} 重置`) : "")
+        + bar(en ? "5-hour window" : "5 小时窗口", U.left, U.lost5 ? (en ? "Reset after the last reading · estimated near full until new data" : "上次读数之后已重置 · 估计接近回满，等新数据")
+            : U.reset5 ? (en ? `used ${U.used5}% · full at ${U.at5}` : `已用 ${U.used5}% · ${U.at5} 复活`) : "", U.approx)
+        + bar(en ? "This week" : "本周", U.week, U.lostW ? (en ? "Reset after the last reading · estimated near full" : "上次读数之后已重置 · 估计接近回满")
+            : U.resetW ? (en ? `used ${U.usedW}% · resets ${U.atW}` : `已用 ${U.usedW}% · ${U.atW} 重置`) : "", U.approxW)
         + (U.context != null ? bar(en ? "Manager context" : "管家上下文", 100 - U.context, en ? "left before compaction" : "剩余上下文") : "")
-        + (U.stale ? `<div class="sy-stale">${en ? `As of ${hm(U.at)} · ${U.age} · may be out of date` : `${hm(U.at)} 的数据 · ${U.age} · 可能已过期`}</div>` : "")
+        + (U.stale ? `<div class="sy-stale">${en ? `As of ${hm(U.at)} · ${U.age} · ${U.why}` : `${hm(U.at)} 的数据 · ${U.age} · ${U.why}`}</div>` : "")
         + `</div>`;
     const list = rows.map(r => `<div class="sy-row ${r.lv}"><i class="sy-dot"></i><div class="sy-m"><b>${esc(r.t)}</b><span>${esc(r.s)}</span></div>${r.act ? `<button type="button" class="sy-btn" data-sy="${r.act.k}">${esc(r.act.l)}</button>` : ""}</div>`).join("");
     const note = HL.missing ? `<p class="sy-note">${en ? "Server, push and disk rows appear after the dashboard server restarts (new /api/health)." : "看板服务器、推送、磁盘这几行，要等看板重启（新接口 /api/health）后才显示。"}</p>` : "";
