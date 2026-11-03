@@ -1974,7 +1974,7 @@
     DW.to = null; DW.pop = []; DW.open = new Set(); DW.n = 0; DW.fresh = false;
     itemMailRead(id);   // r-improve-1102 P3: opening a card reads all of its mailbox entries, not only the new replies
     const dw = $("#drawer"); clearTimeout(DW.ct); const wasOpen = !dw.hidden && dw.classList.contains("open"); dw.hidden = false;
-    dw.innerHTML = `<div class="dw-top"></div><div class="dw-scroll"></div>
+    dw.innerHTML = `<div class="dw-top"></div><div class="dw-scroll"></div><nav class="dw-toc" hidden></nav>
       <div class="dw-dock"><div class="dw-askbar" hidden></div><div class="composer"><div class="at-pop" hidden></div><textarea placeholder="${esc(t("composer_ph"))}"></textarea><div class="pending-att"></div>
         <div class="cm-row"><button class="dw-file" aria-label="${UI.lang === "en" ? "Attach" : "添加附件"}">+ ${t("file")}</button><input type="file" multiple hidden>
         <span class="cm-to"></span><span class="dim dw-def">${t("default_owner")}</span><span style="flex:1"></span><span class="dim">${t("send_hint")}</span></div></div>
@@ -2050,6 +2050,7 @@
       }
     });
     $(".dw-scroll", dw).addEventListener("scroll", jumpState, { passive: true });
+    TOC.key = ""; TOC.item = null; $(".dw-scroll", dw).addEventListener("scroll", () => { if (!TOC.raf) TOC.raf = requestAnimationFrame(() => { TOC.raf = 0; tocSync(); }); }, { passive: true });   // t-ri1103-p4
     { // t-detail-jump: a card opens at its newest message and stays pinned there for the first few seconds while images / files / drafts
       // finish loading (load events + a ResizeObserver, see dwPinWatch). Any touch, wheel or key in the scroller unpins it at once, so a
       // user reading further up is never pulled down; after that the old rule applies (follow new messages only when already at the end).
@@ -2084,6 +2085,58 @@
     if (nearEnd(sc)) DW.fresh = false;
     if (top) top.hidden = sc.scrollTop < 200;
     if (end) { end.hidden = nearEnd(sc); const dot = $(".new", end); if (dot) dot.hidden = !DW.fresh; }
+  }
+  // ===== t-ri1103-p4 (2026-11-03): 长草稿目录. When the current draft has 4+ h1/h2 headings, a floating list sits under the category button:
+  // a tap scrolls to that heading, the section being read is lit, and the bar shows how far through the draft you are (bottom of the view vs the draft).
+  // Desktop: open by default when the detail is at least 680px wide; 收起 / 展开 is remembered (localStorage rt.toc). Phone (mobile.css): a small
+  // 「目录」 pill above the reply box, a tap opens the same list as a bottom sheet. The nav lives outside .dw-scroll, so a poll re-render only rebuilds
+  // its list when the headings change. It only scrolls on a tap, so it never fights the open-at-newest pin (t-detail-jump).
+  const TOC = { hs: [], card: null, key: "", item: null, open: false, cur: null, raf: 0 };
+  const tocOff = sc => PHONE.matches ? (parseFloat(getComputedStyle(sc).paddingTop) || 0) : 0;
+  function tocMode() {
+    const nav = $("#drawer .dw-toc"); if (!nav) return;
+    nav.classList.toggle("open", !!TOC.open); const b = $("[data-toc-tg]", nav); if (b) b.setAttribute("aria-expanded", String(!!TOC.open));
+  }
+  function tocBuild() {
+    const dw = $("#drawer"), nav = dw && $(".dw-toc", dw), sc = dw && $(".dw-scroll", dw); if (!nav || !sc) return;
+    const card = $('.cs-card.draftc[data-vkey="cur"]', sc), hs = card ? $$(".md h1, .md h2", card) : [];
+    TOC.hs = hs; TOC.card = card;
+    if (hs.length < 4) { if (!nav.hidden) { nav.hidden = true; nav.innerHTML = ""; } TOC.key = ""; return; }
+    const zh = UI.lang !== "en", key = UI.item + "|" + UI.lang + "|" + hs.map(h => h.tagName + h.textContent).join("\n");
+    if (TOC.item !== UI.item) { TOC.item = UI.item; let pref = ""; try { pref = localStorage.getItem("rt.toc") || ""; } catch { } TOC.open = PHONE.matches ? false : pref ? pref === "open" : dw.clientWidth >= 680; }
+    if (key !== TOC.key) {
+      TOC.key = key; TOC.cur = null;
+      nav.setAttribute("aria-label", zh ? "目录" : "Contents");
+      nav.innerHTML = `<div class="toc-scrim" data-toc-close></div><div class="toc-box"><button type="button" class="toc-h" data-toc-tg aria-expanded="false"><span class="k">${zh ? "目录" : "Contents"}</span><span class="n">· ${hs.length}</span><span class="sp"></span><span class="pc"></span><svg class="chev" viewBox="0 0 10 6" width="10" height="6" aria-hidden="true"><path d="M1 5l4-4 4 4" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>`
+        + `<ol class="toc-l">${hs.map((h, i) => `<li><button type="button" class="${h.tagName === "H1" ? "l1" : "l2"}" data-toc="${i}" title="${esc(h.textContent)}">${esc(h.textContent)}</button></li>`).join("")}</ol><div class="toc-bar"><i></i></div></div>`;
+    }
+    nav.hidden = false; tocMode();
+    const top = $(".dw-top", dw); if (top) nav.style.setProperty("--toc-top", (top.offsetTop + top.offsetHeight + 6) + "px");
+    tocSync();
+  }
+  function tocSync() {
+    const nav = $("#drawer .dw-toc"), sc = $("#drawer .dw-scroll"); if (!nav || nav.hidden || !sc || !TOC.hs.length) return;
+    const m = TOC.card && $(".md", TOC.card); if (!m || !m.isConnected) return;
+    const sr = sc.getBoundingClientRect(), mr = m.getBoundingClientRect(), line = sr.top + tocOff(sc) + 40;
+    let cur = -1; TOC.hs.forEach((h, i) => { if (h.getBoundingClientRect().top <= line) cur = i; });
+    const pc = mr.height ? Math.round(Math.max(0, Math.min(1, (sr.bottom - mr.top) / mr.height)) * 100) : 0;
+    if (TOC.cur !== cur) {
+      TOC.cur = cur; $$("[data-toc]", nav).forEach((b, i) => b.classList.toggle("on", i === cur));
+      const l = $(".toc-l", nav), b = cur >= 0 && $(`[data-toc="${cur}"]`, nav);   // keep the lit line inside the list's own scroll
+      if (l && b && l.clientHeight && (b.offsetTop < l.scrollTop || b.offsetTop + b.offsetHeight > l.scrollTop + l.clientHeight)) l.scrollTop = b.offsetTop - l.clientHeight / 2;
+    }
+    const bar = $(".toc-bar i", nav), t0 = $(".pc", nav);
+    if (bar) bar.style.width = pc + "%";
+    if (t0) t0.textContent = (UI.lang === "en" ? "" : "读到 ") + pc + "%";
+  }
+  function tocGo(i) {
+    const sc = $("#drawer .dw-scroll"); if (!sc) return;
+    DW.pin = false;   // t-detail-jump: a tap on the list is a deliberate move, never pulled back to the newest message
+    if (TOC.card && TOC.card.classList.contains("folded")) { DW.open.delete("xcur"); renderDrawer(); DW.pin = false; }   // folded current draft: unfold first (the re-render re-pins when the view was at the end)
+    if (PHONE.matches) { TOC.open = false; tocMode(); }
+    const h = TOC.hs[i]; if (!h || !h.isConnected) return;
+    sc.scrollTop = Math.max(0, h.getBoundingClientRect().top - sc.getBoundingClientRect().top + sc.scrollTop - tocOff(sc) - 14);
+    tocSync(); jumpState();
   }
   // one stream: thread entries + every draft version, by time; a "submitted for review" event next to a draft folds into its card
   function streamOf(it) {
@@ -2385,7 +2438,7 @@
     else if (first || dwPinned()) { sc.scrollTop = sc.scrollHeight; dwPinWatch(sc); }   // t-detail-jump: open at the newest message (was: review cards at the current draft, others at the top)
     else if (wasEnd) { DW.pin = true; DW.pinUntil = Math.max(DW.pinUntil || 0, Date.now() + 1500); sc.scrollTop = sc.scrollHeight; dwPinWatch(sc); }   // t-detail-jump: already at the end → stay there while the re-rendered images settle
     else { sc.scrollTop = keep; if (grew) DW.fresh = true; }
-    jumpState(); drawTo();
+    jumpState(); drawTo(); tocBuild();   // t-ri1103-p4
     const done = it.stage === "done";
     const acts = $(".dw-acts", dw);
     {   // D4: desktop now uses the phone's dock (same state logic, same two pills); before it always showed 批准 / 驳回 / 完成 with ornaments
@@ -2451,7 +2504,11 @@
     }
   });
   $("#drawer").addEventListener("click", e => {
-    if (e.target.closest(".dw-back[data-close]")) return backItem();   // t-parent-links: back = previous card if you came from one, else close
+    if (e.target.closest(".dw-back[data-close]")) return backItem();
+    { // t-ri1103-p4: 目录
+      if (e.target.closest("[data-toc-tg]")) { TOC.open = !TOC.open; if (!PHONE.matches) try { localStorage.setItem("rt.toc", TOC.open ? "open" : "min"); } catch { } tocMode(); TOC.cur = null; tocSync(); return; }   // cur reset: the opened list scrolls its lit line into view
+      if (e.target.closest("[data-toc-close]")) { TOC.open = false; tocMode(); return; }
+      const tc = e.target.closest("[data-toc]"); if (tc) { tocGo(+tc.dataset.toc); return; } }   // t-parent-links: back = previous card if you came from one, else close
     if (e.target.closest("[data-close]")) return closeItem();
     const nv = e.target.closest("[data-dw-nav]"); if (nv) { navItem(nv.dataset.dwNav); return; }
     const ci = e.target.closest("[data-copy-id]");   // t-id-copy: tap the card id to copy it

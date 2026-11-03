@@ -1642,3 +1642,20 @@ html.vt-run #drawer, html.vt-run #page { transition: none !important; }
 
 /* t-type-polish A: badge counts here use the font shorthand (which resets numerals), so tabular-nums goes after it */
 .cl-n, .cl-back button > i.n { font-variant-numeric: tabular-nums; }
+
+/* ===== ri1103-P4 (2026-11-03): 长草稿目录 on the phone. Closed = a small 「目录 · 读到 N%」 pill bottom-left above the reply box (the jump buttons
+   sit bottom-right); a tap opens the same list as a bottom sheet over the dock, a tap on a heading (or the scrim) closes it. No backdrop blur (layer budget). ===== */
+.dw-toc { top: auto; right: auto; left: 12px; bottom: calc(var(--dock-h, 150px) + 12px); width: auto; z-index: 6; }
+.dw-toc .toc-box { -webkit-backdrop-filter: none; backdrop-filter: none; background: var(--solid); box-shadow: inset 0 0 0 1px var(--line2), 0 6px 18px rgba(0,0,0,.22); max-height: none; }
+.dw-toc:not(.open) .toc-box { min-width: 0; border-radius: 999px; }
+.dw-toc:not(.open) .toc-h { padding: 8px 14px; gap: 5px; }
+.dw-toc:not(.open) .toc-h .n, .dw-toc:not(.open) .toc-h .sp, .dw-toc:not(.open) .toc-bar { display: none; }
+.dw-toc.open { inset: 0; width: auto; pointer-events: auto; }
+.dw-toc.open .toc-scrim { display: block; position: absolute; inset: 0; background: rgba(0,0,0,.36); }
+.dw-toc.open .toc-box { position: absolute; left: 0; right: 0; bottom: 0; max-height: 62vh; border-radius: 18px 18px 0 0; padding-bottom: env(safe-area-inset-bottom); }
+.dw-toc.open .toc-h { padding: 16px 20px 10px; font-size: var(--fs-13); }
+.dw-toc.open .toc-l { padding: 0 10px 8px; }
+.dw-toc.open .toc-l button { padding: 10px 12px; font-size: var(--fs-15); }
+.dw-toc.open .toc-l button.l2 { padding-left: 26px; }
+.dw-toc.open .toc-bar { margin: 2px 20px 14px; }
+body.kb .dw-toc:not(.open) { display: none; }   /* keyboard up: the pill would sit on the text being typed against */

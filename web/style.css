@@ -2189,3 +2189,36 @@ b, strong, th, h1, h2, h3, h4, h5, h6 { font-weight: 600; }
 .cal-rt .cal-st.soon { color: var(--accent); font-weight: 600; }
 .cal-rt:hover .cal-nm { color: var(--ink); }
 .cal-off { font-size: var(--fs-11); color: var(--dim); padding: 6px 0 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* ===== ri1103-P4 (2026-11-03): 长草稿目录 (t-ri1103-p4). app.js tocBuild() adds nav.dw-toc to the detail when the current draft has 4+ h1/h2:
+   desktop = a floating card under the category button (list + 读到 N% bar), 收起 leaves a small header pill. The phone layout lives in mobile.css. ===== */
+.dw-toc[hidden] { display: none; }
+.dw-toc { position: absolute; z-index: 4; top: var(--toc-top, 64px); right: 22px; width: 264px; pointer-events: none; }
+.dw-toc .toc-scrim { display: none; }
+.dw-toc .toc-box { pointer-events: auto; display: flex; flex-direction: column; max-height: min(60vh, 470px); border-radius: 16px; overflow: hidden;
+  background: color-mix(in srgb, var(--bg) 90%, transparent); -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px);
+  box-shadow: inset 0 0 0 1px var(--line2), 0 12px 32px rgba(0,0,0,.22); }
+.dw-toc .toc-h { flex: none; display: flex; align-items: center; gap: 6px; width: 100%; padding: 10px 14px 8px; margin: 0; border: 0; border-radius: 0; background: none; box-shadow: none;
+  font: 500 var(--fs-12)/1.2 var(--f-sys); letter-spacing: .02em; color: var(--dim); text-align: left; cursor: pointer; }
+.dw-toc .toc-h .k { color: var(--ink2); }
+.dw-toc .toc-h .sp { flex: 1; }
+.dw-toc .toc-h .pc { font-variant-numeric: tabular-nums; }
+.dw-toc .toc-h .chev { flex: none; margin-left: 2px; opacity: .7; transition: transform .2s var(--ease); }
+.dw-toc:not(.open) .toc-h .chev { transform: rotate(180deg); }
+.dw-toc .toc-h:hover .k { color: var(--ink); }
+.dw-toc .toc-l { position: relative; flex: 1 1 auto; min-height: 0; list-style: none; margin: 0; padding: 0 6px 6px; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: none; }
+.dw-toc .toc-l::-webkit-scrollbar { display: none; }
+.dw-toc .toc-l li { margin: 0; padding: 0; }
+.dw-toc .toc-l li::marker { content: none; }
+.dw-toc .toc-l button { display: block; width: 100%; padding: 6px 10px; margin: 0; border: 0; border-radius: 8px; background: none; box-shadow: none; text-align: left;
+  font: 400 var(--fs-13)/1.4 var(--f-sys); letter-spacing: .01em; color: var(--dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer; }
+.dw-toc .toc-l button.l1 { color: var(--ink2); font-weight: 500; }
+.dw-toc .toc-l button.l2 { padding-left: 20px; }
+.dw-toc .toc-l button:hover { color: var(--ink); background: color-mix(in srgb, var(--ink) 6%, transparent); }
+.dw-toc .toc-l button.on { color: var(--ink); background: var(--accent-soft); box-shadow: inset 2px 0 0 var(--accent); }
+.dw-toc .toc-bar { flex: none; height: 2px; margin: 2px 14px 10px; border-radius: 1px; background: var(--line); overflow: hidden; }
+.dw-toc .toc-bar i { display: block; height: 100%; width: 0; border-radius: inherit; background: var(--accent); }
+.dw-toc:not(.open) { width: auto; }
+.dw-toc:not(.open) .toc-box { min-width: 156px; border-radius: 14px; }
+.dw-toc:not(.open) .toc-l { display: none; }
+.dw-toc:not(.open) .toc-bar { margin-top: 0; margin-bottom: 8px; }
