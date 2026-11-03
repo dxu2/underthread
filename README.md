@@ -61,9 +61,15 @@ To try changes to the UI, run a copy first: `PORT=8799 NO_LOOPS=1 python3 server
 - `tools/transcribe.py`: voice memo transcription with whisper.cpp.
 - `tools/ghcred.py`: store a GitHub push token once from the dashboard (keychain or a 0600 file); set `UNDERTHREAD_GH_REPO=owner/name` for the push check.
 
-## Example roles
+## The bundled team preset
 
-`roster.example.json` ships neutral placeholder roles (a manager plus six specialists). Rename them, change their duties and tone, add or remove roles, then run `make_agents.py` again. This repository contains no characters from any game or anime; please don't commit other people's characters or artwork.
+The framework itself is general: the manager, cards, review, rules and dashboard don't assume any kind of work. Roles, rules, categories and platforms are all configuration.
+
+What ships in the repository is **one ready-made example preset: a content-creator team** (Bilibili / YouTube / Xiaohongshu). It sets the tone of `manager.md`, `policy.md`, `roles/*.md`, `roster.example.json` (a manager plus six specialists with placeholder names) and `config.example.json`, so you can see a complete team working out of the box.
+
+For a different workflow, edit those files: rewrite the role notes in `roles/*.md`, rename and redefine roles in `roster.json`, adjust `policy.md` and `config.json`, then run `make_agents.py` again. No code changes are needed.
+
+This repository contains no characters from any game or anime; please don't commit other people's characters or artwork.
 
 ## Privacy
 
@@ -101,5 +107,6 @@ Code is [MIT](LICENSE). It covers this repository's code only; models, fonts, vo
 你只跟一个「管家」说话。管家接你的消息，拆成任务卡，派给各个专员 agent，并在本地看板上跟你同步。电脑和手机都能用。专员做事、交草稿，你只负责拍板：批准、驳回或评论。
 
 - 核心概念：管家、可配置的专员、卡片与审核、看板（小组件首页、详情、聊天、信箱）、手机端。
+- 仓库自带的是一套现成的示例团队预设：「内容创作者团队（B站 / YouTube / 小红书）」。框架本身是通用的，想用在别的工作流上，改 `roles/*.md`、`roster.json`、`policy.md` 和 `config.json`，再跑一次 `make_agents.py` 就行，不用改代码。
 - 上手：照上面 Getting started 的四步做。详细说明见 [SETUP-GUIDE.md](SETUP-GUIDE.md)。
 - 隐私：所有数据都存在本机的项目目录里，并且已经写进 `.gitignore`。看板默认只监听 `127.0.0.1`。

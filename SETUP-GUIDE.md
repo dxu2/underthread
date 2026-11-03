@@ -5,6 +5,10 @@ specialist **subagents**, and leaves you only to review and approve. It works ar
 research, writing, small fixes, planning, recurring chores. There are no Slack or email collectors: you give the orders.
 
 > Items marked **(example)** are choices you can change: roles, categories, paths.
+>
+> **Bundled preset.** The framework is general. The files that ship with it (`manager.md`, `policy.md`, `roles/*.md`,
+> `roster.example.json`, `config.example.json`) are one ready-made example preset: a content-creator team
+> (Bilibili / YouTube / Xiaohongshu). For another workflow, rewrite those files and re-run `make_agents.py`; see section 3.
 
 ---
 
@@ -76,6 +80,9 @@ flowchart LR
 
 Each role is a custom subagent generated from `roster.json`. The example roster ships one manager and six specialists with
 placeholder names; rename them, change what they do, add or remove roles. The ids below are the ones in `roster.example.json`.
+In the bundled content-creator preset their role notes (`roles/*.md`) are written for that job (topic research, scripts,
+storyboards, covers, publishing calendar); the table below is the general shape. To repurpose a role, rewrite its file in
+`roles/` and its entry in `roster.json`.
 
 | Role (example) | Id | Responsibility |
 |---|---|---|
