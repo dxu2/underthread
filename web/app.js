@@ -783,17 +783,33 @@
     // calendar
     const today = dayKey(new Date()), tmr = dayKey(new Date(Date.now() + 864e5));
     const evs = (ST.calendar || []).filter(e => e.date === today || e.date === tmr);
+    // ri1103-P1: the team's fixed daily routines (meta.routines) join the user's own events, sorted by time; paused ones fold into one line.
+    // TODO(ri1103-P1): server.py should put config report_time into meta (meta.report_time); until then the daily report row shows no time.
+    const rts = (ST.meta && ST.meta.routines) || [], nowM = new Date().getHours() * 60 + new Date().getMinutes();
+    const rtName = r => String(r.label || r.id).replace(/[（(][^）)]*[）)]/g, "").replace(/^.*?每日\s*(\d+\s*个\s*)?(一条|打磨)?/, "").replace(/^app\s*/i, "").trim() || r.id;
+    const rtLeft = hm => { const [h, m] = hm.split(":").map(Number), d = h * 60 + m - nowM; return d > 0 ? `${Math.floor(d / 60)}:${pad(d % 60)}${UI.lang === "en" ? "" : " 后"}` : null; };
+    const rtRow = (tm, who, name, done, itemId) => {
+      const left = !done && tm && rtLeft(tm), a = who && agent(who);
+      const st = done ? `✓ ${done}` : left || (tm ? (UI.lang === "en" ? "due" : "到点") : (UI.lang === "en" ? "tonight" : "今晚"));
+      return { k: "0" + (tm || "99"), h: `<div class="cal-i cal-rt ${done ? "past" : ""}"${itemId ? ` data-item="${esc(itemId)}"` : ""}><span class="tm">${esc(tm || "—")}</span>${a ? av(a, "cal-av") : ""}<span class="cal-nm">${esc(name)}</span><span class="cal-st${left ? " soon" : ""}">${esc(st)}</span></div>` };
+    };
+    const itemOwner = id => { const it = (ST.items || []).find(x => x.id === id); return it && it.owner; };
+    const rtLive = rts.filter(r => !r.paused && !r.disabled && r.time), rtOff = rts.filter(r => r.paused || r.disabled);
+    const sent = UI.lang === "en" ? "sent" : "已派";
+    const rtRows = rtLive.map(r => rtRow(r.time, itemOwner(r.item), rtName(r), r.last === today ? sent : "", r.item));
+    if (ST.meta) rtRows.push(rtRow(ST.meta.report_time || "", "manager", UI.lang === "en" ? "Daily report" : "日报", ST.meta.last_report_date === today ? (UI.lang === "en" ? "sent" : "已发") : "", ""));
     const nowHM = `${pad(new Date().getHours())}:${pad(new Date().getMinutes())}`;
-    $("#cal").classList.toggle("cal-empty", !evs.length && !UI.calForm);   // t-cal-fold: nothing today or tomorrow -> one faint row, "+" still there
-    if (!evs.length && !UI.calForm) $("#cal").innerHTML = `<div class="side-h"><span>${t("today")} · ${UI.lang === "en" ? "none" : "无"}</span><button data-cal-add>+</button></div>`;
-    else $("#cal").innerHTML = `<div class="side-h"><span>${t("today")} <span class="dim" style="font-weight:400">${evs.filter(e => e.date === today).length} ${t("meetings")}</span></span><button data-cal-add>${UI.calForm ? "−" : "+"}</button></div>
+    $("#cal").classList.toggle("cal-empty", !evs.length && !rtRows.length && !UI.calForm);   // t-cal-fold: nothing today or tomorrow -> one faint row, "+" still there
+    if (!evs.length && !rtRows.length && !UI.calForm) $("#cal").innerHTML = `<div class="side-h"><span>${t("today")} · ${UI.lang === "en" ? "none" : "无"}</span><button data-cal-add>+</button></div>`;
+    else $("#cal").innerHTML = `<div class="side-h"><span>${t("today")} <span class="dim" style="font-weight:400">${evs.filter(e => e.date === today).length + rtRows.length} ${t("meetings")}</span></span><button data-cal-add>${UI.calForm ? "−" : "+"}</button></div>
       ${UI.calForm ? `<form class="cal-form" id="calf"><input type="date" name="date" value="${today}"><input type="time" name="time"><input name="title" placeholder="…" required style="flex:1"><button class="btn-s">${t("add")}</button></form>` : ""}
-      ${evs.map(e => `<div class="cal-i ${e.date === today && e.time && e.time < nowHM ? "past" : ""}"><span class="tm">${e.date === tmr ? "+1 " : ""}${esc(e.time || "—")}</span><span>${esc(e.title)}</span><button class="x" data-cal-del="${e.id}">✕</button></div>`).join("")}
+      ${[...evs.map(e => ({ k: (e.date === tmr ? "1" : "0") + (e.time || "99"), h: `<div class="cal-i ${e.date === today && e.time && e.time < nowHM ? "past" : ""}"><span class="tm">${e.date === tmr ? "+1 " : ""}${esc(e.time || "—")}</span><span>${esc(e.title)}</span><button class="x" data-cal-del="${e.id}">✕</button></div>` })), ...rtRows].sort((x, y) => x.k < y.k ? -1 : x.k > y.k ? 1 : 0).map(x => x.h).join("")}
+      ${rtOff.length ? `<div class="cal-off" title="${esc(rtOff.map(rtName).join("、"))}">${UI.lang === "en" ? "Paused" : "暂停"} ${rtOff.length}${UI.lang === "en" ? "" : " 项"} · ${esc(rtOff.map(rtName).join("、"))}</div>` : ""}
       <div class="cal-now">${nowHM}</div>`;
     const f = $("#calf");
     if (f) f.onsubmit = e => { e.preventDefault(); const fd = new FormData(f); api("calendar_add", Object.fromEntries(fd)); };
 
-    $("#cal").classList.toggle("noev", !evs.length);   // t-web-audit 02: no events -> no empty time rail
+    $("#cal").classList.toggle("noev", !evs.length);   // ri1103-P1: routine rows carry their own countdown, so the clock rail stays for real events only   // t-web-audit 02: no events -> no empty time rail
     // team
     // ui1: rows animate in once (not on every poll re-render); the open chat's row is marked; unread mail shows a dot
     const teamFirst = !UI.teamIn; UI.teamIn = true; $("#team").classList.toggle("team-enter", teamFirst);

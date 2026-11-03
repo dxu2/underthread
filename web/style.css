@@ -2169,3 +2169,14 @@ time, .nrv, .aq, .aq-n, .badge, .nav-i .n, .grp-h, .col-h span, .rf-pill b, .rt-
 .cs-card.draftc .md h2 { font-size: var(--fs-16); }
 /* PingFang SC stops at Semibold (600): the browser's default bold (700) only thickens the Latin and digits in a mixed line. Cap it. */
 b, strong, th, h1, h2, h3, h4, h5, h6 { font-weight: 600; }
+
+/* ri1103-P1: today's schedule lists the team's fixed daily routines (rows from app.js renderLeft) */
+.cal-i.cal-rt { align-items: center; gap: 8px; cursor: pointer; padding: 2px 0; }
+#cal.noev:not(.cal-empty) { margin-bottom: 12px; }
+@media (min-width: 761px) { #nav { margin-bottom: 14px; } }   /* P1+P3: keeps all 8 TEAM rows on a 1000px-tall screen */
+.cal-rt .av.cal-av { width: 18px; height: 18px; flex: none; border-width: 1px; }
+.cal-rt .cal-nm { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cal-rt .cal-st { flex: none; font-size: var(--fs-11); color: var(--dim); font-family: var(--f-display); letter-spacing: .02em; }
+.cal-rt .cal-st.soon { color: var(--accent); font-weight: 600; }
+.cal-rt:hover .cal-nm { color: var(--ink); }
+.cal-off { font-size: var(--fs-11); color: var(--dim); padding: 6px 0 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
