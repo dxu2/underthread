@@ -1103,6 +1103,7 @@
     const zh = UI.lang !== "en";
     if (window.FX && btn) { const r = btn.getBoundingClientRect(); FX.burst(r.left + r.width / 2, r.top + r.height / 2, { n: 18 }); }
     const card = btn && btn.closest(".rv-card");
+    const pb = $("#pagebody"); if (pb) pb._hk = "";   // t-home-flicker: the card is collapsed in place, so the next render must rewrite
     rvCollapse(card, () => { if (RV.pending === id || !RV.pending) renderPage(); });
     const b = rvUndoBar();
     b.innerHTML = `<span class="rv-u-tx"><b>${okDone(it).split(" · ")[0]}</b>${esc(it.title)}</span><button type="button" data-rv-undo>${zh ? "撤销" : "Undo"}</button><i class="rv-u-bar" style="--hold:${RV_HOLD}ms"></i>`;
@@ -1824,6 +1825,7 @@
   const widgetHome = () => !MOBQ.matches && UI.home === "widgets" && UI.page === "review";   // t-home-widgets (web/widgets.js + widgets.css)
   const homeSwitch = () => MOBQ.matches ? "" : `<button class="home-sw" data-home-set="${UI.home === "classic" ? "app" : "classic"}">${UI.lang === "en" ? (UI.home === "classic" ? "App-style home" : "Classic home") : (UI.home === "classic" ? "换成 app 式首页" : "切回原来的首页")}</button>`;
   function setHome(v) { UI.home = ["classic", "app"].includes(v) ? v : "widgets"; LS.set("home2", UI.home); UI.hf = "review"; renderPage(true); }
+  const phaseFree = h => h.replace(/--wp:-?[\d.]+s|animation-delay:-\d+ms|--wg-fd:-\d+ms/g, "").replace(/(<time class="(?:wk-el|rel)"[^>]*>)[^<]*/g, "$1");   // t-home-flicker
   function renderPage(scrollTop) {
     document.documentElement.dataset.home = appHome() ? "app" : widgetHome() ? "widgets" : "classic";   // t-home-applike: scopes home-app.css
     autoFold();
@@ -1844,7 +1846,13 @@
       }
     } else { ob.hidden = true; officeMounted = false; ob.innerHTML = ""; }
     const html = (PAGES[UI.page] || (() => catPage(UI.page)))();
-    if (html != null) body.innerHTML = html;   // t-imp29-p4: a page may return null to keep its DOM (the asset library keeps scroll, focus and loaded thumbs across polls)
+    if (html != null) {   // t-imp29-p4: a page may return null to keep its DOM (the asset library keeps scroll, focus and loaded thumbs across polls)
+      // t-home-flicker (11-03): every state rev (any chat message) re-renders; on the phone / app-style home an unchanged page keeps its DOM, so the
+      // spinners, breathing rings and sweeps don't restart. The compare ignores wall-clock phases and the elapsed labels the 20 s ticker keeps fresh.
+      const hk = UI.page === "review" && !widgetHome() ? phaseFree(html) : "";
+      if (!hk || hk !== body._hk || !body.firstElementChild) body.innerHTML = html;
+      body._hk = hk;
+    }
     if (scrollTop) page.scrollTop = 0;
     hooks.forEach(f => f("page"));
   }
@@ -3037,7 +3045,7 @@
   window.App = {
     okLabel, okDone, askLeft, openAsks: it => openAsks(it),   // t-btn-names
     rvApprove: id => rvApprove(id, null), rvCanApprove: it => rvCanApprove(it), awaitsUser: it => awaitsUser(it), busy: it => busy(it), onYou: it => onYou(it), onYouCard: it => onYouCard(it), grpOf: it => grpOf(it), newReplies: () => newReplies(), decisions: () => decisions(),   // t-imp-p5 (palette)
-    UI, get ST() { return ST; }, roll, modalStatus: () => modalStatus(), ghOpen: () => ghOpen(), ghLabel: () => ghLabel(), statusSummary: () => statusSummary(statusRows()), loadHealth: a => loadHealth(a), refreshPage: () => renderPage(), pixelOpen, avatarUrl, t, items, agent, aname, atitle, av, when, whenH, agoH, ago, byAct, PLAT, stageLabel,
+    UI, get ST() { return ST; }, roll, modalStatus: () => modalStatus(), ghOpen: () => ghOpen(), ghLabel: () => ghLabel(), statusSummary: () => statusSummary(statusRows()), loadHealth: a => loadHealth(a), refreshPage: () => renderPage(), phaseFree, pixelOpen, avatarUrl, t, items, agent, aname, atitle, av, when, whenH, agoH, ago, byAct, PLAT, stageLabel,
     refresh: async () => { await poll(true); return !UI.down; },   // t-m2-c ④ pull-to-refresh: a forced full fetch; false = the server did not answer
     tablePv: s => tablePv(s),   // t-chat-table (mobile.js chat list preview)
     verCheck: () => verCheck(true), attachPick: p => attachPick(p),   // t-lib-attach (viewer.js)   // t-new-ver (tests)

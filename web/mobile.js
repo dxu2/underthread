@@ -315,8 +315,9 @@
       <div class="deck">${order.map((it, i) => card(it, i === 0 ? "top" : i === 1 ? "back" : "back2")).reverse().join("")}</div>
       <div class="dk-btns"><button class="no" data-dk="no" aria-label="reject">✕</button><button class="sk" data-dk="skip" aria-label="later">↑</button><button class="ok" data-dk="ok" aria-label="approve">✓</button></div>
       <div class="dk-hint">${en() ? `→ ${App.okLabel(list[deckIdx], true).toLowerCase()} · ← reject · ↑ later · tap to open` : `右滑${App.okLabel(list[deckIdx], false)} · 左滑驳回 · 上滑稍后 · 轻点看详情`}</div>`;
-    if (body._deck === html && $(".deck", body)) return;
-    body.innerHTML = html; body._deck = html;
+    const pf = App.phaseFree || (h => h);   // t-home-flicker: the --wp ring phase in App.av is not data
+    if (body._deck === pf(html) && $(".deck", body)) return;
+    body.innerHTML = html; body._deck = pf(html);
     wireDeck(body);
   }
   function wireDeck(body) {

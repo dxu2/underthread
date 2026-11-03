@@ -101,7 +101,41 @@
   const sizeBtns = (k, s) => `<span class="wg-sz">${SIZES[k].map(z => `<button type="button" data-wg-size="${k}:${z}" class="${z === s ? "on" : ""}">${z.toUpperCase()}</button>`).join("")}</span>`;
   const editBar = (k, s, i, n) => `<span class="wg-x" data-wg-hide="${k}" title="${en() ? "Remove" : "移除"}">−</span>${sizeBtns(k, s)}<span class="wg-mv">${i > 0 ? `<button type="button" data-wg-move="${k}:-1">←</button>` : ""}${i < n - 1 ? `<button type="button" data-wg-move="${k}:1">→</button>` : ""}</span>`;
 
-  let last = "";
+  // t-home-flicker (11-03): the HTML carries wall-clock phases (--wg-fd) so a rebuilt node does not restart the sweep; they are not data,
+  // so every compare strips them. Same data: keep the DOM. Changed data (C): replace only the tiles / header / tail / tray whose HTML changed,
+  // the rest keep their nodes (thumbs, hover highlight, running animations). mvPage is told via MV.dirty so new rows / moved tiles still animate.
+  const norm = h => h.replace(/--wg-fd:-\d+ms/g, "");
+  let last = "", PREV = null;
+  const frag = h => { const t = document.createElement("template"); t.innerHTML = h.trim(); return t.content.firstElementChild; };
+  function patch(wg, P) {
+    if (!PREV || wg.className.split(/\s+/).includes("edit") !== P.edit) return false;
+    mvSnap(wg);   // positions before the change, for the FLIP / ghost diff in mvPage
+    wg.classList.toggle("edit", P.edit);
+    const swap = (sel, h0, h1, after) => {   // header / tail / tray: one element each, replaced only when its HTML changed
+      if (norm(h0) === norm(h1)) return;
+      const cur = wg.querySelector(":scope > " + sel), nu = h1 ? frag(h1) : null;
+      if (cur && nu) cur.replaceWith(nu); else if (cur) cur.remove(); else if (nu) after.after(nu);
+    };
+    const grid = wg.querySelector(":scope > .wg-grid"), hd = wg.querySelector(":scope > .wg-hd");
+    if (!grid || !hd) return false;
+    swap(".wg-hd", PREV.hd, P.hd, hd);
+    const old = new Map([...grid.children].map(t => [t.dataset.wg, t])), was = new Map(PREV.tiles), want = P.tiles.map(([k, h]) => {
+      const t = old.get(k); if (!t || !was.has(k)) return frag(h);
+      if (norm(was.get(k)) === norm(h)) return t;
+      // same tile, new content: with the same number of children swap only the children that changed (the hero keeps its background
+      // image and the sweep its node when only 「N 分钟」 ticked); otherwise the whole tile
+      const n = frag(h), a = frag(was.get(k));
+      if (!a || a.children.length !== n.children.length || t.children.length !== n.children.length) return n;
+      if (a.className !== n.className) t.className = n.className;
+      [...n.children].forEach((c, i) => { if (norm(a.children[i].outerHTML) !== norm(c.outerHTML)) t.children[i].replaceWith(c); });
+      return t; });
+    [...grid.children].forEach(t => { if (!want.includes(t)) t.remove(); });   // drop first, so unchanged tiles never get moved (a move restarts their animations)
+    want.forEach((t, i) => { if (grid.children[i] !== t) grid.insertBefore(t, grid.children[i] || null); });
+    swap(".wg-tail", PREV.tail, P.tail, grid);
+    swap(".wg-tray", PREV.tray, P.tray, wg.querySelector(":scope > .wg-tail") || grid);
+    MV.dirty = true;
+    return true;
+  }
   function html(body, tail) {
     const L = load(), D = data(), calm = [], tiles = [];
     const count = { review: D.waiting.length, replies: D.nr.length, today: D.shipped.length };
@@ -110,17 +144,24 @@
       if (!EDIT && isEmpty(k, D)) { calm.push(calmText(k)); return; }
       const inner = EDIT && isEmpty(k, D) ? eb(k) + `<div class="wg-calm-in">${calmText(k)}</div>` : W[k](s, D);
       const multi = k === "busy" && D.busy.length > 1 ? " multi" : "";
-      tiles.push(`<section class="wg wg-${k} sz-${s}${k === "busy" && !isEmpty(k, D) ? " hero" + multi : ""}" data-wg="${k}">${inner}${EDIT ? editBar(k, s0, i, L.length) : ""}</section>`);
+      tiles.push([k, `<section class="wg wg-${k} sz-${s}${k === "busy" && !isEmpty(k, D) ? " hero" + multi : ""}" data-wg="${k}">${inner}${EDIT ? editBar(k, s0, i, L.length) : ""}</section>`]);
     });
     const hidden = Object.keys(SIZES).filter(k => !L.some(x => x[0] === k));
-    const out = `<div id="wg" class="${EDIT ? "edit" : ""}"><div class="wg-hd">${calm.length ? `<span class="wg-calm">✓ ${calm.map(esc).join(" · ")}</span>` : ""}<span class="sp"></span>${EDIT ? `<button type="button" class="wg-btn" data-wg-reset>${en() ? "Reset" : "恢复默认"}</button>` : ""}<button type="button" class="wg-btn${EDIT ? " on" : ""}" data-wg-edit>${EDIT ? (en() ? "Done" : "完成") : (en() ? "Edit widgets" : "编辑小组件")}</button></div>
-      <div class="wg-grid">${tiles.join("")}</div>
-      ${tail ? `<div class="wg-tail">${tail}</div>` : ""}
-      ${EDIT ? `<div class="wg-tray"><h4>${en() ? "Add widgets" : "添加小组件"}<small>${hidden.length ? (en() ? "click to add back" : "点一下加回去") : (en() ? "all widgets are on the page" : "所有小组件都在页面上了")}</small></h4><div class="wg-chips">${hidden.map(k => `<button type="button" data-wg-add="${k}">+ ${nm(k)}</button>`).join("")}</div></div>` : ""}</div>`;
-    if (out === last && body && body.firstElementChild && body.firstElementChild.id === "wg") return null;   // same DOM: keep it (no flicker, no image reloads)
-    last = out; return out;
+    const P = { edit: EDIT, tiles,
+      hd: `<div class="wg-hd">${calm.length ? `<span class="wg-calm">✓ ${calm.map(esc).join(" · ")}</span>` : ""}<span class="sp"></span>${EDIT ? `<button type="button" class="wg-btn" data-wg-reset>${en() ? "Reset" : "恢复默认"}</button>` : ""}<button type="button" class="wg-btn${EDIT ? " on" : ""}" data-wg-edit>${EDIT ? (en() ? "Done" : "完成") : (en() ? "Edit widgets" : "编辑小组件")}</button></div>`,
+      tail: tail ? `<div class="wg-tail">${tail}</div>` : "",
+      tray: EDIT ? `<div class="wg-tray"><h4>${en() ? "Add widgets" : "添加小组件"}<small>${hidden.length ? (en() ? "click to add back" : "点一下加回去") : (en() ? "all widgets are on the page" : "所有小组件都在页面上了")}</small></h4><div class="wg-chips">${hidden.map(k => `<button type="button" data-wg-add="${k}">+ ${nm(k)}</button>`).join("")}</div></div>` : "" };
+    const out = `<div id="wg" class="${EDIT ? "edit" : ""}">${P.hd}
+      <div class="wg-grid">${tiles.map(x => x[1]).join("")}</div>
+      ${P.tail}
+      ${P.tray}</div>`;
+    const key = norm(out), wg = body && body.firstElementChild && body.firstElementChild.id === "wg" ? body.firstElementChild : null;
+    if (wg && key === last) return null;   // same data: keep the DOM (no flicker, no image reloads)
+    const kept = wg && patch(wg, P);
+    last = key; PREV = P;
+    return kept ? null : out;
   }
-  const redraw = () => { last = ""; A() && A().refreshPage(); };
+  const redraw = () => { last = ""; A() && A().refreshPage(); };   // a layout change goes through patch(): changed tiles only
   document.addEventListener("click", e => {
     const t = e.target.closest && e.target.closest("[data-wg-edit],[data-wg-reset],[data-wg-hide],[data-wg-size],[data-wg-move],[data-wg-add]");
     if (!t) { if (EDIT && e.target.closest && e.target.closest("#wg .wg-grid") ) { e.preventDefault(); e.stopPropagation(); } return; }   // editing: tiles don't navigate
@@ -140,10 +181,12 @@
   // tiles moving or resizing (FLIP glide), numbers changing (roll). A poll that returns the same data keeps the same DOM and plays nothing;
   // a poll with new data animates only what changed. prefers-reduced-motion turns all of it off. Desktop widget home only.
   const RMQ = matchMedia("(prefers-reduced-motion: reduce)");
-  const MV = { page: null, wg: null, rects: new Map(), rows: new Map(), nums: new Map() };
+  const MV = { page: null, wg: null, rects: new Map(), rows: new Map(), nums: new Map(), dirty: false };
+  // t-home-flicker: tile boxes from layout (offset*), not getBoundingClientRect, which includes a running entry / FLIP transform and made every diff glide all tiles
+  const lay = t => ({ left: t.offsetLeft, top: t.offsetTop, width: t.offsetWidth, height: t.offsetHeight });
   const rk = r => r.closest(".wg").dataset.wg + "|" + r.dataset.item;
   function mvSnap(wg) {
-    MV.rects = new Map([...wg.querySelectorAll(".wg")].map(t => [t.dataset.wg, t.getBoundingClientRect()]));
+    MV.rects = new Map([...wg.querySelectorAll(".wg")].map(t => [t.dataset.wg, lay(t)]));
     MV.rows = new Map([...wg.querySelectorAll(".wg-row[data-item]")].map(r => [rk(r), { r: r.getBoundingClientRect(), html: r.outerHTML }]));
     MV.nums = new Map([...wg.querySelectorAll(".wg-big, .wg-eb .n")].map(n => [n.closest(".wg").dataset.wg + "|" + n.className, n.textContent]));
   }
@@ -159,7 +202,8 @@
   function mvPage() {
     const wg = document.getElementById("wg"), page = A().UI.page, entered = page === "review" && MV.page !== "review"; MV.page = page;
     if (!wg) { MV.wg = null; return; }
-    if (wg === MV.wg && !entered) return;   // same DOM (poll with no change): nothing to play
+    const dirty = MV.dirty; MV.dirty = false;
+    if (wg === MV.wg && !entered && !dirty) return;   // same DOM (poll with no change): nothing to play; dirty = patch() swapped some tiles in place
     const rm = RMQ.matches;
     [...wg.querySelectorAll(".wg")].forEach((t, i) => t.style.setProperty("--wg-i", i));
     if (entered || !MV.wg) {
@@ -170,7 +214,7 @@
       MV.rows.forEach((v, k) => { if (now.has(k)) return; const g = document.createElement("div"); g.className = "wg-ghost"; g.innerHTML = v.html;
         Object.assign(g.style, { left: v.r.left + "px", top: v.r.top + "px", width: v.r.width + "px" }); if (g.firstElementChild) g.firstElementChild.style.margin = "0";
         document.body.appendChild(g); setTimeout(() => g.remove(), 420); });
-      wg.querySelectorAll(".wg").forEach(t => { const o = MV.rects.get(t.dataset.wg); if (!o) return; const n = t.getBoundingClientRect(); if (!n.width || !n.height) return;
+      wg.querySelectorAll(".wg").forEach(t => { const o = MV.rects.get(t.dataset.wg); if (!o) return; const n = lay(t); if (!n.width || !n.height) return;
         const dx = o.left - n.left, dy = o.top - n.top, sx = o.width / n.width, sy = o.height / n.height;
         if (Math.abs(dx) + Math.abs(dy) > 1 || Math.abs(sx - 1) + Math.abs(sy - 1) > .01)
           t.animate([{ transformOrigin: "0 0", transform: `translate(${dx}px,${dy}px) scale(${sx},${sy})` }, { transformOrigin: "0 0", transform: "none" }], { duration: 320, easing: "cubic-bezier(.2,.8,.2,1)" }); });
