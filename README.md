@@ -1,69 +1,105 @@
-# Underthread · 暗线
+# Underthread
 
-[English](README.en.md)
+**A personal AI agent team that works 24/7.**
 
-一个给个人自媒体创作者用的 **AI agent 团队看板**。一个常驻的「管家」会话（Claude Code）接你的指令、拆成卡片、派给几位专员（研究、编剧、导演、美术、运营、工匠），专员只交**草稿**，你在本地看板上批准、驳回或评论。发布永远由你自己来。
+[中文简介](#中文简介)
 
-> 状态：第一版，框架可以跑通。语音通话 / 会议、像素露台办公室和舞台背景这几块依赖私有素材，没有放进这个仓库。
+You talk to one **manager**. It takes your messages, breaks them into tasks, hands them to a team of **specialist agents**, and keeps you in sync on a local **dashboard** you can also use from your phone. The agents do the work and hand back drafts. Your part is to approve, reject or comment.
 
-## 截图
+> Status: early version. The framework runs end to end on one machine. Voice calls and some optional artwork are not part of this repository.
 
-> （占位：用示例数据截的看板首页）
->
-> （占位：卡片详情页：草稿、把握度、时间线、批准 / 驳回）
->
-> （占位：手机端）
+![Dashboard home (example data)](docs/screenshot-desktop.jpg)
 
-## 它能做什么
+## What it is
 
-- **本地看板**（`server.py` + `web/`）：卡片看板、详情页、版本对比、日程、通知、手机端（可以加到主屏幕）、Web Push 推送。
-- **状态只走一个入口**（`stateutil.py`）：卡片、对话、日志、规则提议都存在本地 `state.json`，有文件锁。
-- **角色可配置**（`roster.json` + `make_agents.py`）：改名字、职能、性格，一条命令生成 Claude Code 子 agent 文件。
-- **规则会成长**：你驳回时写的原因，管家会整理成规则提议，你确认后写进 `roles/*.md` 的 `## Confirmed rules`。
-- **可选**：用 ComfyUI 出图（`tools/comfy.py`，走 SSH 隧道连你自己的 GPU 机器）；用 whisper.cpp 给语音备忘转文字（`tools/transcribe.py`）。
+- A **long-running manager session** in [Claude Code](https://docs.claude.com/en/docs/claude-code). It watches your inbox, sorts each request, dispatches it and follows up.
+- A **team of specialists**: Claude Code subagents, each with its own role notes, rules and memory. You decide what roles you need.
+- A **local dashboard** (`server.py` + `web/`): cards, a review queue, chat with the manager and each agent, notifications, and a phone layout.
+- **One state file** behind it (`state.json`, written only through `stateutil.py`, with file locking). Nothing leaves your machine unless an agent is asked to call an outside tool.
 
-## 上手
+## Core concepts
 
-需要：macOS 或 Linux、Python 3.10+（只用标准库）、[Claude Code](https://docs.claude.com/en/docs/claude-code)。导演角色要用 ffmpeg 的话另装。
+| Concept | What it means |
+|---|---|
+| **Manager** | Your single point of contact. Turns a message into one or more cards, picks the right specialist, dispatches, checks the result and writes a daily report. |
+| **Specialists** | Configurable agents (for example a researcher, a writer, a designer, a tooling keeper). Each gets a role file in `roles/` and a subagent file generated from `roster.json`. |
+| **Cards** | Every piece of work is a card with a stage (to do → doing → review → done), an owner, a thread and versioned drafts. |
+| **Review** | Agents deliver drafts or plans to *review*. You approve, reject with a reason, or answer the clickable questions they attach. Big jobs go through a plan first. |
+| **Rules that grow** | When you reject something, the manager turns your reason into a rule proposal. Once you confirm it, it lands in that role's `## Confirmed rules`. |
+| **Dashboard** | Desktop home made of widgets (waiting on you, working now, new replies, shipped today, this week, recent media), card detail with diffs, chat, mailbox, ⌘K palette. |
+| **Phone** | The same dashboard as a home-screen web app: tab bar, chat list, pull to refresh, optional Web Push notifications. |
+
+<img src="docs/screenshot-phone.jpg" alt="Phone layout (example data)" width="300">
+
+## Getting started
+
+Requirements: macOS or Linux, Python 3.10+ (standard library only) and Claude Code.
 
 ```bash
 git clone https://github.com/dxu2/underthread.git && cd underthread
 
-# 1. 第一次启动会自动从 *.example.json 复制出 config.json / roster.json / state.json
-python3 server.py              # 打开 http://127.0.0.1:8765
+# 1. The first start copies config.json / roster.json / state.json from the *.example.json files
+python3 server.py              # open http://127.0.0.1:8765
 
-# 2. 改 roster.json（角色名字、职能、性格），然后生成 agent 文件
-python3 make_agents.py         # 写到 .claude/agents/，并刷新 manager.md 里的派单表
+# 2. Edit roster.json (names, duties, tone), then generate the agent files
+python3 make_agents.py         # writes .claude/agents/ and refreshes the dispatch table in manager.md
 
-# 3. 可选：让团队免确认地跑 stateutil 等命令
+# 3. Optional: let the team run stateutil and friends without a prompt each time
 cp claude-settings.example.json .claude/settings.json
 
-# 4. 另开一个终端，启动管家
+# 4. In another terminal, start the manager
 claude "Start the manager per manager.md"
 ```
 
-详细说明见 [SETUP-GUIDE.md](SETUP-GUIDE.md)。改界面时先在副本里试：`PORT=8799 NO_LOOPS=1 python3 server.py`，不要碰真实的 `state.json`。
+Then write to the manager from the dashboard's chat. See [SETUP-GUIDE.md](SETUP-GUIDE.md) for the full walkthrough (architecture, roles, restarts, optional tools).
 
-## 示例角色
+To try changes to the UI, run a copy first: `PORT=8799 NO_LOOPS=1 python3 server.py`, never against your real `state.json`.
 
-`roster.example.json` 里是一套**中性的占位角色**：阿管（管家）、阿侦（研究）、阿笔（编剧）、阿镜（导演）、阿绘（美术）、阿播（运营）、阿匠（工匠）。名字、性格、对你的称呼都可以随便改。这个仓库**不包含任何商业游戏或动漫的角色**，也请不要把别人的角色形象、立绘提交进来。
+### Optional tools
 
-## 不包含的东西
+- `tools/comfy.py`: image generation through your own ComfyUI box (SSH tunnel).
+- `tools/transcribe.py`: voice memo transcription with whisper.cpp.
+- `tools/ghcred.py`: store a GitHub push token once from the dashboard (keychain or a 0600 file); set `UNDERTHREAD_GH_REPO=owner/name` for the push check.
 
-| 不包含 | 说明 |
+## Example roles
+
+`roster.example.json` ships neutral placeholder roles (a manager plus six specialists). Rename them, change their duties and tone, add or remove roles, then run `make_agents.py` again. This repository contains no characters from any game or anime; please don't commit other people's characters or artwork.
+
+## Privacy
+
+- **Your data stays local.** Cards, chat, logs, uploads and agent memory live in files in the project folder (`state.json`, `uploads/`, `work/`, `logs/`, `.claude/agent-memory/`) and are all in `.gitignore`.
+- The dashboard listens on `127.0.0.1` only. To use it from your phone you have to expose it yourself, for example through a private network such as Tailscale Serve (push notifications need https).
+- Secrets are generated or stored locally with mode 600 (`vapid.json` for push, the optional GitHub token) and never sent back to the page.
+- The only outside calls are the ones you configure: Claude Code itself, and any optional tool you enable.
+
+## Ground rules the agents follow
+
+- **Drafts only.** Agents never publish, post, upload or send anything to an outside service on your behalf.
+- **Plan first** for big or risky changes; work starts after you approve.
+- **Backups** before edits (`name.bak-<tag>`, ignored by git).
+
+## Not included
+
+| Not included | Notes |
 |---|---|
-| 你的数据 | `config.json`、`roster.json`、`state.json`、`inbox.jsonl`、`uploads/`、`work/`、`logs/`、`avatars/` 都在 `.gitignore` 里 |
-| 推送密钥 | `vapid.json` 第一次用推送时在本机自动生成，权限 600，**永远不要提交** |
-| 模型 | whisper 模型、ComfyUI 模型、LoRA 等都不附带。请自己下载，并遵守它们各自的许可协议 |
-| 声音 | 不附带任何声音样本或克隆声音。语音模块之后单独发布；只用你自己的声音或你有权使用的声音 |
-| 美术素材 | 角色立绘、像素办公室素材不附带。界面在没有这些图时会自动退回纯文字 / 头像 |
+| Your data | `config.json`, `roster.json`, `state.json`, `inbox.jsonl`, `uploads/`, `work/`, `logs/`, `avatars/` |
+| Keys | `vapid.json` and tokens are created on your machine; never commit them |
+| Models | No whisper, ComfyUI or other model weights; follow each model's own license |
+| Voice | No voice samples or voice features in this release |
+| Artwork | No character art; the UI falls back to text and avatars |
 
-## 原则
+## License
 
-- **只出草稿**：agent 从不在 B站 / YouTube / 小红书 或任何外部服务上发布、评论、上传。
-- **改动先出计划**：大活先交计划，你批准后才动手。
-- **备份**：改文件前留 `.bak-<tag>`（已在 `.gitignore` 里用 `*.bak*` 排除）。
+Code is [MIT](LICENSE). It covers this repository's code only; models, fonts, voices and images you plug in keep their own licenses.
 
-## 许可
+---
 
-代码使用 [MIT](LICENSE)。MIT 只覆盖本仓库的代码；你接入的模型、字体、声音和图片各自遵守原来的许可。
+## 中文简介
+
+**Underthread（暗线）：一支 24 小时在线的个人 AI agent 团队。**
+
+你只跟一个「管家」说话。管家接你的消息，拆成任务卡，派给各个专员 agent，并在本地看板上跟你同步。电脑和手机都能用。专员做事、交草稿，你只负责拍板：批准、驳回或评论。
+
+- 核心概念：管家、可配置的专员、卡片与审核、看板（小组件首页、详情、聊天、信箱）、手机端。
+- 上手：照上面 Getting started 的四步做。详细说明见 [SETUP-GUIDE.md](SETUP-GUIDE.md)。
+- 隐私：所有数据都存在本机的项目目录里，并且已经写进 `.gitignore`。看板默认只监听 `127.0.0.1`。
