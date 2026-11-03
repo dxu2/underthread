@@ -358,6 +358,12 @@
     } else if (k === "no") {
       top.style.transform = "translate(-30px, 0) rotate(-3deg)";
       setTimeout(() => { top.style.transform = ""; App.rejectItem(id); }, 220);
+    } else if (App.snzMenu) {   // ri1103-P2: 上滑稍后 = the same 稍后 sheet as the detail page; the card flies off only once a time is picked
+      top.style.transform = "translate(0, -48px)";
+      App.snzMenu(id, null, ok => {
+        if (ok) { top.style.transform = "translate(0, -120vh) rotate(-6deg)"; top.style.opacity = 0; setTimeout(() => { const b = $("#pagebody"); if (b) b._deck = null; deck(); }, 380); }
+        else { top.style.transform = ""; const s = $(".dk-stamp.skip", top); if (s) s.style.opacity = 0; }
+      });
     } else {
       top.style.transform = "translate(0, -120vh) rotate(-6deg)"; top.style.opacity = 0;
       setTimeout(() => { deckIdx++; const b = $("#pagebody"); if (b) b._deck = null; deck(); }, 380);

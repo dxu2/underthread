@@ -124,19 +124,25 @@
   const busy = i => !!i && i.stage !== "done" && workersOf(i.id).length > 0;
   // t-home-newreplies: a card nobody is working on that still has an unanswered ask is on you too, whatever its stage (a comment flips review → doing;
   // the specialist answers + asks again but may not put it back to review). onYouCard = the cards listed as review cards; awaitsUser ones are the decisions list.
-  const onYouCard = i => !!i && i.stage !== "done" && !busy(i) && (i.stage === "review" || (!awaitsUser(i) && openAsks(i).length > 0));
-  const onYou = i => onYouCard(i) || (!!i && awaitsUser(i) && !busy(i));
+  // ri1103-P2: 稍后. it.snooze = {until, wait:"reply"|null, at} from the server; while active the card leaves 等你拍板 everywhere (lists, counts,
+  // red dots, the app badge). The server's snooze_loop clears it within ~20 s of the time / the reply; this mirror hides that gap.
+  const snzReplied = i => { const at = Date.parse(i.snooze.at) || 0; return (i.thread || []).some(e => e.who !== "me" && e.kind !== "event" && (Date.parse(e.t) || 0) > at) || (Date.parse(i.draft_at) || 0) > at; };
+  // 「等回复」 ends after 3 days with no reply too (server sets until = at + 3 d; a snooze made before that change has no until, so count from at)
+  const snzEnd = i => i.snooze.until ? Date.parse(i.snooze.until) : i.snooze.wait === "reply" ? (Date.parse(i.snooze.at) || 0) + 3 * 864e5 : Infinity;
+  const snoozed = i => !!i && !!i.snooze && i.stage !== "done" && snzEnd(i) > Date.now() && !(i.snooze.wait === "reply" && snzReplied(i));
+  const onYouCard = i => !!i && i.stage !== "done" && !busy(i) && !snoozed(i) && (i.stage === "review" || (!awaitsUser(i) && openAsks(i).length > 0));
+  const onYou = i => onYouCard(i) || (!!i && awaitsUser(i) && !busy(i) && !snoozed(i));
   // t-agent-queue: a role's queue = its open cards that are to do, or in progress but not the card it is on now. Routine cards (r-…) never count.
   // Badge 「排队 N」 (hidden at 0) in the TEAM list, the chat roster, the DM header and the 此刻在忙 widget; a click lists the cards (App.queueOf / qBadge).
   const queueOf = id => { const a = (ST && ST.agents && ST.agents[id]) || {}; return items().filter(i => i.owner === id && !i.archived && !/^r-/.test(i.id) && (i.stage === "todo" || (i.stage === "doing" && i.id !== a.item)))
     .sort((x, y) => (Date.parse(x.updated || x.created) || 0) - (Date.parse(y.updated || y.created) || 0)); };
   const qBadge = (id, small) => { const n = queueOf(id).length; return !n ? "" : small ? `<i class="aq-n" data-aq="${esc(id)}" title="${UI.lang === "en" ? `${n} queued` : `排队 ${n}`}">${n}</i>` : `<span class="aq" data-aq="${esc(id)}">${UI.lang === "en" ? `Queued ${n}` : `排队 ${n}`}</span>`; };
-  const grpOf = i => busy(i) ? "doing" : (awaitsUser(i) || onYouCard(i)) ? "review" : idleDoing(i) ? "todo" : i.stage;
+  const grpOf = i => busy(i) ? "doing" : snoozed(i) ? "todo" : (awaitsUser(i) || onYouCard(i)) ? "review" : idleDoing(i) ? "todo" : i.stage;   // ri1103-P2: a snoozed card waits under 待办
   // t-idle-pause-tag: such a card says 「暂停」 where a row shows its stage, so it stands apart from a real 待办
   const pauseL = () => UI.lang === "en" ? "Paused" : "暂停";
   // t-routine-btn: a routine's main card says 「暂停」 only when the routine is really paused; running, idle between runs, it says 每天 HH:MM
   const rtTag = i => { const r = i && i.stage !== "done" && !busy(i) && routineOf(i); return !r ? null : r.paused ? pauseL() : r.time ? (UI.lang === "en" ? `Daily ${r.time}` : `每天 ${r.time}`) : null; };
-  const rowLabel = i => rtTag(i) || (idleDoing(i) ? pauseL() : grpLabel(grpOf(i)));
+  const rowLabel = i => rtTag(i) || (snoozed(i) ? (UI.lang === "en" ? "Later · " : "稍后 · ") + snzText(i) : idleDoing(i) ? pauseL() : grpLabel(grpOf(i)));
   const grpLabel = s => s === "review" ? (UI.lang === "en" ? "On you" : "等你拍板") : stageLabel(s);
 
   // ---------- helpers ----------
@@ -784,7 +790,7 @@
     const today = dayKey(new Date()), tmr = dayKey(new Date(Date.now() + 864e5));
     const evs = (ST.calendar || []).filter(e => e.date === today || e.date === tmr);
     // ri1103-P1: the team's fixed daily routines (meta.routines) join the user's own events, sorted by time; paused ones fold into one line.
-    // TODO(ri1103-P1): server.py should put config report_time into meta (meta.report_time); until then the daily report row shows no time.
+    // ri1103-P2: meta.report_time comes from config.json report_time (server.py public_state); an older server sends none -> the row shows no time.
     const rts = (ST.meta && ST.meta.routines) || [], nowM = new Date().getHours() * 60 + new Date().getMinutes();
     const rtName = r => String(r.label || r.id).replace(/[（(][^）)]*[）)]/g, "").replace(/^.*?每日\s*(\d+\s*个\s*)?(一条|打磨)?/, "").replace(/^app\s*/i, "").trim() || r.id;
     const rtLeft = hm => { const [h, m] = hm.split(":").map(Number), d = h * 60 + m - nowM; return d > 0 ? `${Math.floor(d / 60)}:${pad(d % 60)}${UI.lang === "en" ? "" : " 后"}` : null; };
@@ -901,7 +907,9 @@
   // t-wait-days: a card on the user (review, or waiting on a plan / question) for more than 24 h gets an amber 「等了 N 天」 tag (same idea as 暂停).
   // The wait starts at the last 提交审核 event in the thread; no such event -> it.updated.
   const waitSince = it => { const th = it.thread || []; for (let i = th.length - 1; i >= 0; i--) if (th[i].kind === "event" && /^提交审核/.test(th[i].text || "")) return th[i].t; return it.updated; };
-  function waitTag(it) {
+  function waitTag(it) { return snzWas(it) + waitTag0(it); }
+  const snzWas = it => it && it.snoozed && !snoozed(it) ? `<span class="snz-was" title="${UI.lang === "en" ? "Came back from Later" : "之前点过稍后，到点回来了"}">${UI.lang === "en" ? "Snoozed" : "推迟过"}</span>` : "";   // ri1103-P2
+  function waitTag0(it) {
     if (!it || !(it.stage === "review" || awaitsUser(it))) return "";
     const h = (Date.now() - new Date(waitSince(it))) / 36e5; if (!(h >= 24)) return "";
     const d = Math.floor(h / 24); return `<span class="wait-d">${UI.lang === "en" ? `Waiting ${d}d` : `等了 ${d} 天`}</span>`;
@@ -1218,10 +1226,11 @@
       const bar = (phoneLike && hf === "review" ? nrBlock() : "") + `<div class="ph-bar"><button data-sort="activity" class="${UI.sort === "activity" ? "on" : ""}">${t("by_activity")}</button>
         <button data-sort="created" class="${UI.sort === "created" ? "on" : ""}"><span class="gl" aria-hidden="true">▼ </span>${t("by_created")}</button>
         <span class="count">${hf === "review" ? (UI.lang === "en" ? "On you" : "等你拍板") : hf === "week" ? "本周交付" : stageLabel(hf)} <b>${list.length + dec.length}</b></span></div>`;   // t-home-nobtn: the 切回 button is gone; ⌘K「首页样式」and #home=classic stay as the back door
-      if (!list.length) return pageHead("review", bar) + (dec.length ? decH + decR : hf === "review" ? `<div class="dc-none top">${t("empty_review")}</div>` : `<div class="empty">${t("empty_review")}</div>`) + today;
+      const sz = hf === "review" ? snzLine() : "";   // ri1103-P2
+      if (!list.length) return pageHead("review", bar) + sz + (dec.length ? decH + decR : hf === "review" ? `<div class="dc-none top">${t("empty_review")}</div>` : `<div class="empty">${t("empty_review")}</div>`) + today;
       const seen = UI.seen.review || "";
       const fresh = list.filter(i => (i.activity || "") > seen);
-      let html = pageHead("review", bar);
+      let html = pageHead("review", bar) + sz;
       const mob = phoneLike, rowf = i => mob ? reviewRow(i, !!seen && fresh.includes(i)) : card(i), wrap = h => mob ? `<div class="act-list">${h}</div>` : h;
       if (mob && hf === "review") {   // P5: one flat column of review cards (new first, then by category), no group headers; the category sits in each card's meta line
         const rest = seen ? list.filter(i => !fresh.includes(i)) : list, cats = ["urgent", "main", "side", "daily", "ongoing"];
@@ -1786,7 +1795,7 @@
   // t-office-d1-s12: the four numbers of the home strip (they also drive the list filter UI.hf on phones)
   function homeCounts() {   // t-imp-p1: review = 等你拍板 (review items + plans / questions parked in waiting)
     const its = items(), wk = Date.now() - 7 * 864e5, rev = its.filter(i => onYouCard(i) && i.id !== RV.pending);
-    return { review: rev.length + its.filter(i => awaitsUser(i) && !busy(i)).length, doing: its.filter(i => grpOf(i) === "doing").length, todo: its.filter(i => grpOf(i) === "todo").length,
+    return { review: rev.length + its.filter(i => awaitsUser(i) && !busy(i) && !snoozed(i)).length, doing: its.filter(i => grpOf(i) === "doing").length, todo: its.filter(i => grpOf(i) === "todo").length,
       week: its.filter(i => i.stage === "done" && i.closed && new Date(i.closed) > wk).length, oldest: rev.length ? Math.min(...rev.map(i => new Date(i.activity || i.updated))) : null };
   }
   // t-visual-stage: pins on the terrace office (positions are fractions of the hero image; a new role without a seat is skipped)
@@ -2509,13 +2518,98 @@
         ? `<span class="rt-off"><i class="rt-dot"></i>${zh ? "暂停" : "Paused"}</span><button class="ab ok rt-sw" data-rt="resume" role="switch" aria-checked="false"><b>${zh ? "开启" : "Turn on"}</b></button>`
         : `<span class="rt-on"><i class="rt-dot"></i>${rt.unknown ? (zh ? "开启中" : "On") : `${zh ? "开启中 · 下次 " : "On · next "}${esc(nx || "—")}`}</span><button class="ab no rt-sw" data-rt="pause" role="switch" aria-checked="true">${zh ? "暂停" : "Pause"}</button>`; }
       else acts.innerHTML = st === "done" ? `<button class="ab re" data-act="reopen"><span aria-hidden="true">↺</span>${t("reopen")}</button>${stampHTML(it)}`
-        : closeBtn() + (st === "solo" ? `<button class="ab ok solo${openAsks(it).length ? " has-ask" : ""}" data-act="done"><b>${zh ? "完成委托" : "Mark done"}</b>${askLeft(it) ? `<small class="ok-ask">${askLeft(it)}</small>` : ""}</button>`
-        : `<button class="ab no" data-act="reject">${t("reject")}</button><button class="ab ok${openAsks(it).length ? " has-ask" : ""}" data-act="approve">${okBtnIn(it)}</button>`);
+        : closeBtn() + (st === "solo" ? snzBtn(it) + `<button class="ab ok solo${openAsks(it).length ? " has-ask" : ""}" data-act="done"><b>${zh ? "完成委托" : "Mark done"}</b>${askLeft(it) ? `<small class="ok-ask">${askLeft(it)}</small>` : ""}</button>`
+        : `<button class="ab no" data-act="reject">${t("reject")}</button>${snzBtn(it)}<button class="ab ok${openAsks(it).length ? " has-ask" : ""}" data-act="approve">${okBtnIn(it)}</button>`);   // ri1103-P2: 稍后 between 驳回 and 验收
       // t-btn-names: open questions show as a line under the button label (desktop and phone); before it was a .dock-note to the left, desktop only
     }
     annPaint();   // t-imp29-p2
     if (window.Preview) Preview.decorate($('.cs-card.draftc[data-vkey="cur"]', sc), it);   // t-imp29-p3: 文稿 / 平台预览 on the current draft
   }
+  // ===== ri1103-P2: 稍后 ▾ = push a card to 今晚 20:00 / 明早 09:00 / 下周一 09:00 / the specialist's next reply / a picked time.
+  // The server keeps it (it.snooze), so desktop and phone agree. Desktop: a small menu over the button; phone: a bottom sheet.
+  const SNZ_IC = `<svg class="snz-ic" viewBox="0 0 16 16" width="13" height="13" aria-hidden="true"><circle cx="8" cy="8.6" r="5.6" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M8 5.6v3.2l2 1.3M3 2.6 1.6 4M13 2.6 14.4 4" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>`;
+  function snzWhen(iso) {
+    const d = new Date(iso), en = UI.lang === "en", h = d.getHours(), t0 = hm(iso); if (isNaN(d)) return "—";
+    const days = Math.round((new Date(d.getFullYear(), d.getMonth(), d.getDate()) - new Date(new Date().setHours(0, 0, 0, 0))) / 864e5);
+    if (days === 0) return en ? `today ${t0}` : `${h >= 17 ? "今晚" : "今天"} ${t0}`;
+    if (days === 1) return en ? `tomorrow ${t0}` : `${h < 12 ? "明早" : "明天"} ${t0}`;
+    if (days > 1 && days < 7) return en ? `${"Sun Mon Tue Wed Thu Fri Sat".split(" ")[d.getDay()]} ${t0}` : `周${"日一二三四五六"[d.getDay()]} ${t0}`;
+    return `${d.getMonth() + 1}/${d.getDate()} ${t0}`;
+  }
+  const snzText = it => !it || !it.snooze ? "" : it.snooze.wait === "reply" ? (UI.lang === "en" ? `until ${aname(agent(it.owner))} replies` : `等${aname(agent(it.owner))}回复`) : snzWhen(it.snooze.until);
+  const snzCan = it => !!it && it.stage !== "done" && !routineOf(it) && (it.stage === "review" || awaitsUser(it) || openAsks(it).length > 0);
+  const snzBtn = it => !snzCan(it) ? "" : snoozed(it)
+    ? `<button class="ab sz on" data-snz-btn title="${UI.lang === "en" ? "Snoozed · change or cancel" : "已推迟 · 点一下改时间或取消"}">${SNZ_IC}<span>${esc(snzText(it))}</span></button>`
+    : `<button class="ab sz" data-snz-btn title="${UI.lang === "en" ? "Take it off your list until later" : "先从等你拍板拿掉，到点再回来"}">${SNZ_IC}<span>${UI.lang === "en" ? "Later" : "稍后"}</span><svg class="snz-car" viewBox="0 0 10 6" width="9" height="6" aria-hidden="true"><path d="M1 1l4 4 4-4" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></button>`;
+  const snzSort = (a, b) => (a.snooze.wait === "reply") - (b.snooze.wait === "reply") || snzEnd(a) - snzEnd(b);   /* timed ones first: the home line names the next fixed return */
+  function snzLine() {
+    const L = items().filter(snoozed).sort(snzSort); if (!L.length) return "";
+    const en = UI.lang === "en", f = L[0], back = f.snooze.wait === "reply" ? snzText(f) : (en ? `back ${snzText(f)}` : `${snzText(f)} 回来`);
+    return `<button type="button" class="snz-line" data-snz-list>${SNZ_IC}<span>${en ? `${L.length} snoozed · ${esc(back)}` : `推迟了 ${L.length} 张 · ${esc(back)}`}</span><i aria-hidden="true">›</i></button>`;
+  }
+  const SNZ = { el: null, done: null };
+  function snzClose(ok) {
+    const el = SNZ.el, d = SNZ.done; SNZ.el = SNZ.done = null;
+    if (el) { el.classList.add("out"); setTimeout(() => el.remove(), 160); }
+    if (d) d(!!ok);
+  }
+  function snzOpen(html, anchor, done) {
+    snzClose(false);
+    const el = document.createElement("div"), sheet = MOBQ.matches || !anchor;
+    el.className = "snz-wrap" + (sheet ? " sheet" : "");
+    el.innerHTML = `<div class="snz-pop" role="menu">${html}</div>`;
+    document.body.appendChild(el); SNZ.el = el; SNZ.done = done || null;
+    const pop = el.firstElementChild;
+    if (!sheet) {
+      const r = anchor.getBoundingClientRect(), w = pop.offsetWidth, h = pop.offsetHeight;
+      const left = Math.max(12, Math.min(innerWidth - w - 12, r.left + r.width / 2 - w / 2)), top = r.top - h - 10 >= 8 ? r.top - h - 10 : r.bottom + 10;
+      Object.assign(pop.style, { left: left + "px", top: top + "px" });
+    }
+    el.addEventListener("click", e => { if (e.target === el) snzClose(false); });
+    return pop;
+  }
+  function snzMenu(id, anchor, done) {
+    const it = items().find(i => i.id === id); if (!it) return done && done(false);
+    const en = UI.lang === "en", now = new Date(), nm = aname(agent(it.owner)), on = snoozed(it);
+    const opt = (p, a, b, extra) => `<button type="button" class="snz-o" data-snz-p="${p}" role="menuitem"><b>${a}</b><span>${b}</span>${extra || ""}</button>`;
+    const html = `<div class="snz-h"><b>${en ? "Later" : "稍后再看"}</b><small>${on ? (en ? `Snoozed · ${esc(snzText(it))}` : `已推迟 · ${esc(snzText(it))}`) : (en ? "Off your list until then; it comes back by itself" : "先从等你拍板拿掉，到时候自己回来")}</small></div>
+      ${now.getHours() * 60 + now.getMinutes() < 19 * 60 + 30 ? opt("tonight", en ? "Tonight" : "今晚", "20:00") : ""}
+      ${opt("morning", en ? (now.getHours() < 5 ? "This morning" : "Tomorrow morning") : (now.getHours() < 5 ? "早上" : "明早"), "09:00")}
+      ${opt("monday", en ? "Next Monday" : "下周一", "09:00")}
+      ${opt("reply", en ? `Until ${esc(nm)} replies` : `等${esc(nm)}下条回复`, en ? "or a new draft · 3 days max" : "有回复或新稿就回来，最多等 3 天")}
+      <button type="button" class="snz-o" data-snz-pick role="menuitem"><b>${en ? "Pick a time…" : "自己选时间…"}</b><span></span></button>
+      <form class="snz-cus" hidden><input type="datetime-local" name="t" required><button class="btn-s">${en ? "OK" : "确定"}</button></form>
+      ${on ? `<button type="button" class="snz-o un" data-snz-un role="menuitem"><b>${en ? "Cancel snooze" : "取消推迟"}</b><span>${en ? "back on your list now" : "现在就回到等你拍板"}</span></button>` : ""}`;
+    const pop = snzOpen(html, anchor, done);
+    const send = (preset, until) => {
+      const lbl = until ? snzWhen(until) : preset === "reply" ? (en ? `until ${nm} replies` : `等${nm}下条回复`) : [...$(`[data-snz-p="${preset}"]`, pop).children].map(x => x.textContent).join(" ").trim();
+      pop.classList.add("busy");
+      api("snooze", { item: id, preset, until, label: lbl }).then(() => {
+        toast(en ? `Snoozed · ${lbl}` : `已推迟 · ${preset === "reply" ? lbl : lbl + " 回来"}`);
+        if (UI.item === id && !MOBQ.matches) closeItem(); else if (UI.item === id) backItem();
+        snzClose(true);
+      }).catch(() => { pop.classList.remove("busy"); });
+    };
+    pop.addEventListener("click", e => {
+      const p = e.target.closest("[data-snz-p]"); if (p) return send(p.dataset.snzP);
+      if (e.target.closest("[data-snz-pick]")) { const f = $(".snz-cus", pop); f.hidden = false; const d = new Date(Date.now() + 3 * 36e5); d.setMinutes(0, 0, 0);
+        const loc = x => new Date(x - x.getTimezoneOffset() * 6e4).toISOString().slice(0, 16); f.t.min = loc(new Date()); f.t.value = loc(d); f.t.focus(); return; }
+      if (e.target.closest("[data-snz-un]")) { pop.classList.add("busy"); api("unsnooze", { item: id }).then(() => { toast(en ? "Back on your list" : "已取消推迟 · 回到等你拍板"); snzClose(false); }).catch(() => pop.classList.remove("busy")); }
+    });
+    $(".snz-cus", pop).addEventListener("submit", e => { e.preventDefault(); const v = e.target.t.value, d = new Date(v); if (!v || isNaN(d)) return; send("custom", d.toISOString()); });
+  }
+  function snzListMenu(anchor) {
+    const L = items().filter(snoozed).sort(snzSort), en = UI.lang === "en"; if (!L.length) return;
+    const pop = snzOpen(`<div class="snz-h"><b>${en ? "Snoozed" : "推迟中的卡"}</b><small>${en ? "Tap one to open it" : "点一张打开；到点或有新回复会自己回来"}</small></div>` +
+      L.map(i => `<div class="snz-r"><button type="button" class="snz-o" data-snz-open="${esc(i.id)}"><b>${esc(i.title)}</b><span>${esc(aname(agent(i.owner)))} · ${esc(snzText(i))}${i.snooze.wait === "reply" && i.snooze.until ? ` · ${en ? "latest" : "最晚"} ${esc(snzWhen(i.snooze.until))}` : ""}</span></button><button type="button" class="snz-x" data-snz-un1="${esc(i.id)}">${en ? "Back now" : "取消推迟"}</button></div>`).join(""), anchor);
+    pop.addEventListener("click", e => {
+      const o = e.target.closest("[data-snz-open]"); if (o) { snzClose(false); openItem(o.dataset.snzOpen); return; }
+      const u = e.target.closest("[data-snz-un1]"); if (u) { u.disabled = true; api("unsnooze", { item: u.dataset.snzUn1 }).then(() => { toast(en ? "Back on your list" : "已取消推迟 · 回到等你拍板"); snzClose(false); }).catch(() => { u.disabled = false; }); }
+    });
+  }
+  document.addEventListener("click", e => { const b = e.target.closest && e.target.closest("[data-snz-list]"); if (b) { e.preventDefault(); snzListMenu(b); } });
+  document.addEventListener("keydown", e => { if (e.key === "Escape" && SNZ.el) { e.stopPropagation(); snzClose(false); } }, true);
+  $("#drawer").addEventListener("click", e => { const b = e.target.closest("[data-snz-btn]"); if (b) snzMenu(UI.item, b); });
   // ===== t-routine-close: routine cards (config.routines -> meta.routines[].item). Before the server restart meta.routines is missing:
   // then an ongoing "r-*" card with no parent is treated as a routine with an unknown schedule, and the buttons say a restart is needed.
   function routineOf(it) {
@@ -3188,6 +3282,7 @@
     draft: k => DRAFT.get(k), liveItem: a => liveItem(a), mgrOnline: a => mgrOnline(a), typingOn: (a, l) => typingOn(a, l), typingUntil: l => typingUntil(l),   // t-now-closed (home.js hero, office.js bubble)   // t-draft-keep (mobile.js chat list marks [草稿])
     go: p => go(p), openItem: id => openItem(id), seekItem: (id, sp) => seekItem(id, sp), seekChat: (t, q) => seekChat(t, q),   /* t-ri1103-p5 */ closeItem: () => closeItem(), backItem: () => backItem(), setChat: id => setChat(id), api: (k, b) => api(k, b), toast: (m, e) => toast(m, e),
     rejectItem(id) { openItem(id); modalReject(); }, on: fn => hooks.push(fn), inkEb, route: (P, via) => route(P, via),
+    snoozed: it => snoozed(it), snzMenu: (id, anchor, done) => snzMenu(id, anchor, done), snzLine: () => snzLine(), snzText: it => snzText(it),   /* ri1103-P2 */
   };
 
   // ---------- t-push-deeplink: one router for "go to this target" (cold-start hash, or a tapped notification while the app is open) ----------

@@ -1672,3 +1672,12 @@ body.kb .dw-toc:not(.open) { display: none; }   /* keyboard up: the pill would s
 .ms-hit { align-items: flex-start; }
 .ms-hit .ms-m b { white-space: normal; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; font-weight: 500; line-height: 1.4; }
 .ms-hit .ms-m b mark { background: color-mix(in srgb, var(--warn) 30%, transparent); color: inherit; border-radius: 3px; padding: 0 1px; }
+
+/* ===== ri1103-P2: 稍后 on the phone: a compact third pill in the dock; the menu is a bottom sheet (style.css .snz-wrap.sheet) ===== */
+#drawer .dw-acts .ab.sz { flex: none; gap: 5px; padding: 0 13px; border: 1px solid var(--line2); font-weight: 500; font-size: var(--fs-15); }
+#drawer .dw-acts .ab.sz.on { max-width: 38%; background: var(--chip2); color: var(--ink2); }
+#drawer .dw-acts .ab.sz span { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+#drawer .dw-acts .ab.sz .snz-car { display: none; }
+.snz-wrap.sheet .snz-o { padding: 13px 12px; font-size: var(--fs-16); }
+.snz-wrap.sheet .snz-o span { font-size: var(--fs-14); }
+.snz-cus input { font-size: var(--fs-16); padding: 8px 10px; }

@@ -56,7 +56,7 @@
     review(s, D) {
       const L = D.waiting, { n, foot } = fitM(s, L.length, 5);
       return eb("review", L.length, true) + L.slice(0, n).map(i => { const a = A().agent(i.owner);
-        return `<div class="wg-row" data-item="${esc(i.id)}"><img class="wg-av" src="${A().avatarUrl(a)}" alt=""><div class="t">${esc(i.title)}<small>${esc(A().aname(a))} · ${en() ? "waiting" : "等了"} ${ago(i.activity || i.updated)}</small></div><span class="wg-tg${i.kind === "plan" ? "" : " hot"}">${kindL(i)}</span></div>`; }).join("") +
+        return `<div class="wg-row" data-item="${esc(i.id)}"><img class="wg-av" src="${A().avatarUrl(a)}" alt=""><div class="t">${esc(i.title)}<small>${esc(A().aname(a))} · ${en() ? "waiting" : "等了"} ${ago(i.activity || i.updated)}</small></div>${i.snoozed ? `<span class="wg-tg snz">${en() ? "Snoozed" : "推迟过"}</span>` : ""}<span class="wg-tg${i.kind === "plan" ? "" : " hot"}">${kindL(i)}</span></div>`; }).join("") +
         (!foot ? "" : `<div class="wg-more">${L.length > n ? `<span data-go="board">${en() ? `${L.length - n} more ›` : `还有 ${L.length - n} 件 ›`}</span>` : `${en() ? "Oldest waiting" : "最久的已经等了"} ${ago(L[0].activity || L[0].updated)}`}</div>`);
     },
     busy(s, D) {
@@ -148,7 +148,7 @@
     });
     const hidden = Object.keys(SIZES).filter(k => !L.some(x => x[0] === k));
     const P = { edit: EDIT, tiles,
-      hd: `<div class="wg-hd">${calm.length ? `<span class="wg-calm">✓ ${calm.map(esc).join(" · ")}</span>` : ""}<span class="sp"></span>${EDIT ? `<button type="button" class="wg-btn" data-wg-reset>${en() ? "Reset" : "恢复默认"}</button>` : ""}<button type="button" class="wg-btn${EDIT ? " on" : ""}" data-wg-edit>${EDIT ? (en() ? "Done" : "完成") : (en() ? "Edit widgets" : "编辑小组件")}</button></div>`,
+      hd: `<div class="wg-hd">${calm.length ? `<span class="wg-calm">✓ ${calm.map(esc).join(" · ")}</span>` : ""}${A().snzLine ? A().snzLine() : ""}<span class="sp"></span>${EDIT ? `<button type="button" class="wg-btn" data-wg-reset>${en() ? "Reset" : "恢复默认"}</button>` : ""}<button type="button" class="wg-btn${EDIT ? " on" : ""}" data-wg-edit>${EDIT ? (en() ? "Done" : "完成") : (en() ? "Edit widgets" : "编辑小组件")}</button></div>`,
       tail: tail ? `<div class="wg-tail">${tail}</div>` : "",
       tray: EDIT ? `<div class="wg-tray"><h4>${en() ? "Add widgets" : "添加小组件"}<small>${hidden.length ? (en() ? "click to add back" : "点一下加回去") : (en() ? "all widgets are on the page" : "所有小组件都在页面上了")}</small></h4><div class="wg-chips">${hidden.map(k => `<button type="button" data-wg-add="${k}">+ ${nm(k)}</button>`).join("")}</div></div>` : "" };
     const out = `<div id="wg" class="${EDIT ? "edit" : ""}">${P.hd}
