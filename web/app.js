@@ -802,7 +802,7 @@
       const ms = a.id === "manager" && mgrState();
       const st = ms ? (ms.on ? "working" : ms.sleep ? "sleeping" : "offline") : a.status || "idle";
       const sub = mgrOnline(a) ? MGR_ON() : a.status === "working" && a.activity ? `▶ ${esc(a.activity)}` : esc(aduty(a));   // t-now-closed
-      return `<div class="team-i ${a.status === "working" && a.activity && !mgrOnline(a) ? "busy" : ""} ${a.enabled === false ? "disabled" : ""} ${UI.chat === a.id ? "on" : ""} ${unreadBy.has(a.id) ? "unread" : ""}" style="--i:${Math.min(i, 12)}" data-chat="${a.id}">${av(a)}<div><div class="nm">${esc(aname(a))}<span class="st ${st}">${ms ? (ms.on ? t("online") : ms.sleep ? ms.txt : t("offline")) : t(st)}</span>${qBadge(a.id)}</div><div class="du">${sub}</div></div></div>`;
+      return `<div class="team-i ${a.status === "working" && a.activity && !mgrOnline(a) ? "busy" : ""} ${a.enabled === false ? "disabled" : ""} ${UI.chat === a.id ? "on" : ""} ${unreadBy.has(a.id) ? "unread" : ""}" style="--i:${Math.min(i, 12)}" data-chat="${a.id}">${av(a)}<div><div class="nm">${esc(aname(a))}<span class="st ${st}"${ms && ms.sleep ? ` title="${esc(ms.txt)}"` : ""}>${ms ? (ms.on ? t("online") : ms.sleep ? (ms.back ? `☾ ${ms.back}` : ms.txt) : t("offline")) : t(st)}</span>${qBadge(a.id)}</div><div class="du">${sub}</div></div></div>`;
     }).join("");
   }
   document.addEventListener("click", e => {

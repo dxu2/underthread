@@ -786,6 +786,10 @@ body.chat-folded .ch-grip { cursor: default; }
 /* manager asleep after hitting the plan limit: moonlit, not alarming */
 .sync .zz, .ch-who .zz { color: var(--glow); opacity: .8; white-space: nowrap; } .ch-who .zz { font-size: 12px; }
 .team-i .st.sleeping { color: var(--glow); opacity: .75; }
+/* t-queue-row-2: while the manager is asleep the name row reads 名字 + 排队 n + ☾ 08:00 — keep it on one line (146px column) */
+.team-i .nm:has(.st.sleeping) { white-space: nowrap; gap: 5px; }
+.team-i .st.sleeping { letter-spacing: 0; font-variant-numeric: tabular-nums; }
+.team-i .nm:has(.st.sleeping) .aq { padding: 0 5px; }
 
 /* ===== ui1-A: left rail = menu + today + team in ONE scroll column, wider (2026-10-27, t-ui-motion-redesign) ===== */
 @keyframes ui1-rise { from { opacity: 0; transform: translateY(6px); } }
@@ -2121,7 +2125,8 @@ html[data-theme] #toast::before, html[data-theme] #toast::after { display: none;
   background: color-mix(in srgb, var(--accent) 16%, transparent); color: var(--accent); cursor: pointer; white-space: nowrap; vertical-align: 1px; font-style: normal; }
 .aq:hover { background: color-mix(in srgb, var(--accent) 26%, transparent); }
 .team-i { position: relative; }
-.team-i .nm .aq { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); margin: 0; }
+.team-i .nm .aq { margin: 0 0 0 -2px; flex: none; }   /* t-queue-row: badge sits after the name (was absolute over the activity line) */
+.team-i .st.working, .team-i .st.idle { display: none; }   /* t-queue-row: only 离线 / ☾ 休眠 show; busy = avatar ring + ▶ line (manager 在线 is .working too) */
 .ch-roster button { position: relative; }
 .ch-roster .aq-n { position: absolute; right: -2px; bottom: 16px; min-width: 16px; height: 16px; padding: 0 4px; border-radius: 8px; font-size: 10px; font-weight: 700; font-style: normal;
   display: grid; place-items: center; background: var(--accent); color: var(--accent-ink); box-shadow: 0 0 0 2px var(--bg); cursor: pointer; }
