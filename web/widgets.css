@@ -137,10 +137,16 @@ html[data-home="widgets"] #wg.wg-enter .wg { animation: wg-in 420ms cubic-bezier
 html[data-home="widgets"] #wg.wg-enter .wg-hd { animation: wg-in 320ms cubic-bezier(.2,.8,.2,1) backwards; }
 html[data-home="widgets"] .wg { transition: transform 220ms cubic-bezier(.2,.8,.2,1), box-shadow 220ms ease; }
 html[data-home="widgets"] #wg:not(.edit) .wg:hover { transform: translateY(-3px); box-shadow: var(--glass-rim), 0 16px 40px rgba(0,0,0,.28); }
-html[data-home="widgets"] .wg::before { content: ""; position: absolute; inset: 0; z-index: 2; pointer-events: none; border-radius: inherit; opacity: 0;
-  background: linear-gradient(115deg, transparent 35%, rgba(255,255,255,.14) 50%, transparent 65%); transform: translateX(60%); }
-html[data-home="widgets"] #wg:not(.edit) .wg:hover::before { animation: wg-sheen 700ms ease-out 1; }
-@keyframes wg-sheen { 0% { opacity: 1; transform: translateX(60%); } 100% { opacity: 1; transform: translateX(-60%); } }
+/* t-hover-glass (approved 11-02, highlight only, no tilt): a soft light follows the pointer (--mx / --my set by widgets.js, once per frame) and the
+   1px rim near it brightens; both fade out in 260ms on leave. Replaces the one-off sheen. Only opacity + CSS variables change. */
+html[data-home="widgets"] .wg::before { content: ""; position: absolute; inset: 0; z-index: 2; pointer-events: none; border-radius: inherit; opacity: var(--hg-o, 0); transition: opacity 260ms ease;
+  background: radial-gradient(260px circle at var(--mx, 50%) var(--my, 50%), rgba(255,255,255,.16), rgba(255,255,255,.05) 40%, transparent 70%); }
+html[data-home="widgets"][data-theme="white"] .wg::before { background: radial-gradient(260px circle at var(--mx, 50%) var(--my, 50%), rgba(255,255,255,.55), rgba(255,255,255,.18) 40%, transparent 70%); }
+html[data-home="widgets"] .wg::after { content: ""; position: absolute; inset: 0; z-index: 3; pointer-events: none; border-radius: inherit; padding: 1px; opacity: var(--hg-o, 0); transition: opacity 260ms ease;
+  background: radial-gradient(180px circle at var(--mx, 50%) var(--my, 50%), rgba(255,255,255,.55), transparent 70%);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor; mask-composite: exclude; }
+html[data-home="widgets"] #wg.edit .wg::before, html[data-home="widgets"] #wg.edit .wg::after { opacity: 0; }
+@media (prefers-reduced-motion: reduce) { html[data-home="widgets"] .wg::before, html[data-home="widgets"] .wg::after { display: none; } }
 @keyframes wg-new { 0% { opacity: 0; transform: translateY(-10px); background: color-mix(in srgb, var(--dot) 22%, transparent); } 40% { opacity: 1; transform: none; } 100% { background: transparent; } }
 html[data-home="widgets"] #wg .wg-row.wg-new { animation: wg-new 1100ms cubic-bezier(.2,.8,.2,1) 1; }
 .wg-ghost { position: fixed; z-index: 50; pointer-events: none; animation: wg-out 380ms cubic-bezier(.4,0,.2,1) forwards; }

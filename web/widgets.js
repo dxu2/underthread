@@ -179,6 +179,15 @@
     MV.wg = wg; mvSnap(wg);
   }
   if (A() && A().on) A().on(k => { if (k === "page") try { mvPage(); } catch (_) { } });
+  { // t-hover-glass: the pointer-following highlight. One update per animation frame; desktop mouse only; off with reduced motion and in edit mode.
+    let raf = 0, ev = null, cur = null;
+    const off = t => { if (t) t.style.setProperty("--hg-o", 0); };
+    const apply = () => { raf = 0; if (!ev) return; const t = ev.target.closest && ev.target.closest('html[data-home="widgets"] #wg:not(.edit) .wg');
+      if (cur && cur !== t) off(cur); cur = t; if (!t) return;
+      const r = t.getBoundingClientRect(); t.style.setProperty("--mx", (ev.clientX - r.left) + "px"); t.style.setProperty("--my", (ev.clientY - r.top) + "px"); t.style.setProperty("--hg-o", 1); };
+    document.addEventListener("pointermove", e => { if (e.pointerType !== "mouse" || RMQ.matches) return; ev = e; if (!raf) raf = requestAnimationFrame(apply); }, { passive: true });
+    document.addEventListener("pointerout", e => { if (cur && !cur.contains(e.relatedTarget)) { off(cur); cur = null; } }, { passive: true });
+  }
   const vis = () => document.documentElement.classList.toggle("wg-paused", document.hidden);   // the flow sweep pauses while the page is hidden
   document.addEventListener("visibilitychange", vis); vis();
   window.Widgets = { html, editing: () => EDIT };
