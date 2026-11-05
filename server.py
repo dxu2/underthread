@@ -71,6 +71,12 @@ CONFIG = {}
 _roster_mtime = None
 _comfy = {"online": None, "at": None}
 START = time.time()  # t-imp-p4: server uptime for /api/health
+try:   # t-home-usage: per-role token rollup; a broken module must not stop the dashboard
+    import usage_roll
+    USAGE = usage_roll.Roll(ROOT)
+except Exception as e:  # noqa: BLE001
+    print("usage_roll:", e)
+    USAGE = None
 _health = {"disk": None, "disk_t": 0, "work": None, "work_t": 0, "work_busy": False, "lock": threading.Lock()}
 
 
@@ -1299,6 +1305,11 @@ class H(BaseHTTPRequestHandler):
                     return self._send(500, {"error": "读状态失败"})
             if u.path == "/api/health":
                 return self._send(200, health())
+            if u.path == "/api/usage":   # t-home-usage: per-role tokens today from the local transcripts (usage_roll.py, 60 s cache)
+                if not USAGE:
+                    return self._send(503, {"error": "usage_roll not loaded"})
+                d = q.get("day", [""])[0]
+                return self._send(200, USAGE.report(d if re.fullmatch(r"\d{4}-\d{2}-\d{2}", d or "") else None))
             if u.path == "/api/docs":
                 return self._send(200, list_docs())
             if u.path == "/api/doc":

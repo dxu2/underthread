@@ -60,7 +60,6 @@
       next: "NEXT", sync: "SYNC", inbox: "INBOX", comfy_on: "5090 在线", comfy_off: "5090 未连",
       no_next: "没有日程", tomorrow: "明天", today_w: "今天", yesterday: "昨天",
       ago_m: "{n} 分钟前", ago_h: "{n} 小时前", just: "刚刚",
-      stamina_t: "体 力", stamina_q: "本月剩余额度（%）",
       unacked: "待处理", reports_empty: "还没有日报。每天 {t} 管家会自动写一份。",
       docs_pick: "选一个文档", ch_none: "未标平台",
     },
@@ -99,7 +98,6 @@
       next: "NEXT", sync: "SYNC", inbox: "INBOX", comfy_on: "5090 online", comfy_off: "5090 not linked",
       no_next: "no events", tomorrow: "Tomorrow", today_w: "Today", yesterday: "Yesterday",
       ago_m: "{n}m ago", ago_h: "{n}h ago", just: "just now",
-      stamina_t: "Stamina", stamina_q: "Budget left this month (%)",
       unacked: "pending", reports_empty: "No reports yet. The manager writes one daily at {t}.",
       docs_pick: "Pick a doc", ch_none: "No platform",
     },
@@ -678,6 +676,87 @@
     return { left, week: wk, sub, subPh, pill, why, stale, approx, approxW, lost5, lostW, age, tip, reset5, resetW, at5, atW, src: u.source,
       used5: five && Math.round(five.used), usedW: week && Math.round(week.used), context: u.context, at: u.at };
   }
+  // ===== t-home-usage (approved 11-04): tokens per role today, from GET /api/usage (server reads the local transcripts, 60 s cache).
+  // One builder, three places: the desktop widget (widgets.js), the phone home card, the 系统状态 panel. Quota % stays a small strip under it.
+  const UG = { data: null, at: 0, busy: null, key: "", prev: new Map() };
+  function loadRoleUsage() {
+    if (UG.busy || Date.now() - UG.at < 6e4) return;
+    UG.busy = fetch("/api/usage").then(r => r.ok ? r.json() : null).catch(() => null).then(d => {
+      UG.at = Date.now(); UG.busy = null; if (!d || !Array.isArray(d.roles)) return;
+      const k = JSON.stringify([d.day, d.roles.map(r => [r.id, r.new])]); UG.data = d;
+      if (k === UG.key) return; UG.key = k;
+      if (UI.page === "review") renderPage();
+      const m = $("#modal .mdl.sys"); if (m && m._paint) m._paint();
+    });
+  }
+  setInterval(() => { if (!document.hidden && (UI.page === "review" || $("#modal .mdl.sys"))) loadRoleUsage(); }, 15000);   // a quiet state does not re-render, so poll the counts here
+  const fmtTok = n => { n = +n || 0; const en = UI.lang === "en";
+    if (n >= 1e8 && !en) return (n / 1e8).toFixed(n >= 1e9 ? 0 : 1) + " 亿";
+    return n >= 1e6 ? (n / 1e6).toFixed(n >= 1e7 ? 0 : 1) + "M" : n >= 1e3 ? Math.round(n / 1e3) + "k" : String(n); };
+  function roleUsage() {
+    loadRoleUsage();
+    const d = UG.data; if (!d) return null;
+    const rows = d.roles.filter(r => r.new > 0).map(r => ({ ...r, a: r.id === "other" ? null : agent(r.id) }));
+    return { ...d, rows };
+  }
+  function ruName(r) { const en = UI.lang === "en"; return r.id === "other" ? (en ? "Other sessions" : "其他会话") : r.a ? aname(r.a) : r.id; }
+  function ruTip(r) { const en = UI.lang === "en", f = fmtTok;
+    return en ? `input ${f(r.in)} · output ${f(r.out)} · cache write ${f(r.cw)} · cache read ${f(r.cr)} · ${r.msgs} replies · ${r.sessions} sessions`
+      : `输入 ${f(r.in)} · 输出 ${f(r.out)} · 写缓存 ${f(r.cw)} · 读缓存 ${f(r.cr)} · ${r.msgs} 次回复 · ${r.sessions} 个会话`; }
+  // quota strip: 5 小时 / 本周 / 管家上下文 (what is LEFT), greyed + 「X 分钟前 · 可能已过期」 past USAGE_STALE (same usage() as the orb)
+  function ruQuota() {
+    const U = usage(), en = UI.lang === "en"; if (U.none) return "";
+    const v = (x, est) => x == null ? "—" : `${est ? "≈" : ""}${x}%`;
+    const age = U.at ? relH("ago", U.at, ago(U.at)) : "";
+    return `<div class="ru-q${U.stale ? " old" : ""}" data-ru-open><span>${en ? "5-hour" : "5 小时"} <b>${v(U.left, U.approx)}</b></span><span>${en ? "Week" : "本周"} <b>${v(U.week, U.approxW)}</b></span>`
+      + (U.context != null ? `<span>${en ? "Manager context" : "管家上下文"} <b>${v(100 - U.context, U.stale)}</b></span>` : "")
+      + `<span class="ru-age">${U.stale ? `<em>${age} · ${en ? "may be out of date" : "可能已过期"}</em>` : age}</span></div>`;
+  }
+  // n: rows to list; o.tot: the big total line; o.quota: the strip
+  function ruHTML(n, o = {}) {
+    const R = roleUsage(), en = UI.lang === "en";
+    if (!R) return `<div class="ru-wait">${en ? "Counting…" : "正在统计…"}</div>` + (o.quota ? ruQuota() : "");
+    const rows = R.rows, max = rows.length ? rows[0].new : 1, more = rows.length - n;
+    const list = rows.length ? rows.slice(0, n).map((r, i) => `<div class="ru-row${r.a ? "" : " nd"}"${r.a ? ` data-chat="${esc(r.id)}"` : ""} title="${esc(ruTip(r))}" style="--ru-i:${i}">`
+        + (r.a ? `<img class="ru-av" src="${avatarUrl(r.a)}" alt="">` : `<span class="ru-av"></span>`)
+        + `<span class="ru-n">${esc(ruName(r))}${r.a && r.a.status === "working" ? `<i class="ru-on" title="${en ? "working" : "工作中"}"></i>` : ""}</span>`
+        + `<i class="ru-bar"><em data-ru="${esc(r.id)}" style="--ru-w:${Math.max(0.02, r.new / max).toFixed(3)}"></em></i><b data-ru-v="${r.new}">${fmtTok(r.new)}</b></div>`).join("")
+      : `<div class="ru-wait">${R.error ? (en ? `Could not read the transcripts (${esc(R.error)})` : `读不到会话记录（${esc(R.error)}）`) : (en ? "No tokens used yet today" : "今天还没用过")}</div>`;
+    const tot = o.tot ? `<div class="ru-tot" data-ru-open><b data-ru-v="${R.total}" data-ru-k="tot">${fmtTok(R.total)}</b><span>${en ? `new tokens · plus ${fmtTok(R.cache_read)} cache reads` : `新 token · 另读缓存 ${fmtTok(R.cache_read)}`}</span></div>` : "";
+    requestAnimationFrame(ruSettle);
+    return tot + `<div class="ru-list">${list}${more > 0 && o.more ? `<div class="ru-more" data-ru-open>${en ? `+${more} more ›` : `还有 ${more} 个 ›`}</div>` : ""}</div>` + (o.quota ? ruQuota() : "");
+  }
+  // Motion (11-04 rule): a bar grows from 0 the first time it is shown and glides from its previous length when the data changes;
+  // numbers count up. Rebuilt DOM with the same data does nothing. prefers-reduced-motion: no transition (CSS) and no count.
+  function ruSettle() {
+    document.querySelectorAll(".ru-bar em:not([data-s])").forEach(em => {
+      em.dataset.s = "1"; const k = em.closest(".ru-list") && em.closest(".ru-list").parentElement ? em.dataset.ru + "|" + (em.closest("[data-wg],.ru-card,.sy-ru") || {}).className : em.dataset.ru;
+      const to = getComputedStyle(em).getPropertyValue("--ru-w").trim(), from = UG.prev.has(k) ? UG.prev.get(k) : "0";
+      UG.prev.set(k, to); if (from === to || RMQ.matches) return;
+      em.style.transition = "none"; em.style.transform = `scaleX(${from})`; em.getBoundingClientRect();
+      em.style.transition = ""; em.style.transform = "";
+      if (from !== "0") em.style.transitionDelay = "0ms";
+    });
+    document.querySelectorAll("[data-ru-v]:not([data-s])").forEach(b => {
+      b.dataset.s = "1"; const k = "v|" + (b.dataset.ruK || (b.closest(".ru-row") && b.closest(".ru-row").querySelector("[data-ru]") || {}).dataset?.ru) + "|" + (b.closest("[data-wg],.ru-card,.sy-ru") || {}).className;
+      const to = +b.dataset.ruV, from = UG.prev.has(k) ? UG.prev.get(k) : 0; UG.prev.set(k, to);
+      if (from === to || RMQ.matches || document.hidden) return;
+      const t0 = performance.now(), D = 520, ease = x => 1 - Math.pow(1 - x, 3);
+      const step = now => { if (!b.isConnected) return; const x = Math.min(1, (now - t0) / D); b.textContent = fmtTok(from + (to - from) * ease(x)); if (x < 1) requestAnimationFrame(step); };
+      requestAnimationFrame(step);
+    });
+  }
+  // phone home card (under the strip's stat row); the desktop widget lives in widgets.js
+  function ruCard() {
+    if (!MOBQ.matches) return "";
+    const R = roleUsage(), en = UI.lang === "en";
+    return `<section class="ru-card" data-ru-open><div class="ru-hd"><b>${en ? "Usage by role" : "各角色用量"}</b><small>${en ? "today · new tokens" : "今天 · 新 token"}</small>${R ? `<span>${en ? "total" : "共"} ${fmtTok(R.total)}</span>` : ""}</div>${ruHTML(4, { quota: true })}</section>`;
+  }
+  document.addEventListener("click", e => {   // the card / strip opens 系统状态; a role row (data-chat) opens the DM instead
+    const o = e.target.closest && e.target.closest("[data-ru-open]"); if (!o || e.target.closest("[data-chat]")) return;
+    if (document.querySelector("#wg.edit")) return;
+    modalStatus();
+  });
   function renderHeader() {
     const m = mgrState(), ag = agents().filter(a => a.enabled !== false && a.id !== "manager");
     const working = ag.filter(a => a.status === "working").length;
@@ -1365,7 +1444,7 @@
     }).join("");
     return `<div class="rl-block"><div class="grp-h"><b>${en ? "Rules awaiting your call" : "待确认的规则"}</b> · ${ls.length}</div>${rows}</div>`;
   }
-  { const r0 = PAGES.review; PAGES.review = function () { return widgetHome() ? r0.call(this) : r0.call(this) + rulesBlock(); }; }   // t-home-widgets: the widget home puts the rules inside #wg itself
+  { const r0 = PAGES.review; PAGES.review = function () { if (widgetHome()) return r0.call(this); return ruCard() + r0.call(this) + rulesBlock(); }; }   /* t-home-usage: ruCard() is "" off phones */   // t-home-widgets: the widget home puts the rules inside #wg itself
   // ===== t-imp-p3: 制作线 (production line), READ-ONLY. Main/side content items grouped by production stage + this week's publish slots.
   // Stage = tag "pipe:<key>" when present, else guessed from the owner's role (marked "推断" on the card). No new state fields, no server change.
   // Moving a card never writes state: dropping it on another column sends the manager a chat message asking to retag it (the manager applies it).
@@ -3092,7 +3171,7 @@
     const list = rows.map(r => `<div class="sy-row ${r.lv}"><i class="sy-dot"></i><div class="sy-m"><b>${esc(r.t)}</b><span>${esc(r.s)}</span></div>${r.act ? `<button type="button" class="sy-btn" data-sy="${r.act.k}">${esc(r.act.l)}</button>` : ""}</div>`).join("");
     const note = HL.missing ? `<p class="sy-note">${en ? "Server, push and disk rows appear after the dashboard server restarts (new /api/health)." : "看板服务器、推送、磁盘这几行，要等看板重启（新接口 /api/health）后才显示。"}</p>` : "";
     return `<div class="sy-hd"><h3>${en ? "System status" : "系统状态"}</h3><span class="sy-sum ${sm.lv}">${sm.txt}</span><button type="button" class="sy-x" data-x aria-label="${en ? "Close" : "关闭"}">${en ? "Done" : "完成"}</button></div>`
-      + bars + `<div class="gt" id="gt"></div>` + `<div class="sy-list">${list}</div>` + note;   // t-dash-token: #gt is filled by ghPaint() and survives repaints
+      + bars + `<div class="sy-ru"><h4>${en ? "Usage by role · today" : "各角色用量 · 今天"}</h4>${ruHTML(99, { tot: true })}</div>` + `<div class="gt" id="gt"></div>` + `<div class="sy-list">${list}</div>` + note;   // t-dash-token: #gt is filled by ghPaint() and survives repaints
   }
   function modalStatus() {
     openModal(statusHTML(), m => {
@@ -3283,6 +3362,7 @@
     go: p => go(p), openItem: id => openItem(id), seekItem: (id, sp) => seekItem(id, sp), seekChat: (t, q) => seekChat(t, q),   /* t-ri1103-p5 */ closeItem: () => closeItem(), backItem: () => backItem(), setChat: id => setChat(id), api: (k, b) => api(k, b), toast: (m, e) => toast(m, e),
     rejectItem(id) { openItem(id); modalReject(); }, on: fn => hooks.push(fn), inkEb, route: (P, via) => route(P, via),
     snoozed: it => snoozed(it), snzMenu: (id, anchor, done) => snzMenu(id, anchor, done), snzLine: () => snzLine(), snzText: it => snzText(it),   /* ri1103-P2 */
+    usage: () => usage(), roleUsage: () => roleUsage(), ruHTML: (n, o) => ruHTML(n, o), fmtTok,   /* t-home-usage */
   };
 
   // ---------- t-push-deeplink: one router for "go to this target" (cold-start hash, or a tapped notification while the app is open) ----------

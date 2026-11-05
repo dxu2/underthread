@@ -16,12 +16,15 @@
   const WD = "日一二三四五六";
 
   // ---------- layout ----------
-  const SIZES = { review: ["m", "l"], busy: ["m", "l"], replies: ["m", "l"], today: ["s", "m", "l"], week: ["s", "m"], ongoing: ["s", "m"], media: ["s", "m"] };
-  const NAME = { review: ["等你拍板", "Waiting on you"], busy: ["此刻在忙", "Working now"], replies: ["新回复", "New replies"], today: ["今天交付", "Shipped today"],
+  const SIZES = { usage: ["m", "l"], review: ["m", "l"], busy: ["m", "l"], replies: ["m", "l"], today: ["s", "m", "l"], week: ["s", "m"], ongoing: ["s", "m"], media: ["s", "m"] };
+  const NAME = { usage: ["各角色用量", "Usage by role"], review: ["等你拍板", "Waiting on you"], busy: ["此刻在忙", "Working now"], replies: ["新回复", "New replies"], today: ["今天交付", "Shipped today"],
     week: ["本周进度", "This week"], ongoing: ["常驻活动", "Routines"], media: ["最近素材", "Recent media"] };
-  const DEF = [["review", "l"], ["busy", "l"], ["replies", "l"], ["today", "m"], ["week", "m"], ["ongoing", "m"], ["media", "m"]];
+  const DEF = [["usage", "l"], ["review", "l"], ["busy", "l"], ["replies", "l"], ["today", "m"], ["week", "m"], ["ongoing", "m"], ["media", "m"]];
   const KEY = "rt.widgets";
-  const load = () => { try { const v = JSON.parse(localStorage.getItem(KEY) || "null"); if (Array.isArray(v) && v.every(x => SIZES[x[0]])) return v; } catch { } return DEF.map(x => x.slice()); };
+  const load = () => { try { const v = JSON.parse(localStorage.getItem(KEY) || "null"); if (Array.isArray(v) && v.every(x => SIZES[x[0]])) {
+      // t-home-usage: a layout saved before the usage widget existed gets it once, first (removing it later sticks)
+      if (!v.some(x => x[0] === "usage") && !localStorage.getItem("rt.wgUsage")) { v.unshift(["usage", "l"]); localStorage.setItem("rt.wgUsage", "1"); localStorage.setItem(KEY, JSON.stringify(v)); }
+      return v; } } catch { } return DEF.map(x => x.slice()); };
   const save = L => { try { localStorage.setItem(KEY, JSON.stringify(L)); } catch { } };
   const nm = k => NAME[k][en() ? 1 : 0];
   let EDIT = false;
@@ -41,7 +44,7 @@
     const imgs = []; its.slice().sort((a, b) => ms(b.activity) - ms(a.activity)).forEach(i => [...(i.draft_attachments || []), ...(i.attachments || [])].forEach(p => { if (/\.(png|jpe?g|webp|gif)$/i.test(p) && !imgs.some(x => x.p === p) && imgs.length < 6) imgs.push({ p, it: i }); }));
     return { waiting, busy, nr, shipped, days, doing: live.filter(i => app.grpOf(i) === "doing").length, todo: live.filter(i => app.grpOf(i) === "todo").length, ongoing, rp, imgs };
   }
-  const isEmpty = (k, D) => ({ review: !D.waiting.length, busy: !D.busy.length, replies: !D.nr.length, today: !D.shipped.length, ongoing: !D.ongoing.length, media: !D.imgs.length, week: false })[k];
+  const isEmpty = (k, D) => ({ usage: false, review: !D.waiting.length, busy: !D.busy.length, replies: !D.nr.length, today: !D.shipped.length, ongoing: !D.ongoing.length, media: !D.imgs.length, week: false })[k];
   const calmText = k => ({ review: ["没有等你拍板的", "Nothing waiting on you"], busy: ["大家都在待机", "Everyone is idle"], replies: ["没有新回复", "No new replies"], today: ["今天还没有交付", "Nothing shipped today"],
     ongoing: ["没有常驻活动", "No routines"], media: ["还没有素材", "No media yet"] })[k][en() ? 1 : 0];
 
@@ -53,6 +56,9 @@
   // more: one row + 「还有 N 件 ›」 (the footer used to be clipped by ~21px under two rows)
   const fitM = (s, len, big) => s === "l" ? { n: big, foot: true } : len <= 2 ? { n: 2, foot: false } : { n: 1, foot: true };
   const W = {
+    usage(s) {   // t-home-usage: tokens per role today + the quota strip; markup shared with the phone card / 系统状态 (App.ruHTML)
+      return `<div class="wg-eb" data-ru-open><b>${nm("usage")}</b><span>${en() ? "today" : "今天"}</span><span class="n">token</span></div>` + A().ruHTML(s === "l" ? 7 : 3, { tot: s === "l", quota: true, more: true });
+    },
     review(s, D) {
       const L = D.waiting, { n, foot } = fitM(s, L.length, 5);
       return eb("review", L.length, true) + L.slice(0, n).map(i => { const a = A().agent(i.owner);
@@ -104,7 +110,7 @@
   // t-home-flicker (11-03): the HTML carries wall-clock phases (--wg-fd) so a rebuilt node does not restart the sweep; they are not data,
   // so every compare strips them. Same data: keep the DOM. Changed data (C): replace only the tiles / header / tail / tray whose HTML changed,
   // the rest keep their nodes (thumbs, hover highlight, running animations). mvPage is told via MV.dirty so new rows / moved tiles still animate.
-  const norm = h => h.replace(/--wg-fd:-\d+ms/g, "");
+  const norm = h => h.replace(/--wg-fd:-\d+ms/g, "").replace(/(<time class="rel"[^>]*>)[^<]*/g, "$1");   // t-home-usage: 「X 分钟前」 ticks on its own (app.js 20 s interval)
   let last = "", PREV = null;
   const frag = h => { const t = document.createElement("template"); t.innerHTML = h.trim(); return t.content.firstElementChild; };
   function patch(wg, P) {

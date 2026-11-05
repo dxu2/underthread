@@ -170,3 +170,8 @@ html.wg-paused[data-home="widgets"] .wg-job::after { animation-play-state: pause
 html[data-home="widgets"] .hero .aq { background: rgba(255,255,255,.2); color: #fff; margin-left: 8px; }
 html[data-home="widgets"] .hero.multi .aq { background: color-mix(in srgb, var(--accent) 16%, transparent); color: var(--accent); }
 html[data-home="widgets"] .wg-sr .st b { white-space: nowrap; } html[data-home="widgets"] .wg-sr .aq { height: 15px; padding: 0 5px; font-size: var(--fs-10); margin-left: 6px; }
+/* t-home-usage: the usage widget (shared .ru-* rules live in style.css) */
+html[data-home="widgets"] .wg-usage .wg-eb { cursor: pointer; }
+html[data-home="widgets"] .wg-usage .wg-eb span:not(.n) { font-size: var(--fs-12); color: var(--dim); }
+html[data-home="widgets"] .wg-usage .ru-list { flex: 1; }
+html[data-home="widgets"] .wg-usage.sz-m .ru-row { padding-top: 2px; padding-bottom: 2px; }
