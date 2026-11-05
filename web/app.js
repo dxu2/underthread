@@ -898,12 +898,12 @@
     // team
     // ui1: rows animate in once (not on every poll re-render); the open chat's row is marked; unread mail shows a dot
     const teamFirst = !UI.teamIn; UI.teamIn = true; $("#team").classList.toggle("team-enter", teamFirst);
-    const unreadBy = new Set((ST.mail || []).filter(m => !m.read && m.agent).map(m => m.agent));
+    /* t-ri1104-p2: TEAM rows use the same unread count as the chat (was: unread mail from that agent) */
     $("#team").innerHTML = `<div class="side-h"><span class="sc">TEAM</span></div>` + agents().map((a, i) => {
       const ms = a.id === "manager" && mgrState();
       const st = ms ? (ms.on ? "working" : ms.sleep ? "sleeping" : "offline") : a.status || "idle";
       const sub = mgrOnline(a) ? MGR_ON() : a.status === "working" && a.activity ? `▶ ${esc(a.activity)}` : esc(aduty(a));   // t-now-closed
-      return `<div class="team-i ${a.status === "working" && a.activity && !mgrOnline(a) ? "busy" : ""} ${a.enabled === false ? "disabled" : ""} ${UI.chat === a.id ? "on" : ""} ${unreadBy.has(a.id) ? "unread" : ""}" style="--i:${Math.min(i, 12)}" data-chat="${a.id}">${av(a)}<div><div class="nm">${esc(aname(a))}<span class="st ${st}"${ms && ms.sleep ? ` title="${esc(ms.txt)}"` : ""}>${ms ? (ms.on ? t("online") : ms.sleep ? (ms.back ? `☾ ${ms.back}` : ms.txt) : t("offline")) : t(st)}</span>${qBadge(a.id)}</div><div class="du">${sub}</div></div></div>`;
+      return `<div class="team-i ${a.status === "working" && a.activity && !mgrOnline(a) ? "busy" : ""} ${a.enabled === false ? "disabled" : ""} ${UI.chat === a.id ? "on" : ""} ${unreadOf(a.id) && UI.chat !== a.id ? "unread" : ""}" style="--i:${Math.min(i, 12)}" data-chat="${a.id}">${av(a)}<div><div class="nm">${esc(aname(a))}<span class="st ${st}"${ms && ms.sleep ? ` title="${esc(ms.txt)}"` : ""}>${ms ? (ms.on ? t("online") : ms.sleep ? (ms.back ? `☾ ${ms.back}` : ms.txt) : t("offline")) : t(st)}</span>${qBadge(a.id)}${unreadOf(a.id) && UI.chat !== a.id ? `<i class="tn">${unreadTag(unreadOf(a.id))}</i>` : ""}</div><div class="du">${sub}</div></div></div>`;
     }).join("");
   }
   document.addEventListener("click", e => {
@@ -1979,6 +1979,9 @@
   const chatMail = id => (ST.mail || []).filter(m => m.kind === "reply" && (!m.item || m.item === "None") && m.agent === id);
   const srvSeen = id => chatMail(id).reduce((t, m) => m.read && m.t > t ? m.t : t, "");
   const seenOf = id => { const a = (UI.seen || {})["chat." + id] || "", b = srvSeen(id); return a > b ? a : b; };
+  /* t-ri1104-p2: the one unread rule for every dot and number (chat roster, TEAM rows, phone list + tab bar, office): messages from them newer than what you have read, server read marks included */
+  const unreadOf = id => { const s = seenOf(id); return chatList(id).filter(m => m.who !== "me" && m.t > s).length; };
+  const unreadTag = n => n > 99 ? "99+" : String(n);
   function chatMailRead(id, upto) { const ids = chatMail(id).filter(m => !m.read && m.t <= upto).map(m => m.id); if (ids.length) nrRead(ids); }
   function itemMailRead(id) { const ids = (ST.mail || []).filter(m => !m.read && m.item === id).map(m => m.id); if (ids.length) nrRead(ids); }
   function doneMailRead() {
@@ -3036,9 +3039,8 @@
       : a.status === "working" ? `<span class="on">▶ ${t("working")}</span>` : `<span class="idle">${t(a.status || "idle")}</span>`;
     $(".ch-who", r).innerHTML = `${av(a, "lg")}<span class="nm">${esc(aname(a))}</span><span class="ti">${esc(atitle(a))}</span>${qBadge(a.id)}${st}<span class="sp"></span>`;
     $(".ch-roster", r).innerHTML = agents().filter(x => x.enabled !== false).map(x => {
-      const l = chatList(x.id); const last = l[l.length - 1];
-      const unread = last && last.who !== "me" && (last.t > seenOf(x.id)) && x.id !== UI.chat;   // r-improve-1102 P3
-      return `<button data-pick="${x.id}" class="${x.id === UI.chat ? "on" : ""}">${av(x)}<span>${esc(aname(x))}</span>${unread ? `<i class="unread"></i>` : ""}${qBadge(x.id, true)}</button>`;
+      const un = x.id !== UI.chat ? unreadOf(x.id) : 0;   /* t-ri1104-p2: a count from unreadOf (was: a dot when the last message was theirs) */
+      return `<button data-pick="${x.id}" class="${x.id === UI.chat ? "on" : ""}">${av(x)}<span>${esc(aname(x))}</span>${un ? `<i class="unread n">${unreadTag(un)}</i>` : ""}${qBadge(x.id, true)}</button>`;
     }).join("").replace(UI.chatFold && !MOBQ.matches ? / title="[^"]*"/g : /$^/, "");   // t-rail-tip: folded rail shows #rail-tip, never the OS tooltip
     $("textarea", r).placeholder = MOBQ.matches ? t("chat_ph", { n: aname(a) }) : (UI.lang === "en" ? `Message ${aname(a)}…` : `对${aname(a)}说……`);   // t-web-dm: desktop moves the shortcut hint below the field
     const list = chatList(UI.chat);
@@ -3417,7 +3419,7 @@
     refresh: async () => { await poll(true); return !UI.down; },   // t-m2-c ④ pull-to-refresh: a forced full fetch; false = the server did not answer
     tablePv: s => tablePv(s),   // t-chat-table (mobile.js chat list preview)
     verCheck: () => verCheck(true), attachPick: p => attachPick(p),   // t-lib-attach (viewer.js)   // t-new-ver (tests)
-    setHome: v => setHome(v), homeStyle: () => UI.home, queueOf: id => queueOf(id), qBadge: (id, small) => qBadge(id, small),   /* t-agent-queue */ seenOf: id => seenOf(id), chatMailRead: (id, t) => chatMailRead(id, t),   /* r-improve-1102 P3 (was swallowed by a // comment until 11-04) */   /* t-home-applike (palette) */
+    setHome: v => setHome(v), homeStyle: () => UI.home, queueOf: id => queueOf(id), qBadge: (id, small) => qBadge(id, small),   /* t-agent-queue */ seenOf: id => seenOf(id), unreadOf: id => unreadOf(id),   /* t-ri1104-p2 */ chatMailRead: (id, t) => chatMailRead(id, t),   /* r-improve-1102 P3 (was swallowed by a // comment until 11-04) */   /* t-home-applike (palette) */
     draft: k => DRAFT.get(k), liveItem: a => liveItem(a), mgrOnline: a => mgrOnline(a), typingOn: (a, l) => typingOn(a, l), typingUntil: l => typingUntil(l),   // t-now-closed (home.js hero, office.js bubble)   // t-draft-keep (mobile.js chat list marks [草稿])
     go: p => go(p), openItem: id => openItem(id), seekItem: (id, sp) => seekItem(id, sp), seekChat: (t, q) => seekChat(t, q),   /* t-ri1103-p5 */ closeItem: () => closeItem(), backItem: () => backItem(), setChat: id => setChat(id), api: (k, b) => api(k, b), toast: (m, e) => toast(m, e),
     rejectItem(id) { openItem(id); modalReject(); }, on: fn => hooks.push(fn), inkEb, route: (P, via) => route(P, via),

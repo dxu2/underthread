@@ -2408,3 +2408,7 @@ html.th-vt::view-transition-old(root), html.th-vt::view-transition-new(root) { a
   .st-pane.st-out { transition: none; }
   .st-row, .st-go, .st-pane .sw, .st-pane .sw i, .st-pane .pz-seg button { transition: background-color .2s, color .2s, border-color .2s !important; transform: none !important; }
 }
+
+/* t-ri1104-p2: unread counts instead of bare dots (chat roster + TEAM rows); same --dot colour as before */
+.ch-roster .unread.n { width: auto; min-width: 16px; height: 16px; padding: 0 4px; box-sizing: border-box; top: -4px; right: 1px; border-radius: 8px; color: #fff; font: 600 var(--fs-10)/16px var(--f-sys, system-ui); font-style: normal; text-align: center; font-variant-numeric: tabular-nums; animation: none; }
+.team-i .tn { display: inline-block; margin-left: 6px; min-width: 18px; height: 18px; padding: 0 5px; box-sizing: border-box; border-radius: 9px; background: var(--dot); color: #fff; font: 600 var(--fs-11)/18px var(--f-sys, system-ui); font-style: normal; text-align: center; font-variant-numeric: tabular-nums; vertical-align: 1px; }

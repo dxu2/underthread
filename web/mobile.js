@@ -507,7 +507,7 @@
   const SEARCH = '<svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="6"/><path d="M16 16 L20 20"/></svg>';
   let convQ = "";
   const convMsgs = id => id === "manager" ? (App.ST.chat || []) : ((App.ST.dms || {})[id] || []);
-  const convUnread = id => { const s = App.seenOf ? App.seenOf(id) : ((App.UI.seen || {})["chat." + id] || ""); return convMsgs(id).filter(m => m.who !== "me" && m.t > s).length; };   // r-improve-1102 P3: server read marks count too
+  const convUnread = id => App.unreadOf ? App.unreadOf(id) : (() => { const s = App.seenOf ? App.seenOf(id) : ((App.UI.seen || {})["chat." + id] || ""); return convMsgs(id).filter(m => m.who !== "me" && m.t > s).length; })();   /* r-improve-1102 P3; t-ri1104-p2: App.unreadOf is the shared rule */
   const pad2 = n => String(n).padStart(2, "0");
   function wtime(iso) {   // 今天 10:40 · 昨天 · 星期二 · 10/19
     if (!iso) return "";

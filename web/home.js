@@ -144,7 +144,8 @@
   function apply(ob, d, events) {
     const root = $(".hd", ob); if (!root || !d) return;
     const as = ordered(d.agents), waiting = new Set(A().items().filter(i => A().onYouCard ? A().onYouCard(i) : i.stage === "review" && !(A().busy && A().busy(i))).map(i => i.owner));   // t-doing-first
-    (A().ST.mail || []).forEach(m => { if (!m.read && m.agent) waiting.add(m.agent); });   // t-office-d1-s3: the dot also means "unread mail from TA" (same rule as the team list)
+    /* t-office-d1-s3 + t-ri1104-p2: the dot also means "unread messages from TA", same rule as the TEAM list and the chat roster */
+    as.forEach(a => { if (A().unreadOf && A().unreadOf(a.id)) waiting.add(a.id); });
     as.forEach(a => {
       const el = $(`.dp[data-id="${a.id}"]`, root); if (!el) return;
       const w = isW(a), it = itemFor(a), on = a.id === S.act, sn = a.since;   // no `since` (old server): the elapsed line falls back to the activity text and the bar hides
