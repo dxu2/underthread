@@ -74,7 +74,7 @@ a:hover { color: var(--soul); text-shadow: 0 0 12px var(--glow-a); }
 .sc { font-family: var(--f-display); letter-spacing: .04em; }
 .dim { color: var(--dim); }
 .mono { font-family: var(--f-mono); font-size: .82em; letter-spacing: 0; }
-:focus-visible { outline: 1px solid var(--glow); outline-offset: 3px; }
+:focus-visible { outline: 2px solid var(--accent-line, var(--glow)); outline-offset: 2px; }   /* t-motion-all: one ring; glass.css plays it in */
 
 /* ---------- ambience ---------- */
 #ambience { position: fixed; inset: 0; z-index: 0; pointer-events: none; overflow: hidden;
@@ -1187,7 +1187,7 @@ html[data-theme="light"] .mc-flash { background: rgba(0,0,0,.28); }
 /* ===== mo1 (t-tabbar-motion M1): motion tokens. ONE place for durations / easings / distances; new motion references these, old call-sites migrate in later milestones.
    Rules: transform + opacity only; never animate blur / backdrop-filter; will-change only while a transition runs; spring = damped (zeta .72, ~4% overshoot), spring-soft = critically damped (no overshoot, for whole-page pushes). ===== */
 :root {
-  --m-instant: 90ms; --m-quick: 180ms; --m-base: 280ms; --m-move: 330ms; --m-slow: 420ms; --m-release: 220ms; --m-stagger: 30ms;
+  --m-instant: 90ms; --m-quick: 180ms; --m-move: 330ms; --m-release: 220ms; --m-stagger: 30ms;   /* --m-base / --m-slow: one value site-wide, defined in glass.css (t-motion-all) */
   --m-ease-std: cubic-bezier(.2, 0, 0, 1); --m-ease-emph: cubic-bezier(.2, .8, .2, 1); --m-ease-ios: cubic-bezier(.32, .72, 0, 1); --m-ease-in: cubic-bezier(.4, 0, 1, 1);
   --m-spring: linear(0, 0.0335, 0.1167, 0.2281, 0.3513, 0.4748, 0.5907, 0.6942, 0.7828, 0.856, 0.9142, 0.9586, 0.991, 1.0133, 1.0275, 1.0352, 1.0382, 1.0378, 1.0352, 1.0312, 1.0266, 1.0218, 1.0172, 1.0131, 1.0095, 1.0064, 1);
   --m-spring-soft: linear(0, 0.0827, 0.2459, 0.4168, 0.5663, 0.6861, 0.7773, 0.8444, 0.8926, 0.9266, 0.9503, 0.9665, 0.9776, 0.9851, 0.9901, 0.9935, 0.9957, 0.9972, 0.9982, 0.9988, 1);

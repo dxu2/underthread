@@ -11,7 +11,9 @@
   --g-blur-1: 12px; --g-blur-2: 22px; --g-blur-3: 34px; --g-sat: 1.45;
   --r-xs: 8px; --r-s: 12px; --r-m: 16px; --r-l: 22px; --r-xl: 28px;
   --m-fast: .14s; --m-base: .24s; --m-slow: .38s; --m-press: .97;
-  --m-ease: cubic-bezier(.22, .8, .24, 1); --m-spring: cubic-bezier(.34, 1.36, .64, 1);
+  --m-ease: cubic-bezier(.22, .8, .24, 1);
+  /* t-motion-all: the glass pieces keep their own overshoot as --g-spring; --m-spring belongs to mo1 (style.css, damped linear() spring + iOS fallback) again */
+  --g-spring: cubic-bezier(.34, 1.36, .64, 1);
 }
 html[data-theme="dark"] {
   --g-tint: rgba(34, 34, 42, .5); --g-tint-2: rgba(58, 58, 68, .62); --g-tint-3: rgba(255, 255, 255, .055);
@@ -36,7 +38,7 @@ html[data-theme] {
   --g-ring: inset 0 0 0 1px var(--g-edge), inset 0 1px 0 var(--g-hi);
 }
 @media (prefers-reduced-motion: reduce) {
-  :root { --m-fast: .01s; --m-base: .01s; --m-slow: .01s; --m-press: 1; --m-spring: linear; }
+  :root { --m-fast: .01s; --m-base: .01s; --m-slow: .01s; --m-press: 1; --g-spring: linear; }
 }
 
 /* ---------- t-card-revamp: desktop list card, owner avatar first ---------- */
@@ -50,7 +52,7 @@ html[data-theme] {
   html[data-theme]:not([data-glass="0"]) .card:active { transform: scale(.985); transition-duration: var(--m-fast); }
   html[data-theme]:not([data-glass="0"]) .card .owner { grid-area: av; flex-direction: column; align-items: center; gap: 6px; font-size: var(--fs-11); color: var(--dim);
     text-align: center; line-height: 1.2; word-break: keep-all; }
-  html[data-theme]:not([data-glass="0"]) .card .owner .av.sm { width: 46px; height: 46px; box-shadow: 0 0 0 2px var(--bg); transition: transform var(--m-base) var(--m-spring); }
+  html[data-theme]:not([data-glass="0"]) .card .owner .av.sm { width: 46px; height: 46px; box-shadow: 0 0 0 2px var(--bg); transition: transform var(--m-base) var(--g-spring); }
   html[data-theme]:not([data-glass="0"]) .card .owner .av.sm.working { --wk-gap: 2px; --wk-w: 2px; }
   html[data-theme]:not([data-glass="0"]) .card .owner .av.sm .aw { display: block; }
   html[data-theme]:not([data-glass="0"]) .card:hover .owner .av.sm { transform: scale(1.05); }
@@ -84,7 +86,7 @@ html[data-theme] {
   html[data-theme]:not([data-glass="0"]) #nav { position: relative; margin-bottom: 10px; gap: 1px; column-gap: 6px; }
   html[data-theme]:not([data-glass="0"]) #nav .nav-pill { position: absolute; left: 0; top: 0; z-index: 0; border-radius: var(--r-s); pointer-events: none;
     background: var(--g-tint-2); box-shadow: var(--g-ring), 0 4px 14px rgba(0, 0, 0, .12); opacity: 0;
-    transition: transform var(--m-slow) var(--m-spring), width var(--m-slow) var(--m-spring), height var(--m-slow) var(--m-spring), opacity var(--m-base) linear; }
+    transition: transform var(--m-slow) var(--g-spring), width var(--m-slow) var(--g-spring), height var(--m-slow) var(--g-spring), opacity var(--m-base) linear; }
   html[data-theme]:not([data-glass="0"]) .nav-i { position: relative; z-index: 1; margin: 0; padding: 6px 12px; border-radius: var(--r-s); font-weight: 500;
     transition: background-color var(--m-base) var(--m-ease), color var(--m-base) var(--m-ease), transform var(--m-fast) var(--m-ease); }
   html[data-theme]:not([data-glass="0"]) .nav-i:hover { background: var(--g-tint-3); }
@@ -132,7 +134,7 @@ html[data-theme] {
 @keyframes g-fade-out { to { opacity: 0; } }
 html[data-theme]:not([data-glass="0"]) .dw-toc .toc-box { border-radius: var(--r-m); background: var(--g-face); box-shadow: var(--g-ring), var(--g-sh);
   -webkit-backdrop-filter: blur(var(--g-blur-2)) saturate(var(--g-sat)); backdrop-filter: blur(var(--g-blur-2)) saturate(var(--g-sat)); transform-origin: top right; }
-html[data-theme]:not([data-glass="0"]) .dw-toc.open .toc-box { animation: g-toc-in var(--m-slow) var(--m-spring) backwards; }
+html[data-theme]:not([data-glass="0"]) .dw-toc.open .toc-box { animation: g-toc-in var(--m-slow) var(--g-spring) backwards; }
 html[data-theme]:not([data-glass="0"]) .dw-toc.g-out .toc-box { animation: g-toc-out .17s var(--m-ease) forwards; }
 html[data-theme]:not([data-glass="0"]) .dw-toc.g-out .toc-l, html[data-theme]:not([data-glass="0"]) .dw-toc.g-out .toc-bar { animation: g-fade-out .15s linear forwards; }
 html[data-theme]:not([data-glass="0"]) .dw-toc:not(.open) .toc-box { border-radius: 999px; }
@@ -140,7 +142,7 @@ html[data-theme]:not([data-glass="0"]) .dw-toc .toc-h { padding: 11px 14px 9px; 
 html[data-theme]:not([data-glass="0"]) .dw-toc .toc-h:active { transform: scale(var(--m-press)); }
 html[data-theme]:not([data-glass="0"]) .dw-toc .toc-h .k { color: var(--ink); font-weight: 600; }
 html[data-theme]:not([data-glass="0"]) .dw-toc .toc-h .pc { padding: 2px 8px; border-radius: 999px; background: var(--g-tint-3); color: var(--ink2); }
-html[data-theme]:not([data-glass="0"]) .dw-toc .toc-h .chev { transition: transform var(--m-slow) var(--m-spring); }
+html[data-theme]:not([data-glass="0"]) .dw-toc .toc-h .chev { transition: transform var(--m-slow) var(--g-spring); }
 html[data-theme]:not([data-glass="0"]) .dw-toc .toc-l { padding: 0 8px 8px; }
 /* timeline: one hairline down the list (on the rows, so it scrolls with them); the lit row = ONE sliding .toc-ind (glass.js) with an accent dot on the line */
 html[data-theme]:not([data-glass="0"]) .dw-toc .toc-l li { position: relative; z-index: 1; background: linear-gradient(var(--g-edge), var(--g-edge)) 9px 0 / 1px 100% no-repeat; }
@@ -157,7 +159,7 @@ html[data-theme]:not([data-glass="0"]) .dw-toc .toc-l button.on { color: var(--i
 html[data-theme]:not([data-glass="0"]) .dw-toc .toc-l:has(.toc-ind) button.on { background: transparent; box-shadow: none; }
 html[data-theme]:not([data-glass="0"]) .dw-toc .toc-ind { position: absolute; left: 0; top: 0; z-index: 0; border-radius: var(--r-xs); pointer-events: none; opacity: 0;
   background: var(--g-tint-2); box-shadow: inset 0 0 0 1px var(--g-edge);
-  transition: transform var(--m-slow) var(--m-spring), width var(--m-slow) var(--m-spring), height var(--m-slow) var(--m-spring), opacity var(--m-base) linear; }
+  transition: transform var(--m-slow) var(--g-spring), width var(--m-slow) var(--g-spring), height var(--m-slow) var(--g-spring), opacity var(--m-base) linear; }
 html[data-theme]:not([data-glass="0"]) .dw-toc .toc-ind::before { content: ""; position: absolute; left: 6px; top: 50%; width: 7px; height: 7px; margin-top: -3.5px; border-radius: 50%;
   background: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 22%, transparent), 0 0 10px var(--accent); }
 html[data-theme]:not([data-glass="0"]) .dw-toc .toc-bar { height: 3px; margin: 4px 14px 12px; background: var(--g-tint-3); }
@@ -184,3 +186,27 @@ html[data-theme]:not([data-glass="0"]) .dw-toc .toc-bar i { background: linear-g
   html[data-theme]:not([data-glass="0"]) .dw-toc.open .toc-l button.l2 { padding-left: 36px; }
   html[data-theme]:not([data-glass="0"]) .dw-toc.open .toc-ind::before { left: 8px; }
 }
+
+/* ===== t-motion-all (2026-11-04, plan work/t-motion-all/plan.md, approved by the manager while the user slept): every button / tab / chip has motion.
+   Everything here is wrapped in :where() = specificity 0, so a component that already declares its own transition / hover keeps it;
+   only controls with nothing get these defaults. Hover only where a real pointer exists (no sticky hover after a tap on phones).
+   Reduced motion: style.css's global rule cuts every transition to .01ms and --m-press is 1 (no scale). Not here: #tabbar, .dk-btns (own systems),
+   text inputs, canvas (pixel office), [data-nomo]. Tab content entry is glass.js (motion 3). ===== */
+:where(button, [role=button], [role=tab], select, summary, a[href], label:has(> input[type=checkbox], > input[type=radio]),
+  [data-go], [data-item], [data-chat], [data-conv], [data-lb], [data-rep], [data-ru-open], [data-more], [data-fold], [data-copy-v], [data-copy-id], [data-aq],
+  [data-hd-pick], [data-msearch], [data-libk], [data-libw], [data-vp-open], [data-snz-open], [data-rf-open], [data-pl], .sync, .cal-i):where(:not(#tabbar *, .dk-btns *, [data-nomo])) {
+  transition: color var(--m-fast) var(--m-ease), background-color var(--m-fast) var(--m-ease), border-color var(--m-fast) var(--m-ease),
+    box-shadow var(--m-fast) var(--m-ease), opacity var(--m-fast) var(--m-ease), filter var(--m-fast) var(--m-ease),
+    outline-offset var(--m-fast) var(--m-ease);
+}
+/* press: glass.js (motion 4) scales the control with WAAPI on the `scale` property, .97 for buttons / tabs and --m-press-row (.98) for rows,
+   and skips anything that already presses itself (an :active rule with transform / scale), so presses never stack. */
+/* hover for the controls that had none (audit, 11-04): rows get a 5% ink wash, bare text gets an underline */
+@media (hover: hover) {
+  :where(.sync, .wg-eb, .ru-tot, .ru-q, .wg h3[data-chat], .wg-job, .wg-wk, .rep-h, .lib-cap, .vd-h, .vc-sumh, .cal-i, .ch-more, .hd-srch):hover {
+    background-color: color-mix(in srgb, var(--ink) 5%, transparent); border-radius: var(--r-xs); }
+  :where(span.it[data-item], .lib-cap):hover { color: var(--ink); text-decoration: underline; text-decoration-color: var(--line3, currentColor); text-underline-offset: 3px; }
+}
+/* keyboard focus: the ring (style.css :focus-visible) settles in from 5px out */
+@keyframes mo-ring { from { outline-offset: 5px; outline-color: transparent; } }
+:where(:focus-visible) { animation: mo-ring var(--m-fast) var(--m-ease); }
