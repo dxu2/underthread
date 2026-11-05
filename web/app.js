@@ -42,7 +42,7 @@
       k_plan: "方案", k_deliverable: "交付", k_question: "提问", k_task: "草稿",
       online: "在线", offline: "离线", working: "执行中", idle: "待机",
       by_activity: "按最新动态", by_created: "最新创建", pending: "待审核",
-      empty_review: "没有等你审核的东西。去喝杯水。", empty: "这里是空的。", empty_mail: "没有新动态", mail_thread: "{n} 条", unread_only: "未读",
+      empty_review: "没有等你审核的东西。去喝杯水。", empty_ok: "没有等你拍板的 · 去喝杯水", empty: "这里是空的。", empty_mail: "没有新动态", mail_thread: "{n} 条", unread_only: "未读",
       wake: "唤醒管家", refresh_usage: "刷新用量", settings: "设置", write_report: "日报", report_req: "让管家写日报", theme: "主题",
       cancel: "取消",
       reject_t: "驳 回", reject_reason: "原因（会被整理成规则提议）",
@@ -80,7 +80,7 @@
       k_plan: "Plan", k_deliverable: "Deliverable", k_question: "Question", k_task: "Draft",
       online: "online", offline: "offline", working: "working", idle: "idle",
       by_activity: "Latest activity", by_created: "Newest", pending: "Pending",
-      empty_review: "Nothing waiting on you.", empty: "Nothing here.", empty_mail: "Nothing new", mail_thread: "{n}", unread_only: "Unread",
+      empty_review: "Nothing waiting on you.", empty_ok: "Nothing waiting on you", empty: "Nothing here.", empty_mail: "Nothing new", mail_thread: "{n}", unread_only: "Unread",
       wake: "Ping manager", refresh_usage: "Refresh usage", settings: "Settings", write_report: "Report", report_req: "Ask for a report", theme: "Theme",
       cancel: "Cancel",
       reject_t: "Reject", reject_reason: "Reason (becomes a rule proposal)",
@@ -1321,6 +1321,9 @@
         <button data-sort="created" class="${UI.sort === "created" ? "on" : ""}"><span class="gl" aria-hidden="true">▼ </span>${t("by_created")}</button>
         <span class="count">${hf === "review" ? (UI.lang === "en" ? "On you" : "等你拍板") : hf === "week" ? "本周交付" : stageLabel(hf)} <b>${list.length + dec.length}</b></span></div>`;   // t-home-nobtn: the 切回 button is gone; ⌘K「首页样式」and #home=classic stay as the back door
       const sz = hf === "review" ? snzLine() : "";   // ri1103-P2
+      /* t-ri1104-p5: phone (and app-style desktop) home with nothing to approve: one quiet line instead of the big empty block,
+         and no sort row (nothing to sort), so 此刻 / 今天交付 move up into the first screen. The sort row comes back with the first card. */
+      if (!list.length && phoneLike && hf === "review" && !dec.length) return pageHead("review", nrBlock()) + sz + `<div class="dc-none dc-ok" role="status"><i aria-hidden="true">✓</i><span>${t("empty_ok")}</span></div>` + today;
       if (!list.length) return pageHead("review", bar) + sz + (dec.length ? decH + decR : hf === "review" ? `<div class="dc-none top">${t("empty_review")}</div>` : `<div class="empty">${t("empty_review")}</div>`) + today;
       const seen = UI.seen.review || "";
       const fresh = list.filter(i => (i.activity || "") > seen);
