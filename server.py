@@ -176,9 +176,45 @@ def routines_fire(nowt=None):
             # append inside the state lock: if the append fails, the mark isn't saved either
             S.inbox_append({"kind": "routine_due", "routine": rid, "label": r.get("label", ""),
                             "time": r.get("time", "10:00"), "date": today})
+            log_routine_run(st["meta"], rid, today)   # t-ri1104-p3: dated run history for the 常驻活动 7-day row
             fired.append(rid)
             print(f"routines: queued routine_due {rid} for {today}")
     return fired
+
+
+ROUTINES_LOG_KEEP = 30   # t-ri1104-p3: dates kept per routine in meta.routines_log
+
+
+def log_routine_run(meta, rid, day):
+    """t-ri1104-p3: meta.routines_log[id] = sorted dates the routine fired (last ROUTINES_LOG_KEEP)."""
+    lg = meta.setdefault("routines_log", {}).setdefault(rid, [])
+    if day not in lg:
+        lg.append(day)
+        lg.sort()
+        del lg[:-ROUTINES_LOG_KEEP]
+
+
+def routines_log_backfill():
+    """t-ri1104-p3, once: build meta.routines_log from the routine_due entries already in inbox.jsonl
+    (every run since t-routine-trigger is there with its date). Skipped once the key exists."""
+    if "routines_log" in S.read()["meta"]:
+        return
+    days = {}
+    try:
+        with open(S.INBOX, encoding="utf-8") as f:
+            for line in f:
+                try:
+                    e = json.loads(line)
+                except ValueError:
+                    continue
+                if isinstance(e, dict) and e.get("kind") == "routine_due" and e.get("routine") and e.get("date"):
+                    days.setdefault(str(e["routine"]), set()).add(str(e["date"]))
+    except FileNotFoundError:
+        pass
+    with S.mutate() as st:
+        if "routines_log" not in st["meta"]:
+            st["meta"]["routines_log"] = {rid: sorted(ds)[-ROUTINES_LOG_KEEP:] for rid, ds in days.items()}
+    print("routines_log: backfilled from inbox:", {k: len(v) for k, v in days.items()})
 
 
 def routine_item(r):
@@ -186,11 +222,14 @@ def routine_item(r):
     return r.get("item") or "r-" + r["id"]
 
 
-def routines_view(meta, nowt=None):
-    """t-routine-close: schedule + paused + next run for the dashboard (read-only; computed, never stored)."""
+def routines_view(meta, nowt=None, items=None):
+    """t-routine-close: schedule + paused + next run for the dashboard (read-only; computed, never stored).
+    t-ri1104-p3: + runs = the last 14 logged dates, each with the run card made that day (a card tagged
+    with the routine's card, created that date) if there is one."""
     nowt = nowt or dt.datetime.now()
     today, hm = nowt.date().isoformat(), nowt.strftime("%H:%M")
     paused, fired = meta.get("routines_paused") or {}, meta.get("routines_fired") or {}
+    log = meta.get("routines_log") or {}
     out = []
     for r in CONFIG.get("routines") or []:
         if not isinstance(r, dict) or not r.get("id"):
@@ -206,7 +245,16 @@ def routines_view(meta, nowt=None):
             nxt = dt.datetime.combine(day, dt.time(*map(int, tm.split(":")))).astimezone().isoformat(timespec="seconds")
         out.append({"id": rid, "item": routine_item(r), "time": tm, "label": r.get("label", ""),
                     "paused": (p or {}).get("at") if isinstance(p, dict) else p, "disabled": r.get("enabled", True) is False,
-                    "last": fired.get(rid) or None, "next": nxt})
+                    "last": fired.get(rid) or None, "next": nxt, "runs": _routine_runs(routine_item(r), log.get(rid) or [], items or [])})
+    return out
+
+
+def _routine_runs(parent, dates, items):
+    kids = [i for i in items if isinstance(i, dict) and i.get("id") != parent and parent in (i.get("tags") or [])]
+    out = []
+    for d in dates[-14:]:
+        k = next((i for i in kids if str(i.get("created", ""))[:10] == d), None)
+        out.append({"date": d, "item": k["id"] if k else None, "stage": k.get("stage") if k else None})
     return out
 
 
@@ -1107,7 +1155,7 @@ def public_state(slim=False):
                              if f.lower().endswith((".png", ".jpg", ".jpeg", ".webp", ".gif"))}
     st["meta"]["inbox_unacked"] = _unacked_count()
     st["meta"]["server_time"] = S.now()
-    st["meta"]["routines"] = routines_view(st["meta"])
+    st["meta"]["routines"] = routines_view(st["meta"], items=st.get("items"))
     st["meta"]["report_time"] = str(CONFIG.get("report_time", "18:00"))   # ri1103-P1: the 日报 row of 今日日程
     st["meta"]["media_v"] = 1   # t-voice-memo: this server transcribes (the page hides 转写/重试 on older servers)
     return slim_state(st) if slim else st
@@ -1482,6 +1530,10 @@ def main():
     ensure_live_files()
     CONFIG = load_json("config.json", {})
     sync_roster()
+    try:
+        routines_log_backfill()   # t-ri1104-p3
+    except Exception as e:
+        print("routines_log_backfill:", e)
     port = int(os.environ.get("PORT") or CONFIG.get("port") or 8765)
     if not os.environ.get("NO_LOOPS"):
         for fn in (comfy_probe_loop, report_loop, roster_watch_loop, push_loop, wake_loop, routine_loop, snooze_loop):

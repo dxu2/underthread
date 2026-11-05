@@ -1310,6 +1310,7 @@
 
   const PAGES = {
     quests() { return questsPage(); },
+    ongoing() { return ongoingPage(); },   /* t-ri1104-p3 */
     review() {
       if (widgetHome()) return window.Widgets ? Widgets.html($("#pagebody"), rulesBlock()) : rulesBlock();   // t-home-widgets: null = keep the current DOM
       const phoneLike = MOBQ.matches || appHome();   // t-home-applike: the desktop app-style home renders the phone home
@@ -1675,7 +1676,7 @@
   // 「已完成 · N 张 ▸」; open / closed is remembered per page in this browser (rt.doneOpen.<page>). A page with nothing but finished
   // cards says so in one faint line above that row instead of a blank page. Open, the row shows the latest 12 as before.
   const doneOpen = pg => lsGet("rt.doneOpen." + pg, false) === true;
-  function stageGroups(list, pg) {
+  function stageGroups(list, pg, quiet) {   /* quiet: no 「这里的活都做完了」 line (常驻活动 puts the fold under its own schedule) */
     let html = "", live = 0;
     for (const s of ["review", "doing", "todo", "waiting"]) {
       const g = list.filter(i => grpOf(i) === s).sort(byAct); if (!g.length) continue;
@@ -1683,10 +1684,70 @@
     }
     const done = list.filter(i => grpOf(i) === "done").sort(byAct); if (!done.length) return html;
     const en = UI.lang === "en", open = doneOpen(pg), shown = done.slice(0, 12);
-    if (!live) html += `<div class="df-empty">${en ? "All done here." : "这里的活都做完了"}</div>`;
+    if (!live && !quiet) html += `<div class="df-empty">${en ? "All done here." : "这里的活都做完了"}</div>`;
     html += `<button type="button" class="df-row${live ? "" : " solo"}" data-donefold="${esc(pg)}" aria-expanded="${open}"><span>${en ? `Done · ${done.length}` : `已完成 · ${done.length} 张`}</span><i aria-hidden="true">▸</i></button>`;
     if (open) html += `<div class="df-list">${shown.map(card).join("")}${done.length > shown.length ? `<div class="df-note">${en ? `Latest ${shown.length} shown · the rest are on the board` : `只列出最近 ${shown.length} 张，更早的在看板里`}</div>` : ""}</div>`;
     return html;
+  }
+  /* t-ri1104-p3: 常驻活动 as a schedule. meta.routines (server) gives time / paused / last / next and (newer server) runs =
+     the logged fire dates with the run card of that day, which drive the 7-day row. Without runs (older server) it is what the
+     front end can know: a run card (child r-* card of the routine) that day -> ✓ or … ; r.last that day -> ✓ ; paused since -> ⏸ ;
+     today before the run -> its time ; anything else "·" (no record kept). Other ongoing cards: 按需常驻 rows, finished ones fold. */
+  function ongoingPage() {
+    const rs = (ST.meta && ST.meta.routines) || [];
+    if (!Array.isArray(ST.meta && ST.meta.routines) || !rs.length) return catPage("ongoing");
+    const en = UI.lang === "en", all = items().filter(i => i.category === "ongoing"), rIds = new Set(rs.map(r => r.item));
+    const days = Array.from({ length: 7 }, (_, i) => new Date(Date.now() - (6 - i) * 864e5)), today = dayKey(new Date());
+    const WK = en ? ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"] : ["周日", "周一", "周二", "周三", "周四", "周五", "周六"];
+    const runsOf = r => { const p = (ST.items || []).find(i => i.id === r.item); return p ? childrenOf(p).filter(k => /^r-/.test(k.id)) : []; };
+    const nameOf = (r, a) => { const n = String(r.label || r.id).replace(/[（(][^）)]*[）)]/g, "").trim(), o = a ? aname(a) : ""; return (o && n.startsWith(o) ? n.slice(o.length).trim() : n) || n; };
+    const nextTxt = r => {
+      if (r.paused) return en ? "Paused" : "已暂停";
+      const nd = r.next && new Date(r.next); if (!nd || isNaN(nd)) return "—";
+      const m = Math.round((nd - Date.now()) / 6e4);
+      if (m <= 0) return en ? "due now" : "到点";
+      if (m < 24 * 60) return en ? `in ${Math.floor(m / 60)}h ${m % 60}m` : `${Math.floor(m / 60) ? Math.floor(m / 60) + " 小时 " : ""}${m % 60} 分后`;
+      return dayKey(nd) === dayKey(new Date(Date.now() + 864e5)) ? `${en ? "tomorrow" : "明天"} ${hm(r.next)}` : when(r.next);
+    };
+    const cell = (r, runs, d) => {
+      const k = dayKey(d);
+      if (Array.isArray(r.runs)) {   /* t-ri1104-p3 server log: every fired date, with the run card made that day */
+        const x = r.runs.find(y => y.date === k);
+        if (x) return x.item && x.stage !== "done" ? ["…", "run", x.item] : ["✓", "ok", x.item || ""];
+        if (r.paused && k >= dayKey(new Date(r.paused))) return ["⏸", "off", ""];
+        if (k === today && !r.paused && r.next && dayKey(new Date(r.next)) === today) return [r.time || "·", "next", ""];
+        return ["·", "na", ""];
+      }
+      const run = runs.filter(x => x.created && dayKey(new Date(x.created)) === k).pop();
+      if (run) return run.stage === "done" ? ["✓", "ok", run.id] : ["…", "run", run.id];
+      if (r.last === k) return ["✓", "ok", ""];
+      if (r.paused && k >= dayKey(new Date(r.paused))) return ["⏸", "off", ""];
+      if (k === today && !r.paused && r.next && dayKey(new Date(r.next)) === today) return [r.time || "·", "next", ""];
+      return ["·", "na", ""];
+    };
+    const row = r => {
+      const it = (ST.items || []).find(i => i.id === r.item), a = it && agent(it.owner), runs = runsOf(r), last = runs[runs.length - 1];
+      const dots = days.map((d, i) => { const [x, c, id] = cell(r, runs, d); return `<span class="rs-d"${id ? ` data-item="${esc(id)}"` : ""}><b class="${c}">${esc(x)}</b><small>${i === 6 ? (en ? "Today" : "今天") : WK[d.getDay()]}</small></span>`; }).join("");
+      const lastL = r.paused ? `${when(r.paused)} ${en ? "paused" : "起暂停"}`
+        : last ? `${en ? "Latest" : "最近一期"} <u data-item="${esc(last.id)}">${esc(last.id)}</u> · ${esc(rowLabel(last))}`
+        : r.last ? `${en ? "Last run" : "最近一次"} ${esc(r.last.slice(5))}` : (en ? "No run yet" : "还没跑过");
+      return `<div class="rs-row${r.paused ? " rs-off" : ""}" data-item="${esc(r.item)}">
+        <div class="rs-t">${esc(r.time || "—")}</div>
+        <div class="rs-m"><div class="rs-n">${a ? av(a, "rs-av", r.item) : ""}<b>${esc(nameOf(r, a))}</b></div><div class="rs-s">${a ? esc(aname(a)) + " · " : ""}${en ? "daily" : "每天"}</div></div>
+        <div class="rs-r"><button type="button" class="rs-tg" data-rtq="${esc(r.id)}" role="switch" aria-checked="${!r.paused}" aria-label="${r.paused ? (en ? "Turn on" : "开启") : (en ? "Pause" : "暂停")}"><i></i></button><span class="rs-nx">${esc(nextTxt(r))}</span></div>
+        <div class="rs-dots">${dots}</div>
+        <div class="rs-last">${lastL}</div></div>`;
+    };
+    const sorted = [...rs].sort((x, y) => (!!x.paused - !!y.paused) || String(x.time || "").localeCompare(String(y.time || "")));
+    const live = rs.filter(r => !r.paused && !r.disabled).length;
+    const runIds = new Set(rs.flatMap(r => runsOf(r).map(k => k.id)));
+    const rest = all.filter(i => !rIds.has(i.id) && !runIds.has(i.id)), od = rest.filter(i => grpOf(i) !== "done"), done = rest.filter(i => grpOf(i) === "done");
+    const odRow = i => { const a = agent(i.owner); return `<div class="rs-row od" data-item="${esc(i.id)}"><div class="rs-m"><div class="rs-n">${a ? av(a, "rs-av", i.id) : ""}<b>${esc(i.title)}</b></div><div class="rs-s">${en ? "Runs when the manager starts it" : "管家说开工才跑"} · ${en ? "last" : "上次"} ${esc(when(i.activity || i.updated))}</div></div><span class="rs-nx dim">${en ? "On call" : "等管家叫"}</span></div>`; };
+    return pageHead("ongoing") +
+      `<div class="rs-h"><b>${en ? "Daily rhythm" : "每天的固定节奏"}</b><span>${en ? `${rs.length} · ${live} running · last 7 days` : `${rs.length} 项 · ${live} 项在跑 · 最近 7 天`}</span></div>` +
+      ringOnce(() => `<div class="rs-list">${sorted.map(row).join("")}</div>` +
+      (od.length ? `<div class="rs-h"><b>${en ? "On demand" : "按需常驻"}</b><span>${en ? "no fixed time" : "没有固定时间"}</span></div><div class="rs-list">${od.map(odRow).join("")}</div>` : "")) +
+      (done.length ? stageGroups(done, "ongoing", true) : "");
   }
   function catPage(c) {
     const list = items().filter(i => i.category === c);
@@ -2787,12 +2848,21 @@
   }
   $("#drawer").addEventListener("click", e => {
     const b = e.target.closest("[data-rt]"); if (!b) return;
-    const it = curItem(), r = routineOf(it), zh = UI.lang !== "en"; if (!r) return;
+    const it = curItem(), r = routineOf(it); if (!r) return;
+    rtToggle(it, r, b.dataset.rt === "pause");
+  });
+  /* t-ri1104-p3: the one pause / resume path, used by the card dock above and by the 常驻活动 schedule page. */
+  function rtToggle(it, r, pause) {
+    const zh = UI.lang !== "en";
     if (r.unknown) return toast(zh ? "这个按钮要等看板重启后才能用" : "Needs a dashboard restart first", true);
-    const pause = b.dataset.rt === "pause";
     if (pause && !confirm(zh ? `暂停常驻任务「${it.title}」？\n暂停以后每天 ${r.time} 不再自动开子卡；已有的子卡不受影响。随时可以再开启。` : `Stop "${it.title}"? No new daily runs until you resume.`)) return;
     api(pause ? "routine_pause" : "routine_resume", { routine: r.id, item: it.id })
       .then(() => toast(pause ? (zh ? "已暂停 · 不会再定时触发" : "Paused") : (zh ? "已开启 · 每天 " + r.time : "Turned on")));
+  }
+  document.addEventListener("click", e => {
+    const b = e.target.closest("[data-rtq]"); if (!b) return;
+    const r = ((ST.meta && ST.meta.routines) || []).find(x => x.id === b.dataset.rtq), it = r && (ST.items || []).find(i => i.id === r.item);
+    if (r && it) rtToggle(it, r, !r.paused);
   });
   // persistent done marker: owner avatar + 委托完成 + when (replaces the faint "✦ 完成 · time" line). .pre = hidden until the splash ends, then it stamps in once.
   /* t-ri1104-p4: some old done cards never got a closed time (22 on 11-04). Fall back to the last "→ done" stage event, then updated. Display only, state untouched. */

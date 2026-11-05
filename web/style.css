@@ -2412,3 +2412,41 @@ html.th-vt::view-transition-old(root), html.th-vt::view-transition-new(root) { a
 /* t-ri1104-p2: unread counts instead of bare dots (chat roster + TEAM rows); same --dot colour as before */
 .ch-roster .unread.n { width: auto; min-width: 16px; height: 16px; padding: 0 4px; box-sizing: border-box; top: -4px; right: 1px; border-radius: 8px; color: #fff; font: 600 var(--fs-10)/16px var(--f-sys, system-ui); font-style: normal; text-align: center; font-variant-numeric: tabular-nums; animation: none; }
 .team-i .tn { display: inline-block; margin-left: 6px; min-width: 18px; height: 18px; padding: 0 5px; box-sizing: border-box; border-radius: 9px; background: var(--dot); color: #fff; font: 600 var(--fs-11)/18px var(--f-sys, system-ui); font-style: normal; text-align: center; font-variant-numeric: tabular-nums; vertical-align: 1px; }
+
+/* ===== t-ri1104-p3: 常驻活动 = schedule (app.js ongoingPage). Shared by desktop and phone; phone tweaks in mobile.css. ===== */
+.rs-h { display: flex; align-items: baseline; gap: 10px; margin: 18px 0 12px; font-size: var(--fs-12); color: var(--dim); font-family: var(--f-cjk); }
+.rs-h b { font-size: var(--fs-15); font-weight: 600; color: var(--ink); }
+.rs-h + .rs-list + .rs-h { margin-top: 30px; }
+.rs-list { display: grid; gap: 12px; max-width: 860px; }
+.rs-row { display: grid; grid-template-columns: 64px 1fr auto; gap: 6px 14px; align-items: center; padding: 16px 18px; border: 1px solid var(--line); border-radius: 18px;
+  background: var(--panel); cursor: pointer; transition: background-color .2s var(--ease), border-color .2s var(--ease), opacity .2s var(--ease); }
+.rs-row:hover { border-color: var(--line2); background: color-mix(in srgb, var(--ink) 4%, var(--panel)); }
+.rs-row.rs-off { opacity: .6; }
+.rs-row.od { grid-template-columns: 1fr auto; }
+.rs-t { font-size: var(--fs-24); font-weight: 600; line-height: 1; font-variant-numeric: tabular-nums; color: var(--ink); }
+.rs-m { min-width: 0; }
+.rs-n { display: flex; align-items: center; gap: 8px; min-width: 0; font-size: var(--fs-15); }
+.rs-n b { font-weight: 600; color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rs-n span { flex: none; font-size: var(--fs-12); color: var(--dim); }
+.rs-n .av.rs-av { width: 22px; height: 22px; flex: none; }
+.rs-s { margin-top: 3px; font-size: var(--fs-12); color: var(--dim); }
+.rs-r { display: grid; justify-items: end; gap: 6px; }
+.rs-nx { font-size: var(--fs-13); font-weight: 600; color: var(--accent); text-align: right; white-space: nowrap; }
+.rs-nx.dim, .rs-row.rs-off .rs-nx { color: var(--dim); font-weight: 400; }
+.rs-tg { position: relative; width: 42px; height: 24px; padding: 0; border: 0; border-radius: 12px; background: var(--accent); cursor: pointer; transition: background-color .22s var(--ease); }
+.rs-tg i { position: absolute; top: 3px; left: 21px; width: 18px; height: 18px; border-radius: 50%; background: var(--bg); box-shadow: 0 1px 3px rgba(0,0,0,.2); transition: left .22s var(--ease); }
+.rs-tg[aria-checked="false"] { background: var(--line2); }
+.rs-tg[aria-checked="false"] i { left: 3px; }
+.rs-tg:hover { filter: brightness(1.06); }
+.rs-tg:focus-visible { outline: 2px solid var(--accent-line, var(--accent)); outline-offset: 2px; }
+.rs-dots { grid-column: 2 / 4; display: flex; gap: 6px; margin-top: 6px; }
+.rs-d { flex: 1; min-width: 0; text-align: center; }
+.rs-d b { display: block; height: 24px; line-height: 24px; border-radius: 7px; margin-bottom: 3px; font-size: var(--fs-12); font-weight: 600; background: var(--chip); color: var(--dim); }
+.rs-d b.ok { background: color-mix(in srgb, var(--ok) 16%, transparent); color: var(--ok); }
+.rs-d b.run, .rs-d b.next { background: var(--accent-soft, color-mix(in srgb, var(--accent) 16%, transparent)); color: var(--accent); }
+.rs-d b.na { background: transparent; box-shadow: inset 0 0 0 1px var(--line); }
+.rs-d small { font-size: var(--fs-11); color: var(--dim); }
+.rs-last { grid-column: 2 / 4; margin-top: 4px; padding-top: 8px; border-top: 1px dashed var(--line); font-size: var(--fs-12); color: var(--dim); }
+.rs-last u { text-decoration: none; color: var(--ink); font-weight: 600; transition: color .2s var(--ease); }
+.rs-last u:hover { color: var(--accent); }
+@media (prefers-reduced-motion: reduce) { .rs-row, .rs-tg, .rs-tg i, .rs-last u { transition: none; } }
