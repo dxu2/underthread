@@ -58,10 +58,10 @@
         App.atitle(a), `dm 私信 chat 对话 ${a.id} ${App.aname(a)} ${a.name_en || ""} ${App.atitle(a)}`, () => fire("data-chat", a.id));
     }
     if (!phone() && App.setHome) {   // t-home-applike / t-home-widgets: one command per other style
-      const cur = App.homeStyle(), L = { widgets: zh ? "小组件" : "widgets", app: zh ? "app 式" : "app-like", classic: zh ? "原来的" : "classic" };
-      for (const v of ["widgets", "app", "classic"].filter(v => v !== cur))
+      const cur = App.homeStyle(), L = { dense: zh ? "紧凑" : "dense", widgets: zh ? "小组件" : "widgets", app: zh ? "app 式" : "app-like", classic: zh ? "原来的" : "classic" };
+      for (const v of ["dense", "widgets", "app", "classic"].filter(v => v !== cur))
         add("home:" + v, zh ? `首页样式：换成${L[v]}` : `Home style: ${L[v]}`, zh ? "只在这台电脑生效" : "This computer only",
-          `home 首页 样式 ${v} ${L[v]} 小组件 widget app 经典 classic 原来 sy`, () => { App.setHome(v); App.go ? App.go("review") : fire("data-go", "review"); });
+          `home 首页 样式 ${v} ${L[v]} 小组件 widget app 经典 classic 原来 紧凑 dense jc sy`, () => { App.setHome(v); App.go ? App.go("review") : fire("data-go", "review"); });
     }
     add("lang", zh ? "Switch to English" : "切换到中文", zh ? "界面语言" : "Language", "lang language english 中文 语言", () => fire("data-lang-set", zh ? "en" : "zh"));   // t-settings-tab: the header EN button is gone
     {   // t-settings-tab: 设置 page + theme mode

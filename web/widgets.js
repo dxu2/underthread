@@ -110,7 +110,8 @@
   // t-home-flicker (11-03): the HTML carries wall-clock phases (--wg-fd) so a rebuilt node does not restart the sweep; they are not data,
   // so every compare strips them. Same data: keep the DOM. Changed data (C): replace only the tiles / header / tail / tray whose HTML changed,
   // the rest keep their nodes (thumbs, hover highlight, running animations). mvPage is told via MV.dirty so new rows / moved tiles still animate.
-  const norm = h => h.replace(/--wg-fd:-\d+ms/g, "").replace(/(<time class="rel"[^>]*>)[^<]*/g, "$1");   // t-home-usage: 「X 分钟前」 ticks on its own (app.js 20 s interval)
+  const norm = h => h.replace(/--wg-fd:-\d+ms/g, "").replace(/(<time class="rel"[^>]*>)[^<]*/g, "$1")
+    .replace(/--now:[\d.]+%/g, "").replace(/(<span class="(?:wk-el|d-tk)"[^>]*>)[^<]*/g, "$1");   /* t-home-dense: elapsed time, the now marker and 「N 小时后」 tick on their own */   // t-home-usage: 「X 分钟前」 ticks on its own (app.js 20 s interval)
   let last = "", PREV = null;
   const frag = h => { const t = document.createElement("template"); t.innerHTML = h.trim(); return t.content.firstElementChild; };
   function patch(wg, P) {
@@ -143,6 +144,7 @@
     return true;
   }
   function html(body, tail) {
+    if (A().homeStyle && A().homeStyle() === "dense") return dense(body, tail);   /* t-home-dense */
     const L = load(), D = data(), calm = [], tiles = [];
     const count = { review: D.waiting.length, replies: D.nr.length, today: D.shipped.length };
     L.forEach(([k, s0], i) => {
@@ -240,6 +242,103 @@
   }
   const vis = () => document.documentElement.classList.toggle("wg-paused", document.hidden);   // the flow sweep pauses while the page is hidden
   document.addEventListener("visibilitychange", vis); vis();
+  // ===== t-home-dense (approved 11-04 13:52): 紧凑首页 =====
+  // Five sections top to bottom: 时间轴 · 等你拍板 (cards in a row) · 今日目标 (ring + list) · 此刻在忙 (+ 待机 avatars) · small cards.
+  // Solid cards (no backdrop-filter), no infinite animation; press comes from glass.js, hover is a background change.
+  // Same data -> same DOM; changed data -> only the sections whose HTML changed are swapped. Ticking text (elapsed, now marker,
+  // 「N 小时后」) is stripped by norm() and updated in place by the 30 s ticker below.
+  const dkey = d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  const rtName = r => String(r.label || r.id).replace(/[（(][^）)]*[）)]/g, "").replace(/^.*?每日\s*(\d+\s*个\s*)?(一条|打磨)?/, "").replace(/^app\s*/i, "").trim() || r.id;
+  const dayAt = hhmm => { const [h, m] = String(hhmm).split(":").map(Number), d = new Date(); d.setHours(h || 0, m || 0, 0, 0); return d.getTime(); };
+  const inH = t => { const h = (t - Date.now()) / 36e5; return en() ? `in ${h < 1 ? Math.max(1, Math.round(h * 60)) + " min" : (Math.round(h * 10) / 10) + " h"}` : h < 1 ? `${Math.max(1, Math.round(h * 60))} 分钟后` : `${Math.round(h * 10) / 10} 小时后`; };
+  const TL = { h0: 8, h1: 22 };
+  const tlX = t => { const d = new Date(t), h = d.getHours() + d.getMinutes() / 60; return Math.max(0, Math.min(100, (h - TL.h0) / (TL.h1 - TL.h0) * 100)); };
+  const pct = x => Math.round(x * 10) / 10 + "%";
+  function dData() {
+    const app = A(), ST = app.ST, its = app.items(), D = data(), now = Date.now(), td = new Date().toDateString(), tk = dkey(new Date());
+    const isT = t => !!t && new Date(t).toDateString() === td;
+    const meta = ST.meta || {};
+    const rts = (meta.routines || []).filter(r => !r.paused && !r.disabled && r.time).map(r => ({ t: dayAt(r.time), name: rtName(r), ran: r.last === tk, item: r.item }));
+    if (meta.report_time) rts.push({ t: dayAt(meta.report_time), name: en() ? "Daily report" : "日报", ran: meta.last_report_date === tk, item: "" });
+    rts.sort((a, b) => a.t - b.t);
+    const cal = (ST.calendar || []).filter(e => e.date === tk);
+    const goals = its.filter(i => !/^r-/.test(i.id) && i.category !== "ongoing" && (i.stage === "done" ? isT(i.closed) : (isT(i.created) || isT(i.activity))));
+    const gOpen = goals.filter(i => i.stage !== "done").sort((a, b) => ms(b.activity) - ms(a.activity)), gDone = goals.filter(i => i.stage === "done").sort((a, b) => ms(b.closed) - ms(a.closed));
+    const agents = Object.values(ST.agents || {}).filter(a => a.enabled !== false).sort((a, b) => (a.order ?? 99) - (b.order ?? 99));
+    const etaMin = id => {   /* median created -> closed for this owner's cards closed in the last 14 days; fewer than 3 -> no estimate */
+      const L = its.filter(i => i.owner === id && i.stage === "done" && i.closed && !/^r-/.test(i.id) && now - ms(i.closed) < 14 * 864e5).map(i => (ms(i.closed) - ms(i.created)) / 6e4).filter(m => m > 3 && m < 600).sort((x, y) => x - y);
+      return L.length >= 3 ? L[Math.floor(L.length / 2)] : null; };
+    const waiting = D.waiting.slice().sort((a, b) => (b.category === "urgent") - (a.category === "urgent"));
+    return { D, now, rts, cal, gOpen, gDone, agents, etaMin, waiting, meta };
+  }
+  const dSecs = X => {
+    const { D, now } = X, zh = !en();
+    // 1 timeline
+    TL.h0 = Math.min(8, new Date(now).getHours()); TL.h1 = Math.max(22, new Date(now).getHours() + 1);
+    const ticks = []; for (let h = TL.h0; h <= TL.h1; h += 2) ticks.push(`<span style="left:${pct((h - TL.h0) / (TL.h1 - TL.h0) * 100)}">${String(h).padStart(2, "0")}:00</span>`);
+    const next = X.rts.find(r => r.t > now && !r.ran), evN = X.cal.length;
+    const tl = `<section class="d-card d-tl" data-sec="tl"><div class="d-tl-ax">${ticks.join("")}</div>
+      <div class="d-tl-bar" style="--now:${pct(tlX(now))}"><i class="past"></i>
+      ${D.shipped.map(i => `<b class="dot" style="left:${pct(tlX(i.closed))}" title="${esc(hm(i.closed) + " " + i.title)}" data-item="${esc(i.id)}"></b>`).join("")}
+      ${X.cal.filter(e => e.time).map(e => `<b class="ev" style="left:${pct(tlX(dayAt(e.time)))}" title="${esc(e.time + " " + (e.title || ""))}"></b>`).join("")}
+      ${X.rts.map(r => `<em class="rt${r.ran ? " ran" : ""}" style="left:${pct(tlX(r.t))}"${r.item ? ` data-item="${esc(r.item)}"` : ""}><u>${hm(r.t)} ${esc(r.name)}</u></em>`).join("")}
+      <span class="now"><u><span class="d-tk" data-now="1">${(zh ? "现在 " : "now ") + hm(now)}</span></u></span></div>
+      <div class="d-tl-ft">${zh ? `今天交付 <b>${D.shipped.length}</b> 件 · ${evN ? `${evN} 个日程` : "没有会议"}` : `<b>${D.shipped.length}</b> shipped today · ${evN ? `${evN} events` : "no meetings"}`}${next ? ` · ${zh ? "下一个" : "next"}：${hm(next.t)} ${esc(next.name)}（<span class="d-tk" data-at="${next.t}">${inH(next.t)}</span>）` : ""}${D.nr.length ? ` · <button type="button" class="d-link in" data-go="mail">${zh ? `新回复 ${D.nr.reduce((t, g) => t + g.ms.length, 0)} 条 ›` : `${D.nr.reduce((t, g) => t + g.ms.length, 0)} new replies ›`}</button>` : ""}${A().snzLine ? A().snzLine() : ""}</div></section>`;
+    // 2 等你拍板
+    const W = X.waiting, tag = i => i.category === "urgent" ? `<em class="u">${zh ? "紧急" : "Urgent"}</em>` : `<em>${kindL(i)}</em>`;
+    const needs = `<section class="d-needs" data-sec="needs"><div class="d-h"><b>${nm("review")}</b>${W.length ? `<span class="n hot">${W.length}</span>` : ""}<span class="sp"></span>${W.length > 2 ? `<button type="button" class="d-link" data-go="board">${zh ? "全部" : "All"} ${W.length} ›</button>` : ""}</div>
+      ${W.length ? `<div class="d-nr">${W.slice(0, 3).map(i => { const a = A().agent(i.owner); return `<button type="button" class="d-n${i.category === "urgent" ? " urgent" : ""}" data-item="${esc(i.id)}"><span class="top"><img src="${A().avatarUrl(a)}" alt="">${tag(i)}</span><span class="t">${esc(i.title)}</span><small>${esc(A().aname(a))} · ${zh ? "等了" : "waiting"} <time class="rel" data-t="${esc(i.activity || i.updated)}" data-rel="ago">${ago(i.activity || i.updated)}</time></small></button>`; }).join("")}</div>` : `<div class="d-calm">✓ ${calmText("review")}</div>`}</section>`;
+    // 3 今日目标
+    const N = X.gOpen.length + X.gDone.length, K = X.gDone.length, R = 46, C = 2 * Math.PI * R;
+    const show = [...X.gOpen, ...X.gDone].slice(0, 5), stg = { todo: zh ? "待办" : "to do", doing: zh ? "进行中" : "doing", review: zh ? "等你看" : "with you", waiting: zh ? "等别人" : "waiting" };
+    const gRow = i => { const ok = i.stage === "done", a = A().agent(i.owner);
+      return `<button type="button" class="d-g${ok ? " ok" : ""}" data-item="${esc(i.id)}"><span class="ck">${ok ? "✓" : ""}</span><span class="t">${esc(i.title)}<small>${ok ? `${hm(i.closed)} ${zh ? "关卡" : "closed"}` : `${esc(A().aname(a))} · ${stg[i.stage] || i.stage}`}</small></span></button>`; };
+    const goals = `<section class="d-card d-goals" data-sec="goals"><div class="d-h"><b>${zh ? "今日目标" : "Today's goals"}</b><span>${zh ? "今天新建、在做、关掉的卡，关卡自动打勾" : "cards created, worked on or closed today"}</span></div>
+      <div class="d-goals-in"><div class="d-ring-w"><svg class="d-ring" viewBox="0 0 120 120" aria-hidden="true"><circle cx="60" cy="60" r="${R}" class="trk"/>${K ? `<circle cx="60" cy="60" r="${R}" class="val" stroke-dasharray="${(C * K / Math.max(1, N)).toFixed(1)} ${C.toFixed(1)}" transform="rotate(-90 60 60)"/>` : ""}</svg>
+        <div class="d-ring-n"><b>${K}</b><small>/${N}</small><span>${zh ? "完成" : "done"}</span></div></div>
+      <div class="d-gl"><div class="d-leg"><i class="g"></i>${K} ${zh ? "完成" : "done"}<i></i>${N - K} ${zh ? "剩下" : "left"}</div>${N ? show.map(gRow).join("") : `<div class="d-calm">${zh ? "今天还没有卡" : "No cards today yet"}</div>`}
+      ${N > show.length ? `<button type="button" class="d-more" data-go="board">${zh ? `还有 ${N - show.length} 件 ›` : `${N - show.length} more ›`}</button>` : ""}</div></div></section>`;
+    // 4 此刻在忙 + 待机
+    const B = D.busy, busyIds = new Set(B.map(x => x.a.id)), stand = X.agents.filter(a => !busyIds.has(a.id));
+    const wRow = ({ a, it, since }) => { const m = X.etaMin(a.id), end = m && since ? ms(since) + m * 6e4 : 0;
+      return `<button type="button" class="d-w" data-item="${esc(it.id)}"><img src="${A().avatarUrl(a)}" alt=""><span class="who"><b>${esc(A().aname(a))}</b><small>${esc(A().atitle(a) || "")}</small></span>
+        <span class="job">${esc(it.title)}<small>${esc(a.activity || "")}</small></span>
+        <span class="tm"><b><span class="wk-el" data-fmt="dc" data-since="${esc(since || "")}">${since ? ago(since) : ""}</span></b><small>${since ? `${hm(since)} ${zh ? "开始" : "start"}` : ""}${end > now ? ` · ${zh ? "预计" : "ETA"} ~${hm(end)}` : ""}</small></span></button>`; };
+    const work = `<section class="d-card d-work" data-sec="work"><div class="d-h">${B.length ? '<span class="live"></span>' : ""}<b>${nm("busy")}</b>${B.length ? `<span class="n">${B.length}</span>` : ""}</div>
+      ${B.length ? B.map(wRow).join("") : `<div class="d-calm">${calmText("busy")}</div>`}
+      ${stand.length ? `<div class="d-sb"><span>${zh ? "待机" : "Standby"} · ${stand.length}</span>${stand.map(a => `<button type="button" data-chat="${esc(a.id)}" title="${esc(A().aname(a))}"><img src="${A().avatarUrl(a)}" alt=""></button>`).join("")}</div>` : ""}</section>`;
+    // 5 small cards
+    const mx = Math.max(1, ...D.days.map(x => x.n)), wk = D.days.reduce((t, x) => t + x.n, 0), u = X.meta.usage || {}, rl = (X.meta.routines || []).filter(r => !r.paused && !r.disabled);
+    const ran = X.rts.filter(r => r.ran).length;
+    const minis = `<section class="d-minis" data-sec="minis"><button type="button" class="d-mini" data-go="board"><small>${zh ? "本周交付" : "Shipped · 7 days"}</small><b>${wk}</b><span class="bars">${D.days.map((x, k) => `<i class="${k === 6 ? "on" : ""}" style="height:${Math.max(8, Math.round(x.n / mx * 100))}%"></i>`).join("")}</span></button>
+      <button type="button" class="d-mini" data-go="ongoing"><small>${nm("ongoing")}</small><b>${rl.length}</b><span class="tx">${zh ? `今天已跑 ${ran}` : `${ran} ran today`}${next ? `<br>${zh ? "下个" : "next"} ${hm(next.t)}` : ""}</span></button>
+      <button type="button" class="d-mini" data-ru-open><small>${nm("usage")}</small><b>${u.five_hour ? Math.round(u.five_hour.used) + "%" : "—"}</b><span class="tx">${zh ? "5 小时额度" : "5-hour quota"}${u.seven_day ? `<br>${zh ? "本周" : "week"} ${Math.round(u.seven_day.used)}%` : ""}</span></button></section>`;
+    return [["tl", tl], ["needs", needs], ["goals", goals], ["work", work], ["minis", minis]];
+  };
+  const DZ = { prev: null };
+  function dense(body, tail) {
+    const secs = dSecs(dData()), tl = tail ? `<div class="d-tail" data-sec="tail">${tail}</div>` : "";
+    if (tl) secs.push(["tail", tl]);
+    const box = body && body.firstElementChild && body.firstElementChild.id === "hd2" ? body.firstElementChild : null;
+    if (box && DZ.prev) {
+      const was = new Map(DZ.prev), cur = new Map([...box.children].map(c => [c.dataset.sec, c]));
+      secs.forEach(([k, h], i) => { const el = cur.get(k);
+        if (el && was.has(k) && norm(was.get(k)) === norm(h)) { if (box.children[i] !== el) box.insertBefore(el, box.children[i] || null); return; }
+        const n = frag(h); if (el) el.replaceWith(n); else box.insertBefore(n, box.children[i] || null); });
+      [...box.children].forEach(c => { if (!secs.some(([k]) => k === c.dataset.sec)) c.remove(); });
+      DZ.prev = secs; return null;
+    }
+    DZ.prev = secs;
+    const rm = RMQ.matches;
+    if (!rm) setTimeout(() => { const b = document.getElementById("hd2"); if (b) b.classList.remove("d-enter"); }, 1200);
+    return `<div id="hd2" class="${rm ? "" : "d-enter"}">${secs.map(([, h], i) => h.replace(/^<(section|div) class="/, `<$1 style="--d-i:${i}" class="`)).join("")}</div>`;
+  }
+  setInterval(() => {   /* 30 s: move the now marker, refresh 「现在 HH:MM」 and 「N 小时后」 in place (they are stripped from the compare) */
+    const b = document.getElementById("hd2"); if (!b || document.hidden) return;
+    const bar = b.querySelector(".d-tl-bar"); if (bar) bar.style.setProperty("--now", pct(tlX(Date.now())));
+    b.querySelectorAll(".d-tk[data-now]").forEach(x => { const v = (en() ? "now " : "现在 ") + hm(Date.now()); if (x.textContent !== v) x.textContent = v; });
+    b.querySelectorAll(".d-tk[data-at]").forEach(x => { const v = inH(+x.dataset.at); if (x.textContent !== v) x.textContent = v; });
+  }, 30000);
   window.Widgets = { html, editing: () => EDIT };
   if (A() && A().refreshPage && document.documentElement.dataset.home === "widgets") A().refreshPage();   // app.js rendered before this file parsed
 })();

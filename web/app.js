@@ -8,7 +8,7 @@
   };
 
   const UI = {
-    page: (p => p === "home" ? "review" : ["roles", "docs", "logs"].includes(p) ? "settings" : p)(LS.get("page", "review")), setTab: (p => ["roles", "docs", "logs"].includes(p) ? p : LS.get("setTab", "general"))(LS.get("page", "review")),   /* t-settings-tab: 角色 / 文档 / 日志 live under 设置 */ item: null, chat: LS.get("chat", "manager"), home: LS.get("home2", "widgets"),   // t-home-applike: desktop 首页 style, "app" | "classic"; t-home-widgets: + "widgets" (default since 11-02, new key so every desktop switches once)
+    page: (p => p === "home" ? "review" : ["roles", "docs", "logs"].includes(p) ? "settings" : p)(LS.get("page", "review")), setTab: (p => ["roles", "docs", "logs"].includes(p) ? p : LS.get("setTab", "general"))(LS.get("page", "review")),   /* t-settings-tab: 角色 / 文档 / 日志 live under 设置 */ item: null, chat: LS.get("chat", "manager"), home: LS.get("home3", "dense"),   // t-home-applike: desktop 首页 style, "app" | "classic"; t-home-widgets: + "widgets" (default since 11-02, new key so every desktop switches once)
     lang: LS.get("lang", "zh"), theme: LS.get("theme", "dark"), sort: LS.get("sort", "activity"),
     logAgent: "", mailFilter: "all", doc: null, docs: null, docText: "", openRep: null, calForm: false, tick: 0,
     seen: LS.get("seen", {}), chatW: LS.get("chatW", 420), chatFold: LS.get("chatFold", false),
@@ -1538,7 +1538,7 @@
     const look = stRow(en ? "Theme" : "主题", (mode === "auto" ? (en ? "Auto follows your system light / dark setting." : "自动：跟着系统的深浅色走（Mac 和 iPhone 选「自动」外观时，会按日出日落切换）") : (en ? "Fixed on this device." : "手动：固定用选好的这一套，只在这台设备生效")) + now,
         stSeg("tmode", [["auto", "自动", "Auto"], ["dark", "夜", "Night"], ["white", "昼", "Day"]], mode === "auto" ? "auto" : cur, "data-tmode"), "", "div")
       + stRow(en ? "Stage background" : "舞台背景", en ? "Your terrace office behind everything; night / day follow the theme" : "你画的露台办公室做背景，夜 / 昼跟着上面的主题", stSw(!!R.dataset.stage), `data-stage-tog aria-pressed="${!!R.dataset.stage}"`)
-      + (MOBQ.matches ? "" : stRow(en ? "Home style" : "首页样式", en ? "This computer only" : "只在这台电脑生效", stSeg("homestyle", [["widgets", "小组件", "Widgets"], ["app", "app 式", "App"], ["classic", "原来的", "Classic"]], UI.home, "data-home-set"), "", "div"))
+      + (MOBQ.matches ? "" : stRow(en ? "Home style" : "首页样式", en ? "This computer only" : "只在这台电脑生效", stSeg("homestyle", [["dense", "紧凑", "Dense"], ["widgets", "小组件", "Widgets"], ["app", "app 式", "App"], ["classic", "原来的", "Classic"]], UI.home, "data-home-set"), "", "div"))
       + stRow(en ? "Language" : "界面语言", "", stSeg("lang", [["zh", "中文", "中文"], ["en", "English", "English"]], UI.lang, "data-lang-set"), "", "div");
     const P = window.Push ? Push.status() : null;
     const push = P ? stRow(en ? "Notifications" : "推送通知", esc(P.label) + (P.diag ? `<span class="st-diag">${esc(P.diag)}</span>` : ""), stSw(P.on), `data-set="push" aria-pressed="${!!P.on}"`)
@@ -2069,12 +2069,12 @@
 
   // t-home-applike: the desktop 首页 (review page) in the phone app's shape, switchable back to the classic stage home (stored per device).
   const appHome = () => !MOBQ.matches && UI.home === "app" && UI.page === "review";
-  const widgetHome = () => !MOBQ.matches && UI.home === "widgets" && UI.page === "review";   // t-home-widgets (web/widgets.js + widgets.css)
+  const widgetHome = () => !MOBQ.matches && (UI.home === "widgets" || UI.home === "dense") && UI.page === "review";   // t-home-widgets (web/widgets.js + widgets.css)
   const homeSwitch = () => MOBQ.matches ? "" : `<button class="home-sw" data-home-set="${UI.home === "classic" ? "app" : "classic"}">${UI.lang === "en" ? (UI.home === "classic" ? "App-style home" : "Classic home") : (UI.home === "classic" ? "换成 app 式首页" : "切回原来的首页")}</button>`;
-  function setHome(v) { UI.home = ["classic", "app"].includes(v) ? v : "widgets"; LS.set("home2", UI.home); UI.hf = "review"; renderPage(true); }
+  function setHome(v) { UI.home = ["classic", "app", "widgets"].includes(v) ? v : "dense"; LS.set("home3", UI.home); UI.hf = "review"; renderPage(true); }
   const phaseFree = h => h.replace(/--wp:-?[\d.]+s|animation-delay:-\d+ms|--wg-fd:-\d+ms/g, "").replace(/(<time class="(?:wk-el|rel)"[^>]*>)[^<]*/g, "$1");   // t-home-flicker
   function renderPage(scrollTop) {
-    document.documentElement.dataset.home = appHome() ? "app" : widgetHome() ? "widgets" : "classic";   // t-home-applike: scopes home-app.css
+    document.documentElement.dataset.home = appHome() ? "app" : widgetHome() ? "widgets" : "classic"; if (widgetHome() && UI.home === "dense") document.documentElement.dataset.dense = "1"; else delete document.documentElement.dataset.dense;   // t-home-applike: scopes home-app.css
     autoFold();
     const page = $("#page");
     let body = $("#pagebody", page);
@@ -3554,7 +3554,7 @@
   if (H.get("page")) UI.page = pageAlias(H.get("page"));
   if (H.get("tab") && SET_TABS.includes(H.get("tab"))) UI.setTab = H.get("tab");   // t-settings-tab: #page=settings&tab=system
   if (H.get("theme")) UI.theme = H.get("theme");
-  if (H.get("home")) UI.home = ["classic", "app"].includes(H.get("home")) ? H.get("home") : "widgets";   // t-home-applike: #home=classic / #home=app, this load only
+  if (H.get("home")) UI.home = ["classic", "app", "widgets"].includes(H.get("home")) ? H.get("home") : "dense";   // t-home-applike: #home=classic / #home=app, this load only
   if (H.get("lang")) UI.lang = H.get("lang");
   if (H.get("fold")) UI.chatFold = H.get("fold") === "1";
   document.documentElement.dataset.theme = UI.theme;
