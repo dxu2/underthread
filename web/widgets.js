@@ -111,7 +111,7 @@
   // so every compare strips them. Same data: keep the DOM. Changed data (C): replace only the tiles / header / tail / tray whose HTML changed,
   // the rest keep their nodes (thumbs, hover highlight, running animations). mvPage is told via MV.dirty so new rows / moved tiles still animate.
   const norm = h => h.replace(/--wg-fd:-\d+ms/g, "").replace(/(<time class="rel"[^>]*>)[^<]*/g, "$1")
-    .replace(/--now:[\d.]+%/g, "").replace(/(<span class="(?:wk-el|d-tk)"[^>]*>)[^<]*/g, "$1");   /* t-home-dense: elapsed time, the now marker and 「N 小时后」 tick on their own */   // t-home-usage: 「X 分钟前」 ticks on its own (app.js 20 s interval)
+    .replace(/--now:[\d.]+%/g, "").replace(/(<span class="(?:wk-el|d-tk)"[^>]*>)[^<]*/g, "$1");   /* t-home-usage: 「X 分钟前」 ticks on its own (app.js 20 s interval). t-home-dense: elapsed time, the now marker and 「N 小时后」 tick on their own */
   let last = "", PREV = null;
   const frag = h => { const t = document.createElement("template"); t.innerHTML = h.trim(); return t.content.firstElementChild; };
   function patch(wg, P) {
@@ -286,18 +286,17 @@
       <div class="d-tl-ft">${zh ? `今天交付 <b>${D.shipped.length}</b> 件 · ${evN ? `${evN} 个日程` : "没有会议"}` : `<b>${D.shipped.length}</b> shipped today · ${evN ? `${evN} events` : "no meetings"}`}${next ? ` · ${zh ? "下一个" : "next"}：${hm(next.t)} ${esc(next.name)}（<span class="d-tk" data-at="${next.t}">${inH(next.t)}</span>）` : ""}${D.nr.length ? ` · <button type="button" class="d-link in" data-go="mail">${zh ? `新回复 ${D.nr.reduce((t, g) => t + g.ms.length, 0)} 条 ›` : `${D.nr.reduce((t, g) => t + g.ms.length, 0)} new replies ›`}</button>` : ""}${A().snzLine ? A().snzLine() : ""}</div></section>`;
     // 2 等你拍板
     const W = X.waiting, tag = i => i.category === "urgent" ? `<em class="u">${zh ? "紧急" : "Urgent"}</em>` : `<em>${kindL(i)}</em>`;
-    const needs = `<section class="d-needs" data-sec="needs"><div class="d-h"><b>${nm("review")}</b>${W.length ? `<span class="n hot">${W.length}</span>` : ""}<span class="sp"></span>${W.length > 2 ? `<button type="button" class="d-link" data-go="board">${zh ? "全部" : "All"} ${W.length} ›</button>` : ""}</div>
-      ${W.length ? `<div class="d-nr">${W.slice(0, 3).map(i => { const a = A().agent(i.owner); return `<button type="button" class="d-n${i.category === "urgent" ? " urgent" : ""}" data-item="${esc(i.id)}"><span class="top"><img src="${A().avatarUrl(a)}" alt="">${tag(i)}</span><span class="t">${esc(i.title)}</span><small>${esc(A().aname(a))} · ${zh ? "等了" : "waiting"} <time class="rel" data-t="${esc(i.activity || i.updated)}" data-rel="ago">${ago(i.activity || i.updated)}</time></small></button>`; }).join("")}</div>` : `<div class="d-calm">✓ ${calmText("review")}</div>`}</section>`;
+    const needs = `<section class="d-needs${W.length ? "" : " d-needs0"}" data-sec="needs"><div class="d-h"><b>${nm("review")}</b>${W.length ? `<span class="n hot">${W.length}</span>` : ""}${W.length ? "" : `<span class="d-ok">✓ ${calmText("review")}</span>`}<span class="sp"></span>${W.length > 2 ? `<button type="button" class="d-link" data-go="board">${zh ? "全部" : "All"} ${W.length} ›</button>` : ""}</div>
+      ${W.length ? `<div class="d-nr">${W.slice(0, 3).map(i => { const a = A().agent(i.owner); return `<button type="button" class="d-n${i.category === "urgent" ? " urgent" : ""}" data-item="${esc(i.id)}"><span class="top"><img src="${A().avatarUrl(a)}" alt="">${tag(i)}</span><span class="t">${esc(i.title)}</span><small>${esc(A().aname(a))} · ${zh ? "等了" : "waiting"} <time class="rel" data-t="${esc(i.activity || i.updated)}" data-rel="ago">${ago(i.activity || i.updated)}</time></small></button>`; }).join("")}</div>` : ""}</section>`;
     // 3 今日目标
     const N = X.gOpen.length + X.gDone.length, K = X.gDone.length, R = 46, C = 2 * Math.PI * R;
-    const show = [...X.gOpen, ...X.gDone].slice(0, 5), stg = { todo: zh ? "待办" : "to do", doing: zh ? "进行中" : "doing", review: zh ? "等你看" : "with you", waiting: zh ? "等别人" : "waiting" };
+    const show = [...X.gOpen, ...X.gDone].slice(0, 12), stg = { todo: zh ? "待办" : "to do", doing: zh ? "进行中" : "doing", review: zh ? "等你看" : "with you", waiting: zh ? "等别人" : "waiting" };
     const gRow = i => { const ok = i.stage === "done", a = A().agent(i.owner);
-      return `<button type="button" class="d-g${ok ? " ok" : ""}" data-item="${esc(i.id)}"><span class="ck">${ok ? "✓" : ""}</span><span class="t">${esc(i.title)}<small>${ok ? `${hm(i.closed)} ${zh ? "关卡" : "closed"}` : `${esc(A().aname(a))} · ${stg[i.stage] || i.stage}`}</small></span></button>`; };
-    const goals = `<section class="d-card d-goals" data-sec="goals"><div class="d-h"><b>${zh ? "今日目标" : "Today's goals"}</b><span>${zh ? "今天新建、在做、关掉的卡，关卡自动打勾" : "cards created, worked on or closed today"}</span></div>
-      <div class="d-goals-in"><div class="d-ring-w"><svg class="d-ring" viewBox="0 0 120 120" aria-hidden="true"><circle cx="60" cy="60" r="${R}" class="trk"/>${K ? `<circle cx="60" cy="60" r="${R}" class="val" stroke-dasharray="${(C * K / Math.max(1, N)).toFixed(1)} ${C.toFixed(1)}" transform="rotate(-90 60 60)"/>` : ""}</svg>
-        <div class="d-ring-n"><b>${K}</b><small>/${N}</small><span>${zh ? "完成" : "done"}</span></div></div>
-      <div class="d-gl"><div class="d-leg"><i class="g"></i>${K} ${zh ? "完成" : "done"}<i></i>${N - K} ${zh ? "剩下" : "left"}</div>${N ? show.map(gRow).join("") : `<div class="d-calm">${zh ? "今天还没有卡" : "No cards today yet"}</div>`}
-      ${N > show.length ? `<button type="button" class="d-more" data-go="board">${zh ? `还有 ${N - show.length} 件 ›` : `${N - show.length} more ›`}</button>` : ""}</div></div></section>`;
+      return `<button type="button" class="d-g${ok ? " ok" : ""}" data-item="${esc(i.id)}"><span class="ck">${ok ? "✓" : ""}</span><span class="t"><span class="tt">${esc(i.title)}</span><small>${ok ? `${hm(i.closed)} ${zh ? "关卡" : "closed"}` : `${esc(A().aname(a))} · ${stg[i.stage] || i.stage}`}</small></span></button>`; };
+    const ring = `<svg class="d-ring" viewBox="0 0 120 120" aria-hidden="true"><circle cx="60" cy="60" r="${R}" class="trk"/>${K ? `<circle cx="60" cy="60" r="${R}" class="val" stroke-dasharray="${(C * K / Math.max(1, N)).toFixed(1)} ${C.toFixed(1)}" transform="rotate(-90 60 60)"/>` : ""}</svg>`;
+    const goals = `<section class="d-card d-goals" data-sec="goals"><div class="d-h" title="${zh ? "今天新建、在做、关掉的卡，关卡自动打勾" : "cards created, worked on or closed today"}"><b>${zh ? "今日目标" : "Today's goals"}</b>${ring}<span class="d-gk"><b>${K}</b>/${N}</span><span class="sp"></span><span class="d-leg"><i class="g"></i>${K} ${zh ? "完成" : "done"}<i></i>${N - K} ${zh ? "剩下" : "left"}</span></div>
+      <div class="d-gl">${N ? show.map(gRow).join("") : `<div class="d-calm">${zh ? "今天还没有卡" : "No cards today yet"}</div>`}</div>
+      ${[[8, "nw"], [12, "wd"]].map(([c, k]) => N > c ? `<button type="button" class="d-more ${k}" data-go="board">${zh ? `还有 ${N - c} 件 ›` : `${N - c} more ›`}</button>` : "").join("")}</section>`;   /* t-home-tight: 8 rows (nw) or 12 in two columns (wd, #hd2 >= 900px); CSS shows the matching 「还有 N 件」 */
     // 4 此刻在忙 + 待机
     const B = D.busy, busyIds = new Set(B.map(x => x.a.id)), stand = X.agents.filter(a => !busyIds.has(a.id));
     const wRow = ({ a, it, since }) => { const m = X.etaMin(a.id), end = m && since ? ms(since) + m * 6e4 : 0;
@@ -306,14 +305,14 @@
         <span class="tm"><b><span class="wk-el" data-fmt="dc" data-since="${esc(since || "")}">${since ? ago(since) : ""}</span></b><small>${since ? `${hm(since)} ${zh ? "开始" : "start"}` : ""}${end > now ? ` · ${zh ? "预计" : "ETA"} ~${hm(end)}` : ""}</small></span></button>`; };
     const work = `<section class="d-card d-work" data-sec="work"><div class="d-h">${B.length ? '<span class="live"></span>' : ""}<b>${nm("busy")}</b>${B.length ? `<span class="n">${B.length}</span>` : ""}</div>
       ${B.length ? B.map(wRow).join("") : `<div class="d-calm">${calmText("busy")}</div>`}
-      ${stand.length ? `<div class="d-sb"><span>${zh ? "待机" : "Standby"} · ${stand.length}</span>${stand.map(a => `<button type="button" data-chat="${esc(a.id)}" title="${esc(A().aname(a))}"><img src="${A().avatarUrl(a)}" alt=""></button>`).join("")}</div>` : ""}</section>`;
+      ${stand.length ? `<div class="d-sb"><span>${zh ? "待机" : "Standby"} · ${stand.length}</span>${stand.map(a => `<button type="button" data-chat="${esc(a.id)}" title="${esc(A().aname(a))}"><img src="${A().avatarUrl(a)}" alt=""></button>`).join("")}${stand.length > 5 ? `<i class="d-sbn">+${stand.length - 5}</i>` : ""}</div>` : ""}</section>`;   /* t-home-tight: under 640px the strip shows 5 faces + this count (CSS) */
     // 5 small cards
     const mx = Math.max(1, ...D.days.map(x => x.n)), wk = D.days.reduce((t, x) => t + x.n, 0), u = X.meta.usage || {}, rl = (X.meta.routines || []).filter(r => !r.paused && !r.disabled);
     const ran = X.rts.filter(r => r.ran).length;
     const minis = `<section class="d-minis" data-sec="minis"><button type="button" class="d-mini" data-go="board"><small>${zh ? "本周交付" : "Shipped · 7 days"}</small><b>${wk}</b><span class="bars">${D.days.map((x, k) => `<i class="${k === 6 ? "on" : ""}" style="height:${Math.max(8, Math.round(x.n / mx * 100))}%"></i>`).join("")}</span></button>
       <button type="button" class="d-mini" data-go="ongoing"><small>${nm("ongoing")}</small><b>${rl.length}</b><span class="tx">${zh ? `今天已跑 ${ran}` : `${ran} ran today`}${next ? `<br>${zh ? "下个" : "next"} ${hm(next.t)}` : ""}</span></button>
       <button type="button" class="d-mini" data-ru-open><small>${nm("usage")}</small><b>${u.five_hour ? Math.round(u.five_hour.used) + "%" : "—"}</b><span class="tx">${zh ? "5 小时额度" : "5-hour quota"}${u.seven_day ? `<br>${zh ? "本周" : "week"} ${Math.round(u.seven_day.used)}%` : ""}</span></button></section>`;
-    return [["tl", tl], ["needs", needs], ["goals", goals], ["work", work], ["minis", minis]];
+    return [["tl", tl], ["needs", needs], ["goals", goals], ["side", `<div class="d-side" data-sec="side">${work.replace(' data-sec="work"', "")}${minis.replace(' data-sec="minis"', "")}</div>`]];   /* t-home-tight: work + minis share the right column */
   };
   const DZ = { prev: null };
   function dense(body, tail) {
@@ -340,5 +339,5 @@
     b.querySelectorAll(".d-tk[data-at]").forEach(x => { const v = inH(+x.dataset.at); if (x.textContent !== v) x.textContent = v; });
   }, 30000);
   window.Widgets = { html, editing: () => EDIT };
-  if (A() && A().refreshPage && document.documentElement.dataset.home === "widgets") A().refreshPage();   // app.js rendered before this file parsed
+  if (A() && A().refreshPage && document.documentElement.dataset.home === "widgets") A().refreshPage();   /* app.js rendered before this file parsed */
 })();
