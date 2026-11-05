@@ -220,8 +220,28 @@
     }).join("") : `<div class="m-chip none">${App.t("empty_review")}</div>`) + `</div>`;
     if (wrap._html !== html) { wrap.innerHTML = html; wrap._html = html; }
   }
-  document.addEventListener("push:change", () => { if (mq.matches && App.ST) menuExtras(); });
-  document.addEventListener("gh:status", () => { if (mq.matches && document.querySelector("#left .m-settings")) menuExtras(); });   // t-dash-token: label of the GitHub row
+  const onSettings = () => App.UI.page === "settings" && App.ST;   // t-settings-tab: the settings rows moved from 更多 to the 设置 page
+  document.addEventListener("push:change", () => { if (onSettings()) App.refreshPage(); });
+  document.addEventListener("gh:status", () => { if (onSettings() && App.UI.setTab === "system") App.refreshPage(); });   // t-dash-token: label of the GitHub row
+  document.addEventListener("change", e => {   // t-imp29-p1: quiet-hours start / end
+    const t = e.target.closest && e.target.closest(".st-pane select[data-pz]"); if (!t || !window.Push) return;
+    Push.setPrefs({ [t.dataset.pz]: +t.value });
+  });
+  document.addEventListener("click", e => {
+    const r = e.target.closest && e.target.closest(".st-pane [data-set]"); if (!r) return;
+    const k = r.dataset.set;
+    if (k === "push" && window.Push) Push.toggle().then(() => onSettings() && App.refreshPage());
+    if (k === "pushtest" && window.Push) Push.test();
+    if (window.Push && Push.prefs && Push.prefs()) {   // t-imp29-p1
+      const p = Push.prefs();
+      if (k === "ptier" && r.dataset.v !== p.tier) Push.setPrefs({ tier: r.dataset.v });
+      if (k === "pquiet") Push.setPrefs({ quiet: !p.quiet });
+      if (k === "pdigest") Push.setPrefs({ digest: !p.digest });
+    }
+    if (k === "status") App.modalStatus();
+    if (k === "ghtok" && App.ghOpen) App.ghOpen();   // t-dash-token
+    if (k === "mictest") location.href = "/static/mictest.html";   // t-vb-1: same-window navigation keeps the home-screen app standalone
+  });
   function menuExtras() {
     const left = $("#left"); if (!left) return;
     if (!$(".m-hero", left)) {
@@ -229,45 +249,9 @@
       h.innerHTML = `<div class="tc-sub" style="animation:none;font-size:10px">Personal Agent Team</div><div class="brand" style="flex-direction:row;gap:.35em;font-size:22px"><span>Under</span><span>thread</span></div>${window.ORN ? ORN.divider(200) : ""}`;
       left.prepend(h);
     }
-    let set = $(".m-settings", left);
-    if (!set) {
-      left.insertAdjacentHTML("beforeend", `<div class="m-settings"></div>`);
-      set = $(".m-settings", left);
-      set.addEventListener("change", e => {   // t-imp29-p1: quiet-hours start / end
-        const t = e.target.closest("select[data-pz]"); if (!t || !window.Push) return;
-        Push.setPrefs({ [t.dataset.pz]: +t.value });
-      });
-      set.addEventListener("click", e => {
-        const r = e.target.closest("[data-set]"); if (!r) return;
-        const k = r.dataset.set;
-        if (k === "theme" || k === "lang") { const h = document.querySelector(`[data-h="${k}"]`); if (h) h.click(); }
-        if (k === "push" && window.Push) Push.toggle().then(menuExtras);
-        if (k === "pushtest" && window.Push) Push.test();
-        if (window.Push && Push.prefs && Push.prefs()) {   // t-imp29-p1
-          const p = Push.prefs();
-          if (k === "ptier" && r.dataset.v !== p.tier) Push.setPrefs({ tier: r.dataset.v });
-          if (k === "pquiet") Push.setPrefs({ quiet: !p.quiet });
-          if (k === "pdigest") Push.setPrefs({ digest: !p.digest });
-        }
-        if (k === "status") App.modalStatus();
-        if (k === "ghtok" && App.ghOpen) App.ghOpen();   // t-dash-token
-        if (k === "mictest") location.href = "/static/mictest.html";   // t-vb-1: same-window navigation keeps the home-screen app standalone
-      });
-    }
-    const P = window.Push ? Push.status() : { label: "—" };
-    const sw = on => `<span class="sw ${on ? "on" : ""}"><i></i></span>`;
-    const hp = App.loadHealth(60000); if (hp) hp.then(() => { if (mq.matches) menuExtras(); });   // t-imp-p4: refresh the 系统状态 summary at most once a minute
-    const SY = App.statusSummary();
-    const html = `<div class="side-h"><span class="sc">${en() ? "SETTINGS" : "设置"}</span></div>
-      <button class="m-set m-sys" data-set="status"><span><b>${en() ? "System status" : "系统状态"}</b><small class="sy-sum-t ${SY.lv}">${esc(SY.txt)}</small></span><em>›</em></button>
-      ${App.ghOpen ? `<button class="m-set" data-set="ghtok"><span><b>${en() ? "GitHub push token" : "GitHub 推送令牌"}</b><small>${esc(App.ghLabel())}</small></span><em>›</em></button>` : ""}
-      <button class="m-set" data-set="push"><span><b>${en() ? "Notifications" : "推送通知"}</b><small>${esc(P.label)}</small>${P.diag ? `<small class="m-diag">${esc(P.diag)}</small>` : ""}</span>${sw(P.on)}</button>
-      ${P.on ? pushPrefs() : ""}
-      ${P.on ? `<button class="m-set" data-set="pushtest"><span><b>${en() ? "Send a test" : "发一条测试通知"}</b></span><em>›</em></button>` : ""}
-      <button class="m-set" data-set="lang"><span><b>English</b><small>${en() ? "Interface language" : "界面语言"}</small></span>${sw(en())}</button>
-      <div class="m-foot">Underthread · ${location.host}</div>`;
-    if (set._html !== html) { set.innerHTML = html; set._html = html; }
+    const old = $(".m-settings", left); if (old) old.remove();   // t-settings-tab: these rows live on the 设置 page now (更多 keeps navigation, today and the team)
   }
+  if (window.App) App.pushPrefs = () => pushPrefs();   // t-settings-tab: the 设置 · 通用 tab draws the push options on every screen size
 
   // t-imp29-p1: 推送分级 + 夜间免打扰 + 早报, per device (server row prefs). Shown under 推送通知 only while push is on here.
   function pushPrefs() {
@@ -1061,15 +1045,78 @@
     document.querySelectorAll("[data-stage-set]").forEach(x => { const o = on(x.dataset.stageSet); x.classList.toggle("on", o); x.setAttribute("aria-checked", o); });
     document.querySelectorAll("[data-theme-set]").forEach(x => { const o = !R.dataset.stage && x.dataset.themeSet === R.dataset.theme; x.classList.toggle("on", o); x.setAttribute("aria-checked", o); });
   }
+  // ===== t-settings-tab / t-theme-auto: theme mode. rt.themeMode = "auto" | "manual" per device (index.html decides it before first paint:
+  // a device with no saved theme starts on auto, one that already picked stays manual). Auto = the system light / dark setting
+  // (dark -> 夜 "dark", light -> 昼 "white"); a browser that answers neither falls back to the clock, 07:00–19:00 = 昼. The stage stays as it is.
+  const DKQ = matchMedia("(prefers-color-scheme: dark)"), LTQ = matchMedia("(prefers-color-scheme: light)"), RMQ = matchMedia("(prefers-reduced-motion: reduce)");
+  const tmode = () => { try { return JSON.parse(localStorage.getItem("rt.themeMode")) === "auto" ? "auto" : "manual"; } catch (err) { return "manual"; } };
+  const setMode = m => { try { localStorage.setItem("rt.themeMode", JSON.stringify(m)); } catch (err) { } };
+  const autoTheme = () => DKQ.matches ? "dark" : LTQ.matches ? "white" : (h => h >= 7 && h < 19 ? "white" : "dark")(new Date().getHours());
+  function toManual() {
+    if (tmode() !== "auto") return;
+    setMode("manual");
+    if (window.App && App.toast) App.toast(App.UI.lang === "en" ? "Switched to manual · change it back in Settings" : "已改成手动 · 设置里可改回自动");
+  }
+  // whole-page crossfade, 0.4 s: a View Transition where the browser has one, else a fading sheet of the old background. Reduced motion: instant.
+  function fadeSwap(fn) {
+    if (RMQ.matches || document.hidden) return fn();
+    if (typeof document.startViewTransition === "function") {
+      R.classList.add("th-vt");
+      const vt = document.startViewTransition(fn);
+      vt.ready.catch(() => { }); vt.updateCallbackDone.catch(() => { });   // a second switch mid-fade skips the first: not an error
+      vt.finished.catch(() => { }).finally(() => R.classList.remove("th-vt"));
+      return;
+    }
+    const bg = getComputedStyle(document.body).backgroundColor, sh = document.createElement("div");
+    sh.className = "th-fade"; sh.style.background = bg; document.body.appendChild(sh);
+    fn();
+    requestAnimationFrame(() => requestAnimationFrame(() => { sh.style.opacity = "0"; }));
+    setTimeout(() => sh.remove(), 480);
+  }
+  function applyTheme(t) {
+    if (!window.App || !App.UI || R.dataset.theme === t) return;
+    fadeSwap(() => {
+      App.UI.theme = t; try { localStorage.setItem("rt.theme", JSON.stringify(t)); } catch (err) { }
+      R.dataset.theme = t; sync(); stageMarks();
+      if (App.refreshPage) App.refreshPage();
+      document.dispatchEvent(new Event("theme:change"));
+    });
+  }
+  const autoTick = () => { if (tmode() === "auto") applyTheme(autoTheme()); };
+  DKQ.addEventListener("change", autoTick); LTQ.addEventListener("change", autoTick);
+  setInterval(autoTick, 60000);   // only matters for the clock fallback
+  document.addEventListener("visibilitychange", () => { if (!document.hidden) autoTick(); });
+  document.addEventListener("click", e => {
+    const m = e.target.closest && e.target.closest("[data-tmode]");
+    if (m && window.App) {
+      const v = m.dataset.tmode;
+      if (v === "auto") { setMode("auto"); if (autoTheme() === R.dataset.theme) App.refreshPage(); else applyTheme(autoTheme()); }
+      else { setMode("manual"); if (v === R.dataset.theme) App.refreshPage(); else applyTheme(v); }
+      return;
+    }
+    const s = e.target.closest && e.target.closest("[data-stage-tog]");
+    if (s && window.App) {
+      const on = !R.dataset.stage;
+      fadeSwap(() => {
+        if (on) R.dataset.stage = "1"; else delete R.dataset.stage;
+        try { localStorage.setItem("rt.stage", JSON.stringify(on)); } catch (err) { }
+        sync(); stageMarks(); if (App.refreshPage) App.refreshPage();
+        document.dispatchEvent(new Event("theme:change"));
+      });
+    }
+  });
   document.addEventListener("click", e => {
     const b = e.target.closest && e.target.closest("[data-stage-set]"); if (!b || !window.App) return;
     const k = b.dataset.stageSet, ls = (a, v) => { try { localStorage.setItem(a, JSON.stringify(v)); } catch (err) { } };
+    if (k !== "off" && (k === "night" ? "dark" : "white") !== R.dataset.theme) toManual();   // t-settings-tab: picking night / day by hand leaves auto
+    fadeSwap(() => {
     if (k === "off") { delete R.dataset.stage; ls("rt.stage", false); }
     else { const t = k === "night" ? "dark" : "white"; App.UI.theme = t; ls("rt.theme", t); R.dataset.theme = t; R.dataset.stage = "1"; ls("rt.stage", true); }
     sync(); stageMarks();
     document.querySelectorAll(".seg[data-seg=mtheme], .seg[data-seg=mstage]").forEach(s => s.append(document.createTextNode("")));
     if (App.refreshPage) App.refreshPage();
     document.dispatchEvent(new Event("theme:change"));
+    });
   });
   // t-visual-ink switches: 墨刊 on/off (rt.skin) and light-theme paper (rt.inkLight); both remembered on this device, applied without a reload
   const lsw = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch (err) { } };
@@ -1087,6 +1134,7 @@
   document.addEventListener("click", e => {
     const b = e.target.closest && e.target.closest("[data-theme-set]"); if (!b) return;
     const t = b.dataset.themeSet; if (!COLORS[t] || !window.App) return;
+    if (t !== R.dataset.theme) toManual();   // t-settings-tab
     const stg = R.dataset.stage; if (stg) { delete R.dataset.stage; try { localStorage.setItem("rt.stage", "false"); } catch (err) { } }   // t-visual-stage: picking a plain theme leaves the stage
     App.UI.theme = t;
     try { localStorage.setItem("rt.theme", JSON.stringify(t)); } catch (err) { }
@@ -1118,6 +1166,7 @@
     pushtest: '<path d="M20.5 4 3.5 11l6.5 2.5L12.5 20z"/><path d="M10 13.5 20.5 4"/>',
     theme: '<circle cx="12" cy="12" r="8"/><path d="M12 4a8 8 0 0 0 0 16z" fill="currentColor"/>',
     mictest: '<rect x="9" y="3.5" width="6" height="10.5" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5v3"/>',
+    settings: '<circle cx="12" cy="12" r="3"/><path d="M12 2.8v2.6M12 18.6v2.6M21.2 12h-2.6M5.4 12H2.8M18.5 5.5l-1.8 1.8M7.3 16.7l-1.8 1.8M18.5 18.5l-1.8-1.8M7.3 7.3 5.5 5.5"/><circle cx="12" cy="12" r="6.6"/>',   // t-settings-tab
     lang: '<circle cx="12" cy="12" r="8.5"/><path d="M3.5 12h17M12 3.5c-3 3.2-3 13.8 0 17M12 3.5c3 3.2 3 13.8 0 17"/>',
   };
   const ICONS_BORROW = { review: 'review', roles: 'team' };
@@ -1242,7 +1291,8 @@
     let h = document.getElementById("inkhello");
     if (!h) { h = document.createElement("div"); h.id = "inkhello"; h.className = "ink-hello"; }
     if (h.nextSibling !== ob) ob.parentNode.insertBefore(h, ob);
-    const hm = document.documentElement.dataset.home, show = (mq.matches || hm === "app" || hm === "widgets") && App.UI.page === "review" && (!ob.hidden || hm === "widgets");   // t-home-widgets: the widget home greets too (its #officebox stays hidden) if (h.hidden === show) h.hidden = !show;   // t-home-applike: the desktop app-style home greets too
+    const hm = document.documentElement.dataset.home, show = (mq.matches || hm === "app" || hm === "widgets") && App.UI.page === "review" && (!ob.hidden || hm === "widgets");   /* t-home-widgets: the widget home greets too (its #officebox stays hidden) */
+    if (h.hidden === show) h.hidden = !show;   // t-home-applike: the desktop app-style home greets too. t-settings-tab: this line had been swallowed by the // comment above, so 「今天.」 stayed on every phone page after home
     if (!show) return;
     const en = App.UI.lang === "en", busy = Object.values((App.ST && App.ST.agents) || {}).filter(a => a.status === "working" && !(App.mgrOnline && App.mgrOnline(a))).length;   // t-cal-fold: same count as 此刻 (the online-only manager is not busy)
     const html = App.inkEb(en ? `${busy} busy` : `${busy} 在忙`) + `<b>${en ? "Today" : "今天"}</b>`;

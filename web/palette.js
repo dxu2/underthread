@@ -63,7 +63,15 @@
         add("home:" + v, zh ? `首页样式：换成${L[v]}` : `Home style: ${L[v]}`, zh ? "只在这台电脑生效" : "This computer only",
           `home 首页 样式 ${v} ${L[v]} 小组件 widget app 经典 classic 原来 sy`, () => { App.setHome(v); App.go ? App.go("review") : fire("data-go", "review"); });
     }
-    add("lang", zh ? "Switch to English" : "切换到中文", zh ? "界面语言" : "Language", "lang language english 中文 语言", () => fire("data-h", "lang"));
+    add("lang", zh ? "Switch to English" : "切换到中文", zh ? "界面语言" : "Language", "lang language english 中文 语言", () => fire("data-lang-set", zh ? "en" : "zh"));   // t-settings-tab: the header EN button is gone
+    {   // t-settings-tab: 设置 page + theme mode
+      add("go:settings", zh ? "跳到「设置」" : "Go to “Settings”", zh ? "通用 / 角色 / 文档 / 日志 / 系统" : "General / roster / docs / log / system", "settings 设置 sz shezhi page 页 go 跳", () => fire("data-go", "settings"));
+      const mode = App.themeMode ? App.themeMode() : "manual", th = document.documentElement.dataset.theme;
+      for (const [v, z, e] of [["auto", "自动（跟随系统）", "Auto (follow system)"], ["dark", "夜", "Night"], ["white", "昼", "Day"]]) {
+        if (v === "auto" ? mode === "auto" : mode === "manual" && th === v) continue;
+        add("tmode:" + v, zh ? `主题：${z}` : `Theme: ${e}`, zh ? "只在这台设备生效" : "This device only", `theme 主题 zt ${v} ${z} ${e} auto 自动 night day dark white 夜 昼 深色 白`, () => fire("data-tmode", v));
+      }
+    }
     if (!q) return out.filter(a => a.id.startsWith("approve:") || a.id === "go:review" || a.id === "status");
     const words = q.split(/\s+/).filter(Boolean);
     return out.filter(a => words.every(w => a.kw.includes(w)));

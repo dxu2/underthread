@@ -8,7 +8,7 @@
   };
 
   const UI = {
-    page: (p => p === "home" ? "review" : p)(LS.get("page", "review")), item: null, chat: LS.get("chat", "manager"), home: LS.get("home2", "widgets"),   // t-home-applike: desktop 首页 style, "app" | "classic"; t-home-widgets: + "widgets" (default since 11-02, new key so every desktop switches once)
+    page: (p => p === "home" ? "review" : ["roles", "docs", "logs"].includes(p) ? "settings" : p)(LS.get("page", "review")), setTab: (p => ["roles", "docs", "logs"].includes(p) ? p : LS.get("setTab", "general"))(LS.get("page", "review")),   /* t-settings-tab: 角色 / 文档 / 日志 live under 设置 */ item: null, chat: LS.get("chat", "manager"), home: LS.get("home2", "widgets"),   // t-home-applike: desktop 首页 style, "app" | "classic"; t-home-widgets: + "widgets" (default since 11-02, new key so every desktop switches once)
     lang: LS.get("lang", "zh"), theme: LS.get("theme", "dark"), sort: LS.get("sort", "activity"),
     logAgent: "", mailFilter: "all", doc: null, docs: null, docText: "", openRep: null, calForm: false, tick: 0,
     seen: LS.get("seen", {}), chatW: LS.get("chatW", 420), chatFold: LS.get("chatFold", false),
@@ -43,7 +43,7 @@
       online: "在线", offline: "离线", working: "执行中", idle: "待机",
       by_activity: "按最新动态", by_created: "最新创建", pending: "待审核",
       empty_review: "没有等你审核的东西。去喝杯水。", empty: "这里是空的。", empty_mail: "没有新动态", mail_thread: "{n} 条", unread_only: "未读",
-      wake: "唤醒管家", write_report: "日报", report_req: "让管家写日报", theme: "主题",
+      wake: "唤醒管家", refresh_usage: "刷新用量", settings: "设置", write_report: "日报", report_req: "让管家写日报", theme: "主题",
       cancel: "取消",
       reject_t: "驳 回", reject_reason: "原因（会被整理成规则提议）",
       lessons: "规则提议", adopt: "采纳", drop: "丢弃", dm: "私信",
@@ -81,7 +81,7 @@
       online: "online", offline: "offline", working: "working", idle: "idle",
       by_activity: "Latest activity", by_created: "Newest", pending: "Pending",
       empty_review: "Nothing waiting on you.", empty: "Nothing here.", empty_mail: "Nothing new", mail_thread: "{n}", unread_only: "Unread",
-      wake: "Ping manager", write_report: "Report", report_req: "Ask for a report", theme: "Theme",
+      wake: "Ping manager", refresh_usage: "Refresh usage", settings: "Settings", write_report: "Report", report_req: "Ask for a report", theme: "Theme",
       cancel: "Cancel",
       reject_t: "Reject", reject_reason: "Reason (becomes a rule proposal)",
       lessons: "Rule proposals", adopt: "Adopt", drop: "Drop", dm: "DM",
@@ -103,7 +103,7 @@
     },
   };
   const t = (k, vars) => { let s = (T[UI.lang] && T[UI.lang][k]) ?? T.zh[k] ?? k; for (const [a, b] of Object.entries(vars || {})) s = s.replace("{" + a + "}", b); return s; };
-  const EN_SUB = { review: "HOME", main: "MAIN QUEST", side: "SIDE QUEST", daily: "DAILY COMMISSIONS", urgent: "URGENT EVENTS",
+  const EN_SUB = { settings: "SETTINGS", review: "HOME", main: "MAIN QUEST", side: "SIDE QUEST", daily: "DAILY COMMISSIONS", urgent: "URGENT EVENTS",
     ongoing: "ONGOING EVENTS", pipe: "PRODUCTION LINE", board: "COMMISSION BOARD", logs: "JOURNAL", reports: "REPORTS", channels: "CHANNELS", docs: "ARCHIVE", assets: "ASSET LIBRARY", roles: "ROSTER", mail: "MAILBOX" };
   const CATS = ["main", "side", "daily", "urgent", "ongoing"];
   const STAGES = ["todo", "doing", "review", "waiting", "done"];
@@ -685,11 +685,11 @@
       UG.at = Date.now(); UG.busy = null; if (!d || !Array.isArray(d.roles)) return;
       const k = JSON.stringify([d.day, d.roles.map(r => [r.id, r.new])]); UG.data = d;
       if (k === UG.key) return; UG.key = k;
-      if (UI.page === "review") renderPage();
+      if (UI.page === "review" || (UI.page === "settings" && UI.setTab === "system")) renderPage();
       const m = $("#modal .mdl.sys"); if (m && m._paint) m._paint();
     });
   }
-  setInterval(() => { if (!document.hidden && (UI.page === "review" || $("#modal .mdl.sys"))) loadRoleUsage(); }, 15000);   // a quiet state does not re-render, so poll the counts here
+  setInterval(() => { if (!document.hidden && (UI.page === "review" || (UI.page === "settings" && UI.setTab === "system") || $("#modal .mdl.sys"))) loadRoleUsage(); }, 15000);   // a quiet state does not re-render, so poll the counts here
   const fmtTok = n => { n = +n || 0; const en = UI.lang === "en";
     if (n >= 1e8 && !en) return (n / 1e8).toFixed(n >= 1e9 ? 0 : 1) + " 亿";
     return n >= 1e6 ? (n / 1e6).toFixed(n >= 1e7 ? 0 : 1) + "M" : n >= 1e3 ? Math.round(n / 1e3) + "k" : String(n); };
@@ -800,11 +800,10 @@
     const unread = (ST.mail || []).filter(m => !m.read).length;
     $("#hdrctrl").innerHTML = `
       <span class="hc-stage" role="radiogroup" aria-label="${UI.lang === "en" ? "Stage" : "舞台"}">${[["night", "舞台·夜", "Stage · night", "dark"], ["day", "舞台·昼", "Stage · day", "white"]].map(x => { const on = !!document.documentElement.dataset.stage && UI.theme === x[3]; return `<button type="button" class="${on ? "on" : ""}" role="radio" aria-checked="${on}" title="${UI.lang === "en" ? x[2] : x[1]}" aria-label="${UI.lang === "en" ? x[2] : x[1]}" data-stage-set="${x[0]}"><i></i></button>`; }).join("")}</span>
-      <button data-h="lang">${UI.lang === "zh" ? "EN" : "中"}</button>
       <button data-h="chat" class="hc-chat" aria-expanded="${document.body.classList.contains("chat-pop")}">${UI.lang === "en" ? "Chat" : "聊天"}</button>
       <button data-h="mail">✉ ${t("mail")} ${unread ? `<span class="badge">${unread}</span>` : ""}</button>
       <button data-h="report">${t("write_report")}</button>
-      <button data-h="ping">${t("wake")}</button>`;
+      <button data-h="ping" title="${UI.lang === "en" ? "Ask the manager to re-read the quota (wakes it if asleep)" : "让管家重新读一次额度（睡着时也会叫醒）"}">${t("refresh_usage")}</button>`;
   }
   document.addEventListener("click", e => {
     const h = e.target.closest("[data-h]"); if (!h) return;
@@ -814,7 +813,8 @@
     if (k === "mail") { MB.open ? closeMailbox() : openMailbox(); }
     if (k === "chat") chatPop(!document.body.classList.contains("chat-pop"));
     if (k === "report") go("reports");
-    if (k === "ping") api("ping").then(() => toast("ping → inbox"));
+    if (k === "ping") api("ping", { note: "刷新用量" }).then(() => toast(UI.lang === "en" ? "Asked the manager to refresh usage" : "已让管家刷新用量"));   // t-settings-tab: same ping, with the note; 唤醒管家 moved to 设置 · 系统
+    if (k === "wake") api("ping").then(() => toast("ping → inbox"));
   });
   $("#brand").addEventListener("click", () => go("review"));
   $("#stamina").addEventListener("click", () => modalStatus());
@@ -861,7 +861,7 @@
   }
   function renderLeft() {
     const c = counts();
-    const navs = ["review", ...CATS, "sep", "pipe", "board", "logs", "reports", "channels", "docs", "assets", "roles"];
+    const navs = ["review", ...CATS, "sep", "pipe", "board", "reports", "channels", "assets", "settings"];   // t-settings-tab: 日志 / 文档 / 角色 moved into 设置
     $("#nav").innerHTML = navs.map(k => k === "sep" ? `<div class="nav-sep"></div>` :
       `<button class="nav-i ${UI.page === k ? "on" : ""} ${k === "urgent" && c.urgent ? "urgent" : ""}" data-go="${k}"><span>${t(k)}</span><span class="n${c[k] === 0 ? " z" : ""}">${c[k] ?? ""}</span></button>`).join("");
 
@@ -913,7 +913,8 @@
     const cd = e.target.closest("[data-cal-del]"); if (cd) { api("calendar_del", { id: cd.dataset.calDel }); return; }
     const oi = e.target.closest("[data-item]"); if (oi && !e.target.closest("button")) { openItem(oi.dataset.item); return; }
   });
-  const pageAlias = p => p === "home" ? "review" : p;   // r-improve-1102 P5: #page=home (the phone 首页 tab's name) = the 首页 page, key "review"
+  const SET_TABS = ["general", "roles", "docs", "logs", "system"];
+  const pageAlias = p => { if (["roles", "docs", "logs"].includes(p)) { UI.setTab = p; LS.set("setTab", p); return "settings"; } return p === "home" ? "review" : p; };   // t-settings-tab: old pages = 设置 tabs   // r-improve-1102 P5: #page=home (the phone 首页 tab's name) = the 首页 page, key "review"
   function go(p) {
     p = pageAlias(p);
     // the "new" group on the review page compares against when you last left it
@@ -928,6 +929,7 @@
     const day = en ? d.toLocaleDateString("en-US", { month: "short", day: "numeric", weekday: "short" }) : `${d.getMonth() + 1}月${d.getDate()}日 · 周${"日一二三四五六"[d.getDay()]}`;
     return `<div class="ink-eb">${day}<i></i>${right}</div>`; }
   function pageHead(k, extra = "") {
+    if (UI.noHead) return extra;   // t-settings-tab: a page drawn inside a 设置 tab keeps its bars, not its masthead
     return `<div class="ph ph-${k}">${inkEb("Underthread")}<h1>${t(k)}</h1>${UI.lang === "zh" ? `<div class="en">${EN_SUB[k] || ""}</div>` : ""}${orn()}</div>${extra}`;
   }
   function card(it) {
@@ -1365,7 +1367,7 @@
     },
     roles() {
       const ls = ST.lessons || [];
-      window.RF && RF.ensure(() => { if (UI.page === "roles") renderPage(); });
+      window.RF && RF.ensure(() => { if (UI.page === "settings" && UI.setTab === "roles") renderPage(); });
       return pageHead("roles") + `<div class="roster">${agents().map(a => {
         const mine = items().filter(i => i.owner === a.id);
         const done = mine.filter(i => i.stage === "done"), first = done.filter(i => !i.rejects).length;
@@ -1493,6 +1495,61 @@
       ${flag ? `<span class="pl-flag${it.stage === "review" || awaitsUser(it) ? " you" : ""}">${flag}</span>` : ""}
       <div class="m">${av(agent(it.owner), "sm", it.id)}<span>${t(it.category)}</span>${plats ? `<span>${esc(plats)}</span>` : ""}${guess ? `<span class="pl-guess" title="${en ? "No pipe:<stage> tag; guessed from the owner" : "没有 pipe:阶段 标签，按负责人推断"}">${en ? "guessed" : "推断"}</span>` : ""}</div></div>`;
   }
+  // ===== t-settings-tab (approved 11-04, plan v1.1): one 设置 page. Tabs 通用 / 角色 / 文档 / 日志 / 系统; the old 角色 / 文档 / 日志 pages are drawn
+  // inside their tab (UI.noHead drops their masthead). 通用 gathers the phone 更多 settings + theme mode; 系统 = status, role usage, GitHub token, 唤醒管家.
+  // Theme mode (rt.themeMode auto | manual) is decided before first paint in index.html and kept live in mobile.js ui13.
+  const themeMode = () => LS.get("themeMode", "manual") === "auto" ? "auto" : "manual";
+  const RMQ_S = matchMedia("(prefers-reduced-motion: reduce)");
+  const ST_L = { general: ["通用", "General"], roles: ["角色", "Roster"], docs: ["文档", "Docs"], logs: ["日志", "Log"], system: ["系统", "System"] };
+  function setTab(k, dir) {
+    if (!SET_TABS.includes(k)) return;
+    const was = UI.setTab; UI.setTab = k; LS.set("setTab", k);
+    if (UI.page !== "settings") { go("settings"); return; }
+    const pane = $("#pagebody .st-pane");
+    const draw = () => { UI.stDir = dir || (SET_TABS.indexOf(k) >= SET_TABS.indexOf(was) ? "r" : "l"); renderPage(); UI.stDir = ""; };
+    if (pane && !RMQ_S.matches && was !== k) { pane.classList.add("st-out"); setTimeout(draw, 90); } else draw();   // fade out, then slide the new pane in from the side you moved to
+  }
+  document.addEventListener("click", e => { const b = e.target.closest("[data-settab]"); if (b) setTab(b.dataset.settab); });
+  const stRow = (b, sm, right, attrs = "", tag = "button") => `<${tag} ${tag === "button" ? 'type="button" ' : ""}class="st-row" ${attrs}><span class="st-tx"><b>${b}</b>${sm ? `<small>${sm}</small>` : ""}</span>${right}</${tag}>`;
+  const stSeg = (key, list, on, attr) => `<div class="seg st-seg" data-seg="${key}" role="radiogroup">${list.map(([v, zh, en]) => `<button type="button" class="seg-i ${v === on ? "on" : ""}" role="radio" aria-checked="${v === on}" ${attr}="${v}">${UI.lang === "en" ? en : zh}</button>`).join("")}</div>`;
+  const stSw = on => `<span class="sw ${on ? "on" : ""}" aria-hidden="true"><i></i></span>`;
+  const stSec = (h, rows) => `<section class="st-sec"><h4>${h}</h4>${rows}</section>`;
+  function stGeneral() {
+    const en = UI.lang === "en", R = document.documentElement, mode = themeMode(), cur = R.dataset.theme === "white" ? "white" : "dark";
+    const sys = matchMedia("(prefers-color-scheme: dark)").matches ? (en ? "system is dark" : "系统是深色") : matchMedia("(prefers-color-scheme: light)").matches ? (en ? "system is light" : "系统是浅色") : (en ? "by clock, 07–19 day" : "按时间：07–19 点用昼");
+    const now = `<span class="st-now">${en ? "Now" : "现在"} <b>${cur === "white" ? (en ? "Day" : "昼") : (en ? "Night" : "夜")}</b>${mode === "auto" ? ` · ${sys}` : ""}</span>`;
+    const look = stRow(en ? "Theme" : "主题", (mode === "auto" ? (en ? "Auto follows your system light / dark setting." : "自动：跟着系统的深浅色走（Mac 和 iPhone 选「自动」外观时，会按日出日落切换）") : (en ? "Fixed on this device." : "手动：固定用选好的这一套，只在这台设备生效")) + now,
+        stSeg("tmode", [["auto", "自动", "Auto"], ["dark", "夜", "Night"], ["white", "昼", "Day"]], mode === "auto" ? "auto" : cur, "data-tmode"), "", "div")
+      + stRow(en ? "Stage background" : "舞台背景", en ? "Your terrace office behind everything; night / day follow the theme" : "你画的露台办公室做背景，夜 / 昼跟着上面的主题", stSw(!!R.dataset.stage), `data-stage-tog aria-pressed="${!!R.dataset.stage}"`)
+      + (MOBQ.matches ? "" : stRow(en ? "Home style" : "首页样式", en ? "This computer only" : "只在这台电脑生效", stSeg("homestyle", [["widgets", "小组件", "Widgets"], ["app", "app 式", "App"], ["classic", "原来的", "Classic"]], UI.home, "data-home-set"), "", "div"))
+      + stRow(en ? "Language" : "界面语言", "", stSeg("lang", [["zh", "中文", "中文"], ["en", "English", "English"]], UI.lang, "data-lang-set"), "", "div");
+    const P = window.Push ? Push.status() : null;
+    const push = P ? stRow(en ? "Notifications" : "推送通知", esc(P.label) + (P.diag ? `<span class="st-diag">${esc(P.diag)}</span>` : ""), stSw(P.on), `data-set="push" aria-pressed="${!!P.on}"`)
+      + (P.on && App.pushPrefs ? `<div class="st-sub">${App.pushPrefs()}</div>` : "")
+      + (P.on ? stRow(en ? "Send a test" : "发一条测试通知", "", `<em class="st-go">›</em>`, `data-set="pushtest"`) : "") : "";
+    const mic = stRow(en ? "Microphone test" : "麦克风测试", en ? "Check before voice calls" : "语音通话前的真机检查", `<em class="st-go">›</em>`, `data-set="mictest"`);
+    return stSec(en ? "Appearance" : "外观", look) + stSec(en ? "Notifications" : "通知", push + mic);
+  }
+  function stSystem() {
+    const en = UI.lang === "en";
+    loadHealth(60000); const SY = statusSummary(statusRows());
+    loadRoleUsage();
+    const rows = stRow(en ? "System status" : "系统状态", `<span class="sy-sum-t ${SY.lv}">${esc(SY.txt)}</span>`, `<em class="st-go">›</em>`, `data-set="status"`)
+      + (typeof ghOpen === "function" ? stRow(en ? "GitHub push token" : "GitHub 推送令牌", esc(ghLabel()), `<em class="st-go">›</em>`, `data-set="ghtok"`) : "")
+      + stRow(en ? "Wake the manager" : "唤醒管家", en ? "Drops a ping in the inbox; use it when the manager is asleep or offline" : "往收件箱发一条 ping，管家休眠或离线时用", `<em class="st-go">›</em>`, `data-h="wake"`);
+    return stSec(en ? "System" : "系统", rows) + `<section class="st-sec st-ru"><h4>${en ? "Usage by role · today" : "各角色用量 · 今天"}</h4>${ruHTML(99, { tot: true, quota: true })}</section>`;
+  }
+  PAGES.settings = function () {
+    const k = SET_TABS.includes(UI.setTab) ? UI.setTab : "general", en = UI.lang === "en";
+    const tabs = `<div class="st-tabs"><div class="seg" data-seg="settab" role="tablist">${SET_TABS.map(x => `<button type="button" class="seg-i ${x === k ? "on" : ""}" role="tab" aria-selected="${x === k}" data-settab="${x}">${ST_L[x][en ? 1 : 0]}</button>`).join("")}</div></div>`;
+    let body;
+    UI.noHead = true;
+    try { body = k === "general" ? stGeneral() : k === "system" ? stSystem() : PAGES[k](); } finally { UI.noHead = false; }
+    return pageHead("settings") + tabs + `<div class="st-pane st-p-${k}${UI.stDir ? " st-in-" + UI.stDir : ""}" role="tabpanel">${body || ""}</div>`;
+  };
+  document.addEventListener("click", e => {
+    const l = e.target.closest("[data-lang-set]"); if (l && l.dataset.langSet !== UI.lang) { UI.lang = l.dataset.langSet; LS.set("lang", UI.lang); render(); }
+  });
   PAGES.pipe = function () {
     const en = UI.lang === "en", all = items().filter(i => i.stage !== "done" && ["main", "side"].includes(i.category));
     const content = all.filter(isContent), skipped = all.filter(i => !isContent(i));
@@ -3363,6 +3420,7 @@
     rejectItem(id) { openItem(id); modalReject(); }, on: fn => hooks.push(fn), inkEb, route: (P, via) => route(P, via),
     snoozed: it => snoozed(it), snzMenu: (id, anchor, done) => snzMenu(id, anchor, done), snzLine: () => snzLine(), snzText: it => snzText(it),   /* ri1103-P2 */
     usage: () => usage(), roleUsage: () => roleUsage(), ruHTML: (n, o) => ruHTML(n, o), fmtTok,   /* t-home-usage */
+    themeMode: () => themeMode(), setTab: k => setTab(k),   /* t-settings-tab */
   };
 
   // ---------- t-push-deeplink: one router for "go to this target" (cold-start hash, or a tapped notification while the app is open) ----------
@@ -3396,6 +3454,7 @@
   // deep links: #page=board  #item=<id>  #theme=light  #lang=en
   const H = new URLSearchParams(location.hash.slice(1));
   if (H.get("page")) UI.page = pageAlias(H.get("page"));
+  if (H.get("tab") && SET_TABS.includes(H.get("tab"))) UI.setTab = H.get("tab");   // t-settings-tab: #page=settings&tab=system
   if (H.get("theme")) UI.theme = H.get("theme");
   if (H.get("home")) UI.home = ["classic", "app"].includes(H.get("home")) ? H.get("home") : "widgets";   // t-home-applike: #home=classic / #home=app, this load only
   if (H.get("lang")) UI.lang = H.get("lang");

@@ -1681,3 +1681,12 @@ body.kb .dw-toc:not(.open) { display: none; }   /* keyboard up: the pill would s
 .snz-wrap.sheet .snz-o { padding: 13px 12px; font-size: var(--fs-16); }
 .snz-wrap.sheet .snz-o span { font-size: var(--fs-14); }
 .snz-cus input { font-size: var(--fs-16); padding: 8px 10px; }
+
+/* ===== t-settings-tab: 设置 page on the phone. Tabs scroll sideways if they ever overflow; segmented controls drop under the label. ===== */
+.ph-settings + .st-tabs { margin: 0 0 14px; }
+.st-tabs .seg { max-width: 100%; }
+.st-tabs .seg-i { padding: 8px 13px; }
+.st-sec { padding: 2px 4px; border-radius: 16px; }
+.st-row { flex-wrap: wrap; row-gap: 10px; }
+.st-row > .st-seg { margin-left: auto; }
+.st-p-roles, .st-p-docs, .st-p-logs { margin: 0 -2px; }
