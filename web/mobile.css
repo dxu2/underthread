@@ -1690,3 +1690,15 @@ body.kb .dw-toc:not(.open) { display: none; }   /* keyboard up: the pill would s
 .st-row { flex-wrap: wrap; row-gap: 10px; }
 .st-row > .st-seg { margin-left: auto; }
 .st-p-roles, .st-p-docs, .st-p-logs { margin: 0 -2px; }
+
+/* ===== t-ri1104-p1: the tab pill stays readable over content.
+   Headless Chromium showed page text straight through the pill (its blur did not take effect there; real iPhone unknown), and the pill tint was only 36-52%,
+   so labels sat on top of sharp text. The tint now carries readability on its own (84% of the page colour), and the scrim behind the pill starts 28px higher
+   so content fades out before it reaches the labels. Blur stays on top of that where it works. Reduced transparency keeps the solid fill. ===== */
+@supports ((-webkit-backdrop-filter: blur(1px)) or (backdrop-filter: blur(1px))) {
+  html[data-theme] #tabbar .tb-row { background: color-mix(in srgb, var(--bg) 84%, transparent); }
+}
+html[data-theme] #tabbar::before { top: -28px; background: linear-gradient(to top, var(--bg) 0, color-mix(in srgb, var(--bg) 72%, transparent) 45%, transparent 100%); }
+@media (prefers-reduced-transparency: reduce) {
+  html[data-theme] #tabbar .tb-row { background: var(--glass-solid); }
+}
