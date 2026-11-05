@@ -158,8 +158,13 @@ a:hover { color: var(--soul); text-shadow: 0 0 12px var(--glow-a); }
 .hdr-ctrl button:hover { color: var(--ink); text-shadow: 0 0 12px var(--glow-a); }
 .hdr-ctrl button:hover::after { left: 0; right: 0; }
 .hdr-ctrl .badge { font-family: var(--f-display); font-size: var(--fs-10); background: var(--dot); color: #fff; border-radius: 8px; padding: 0 5px; line-height: 15px;
-  box-shadow: 0 0 0 1.5px var(--bg); animation: pulse 2.4s ease-in-out infinite; }
-@keyframes pulse { 50% { box-shadow: 0 0 2px rgba(227,115,93,.2); } }
+  box-shadow: 0 0 0 1.5px var(--bg); position: relative; }
+/* t-power-save: pulse used to animate box-shadow, which repaints the dot every frame. The glow now sits on ::after and only its opacity moves (compositor only).
+   Every dot that pulses (.hdr-ctrl .badge, .ch-roster .unread, phone .dp-un.on / .hd-stat.alert .hd-rdot) uses this ::after; a rule that stops the pulse hides the ::after. */
+@keyframes pulse { 50% { opacity: 1; } }
+.hdr-ctrl .badge::after, .ch-roster .unread::after { content: ""; position: absolute; inset: 0; border-radius: inherit; box-shadow: 0 0 2px .5px rgba(227,115,93,.25); opacity: 0; pointer-events: none; animation: pulse 2s infinite; }
+.hdr-ctrl .badge::after { animation-duration: 2.4s; animation-timing-function: ease-in-out; }
+@media (prefers-reduced-motion: reduce) { .hdr-ctrl .badge::after, .ch-roster .unread::after { display: none; } }
 
 /* ---------- ticker ---------- */
 #ticker { display: flex; justify-content: center; align-items: center; gap: 14px; padding: 9px 28px 7px; font-size: var(--fs-14); min-height: 38px; }
@@ -257,7 +262,7 @@ body.resizing { cursor: col-resize; user-select: none; }
    All periods divide --wk-period, so every ring on the screen beats together. No JS timers; CSS animations pause with the tab by themselves.
    D1 strip (home.js, mobile.css) reads the same tokens. White theme: only --accent* variables, no extra rule. ===== */
 :root { --wk-period: 4s; --wk-breath: 2s; --wk-gap: 2px; --wk-w: 2px; --wk-ring: var(--accent); --wk-track: var(--accent-soft); --wk-ease: ease-in-out; }
-.av.working, .hd-mini.working { position: relative; box-shadow: 0 0 0 2px var(--bg); animation: wk-breathe var(--wk-breath) var(--wk-ease) var(--wp, 0s) infinite; }
+.av.working, .hd-mini.working { position: relative; box-shadow: 0 0 0 2px var(--bg); }   /* t-power-save: the 1.02 wk-breathe scale is gone (it alone cost ~400 ms/s of style recalc on desktop); ring, ripple and dot stay */
 .av.working::before, .hd-mini.working::before { content: ""; position: absolute; inset: calc(-1 * (var(--wk-gap) + var(--wk-w))); padding: var(--wk-w); border-radius: inherit; pointer-events: none;
   background: conic-gradient(from 0deg, var(--wk-track) 0 30%, var(--wk-ring) 100%);
   -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor; mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0);
@@ -268,7 +273,6 @@ body.resizing { cursor: col-resize; user-select: none; }
 .av.sm .aw, .cm-to .av .aw, .cl-back .av .aw { display: none; }   /* the dot only where the avatar is >= 32px */
 .av.sm.working { --wk-gap: 1.5px; --wk-w: 1.5px; }
 @keyframes wk-spin { to { transform: rotate(360deg); } }
-@keyframes wk-breathe { 0%, 100% { scale: 1; } 50% { scale: 1.02; } }
 @keyframes wk-ripple { 0% { opacity: 0; scale: .98; } 18% { opacity: .5; } 100% { opacity: 0; scale: 1.34; } }
 @keyframes wk-dot { 0%, 100% { opacity: 1; scale: 1; } 50% { opacity: .45; scale: .8; } }
 @keyframes wk-glow { 0%, 100% { opacity: .4; } 50% { opacity: 1; } }
@@ -503,7 +507,7 @@ textarea { font-family: var(--f-body); }
 .ch-roster button .av { transition: transform .45s var(--ease), box-shadow .4s; }
 .ch-roster button:hover { color: var(--ink2); } .ch-roster button:hover .av { transform: translateY(-3px); }
 .ch-roster button.on { color: var(--ink); } .ch-roster button.on .av { box-shadow: 0 0 0 3px var(--bg), 0 0 0 4px var(--ink2), 0 0 16px var(--glow-a); transform: translateY(-2px); }
-.ch-roster .unread { position: absolute; top: -1px; right: 5px; width: 8px; height: 8px; border-radius: 50%; background: var(--dot); box-shadow: 0 0 0 1.5px var(--bg); animation: pulse 2s infinite; }
+.ch-roster .unread { position: absolute; top: -1px; right: 5px; width: 8px; height: 8px; border-radius: 50%; background: var(--dot); box-shadow: 0 0 0 1.5px var(--bg); }
 .ch-msgs { flex: 1; overflow-y: auto; padding: 16px 24px 24px; display: flex; flex-direction: column; gap: 18px;
   -webkit-mask-image: linear-gradient(transparent, black 26px); mask-image: linear-gradient(transparent, black 26px); }
 .msg { max-width: 100%; }
@@ -2411,6 +2415,7 @@ html.th-vt::view-transition-old(root), html.th-vt::view-transition-new(root) { a
 
 /* t-ri1104-p2: unread counts instead of bare dots (chat roster + TEAM rows); same --dot colour as before */
 .ch-roster .unread.n { width: auto; min-width: 16px; height: 16px; padding: 0 4px; box-sizing: border-box; top: -4px; right: 1px; border-radius: 8px; color: #fff; font: 600 var(--fs-10)/16px var(--f-sys, system-ui); font-style: normal; text-align: center; font-variant-numeric: tabular-nums; animation: none; }
+.ch-roster .unread.n::after { display: none; }   /* t-power-save: the count badge never pulsed */
 .team-i .tn { display: inline-block; margin-left: 6px; min-width: 18px; height: 18px; padding: 0 5px; box-sizing: border-box; border-radius: 9px; background: var(--dot); color: #fff; font: 600 var(--fs-11)/18px var(--f-sys, system-ui); font-style: normal; text-align: center; font-variant-numeric: tabular-nums; vertical-align: 1px; }
 
 /* ===== t-ri1104-p3: 常驻活动 = schedule (app.js ongoingPage). Shared by desktop and phone; phone tweaks in mobile.css. ===== */
@@ -2450,3 +2455,7 @@ html.th-vt::view-transition-old(root), html.th-vt::view-transition-new(root) { a
 .rs-last u { text-decoration: none; color: var(--ink); font-weight: 600; transition: color .2s var(--ease); }
 .rs-last u:hover { color: var(--accent); }
 @media (prefers-reduced-motion: reduce) { .rs-row, .rs-tg, .rs-tg i, .rs-last u { transition: none; } }
+
+/* t-power-save: idle pause (fx.js). After 20 s without input or when the window loses focus, fx.js marks every element running an infinite animation
+   (data-ip: s = itself, b = ::before, a = ::after) and sets html[data-idle]; this pauses only those. Removing data-idle resumes them where they stopped. */
+html[data-idle] [data-ip~="s"], html[data-idle] [data-ip~="b"]::before, html[data-idle] [data-ip~="a"]::after { animation-play-state: paused !important; }

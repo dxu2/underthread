@@ -482,7 +482,8 @@
     });
     ta.addEventListener("input", upd); ta.addEventListener("focus", () => setPanel(false));
     document.addEventListener("pointerdown", e => { if (c.classList.contains("panel-on") && !e.target.closest(".ch-comp")) setPanel(false); }, true);
-    setInterval(upd, 300);   // value cleared by send() and attachment chips change without input events
+    /* value cleared by send() and attachment chips change without input events. t-power-save: ticks only while this composer is in the page and visible */
+    const updT = setInterval(() => { if (!c.isConnected) { clearInterval(updT); return; } if (!document.hidden && !document.documentElement.dataset.idle) upd(); }, 300);
     upd();
   }
   function composers() {
@@ -1028,7 +1029,13 @@
   document.addEventListener("focusin", e => { if (e.target.matches && e.target.matches("#right .ch-comp textarea")) { place(); fit(e.target); } });
   mqp.addEventListener && mqp.addEventListener("change", place);
   let last = null;
-  setInterval(() => { const ta = find(); if (!ta) return; place(); const v = ta.value; if (v !== last) { last = v; fit(ta); } }, 200);   // value changed without an input event (cleared after send)
+  /* value changed without an input event (cleared after send). t-power-save: the 200 ms tick runs only while the chat input exists, the page is visible and not idle;
+     it stops when the input goes and restarts on the next focus / input / visibility change */
+  let fitT = 0;
+  const fitTick = () => { const ta = find(); if (!ta) { clearInterval(fitT); fitT = 0; return; } if (document.hidden || document.documentElement.dataset.idle) return; place(); const v = ta.value; if (v !== last) { last = v; fit(ta); } };
+  const fitOn = () => { if (!fitT && find()) fitT = setInterval(fitTick, 200); };
+  fitOn();
+  document.addEventListener("focusin", fitOn); document.addEventListener("input", fitOn); document.addEventListener("visibilitychange", fitOn); document.addEventListener("pointerdown", fitOn, true);
 })();
 
 /* ===== ui13 (t-slack-ios P1): three-way theme switch (深色 / 浅色 / 白), remembered in localStorage, <meta theme-color> kept in step.

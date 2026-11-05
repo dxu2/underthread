@@ -335,7 +335,7 @@ body.vp-fix #toast { bottom: auto; top: calc(var(--app-h) - var(--tb-h) - 56px);
 body::after { -webkit-mask-image: linear-gradient(to bottom, transparent calc(env(safe-area-inset-top) + 90px), black calc(env(safe-area-inset-top) + 150px));
                       mask-image: linear-gradient(to bottom, transparent calc(env(safe-area-inset-top) + 90px), black calc(env(safe-area-inset-top) + 150px)); }
 /* B: mail badge is plain red, no glow or pulse */
-.hdr-ctrl .badge { box-shadow: none; animation: none; }
+.hdr-ctrl .badge { box-shadow: none; animation: none; } .hdr-ctrl .badge::after { display: none; }
 /* C: no glow around the orb */
 .orb { filter: none; }
 /* D: (t-stamina-stale) the old "% stays bright when stale" rule is gone; stale greys out everywhere (style.css) */
@@ -647,7 +647,7 @@ body #right .ch-comp .m-send { height: 40px; margin-top: 0; margin-bottom: 0; }
 [data-theme="white"] #tabbar button.on { color: var(--accent); }
 [data-theme="white"] #tabbar button.on svg { filter: none; }
 [data-theme="white"] .tb-ind b { background: var(--accent); box-shadow: none; }
-[data-theme="white"] #tabbar .tb-badge, [data-theme="white"] .hdr-ctrl .badge, [data-theme="white"] .cl-n { box-shadow: 0 0 0 1.5px #fff; animation: none; color: #fff; }
+[data-theme="white"] #tabbar .tb-badge, [data-theme="white"] .hdr-ctrl .badge, [data-theme="white"] .cl-n { box-shadow: 0 0 0 1.5px #fff; animation: none; color: #fff; } [data-theme="white"] .hdr-ctrl .badge::after { display: none; }
 /* chat: bubbles + composer */
 [data-theme="white"] #right .msg .mb, [data-theme="white"] .m-typing .mb { background: #f1f1f2; border: 0; color: var(--ink); }
 [data-theme="white"] #right .msg:not(.me) > .mb::before, [data-theme="white"] .m-typing .mb::before { background: var(--bub); border: 0; box-shadow: -1px 1px 0 var(--bub-line); }
@@ -1172,7 +1172,8 @@ html[lang="en"] .dp-info .n b { font-family: var(--f-body); letter-spacing: .01e
 html[lang="en"] .dp-info .rl, html[lang="en"] .dp-t, html[lang="en"] .hd-st { font-family: var(--f-body); }
 html[lang="en"] .dp-vn { font-family: var(--f-display); font-size: var(--fs-10); letter-spacing: .16em; text-transform: uppercase; }
 .dp-un { position: absolute; top: 9px; right: calc(var(--sk) * .5 + 5px); width: 9px; height: 9px; border-radius: 50%; background: var(--dot); box-shadow: 0 0 0 1.5px rgba(0,0,0,.55); transform: scale(0); transition: transform var(--m-base) var(--m-spring); z-index: 4; }
-.dp-un.on { transform: scale(1); animation: pulse 2s infinite; }
+.dp-un.on { transform: scale(1); }
+.dp-un.on::after, .hd-stat.alert .hd-rdot::after { content: ""; position: absolute; inset: 0; border-radius: inherit; box-shadow: 0 0 2px .5px rgba(227,115,93,.25); opacity: 0; pointer-events: none; animation: pulse 2s infinite; }   /* t-power-save: pulse on ::after, opacity only (see style.css) */
 .dp.act .dp-un { right: auto; left: calc(var(--sk) + 9px); top: 12px; }   /* t-office-d1-s3: the expanded panel's top-right holds the two round keys */
 .dp-rg { position: absolute; left: calc(50% + 2px); top: 10px; width: 14px; height: 14px; margin-left: -7px; opacity: 0; transform: scale(.6); transition: opacity var(--m-base) var(--m-ease-std), transform var(--m-slow) var(--m-spring); z-index: 3; }
 .dp.w .dp-rg { opacity: 1; transform: none; } .dp.act .dp-rg { opacity: 0; }
@@ -1227,7 +1228,7 @@ html[lang="en"] .dp-vn { font-family: var(--f-display); font-size: var(--fs-10);
 .hd-stat span { font-family: var(--f-cjk); font-size: var(--fs-11); color: var(--dim); letter-spacing: .04em; }
 .hd-stat.on { background: var(--accent-soft); } .hd-stat.on b { color: var(--ink); }
 .hd-rdot { position: absolute; top: 7px; left: calc(50% + 14px); transform: scale(0); transition: transform var(--m-base) var(--m-spring); }
-.hd-stat.alert .hd-rdot { transform: scale(1); animation: pulse 2s infinite; }
+.hd-stat.alert .hd-rdot { transform: scale(1); }
 .hd-stat:focus-visible, .hd-pill:focus-visible, .hd-chip:focus-visible, .dp-b:focus-visible { outline: 2px solid var(--ink); outline-offset: 1px; }
 /* long-press quick sheet: the only blurred layer, and only while open */
 .dp-sheet-w { position: fixed; inset: 0; z-index: 80; display: flex; align-items: flex-end; padding: 0 12px calc(env(safe-area-inset-bottom, 0px) + 12px); opacity: 0; transition: opacity var(--m-base) var(--m-ease-std); }
@@ -1243,7 +1244,7 @@ html[lang="en"] .dp-vn { font-family: var(--f-display); font-size: var(--fs-10);
 @media (max-width: 340px) { .hd { --sk: 20px; } .dp.act { flex-grow: 2.7; } .dp-strip { height: 168px; } .dp-info .n b { font-size: var(--fs-15); } .dp-info .n .hd-st { display: none; } }
 @media (prefers-reduced-motion: reduce) {
   .dp, .dp-art, .dp-info, .dp-btns, .hd-exp, .hd.open .hd-exp, .hd-alert, .hd-pill .hd-pc { transition: none; }
-  .hd-office, .hd.open .hd-office { transform: none; transition: opacity var(--m-quick) linear; } .dp-rg i, .dp:not(.w) .dp-img, .dp.lit::before, .dp-un.on, .hd-st i, .hd-stat.alert .hd-rdot, .dp.w .dp-edge { animation: none; }
+  .hd-office, .hd.open .hd-office { transform: none; transition: opacity var(--m-quick) linear; } .dp-rg i, .dp:not(.w) .dp-img, .dp.lit::before, .dp-un.on, .hd-st i, .hd-stat.alert .hd-rdot, .dp.w .dp-edge { animation: none; } .dp-un.on::after, .hd-stat.alert .hd-rdot::after { display: none; }
   .dp.mc .dp-fx .s1, .dp.mc .dp-fx .s2 { display: none; } .hd-enter, .hd-enter .dp { animation: none; }
 }
 

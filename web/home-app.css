@@ -124,7 +124,8 @@ html[data-home="app"][lang="en"] .dp-info .n b { font-family: var(--f-body); let
 html[data-home="app"][lang="en"] .dp-info .rl, html[data-home="app"][lang="en"] .dp-t, html[data-home="app"][lang="en"] .hd-st { font-family: var(--f-body); }
 html[data-home="app"][lang="en"] .dp-vn { font-family: var(--f-display); font-size: var(--fs-10); letter-spacing: .16em; text-transform: uppercase; }
 html[data-home="app"] .dp-un { position: absolute; top: 9px; right: calc(var(--sk) * .5 + 5px); width: 9px; height: 9px; border-radius: 50%; background: var(--dot); box-shadow: 0 0 0 1.5px rgba(0,0,0,.55); transform: scale(0); transition: transform var(--m-base) var(--m-spring); z-index: 4; }
-html[data-home="app"] .dp-un.on { transform: scale(1); animation: pulse 2s infinite; }
+html[data-home="app"] .dp-un.on { transform: scale(1); }
+html[data-home="app"] .dp-un.on::after, html[data-home="app"] .hd-stat.alert .hd-rdot::after { content: ""; position: absolute; inset: 0; border-radius: inherit; box-shadow: 0 0 2px .5px rgba(227,115,93,.25); opacity: 0; pointer-events: none; animation: pulse 2s infinite; }
 html[data-home="app"] .dp.act .dp-un { right: auto; left: calc(var(--sk) + 9px); top: 12px; }
 html[data-home="app"] .dp-rg { position: absolute; left: calc(50% + 2px); top: 10px; width: 14px; height: 14px; margin-left: -7px; opacity: 0; transform: scale(.6); transition: opacity var(--m-base) var(--m-ease-std), transform var(--m-slow) var(--m-spring); z-index: 3; }
 html[data-home="app"] .dp.w .dp-rg { opacity: 1; transform: none; }
@@ -182,7 +183,7 @@ html[data-home="app"] .hd-stat span { font-family: var(--f-cjk); font-size: var(
 html[data-home="app"] .hd-stat.on { background: var(--accent-soft); }
 html[data-home="app"] .hd-stat.on b { color: var(--ink); }
 html[data-home="app"] .hd-rdot { position: absolute; top: 7px; left: calc(50% + 14px); transform: scale(0); transition: transform var(--m-base) var(--m-spring); }
-html[data-home="app"] .hd-stat.alert .hd-rdot { transform: scale(1); animation: pulse 2s infinite; }
+html[data-home="app"] .hd-stat.alert .hd-rdot { transform: scale(1); }
 html[data-home="app"] .hd-stat:focus-visible, html[data-home="app"] .hd-pill:focus-visible, html[data-home="app"] .hd-chip:focus-visible, html[data-home="app"] .dp-b:focus-visible { outline: 2px solid var(--ink); outline-offset: 1px; }
 html[data-home="app"] .dp-sheet-w { position: fixed; inset: 0; z-index: 80; display: flex; align-items: flex-end; padding: 0 12px calc(env(safe-area-inset-bottom, 0px) + 12px); opacity: 0; transition: opacity var(--m-base) var(--m-ease-std); }
 html[data-home="app"] .dp-sheet-w.in { opacity: 1; }
@@ -196,6 +197,7 @@ html[data-home="app"] .sh-h span:not(.hd-mini) { font-family: var(--f-cjk); font
   html[data-home="app"] .dp, html[data-home="app"] .dp-art, html[data-home="app"] .dp-info, html[data-home="app"] .dp-btns, html[data-home="app"] .hd-exp, html[data-home="app"] .hd.open .hd-exp, html[data-home="app"] .hd-alert, html[data-home="app"] .hd-pill .hd-pc { transition: none; }
   html[data-home="app"] .hd-office, html[data-home="app"] .hd.open .hd-office { transform: none; transition: opacity var(--m-quick) linear; }
   html[data-home="app"] .dp-rg i, html[data-home="app"] .dp:not(.w) .dp-img, html[data-home="app"] .dp.lit::before, html[data-home="app"] .dp-un.on, html[data-home="app"] .hd-st i, html[data-home="app"] .hd-stat.alert .hd-rdot, html[data-home="app"] .dp.w .dp-edge { animation: none; }
+  html[data-home="app"] .dp-un.on::after, html[data-home="app"] .hd-stat.alert .hd-rdot::after { display: none; }
   html[data-home="app"] .dp.mc .dp-fx .s1, html[data-home="app"] .dp.mc .dp-fx .s2 { display: none; }
   html[data-home="app"] .hd-enter, html[data-home="app"] .hd-enter .dp { animation: none; }
 }

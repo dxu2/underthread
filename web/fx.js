@@ -45,8 +45,13 @@
     }
     let mx = -999, my = -999;
     addEventListener("pointermove", e => { mx = e.clientX; my = e.clientY; }, { passive: true });
-    let last = 0;
+    let last = 0, held = false, running = true;
+    idle.subs.push(on => {   /* t-power-save: idle stops the loop outright (no empty rAF ticks); wake restarts it where the motes were */
+      held = on;
+      if (!on && !running) { running = true; last = performance.now(); requestAnimationFrame(frame); }
+    });
     function frame(t) {
+      if (held) { running = false; return; }
       requestAnimationFrame(frame);
       if (document.hidden || t - last < 33) return;
       const dt = Math.min(3, (t - last) / 16.7); last = t;
@@ -207,7 +212,54 @@
     }
   }
 
+  /* ---------- t-power-save: idle pause ----------
+     After 20 s without input, or when the window loses focus, every infinite animation pauses (CSS and WAAPI) and the motes canvas stops.
+     Finite animations (entrances, press, new bubbles) keep running, so content that arrives while idle still shows up.
+     CSS animations are paused by marking their element (data-ip: s = itself, b = ::before, a = ::after) and one html[data-idle] rule in style.css,
+     not by Animation.pause(): a WAAPI pause would override animation-play-state for good and break .stamina.stale / body.lb-open later.
+     Polls that re-render while idle bring fresh nodes; a MutationObserver marks those too. Any input removes data-idle and everything resumes in place.
+     Voice-call rings (vc-*) are never paused. */
+  const IDLE_MS = 20000;
+  const idle = { on: false, last: Date.now(), t: 0, q: 0, mo: null, held: new Set(), subs: [] };
+  const isVc = (a, el) => (a.animationName || "").startsWith("vc-") || !!(el && el.closest && el.closest(".vc-pill, .vc-full, [data-noidle]"));
+  function markAll() {
+    let list; try { list = document.getAnimations(); } catch (_) { return; }
+    for (const a of list) {
+      const fx = a.effect, tm = fx && fx.getTiming && fx.getTiming();
+      if (!tm || tm.iterations !== Infinity || a.playState !== "running") continue;
+      const el = fx.target; if (!el || isVc(a, el)) continue;
+      if (a.animationName === undefined) { try { a.pause(); idle.held.add(a); } catch (_) { } continue; }   /* script-made (WAAPI) loop */
+      const k = fx.pseudoElement === "::before" ? "b" : fx.pseudoElement === "::after" ? "a" : "s", cur = el.dataset.ip || "";
+      if (!cur.split(" ").includes(k)) el.dataset.ip = (cur + " " + k).trim();
+    }
+  }
+  function sleep() {
+    if (idle.on) return;
+    idle.on = true; document.documentElement.dataset.idle = "1"; markAll();
+    idle.subs.forEach(f => f(true));
+    if (!window.MutationObserver) return;
+    idle.mo = idle.mo || new MutationObserver(() => { if (!idle.q) idle.q = setTimeout(() => { idle.q = 0; if (idle.on) markAll(); }, 300); });
+    idle.mo.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ["class"] });
+  }
+  function wake() {
+    idle.last = Date.now();
+    if (!idle.on) return;
+    idle.on = false; delete document.documentElement.dataset.idle;
+    if (idle.mo) idle.mo.disconnect();
+    idle.held.forEach(a => { try { if (a.playState === "paused") a.play(); } catch (_) { } }); idle.held.clear();
+    idle.subs.forEach(f => f(false)); arm();
+  }
+  function arm() {
+    clearTimeout(idle.t);
+    idle.t = setTimeout(function chk() { const left = IDLE_MS - (Date.now() - idle.last); if (left > 50) idle.t = setTimeout(chk, left); else sleep(); }, IDLE_MS);
+  }
+  ["pointerdown", "pointermove", "keydown", "wheel", "touchstart"].forEach(t => addEventListener(t, wake, { passive: true, capture: true }));
+  addEventListener("scroll", wake, { passive: true, capture: true });
+  addEventListener("focus", wake);
+  addEventListener("blur", () => setTimeout(() => { if (!document.hasFocus() && !(document.activeElement && document.activeElement.tagName === "IFRAME")) sleep(); }, 0));
+  arm();
+
   ambience(); pointerGlow();
   if (document.readyState === "loading") addEventListener("DOMContentLoaded", splash); else splash();
-  window.FX = { enter, rows, burst, titleCard, countUp, reduce, missionComplete };
+  window.FX = { enter, rows, burst, titleCard, countUp, reduce, missionComplete, idle: { isOn: () => idle.on, sleep, wake } };
 })();

@@ -3563,7 +3563,10 @@
     window.FX && FX.enter($("#pagebody"));
     if (H.get("item") || H.get("dm") || H.get("rep") || H.get("push")) { const r = route(H, "cold"); document.dispatchEvent(new CustomEvent("rt:routed", { detail: { via: "cold", result: r, push: H.get("push") } })); }
   });
-  setInterval(poll, 2500);
+  /* t-power-save: a hidden tab polls every 30 s instead of 2.5 s, and refreshes once the moment it is visible again */
+  let pollAt = Date.now();
+  setInterval(() => { if (document.hidden && Date.now() - pollAt < 30000) return; pollAt = Date.now(); poll(); }, 2500);
+  document.addEventListener("visibilitychange", () => { if (!document.hidden) { pollAt = Date.now(); poll(); } });
   setInterval(() => { if (ST) renderLeft(); document.querySelectorAll(".m-typing[data-until]").forEach(b => { if (b.dataset.until && Date.now() > +b.dataset.until) b.remove(); }); }, 60000);   // t-typing-fix: stale typing dots go even without a poll change
 })();
 
