@@ -133,31 +133,64 @@
     e.preventDefault(); e.stopImmediatePropagation();
   }, true);
 
-  // ---- gestures: pointer events; 1 finger = swipe / drag / pan, 2 fingers = pinch, double tap / double click = zoom ----
+  // ---- gestures (t-img-zoom): pointer events. Tap / click the image = fit <-> 2x at that point; drag pans when zoomed;
+  // 2 fingers = pinch around the midpoint; wheel / trackpad pinch (ctrl+wheel) / Safari gesture events zoom at the cursor.
+  // Unzoomed touch: horizontal swipe = prev/next, vertical swipe = close. Tap on the empty stage (not the image) closes.
+  // Pan is clamped so the image edge never leaves the stage; everything animates unless prefers-reduced-motion.
   function gestures(st) {
-    const P = new Map(); let g = null, lastTap = 0;
+    const P = new Map(); let g = null, gs0 = 1;
     const media = () => $(".lb-media", st);
     const isImg = () => { const m = media(); return !!(m && m.tagName === "IMG"); };
     const body = () => (isImg() && media()) || $(".lb-pdfc", st);   // what a swipe moves: the image, or the phone PDF cover (t-media-viewer)
     const frame = () => $(".lb-frame", root);
-    const apply = (anim) => { const m = media(); if (!m || m.tagName !== "IMG") return; m.style.transition = anim ? "transform .22s var(--ease)" : "none"; m.style.transform = `translate(${zoom.x}px,${zoom.y}px) scale(${zoom.s})`; pct(); root.classList.toggle("zoomed", zoom.s > 1.02); };
-    setZoom = s => { const m = media(); if (!m || m.tagName !== "IMG") return; zoom.s = Math.max(1, Math.min(5, s)); if (zoom.s < 1.02) zoom = { s: 1, x: 0, y: 0 }; apply(true); };
+    const ZMAX = 6, ZTAP = 2;
+    // rest centre of the image (it sits centred in the stage's content box; transform-origin is its centre)
+    const centre = () => {
+      const r = st.getBoundingClientRect(), cs = getComputedStyle(st);
+      const pl = parseFloat(cs.paddingLeft) || 0, pr = parseFloat(cs.paddingRight) || 0, pt = parseFloat(cs.paddingTop) || 0, pb = parseFloat(cs.paddingBottom) || 0;
+      return { x: r.left + pl + (r.width - pl - pr) / 2, y: r.top + pt + (r.height - pt - pb) / 2, w: r.width, h: r.height };
+    };
+    const clamp = () => {   // keep the scaled image covering the stage (or centred on an axis where it is smaller)
+      const m = media(); if (!m) return; const c = centre();
+      const bx = Math.max(0, (m.offsetWidth * zoom.s - c.w) / 2), by = Math.max(0, (m.offsetHeight * zoom.s - c.h) / 2);
+      zoom.x = Math.max(-bx, Math.min(bx, zoom.x)); zoom.y = Math.max(-by, Math.min(by, zoom.y));
+    };
+    // zoom to scale s keeping the screen point (px, py) fixed under the cursor / fingers
+    const zoomAt = (s, px, py) => {
+      const c = centre(), s0 = zoom.s; s = Math.max(1, Math.min(ZMAX, s));
+      const qx = px - c.x, qy = py - c.y;
+      zoom.x = qx - (s / s0) * (qx - zoom.x); zoom.y = qy - (s / s0) * (qy - zoom.y); zoom.s = s;
+      if (s < 1.02) zoom = { s: 1, x: 0, y: 0 };
+    };
+    const apply = (anim, dur) => {
+      const m = media(); if (!m || m.tagName !== "IMG") return;
+      m.style.transition = anim && !reduce ? `transform ${dur || .28}s var(--ease)` : "none";
+      m.style.transform = `translate(${zoom.x}px,${zoom.y}px) scale(${zoom.s})`; pct(); root.classList.toggle("zoomed", zoom.s > 1.02);
+    };
+    setZoom = s => { const m = media(); if (!m || m.tagName !== "IMG") return; const c = centre(); zoomAt(s, c.x, c.y); clamp(); apply(true); };
+    const toggleAt = (x, y) => { if (zoom.s > 1.02) zoom = { s: 1, x: 0, y: 0 }; else { zoomAt(ZTAP, x, y); clamp(); } apply(true, .32); };
     const dist = () => { const a = [...P.values()]; return Math.hypot(a[0].x - a[1].x, a[0].y - a[1].y); };
+    const mid = () => { const a = [...P.values()]; return { x: (a[0].x + a[1].x) / 2, y: (a[0].y + a[1].y) / 2 }; };
     st.addEventListener("pointerdown", e => {
       if (!body() || e.target.closest(".lb-pdfgo")) return;
       if (e.pointerType === "mouse" && e.button !== 0) return;
       st.setPointerCapture(e.pointerId); P.set(e.pointerId, { x: e.clientX, y: e.clientY, t: e.pointerType });
-      if (P.size === 2 && isImg()) g = { mode: "pinch", d0: dist(), s0: zoom.s };
-      else g = { mode: "one", x0: e.clientX, y0: e.clientY, zx: zoom.x, zy: zoom.y, t0: Date.now(), moved: false, dir: null, touch: e.pointerType !== "mouse" };
+      if (P.size === 2 && isImg()) { const m0 = mid(); g = { mode: "pinch", d0: dist(), s0: zoom.s, x0: zoom.x, y0: zoom.y, mx: m0.x, my: m0.y }; }
+      else g = { mode: "one", x0: e.clientX, y0: e.clientY, zx: zoom.x, zy: zoom.y, t0: Date.now(), moved: false, dir: null, touch: e.pointerType !== "mouse",
+        onImg: !!e.target.closest("img.lb-media, .lb-pdfc") };
     });
     st.addEventListener("pointermove", e => {
       if (!P.has(e.pointerId) || !g) return;
       P.set(e.pointerId, { x: e.clientX, y: e.clientY });
-      if (g.mode === "pinch" && P.size >= 2) { zoom.s = Math.max(.7, Math.min(5, g.s0 * dist() / g.d0)); apply(false); return; }
+      if (g.mode === "pinch" && P.size >= 2) {   // scale around the starting midpoint, and follow the midpoint as it moves
+        const s = Math.max(.7, Math.min(ZMAX, g.s0 * dist() / g.d0)), m1 = mid(), c = centre(), qx = g.mx - c.x, qy = g.my - c.y;
+        zoom.x = qx - (s / g.s0) * (qx - g.x0) + (m1.x - g.mx); zoom.y = qy - (s / g.s0) * (qy - g.y0) + (m1.y - g.my); zoom.s = s;
+        apply(false); return;
+      }
       if (g.mode !== "one") return;
       const dx = e.clientX - g.x0, dy = e.clientY - g.y0;
       if (Math.abs(dx) + Math.abs(dy) > 6) g.moved = true;
-      if (zoom.s > 1.02) { zoom.x = g.zx + dx; zoom.y = g.zy + dy; apply(false); return; }
+      if (zoom.s > 1.02) { if (!g.moved) return; root.classList.add("panning"); zoom.x = g.zx + dx; zoom.y = g.zy + dy; apply(false); return; }
       if (!g.touch) return;   // mouse at 100%: nothing to drag (arrows / buttons switch)
       if (!g.dir && g.moved) g.dir = Math.abs(dx) > Math.abs(dy) ? "h" : "v";
       if (g.dir === "h") { body().style.transition = "none"; body().style.transform = `translateX(${dx}px)`; }
@@ -168,24 +201,41 @@
     });
     const end = e => {
       if (!P.has(e.pointerId)) return; P.delete(e.pointerId);
+      root.classList.remove("panning");
       if (!g) return;
-      if (g.mode === "pinch") { if (P.size < 2) { if (zoom.s < 1) { zoom = { s: 1, x: 0, y: 0 }; apply(true); } g = null; } return; }
+      if (g.mode === "pinch") {
+        if (P.size < 2) { if (zoom.s < 1.02) zoom = { s: 1, x: 0, y: 0 }; else clamp(); apply(true); g = null; }
+        return;
+      }
       const dx = e.clientX - g.x0, dy = e.clientY - g.y0, fast = Date.now() - g.t0 < 300, m = body(), f = frame();
       const snapBack = () => { $(".lb-bg", root).style.opacity = ""; f.style.transition = "transform .22s var(--ease)"; f.style.transform = ""; };
       if (zoom.s <= 1.02 && g.dir === "h" && (Math.abs(dx) > 70 || (fast && Math.abs(dx) > 30))) { g = null; const n0 = idx; go(idx + (dx < 0 ? 1 : -1)); if (idx === n0 && m) { m.style.transition = "transform .22s var(--ease)"; m.style.transform = ""; } return; }
       if (zoom.s <= 1.02 && g.dir === "v" && (Math.abs(dy) > 120 || (fast && Math.abs(dy) > 50))) { g = null; return close(); }
       if (g.dir === "v") snapBack();
       if (!g.moved) {   // tap / click
-        const now = Date.now();
-        if (!isImg()) { /* PDF cover: taps do nothing */ }
-        else if (now - lastTap < 300) { zoom = zoom.s > 1.02 ? { s: 1, x: 0, y: 0 } : { s: 2.5, x: 0, y: 0 }; apply(true); lastTap = 0; }
-        else if (g.touch) { lastTap = now; setTimeout(() => { if (lastTap === now) { lastTap = 0; chromeOn = !chromeOn; root.classList.toggle("hide", !chromeOn); } }, 300); }
-        else lastTap = now;   // mouse: a single click does nothing, a double click zooms
-      } else if (m && zoom.s <= 1.02) { zoom = { s: 1, x: 0, y: 0 }; if (isImg()) apply(true); else { m.style.transition = "transform .22s var(--ease)"; m.style.transform = ""; } }
+        if (isImg() && (g.onImg || zoom.s > 1.02)) toggleAt(e.clientX, e.clientY);
+        else if (!g.onImg) { g = null; return close(); }   // empty stage around the image
+        /* PDF cover: taps do nothing */
+      } else if (zoom.s > 1.02) { clamp(); apply(true, .22); }   // released after a pan: settle back inside the edges
+      else if (m) { zoom = { s: 1, x: 0, y: 0 }; if (isImg()) apply(true); else { m.style.transition = "transform .22s var(--ease)"; m.style.transform = ""; } }
       g = null;
     };
     st.addEventListener("pointerup", end); st.addEventListener("pointercancel", end);
-    st.addEventListener("wheel", e => { if (!media() || media().tagName !== "IMG") return; e.preventDefault(); zoom.s = Math.max(1, Math.min(5, zoom.s * (e.deltaY < 0 ? 1.12 : .9))); if (zoom.s === 1) { zoom.x = zoom.y = 0; } apply(false); }, { passive: false });
+    // wheel: a mouse notch (|deltaY| >= 40) zooms in an animated step; trackpad pinch (ctrlKey) and fine scroll follow continuously
+    st.addEventListener("wheel", e => {
+      if (!isImg()) return; e.preventDefault();
+      const d = e.deltaMode === 1 ? e.deltaY * 16 : e.deltaY;
+      if (!e.ctrlKey && zoom.s > 1.02 && Math.abs(d) < 40 && (e.deltaX || Math.abs(d) % 1)) {   // trackpad two-finger scroll while zoomed = pan
+        zoom.x -= e.deltaX; zoom.y -= d; clamp(); apply(false); return;
+      }
+      const k = Math.exp(-d * (e.ctrlKey ? .01 : .0025)), step = !e.ctrlKey && Math.abs(d) >= 40;
+      zoomAt(zoom.s * Math.max(.5, Math.min(2, k)), e.clientX, e.clientY); clamp();
+      apply(step, .2);
+    }, { passive: false });
+    // Safari on macOS sends trackpad pinch as gesture* events instead of ctrl+wheel
+    st.addEventListener("gesturestart", e => { if (!isImg()) return; e.preventDefault(); gs0 = zoom.s; });
+    st.addEventListener("gesturechange", e => { if (!isImg() || P.size) return; e.preventDefault(); zoomAt(gs0 * e.scale, e.clientX, e.clientY); clamp(); apply(false); });
+    st.addEventListener("gestureend", e => { if (!isImg()) return; e.preventDefault(); if (zoom.s < 1.02) { zoom = { s: 1, x: 0, y: 0 }; apply(true); } });
   }
 
   // ---- entry: click on any [data-lb] thumbnail or PDF link ----
