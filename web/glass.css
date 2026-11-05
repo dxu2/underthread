@@ -64,3 +64,60 @@ html[data-theme] {
   html[data-theme]:not([data-glass="0"]) .card .acts { right: 20px; bottom: 14px; }
   html[data-theme]:not([data-glass="0"]) .card.wk-on .wk-tag { margin-top: 8px; }
 }
+
+/* ---------- t-left-glass: the desktop rail is one floating glass panel ---------- */
+@media (min-width: 761px) {
+  html[data-theme]:not([data-glass="0"]) #layout { --left-w: 232px; }   /* +16px pays back the panel's outer margins (ink skin had 216) */
+  /* dark (not stage): two soft glows behind the rail, so the blur has something to show; the moving fog shows through too */
+  html[data-theme="dark"]:not([data-stage]):not([data-glass="0"]) #layout {
+    background: radial-gradient(150px 220px at 70px 30%, color-mix(in srgb, var(--accent) 22%, transparent), transparent 75%),
+      radial-gradient(170px 240px at 190px 78%, rgba(90, 120, 200, .16), transparent 75%) no-repeat; }
+  html[data-theme]:not([data-glass="0"]) #main::before { display: none; }
+  html[data-theme]:not([data-glass="0"]) #left { margin: 10px 4px 12px 12px; padding: 10px 10px 8px; border-radius: var(--r-xl);
+    background: var(--g-face); box-shadow: var(--g-ring), var(--g-sh);
+    -webkit-backdrop-filter: blur(var(--g-blur-2)) saturate(var(--g-sat)); backdrop-filter: blur(var(--g-blur-2)) saturate(var(--g-sat)); }
+  html[data-theme="dark"]:not([data-stage]):not([data-glass="0"]) #left { --g-tint: rgba(40, 40, 50, .42); --g-hi-2: rgba(255, 255, 255, .07); }
+  @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) { html[data-theme]:not([data-glass="0"]) #left { background: var(--solid, var(--bg)); } }
+  @media (prefers-reduced-transparency: reduce) { html[data-theme]:not([data-glass="0"]) #left { -webkit-backdrop-filter: none; backdrop-filter: none; background: var(--solid, var(--bg)); } }
+
+  /* nav: the selected item is drawn by ONE sliding .nav-pill (glass.js); items sit above it */
+  html[data-theme]:not([data-glass="0"]) #nav { position: relative; margin-bottom: 10px; gap: 1px; column-gap: 6px; }
+  html[data-theme]:not([data-glass="0"]) #nav .nav-pill { position: absolute; left: 0; top: 0; z-index: 0; border-radius: var(--r-s); pointer-events: none;
+    background: var(--g-tint-2); box-shadow: var(--g-ring), 0 4px 14px rgba(0, 0, 0, .12); opacity: 0;
+    transition: transform var(--m-slow) var(--m-spring), width var(--m-slow) var(--m-spring), height var(--m-slow) var(--m-spring), opacity var(--m-base) linear; }
+  html[data-theme]:not([data-glass="0"]) .nav-i { position: relative; z-index: 1; margin: 0; padding: 6px 12px; border-radius: var(--r-s); font-weight: 500;
+    transition: background-color var(--m-base) var(--m-ease), color var(--m-base) var(--m-ease), transform var(--m-fast) var(--m-ease); }
+  html[data-theme]:not([data-glass="0"]) .nav-i:hover { background: var(--g-tint-3); }
+  html[data-theme]:not([data-glass="0"]) .nav-i:active { transform: scale(var(--m-press)); }
+  html[data-theme]:not([data-glass="0"]) .nav-i.on { background: transparent; box-shadow: none; font-weight: 600; }
+  html[data-theme]:not([data-glass="0"]) #nav:not(:has(.nav-pill)) .nav-i.on { background: var(--g-tint-2); box-shadow: var(--g-ring); }   /* before glass.js runs */
+  html[data-theme]:not([data-glass="0"]) .nav-i > span:first-child::before, html[data-theme]:not([data-glass="0"]) .nav-i > span:first-child::after { display: none; }
+  html[data-theme]:not([data-glass="0"]) .nav-i .n:not(.z) { min-width: 22px; padding: 1px 7px; border-radius: 999px; background: var(--g-tint-3); text-align: center; font-size: var(--fs-11);
+    transition: background-color var(--m-base) var(--m-ease), color var(--m-base) var(--m-ease); }
+  html[data-theme]:not([data-glass="0"]) .nav-i.on .n:not(.z) { background: var(--accent); color: var(--accent-ink, #fff); }
+  html[data-theme]:not([data-glass="0"]) .nav-sep { margin: 6px 6px 8px; background: linear-gradient(90deg, transparent, var(--g-edge) 20%, var(--g-edge) 80%, transparent); }
+  /* entry tiles (制作线 / 委托板 / 报告 / 频道 / 素材 / 设置): 2 x 3 small glass tiles */
+  html[data-theme]:not([data-glass="0"]) #nav > .nav-sep ~ .nav-i { justify-content: center; padding: 5px 6px; margin-bottom: 4px; font-size: var(--fs-13);
+    background: var(--g-tint-3); box-shadow: inset 0 0 0 1px var(--g-edge); }
+  html[data-theme]:not([data-glass="0"]) #nav > .nav-sep ~ .nav-i:hover { background: var(--g-tint-2); transform: translateY(-1px); }
+  html[data-theme]:not([data-glass="0"]) #nav > .nav-sep ~ .nav-i:active { transform: scale(var(--m-press)); }
+  html[data-theme]:not([data-glass="0"]) #nav:has(.nav-pill) > .nav-sep ~ .nav-i.on { background: transparent; box-shadow: none; }
+
+  /* 今日日程: an inset sub-panel */
+  html[data-theme]:not([data-glass="0"]) #cal { margin: 0 0 8px; padding: 6px 6px 4px; border-radius: var(--r-m); background: var(--g-tint-3); box-shadow: inset 0 0 0 1px var(--g-edge); }
+  html[data-theme]:not([data-glass="0"]) #cal .side-h, html[data-theme]:not([data-glass="0"]) #team .side-h { background: transparent; padding-left: 4px; padding-right: 4px; }
+  html[data-theme]:not([data-glass="0"]) #cal .side-h::after { content: none; }
+  html[data-theme]:not([data-glass="0"]) #team .side-h { position: static; }
+  html[data-theme]:not([data-glass="0"]) .cal-i { border-bottom: 0; padding: 3px 4px; border-radius: var(--r-xs); transition: background-color var(--m-base) var(--m-ease); }
+  html[data-theme]:not([data-glass="0"]) .cal-i.cal-rt { gap: 6px; }
+  html[data-theme]:not([data-glass="0"]) .cal-i .tm { min-width: 0; }
+  html[data-theme]:not([data-glass="0"]) .cal-i:hover { background: var(--g-tint-3); }
+
+  /* TEAM */
+  html[data-theme]:not([data-glass="0"]) #left > #team { margin-right: -6px; padding-right: 6px; }
+  html[data-theme]:not([data-glass="0"]) #team .team-i { margin-left: 0; margin-right: 0; border-radius: var(--r-s);
+    transition: background-color var(--m-base) var(--m-ease), box-shadow var(--m-base) var(--m-ease), transform var(--m-fast) var(--m-ease); }
+  html[data-theme]:not([data-glass="0"]) #team .team-i:hover { background: var(--g-tint-3); }
+  html[data-theme]:not([data-glass="0"]) #team .team-i:active { transform: scale(.985); }
+  html[data-theme]:not([data-glass="0"]) #team .team-i.on { background: var(--g-tint-2); box-shadow: var(--g-ring); }
+}
