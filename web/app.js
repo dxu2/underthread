@@ -2240,7 +2240,9 @@
   const tocOff = sc => PHONE.matches ? (parseFloat(getComputedStyle(sc).paddingTop) || 0) : 0;
   function tocMode() {
     const nav = $("#drawer .dw-toc"); if (!nav) return;
-    nav.classList.toggle("open", !!TOC.open); const b = $("[data-toc-tg]", nav); if (b) b.setAttribute("aria-expanded", String(!!TOC.open));
+    const apply = () => { nav.classList.toggle("open", !!TOC.open); const b = $("[data-toc-tg]", nav); if (b) b.setAttribute("aria-expanded", String(!!TOC.open)); };
+    if (!TOC.open && nav.classList.contains("open") && window.Glass) return Glass.out(nav, apply);   /* t-toc-glass: close animation first (glass.js) */
+    apply();
   }
   function tocBuild() {
     const dw = $("#drawer"), nav = dw && $(".dw-toc", dw), sc = dw && $(".dw-scroll", dw); if (!nav || !sc) return;
@@ -2267,6 +2269,7 @@
     const pc = mr.height ? Math.round(Math.max(0, Math.min(1, (sr.bottom - mr.top) / mr.height)) * 100) : 0;
     if (TOC.cur !== cur) {
       TOC.cur = cur; $$("[data-toc]", nav).forEach((b, i) => b.classList.toggle("on", i === cur));
+      if (window.Glass) Glass.toc(nav);   /* t-toc-glass: slide the indicator to the lit line */
       const l = $(".toc-l", nav), b = cur >= 0 && $(`[data-toc="${cur}"]`, nav);   // keep the lit line inside the list's own scroll
       if (l && b && l.clientHeight && (b.offsetTop < l.scrollTop || b.offsetTop + b.offsetHeight > l.scrollTop + l.clientHeight)) l.scrollTop = b.offsetTop - l.clientHeight / 2;
     }

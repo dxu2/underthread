@@ -121,3 +121,66 @@ html[data-theme] {
   html[data-theme]:not([data-glass="0"]) #team .team-i:active { transform: scale(.985); }
   html[data-theme]:not([data-glass="0"]) #team .team-i.on { background: var(--g-tint-2); box-shadow: var(--g-ring); }
 }
+
+/* ---------- t-toc-glass: long-draft contents (desktop float + phone pill / bottom sheet) ---------- */
+@keyframes g-toc-in { from { transform: scale(.94) translateY(-6px); } }
+@keyframes g-toc-out { to { transform: scale(.96) translateY(-4px); } }
+@keyframes g-sheet-in { from { transform: translateY(100%); } }
+@keyframes g-sheet-out { to { transform: translateY(100%); } }
+@keyframes g-rise { from { opacity: 0; transform: translateY(6px); } }
+@keyframes g-fade { from { opacity: 0; } }
+@keyframes g-fade-out { to { opacity: 0; } }
+html[data-theme]:not([data-glass="0"]) .dw-toc .toc-box { border-radius: var(--r-m); background: var(--g-face); box-shadow: var(--g-ring), var(--g-sh);
+  -webkit-backdrop-filter: blur(var(--g-blur-2)) saturate(var(--g-sat)); backdrop-filter: blur(var(--g-blur-2)) saturate(var(--g-sat)); transform-origin: top right; }
+html[data-theme]:not([data-glass="0"]) .dw-toc.open .toc-box { animation: g-toc-in var(--m-slow) var(--m-spring) backwards; }
+html[data-theme]:not([data-glass="0"]) .dw-toc.g-out .toc-box { animation: g-toc-out .17s var(--m-ease) forwards; }
+html[data-theme]:not([data-glass="0"]) .dw-toc.g-out .toc-l, html[data-theme]:not([data-glass="0"]) .dw-toc.g-out .toc-bar { animation: g-fade-out .15s linear forwards; }
+html[data-theme]:not([data-glass="0"]) .dw-toc:not(.open) .toc-box { border-radius: 999px; }
+html[data-theme]:not([data-glass="0"]) .dw-toc .toc-h { padding: 11px 14px 9px; transition: background-color var(--m-base) var(--m-ease); }
+html[data-theme]:not([data-glass="0"]) .dw-toc .toc-h:active { transform: scale(var(--m-press)); }
+html[data-theme]:not([data-glass="0"]) .dw-toc .toc-h .k { color: var(--ink); font-weight: 600; }
+html[data-theme]:not([data-glass="0"]) .dw-toc .toc-h .pc { padding: 2px 8px; border-radius: 999px; background: var(--g-tint-3); color: var(--ink2); }
+html[data-theme]:not([data-glass="0"]) .dw-toc .toc-h .chev { transition: transform var(--m-slow) var(--m-spring); }
+html[data-theme]:not([data-glass="0"]) .dw-toc .toc-l { padding: 0 8px 8px; }
+/* timeline: one hairline down the list (on the rows, so it scrolls with them); the lit row = ONE sliding .toc-ind (glass.js) with an accent dot on the line */
+html[data-theme]:not([data-glass="0"]) .dw-toc .toc-l li { position: relative; z-index: 1; background: linear-gradient(var(--g-edge), var(--g-edge)) 9px 0 / 1px 100% no-repeat; }
+html[data-theme]:not([data-glass="0"]) .dw-toc.open .toc-l li { animation: g-rise .28s var(--m-ease) backwards; }
+html[data-theme]:not([data-glass="0"]) .dw-toc.open .toc-l li:nth-child(2) { animation-delay: 18ms; } html[data-theme]:not([data-glass="0"]) .dw-toc.open .toc-l li:nth-child(3) { animation-delay: 36ms; }
+html[data-theme]:not([data-glass="0"]) .dw-toc.open .toc-l li:nth-child(4) { animation-delay: 54ms; } html[data-theme]:not([data-glass="0"]) .dw-toc.open .toc-l li:nth-child(5) { animation-delay: 72ms; }
+html[data-theme]:not([data-glass="0"]) .dw-toc.open .toc-l li:nth-child(6) { animation-delay: 90ms; } html[data-theme]:not([data-glass="0"]) .dw-toc.open .toc-l li:nth-child(7) { animation-delay: 108ms; }
+html[data-theme]:not([data-glass="0"]) .dw-toc.open .toc-l li:nth-child(n+8) { animation-delay: 126ms; }
+html[data-theme]:not([data-glass="0"]) .dw-toc .toc-l button { position: relative; padding: 7px 10px 7px 22px; border-radius: var(--r-xs); font-size: var(--fs-13);
+  transition: background-color var(--m-base) var(--m-ease), color var(--m-base) var(--m-ease), transform var(--m-fast) var(--m-ease); }
+html[data-theme]:not([data-glass="0"]) .dw-toc .toc-l button.l2 { padding-left: 32px; }
+html[data-theme]:not([data-glass="0"]) .dw-toc .toc-l button:active { transform: scale(.98); }
+html[data-theme]:not([data-glass="0"]) .dw-toc .toc-l button.on { color: var(--ink); font-weight: 600; background: var(--g-tint-2); box-shadow: inset 0 0 0 1px var(--g-edge); }
+html[data-theme]:not([data-glass="0"]) .dw-toc .toc-l:has(.toc-ind) button.on { background: transparent; box-shadow: none; }
+html[data-theme]:not([data-glass="0"]) .dw-toc .toc-ind { position: absolute; left: 0; top: 0; z-index: 0; border-radius: var(--r-xs); pointer-events: none; opacity: 0;
+  background: var(--g-tint-2); box-shadow: inset 0 0 0 1px var(--g-edge);
+  transition: transform var(--m-slow) var(--m-spring), width var(--m-slow) var(--m-spring), height var(--m-slow) var(--m-spring), opacity var(--m-base) linear; }
+html[data-theme]:not([data-glass="0"]) .dw-toc .toc-ind::before { content: ""; position: absolute; left: 6px; top: 50%; width: 7px; height: 7px; margin-top: -3.5px; border-radius: 50%;
+  background: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 22%, transparent), 0 0 10px var(--accent); }
+html[data-theme]:not([data-glass="0"]) .dw-toc .toc-bar { height: 3px; margin: 4px 14px 12px; background: var(--g-tint-3); }
+html[data-theme]:not([data-glass="0"]) .dw-toc .toc-bar i { background: linear-gradient(90deg, color-mix(in srgb, var(--accent) 50%, transparent), var(--accent));
+  box-shadow: 0 0 8px color-mix(in srgb, var(--accent) 55%, transparent); transition: width var(--m-slow) var(--m-ease); }
+@media (prefers-reduced-motion: reduce) {
+  html[data-theme]:not([data-glass="0"]) .dw-toc .toc-l li { animation: none !important; }
+}
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) { html[data-theme]:not([data-glass="0"]) .dw-toc .toc-box { background: var(--solid, var(--bg)); } }
+@media (prefers-reduced-transparency: reduce) { html[data-theme]:not([data-glass="0"]) .dw-toc .toc-box { -webkit-backdrop-filter: none; backdrop-filter: none; background: var(--solid, var(--bg)); } }
+/* phone: the closed pill is light glass (blur-1); open = bottom sheet with heavy glass (blur-3), a grabber, slides up with a spring */
+@media (max-width: 760px) {
+  html[data-theme]:not([data-glass="0"]) .dw-toc .toc-box { max-height: none; -webkit-backdrop-filter: blur(var(--g-blur-1)) saturate(var(--g-sat)); backdrop-filter: blur(var(--g-blur-1)) saturate(var(--g-sat)); transform-origin: bottom left; }
+  html[data-theme]:not([data-glass="0"]) .dw-toc.open .toc-box { max-height: 62vh; border-radius: var(--r-xl) var(--r-xl) 0 0; animation-name: g-sheet-in; background: linear-gradient(180deg, var(--g-hi-2), transparent 42%), var(--g-tint-2);
+    -webkit-backdrop-filter: blur(var(--g-blur-3)) saturate(var(--g-sat)); backdrop-filter: blur(var(--g-blur-3)) saturate(var(--g-sat)); }
+  html[data-theme]:not([data-glass="0"]) .dw-toc.g-out .toc-box { animation: g-sheet-out .2s var(--m-ease) forwards; }
+  html[data-theme]:not([data-glass="0"]) .dw-toc.open .toc-box::before { content: ""; display: block; flex: none; width: 36px; height: 4px; margin: 8px auto 0; border-radius: 2px; background: var(--g-edge); }
+  html[data-theme]:not([data-glass="0"]) .dw-toc.open .toc-scrim { background: rgba(0, 0, 0, .28); animation: g-fade var(--m-base) linear backwards; }
+  html[data-theme]:not([data-glass="0"]) .dw-toc.g-out .toc-scrim { animation: g-fade-out .2s linear forwards; }
+  html[data-theme]:not([data-glass="0"]) .dw-toc.open .toc-h { padding: 10px 20px 10px; }
+  html[data-theme]:not([data-glass="0"]) .dw-toc.open .toc-l { padding: 0 12px 8px; }
+  html[data-theme]:not([data-glass="0"]) .dw-toc.open .toc-l li { background-position: 11px 0; }
+  html[data-theme]:not([data-glass="0"]) .dw-toc.open .toc-l button { font-size: var(--fs-15); padding: 10px 12px 10px 26px; }
+  html[data-theme]:not([data-glass="0"]) .dw-toc.open .toc-l button.l2 { padding-left: 36px; }
+  html[data-theme]:not([data-glass="0"]) .dw-toc.open .toc-ind::before { left: 8px; }
+}
