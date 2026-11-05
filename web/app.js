@@ -1283,11 +1283,24 @@
     }
     return out;
   }
+  /* t-ri1104-p4: a 「待审核: <title>」 mail only repeats line 1 (the title) and goes stale once the card moves on.
+     Phone 动态 rows of such mail show the card's latest thread line instead (who said it + text, max 60 chars).
+     Generic 验收 / 完成 stamps and stage events are skipped; with no line left: 已关单 / 等你验收 / the stage label. Display only. */
+  const REV_MAIL = /^待审核\s*[:：]/;
+  function cardLine(it) {
+    const en = UI.lang === "en", th = (it.thread || []).filter(x => x.kind !== "event" && x.kind !== "approve" && x.kind !== "done" && String(x.text || "").trim());
+    const x = th[th.length - 1];
+    if (!x) return it.stage === "done" ? (en ? "Closed" : "已关单") : it.stage === "review" ? (en ? "Waiting for your review" : "等你验收") : stageLabel(it.stage);
+    const who = x.who === "me" ? (en ? "You" : "你") : x.who ? aname(agent(x.who)) : "";
+    let s = mailPv(x.text, x.who && x.who !== "me" ? agent(x.who) : null);
+    if ([...s].length > 60) s = [...s].slice(0, 60).join("") + "…";
+    return who ? who + (en ? ": " : "：") + s : s;
+  }
   function mailRow(g) {
     const m = g.last, it = m.item ? ST.items.find(i => i.id === m.item) : null, a = m.agent ? agent(m.agent) : null;
     const unread = g.ms.some(x => !x.read);
     return actRow({ attr: `data-mail="${m.id}" data-mailids="${g.ms.map(x => x.id).join(",")}"`, av: a ? av(a, "", m.item) : av("me"), ws: it ? workersOf(it.id) : [], unread,
-      name: a ? aname(a) : whoName("me"), title: it ? it.title : "", time: agoH(m.t), preview: mailPv(m.text, a),
+      name: a ? aname(a) : whoName("me"), title: it ? it.title : "", time: agoH(m.t), preview: REV_MAIL.test(m.text || "") && it ? cardLine(it) : mailPv(m.text, a),
       chip: it ? rowLabel(it) : (m.kind === "reply" ? t("replies") : t("updates")), n: g.ms.length });
   }
   document.addEventListener("click", e => {
@@ -2779,9 +2792,16 @@
       .then(() => toast(pause ? (zh ? "已暂停 · 不会再定时触发" : "Paused") : (zh ? "已开启 · 每天 " + r.time : "Turned on")));
   });
   // persistent done marker: owner avatar + 委托完成 + when (replaces the faint "✦ 完成 · time" line). .pre = hidden until the splash ends, then it stamps in once.
+  /* t-ri1104-p4: some old done cards never got a closed time (22 on 11-04). Fall back to the last "→ done" stage event, then updated. Display only, state untouched. */
+  function closedAt(it) {
+    if (!it) return "";
+    if (it.closed) return it.closed;
+    const ev = (it.thread || []).filter(x => x.kind === "event" && /→\s*done\b/.test(x.text || "")).pop();
+    return (ev && ev.t) || it.updated || "";
+  }
   function stampHTML(it) {
     const own = agent(it.owner);
-    return `<div class="dw-stamp${DW.stampPre === it.id ? " pre" : ""}"><span class="st-av">${av(own)}</span><span class="st-tx"><b>${UI.lang === "en" ? "Mission Complete" : "委托完成"}</b><i>${esc(aname(own))} · ${when(it.closed)}</i></span></div>`;
+    return `<div class="dw-stamp${DW.stampPre === it.id ? " pre" : ""}"><span class="st-av">${av(own)}</span><span class="st-tx"><b>${UI.lang === "en" ? "Mission Complete" : "委托完成"}</b><i>${esc(aname(own))}${closedAt(it) ? " · " + when(closedAt(it)) : ""}</i></span></div>`;
   }
   $("#drawer").addEventListener("change", e => {
     if (e.target.matches && e.target.matches("[data-vd-base]")) { if (DW.vd) DW.vd.base = +e.target.value; renderDrawer(); return; }   // t-imp-p2
