@@ -2950,7 +2950,7 @@
   }, true);
   NARROWQ.addEventListener("change", () => { if (!NARROWQ.matches) chatPop(false); });
   function applyChatW() {
-    document.documentElement.style.setProperty("--chat-w", UI.chatFold ? "64px" : UI.chatW + "px");
+    document.documentElement.style.setProperty("--chat-w", UI.chatFold ? "80px" : UI.chatW + "px");   // t-rail-width: 64 -> 80, so avatars get ~14px either side and the unread badge / online dot sit inside
     document.body.classList.toggle("chat-folded", UI.chatFold);
   }
   function foldChat(on) {
@@ -3414,7 +3414,7 @@
     refresh: async () => { await poll(true); return !UI.down; },   // t-m2-c ④ pull-to-refresh: a forced full fetch; false = the server did not answer
     tablePv: s => tablePv(s),   // t-chat-table (mobile.js chat list preview)
     verCheck: () => verCheck(true), attachPick: p => attachPick(p),   // t-lib-attach (viewer.js)   // t-new-ver (tests)
-    setHome: v => setHome(v), homeStyle: () => UI.home, queueOf: id => queueOf(id), qBadge: (id, small) => qBadge(id, small),   /* t-agent-queue */ seenOf: id => seenOf(id), chatMailRead: (id, t) => chatMailRead(id, t),   /* r-improve-1102 P3, t-home-applike (palette) */
+    setHome: v => setHome(v), homeStyle: () => UI.home, queueOf: id => queueOf(id), qBadge: (id, small) => qBadge(id, small),   /* t-agent-queue */ seenOf: id => seenOf(id), chatMailRead: (id, t) => chatMailRead(id, t),   /* r-improve-1102 P3 (was swallowed by a // comment until 11-04) */   /* t-home-applike (palette) */
     draft: k => DRAFT.get(k), liveItem: a => liveItem(a), mgrOnline: a => mgrOnline(a), typingOn: (a, l) => typingOn(a, l), typingUntil: l => typingUntil(l),   // t-now-closed (home.js hero, office.js bubble)   // t-draft-keep (mobile.js chat list marks [草稿])
     go: p => go(p), openItem: id => openItem(id), seekItem: (id, sp) => seekItem(id, sp), seekChat: (t, q) => seekChat(t, q),   /* t-ri1103-p5 */ closeItem: () => closeItem(), backItem: () => backItem(), setChat: id => setChat(id), api: (k, b) => api(k, b), toast: (m, e) => toast(m, e),
     rejectItem(id) { openItem(id); modalReject(); }, on: fn => hooks.push(fn), inkEb, route: (P, via) => route(P, via),
