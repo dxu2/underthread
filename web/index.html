@@ -23,12 +23,21 @@ try{if(m!=="auto"&&m!=="manual"){m=L.getItem("rt.theme")?"manual":"auto";L.setIt
 if(m!=="auto"||/[#&]theme=/.test(location.hash))return;var q=function(s){return matchMedia("(prefers-color-scheme: "+s+")").matches;},h=new Date().getHours();
 t=q("dark")?"dark":q("light")?"white":(h>=7&&h<19?"white":"dark");try{L.setItem("rt.theme",JSON.stringify(t));}catch(e){}d.dataset.theme=t;
 var c=document.querySelector('meta[name="theme-color"]');if(c)c.content=t==="white"?"#ffffff":"#040404";})();</script>
+<!-- t-splash: opening (B 穿针) guard. Plays once per session unless rt.splash.mode="off", the tab opened in the background, or the hash has #nosplash / push= (a notification tap goes straight to the card).
+     Covers the first frame in the theme's base colour until splash.js takes over; drops itself after 4 s whatever happens. -->
+<script>(function(){var d=document.documentElement,L=localStorage,m="session",t=d.dataset.theme,h;try{m=JSON.parse(L.getItem("rt.splash.mode"))||"session";}catch(e){}
+if(m==="off"||document.visibilityState==="hidden"||/[#&](nosplash|push=)/.test(location.hash))return;try{if(sessionStorage.getItem("rt.splash")==="1")return;sessionStorage.setItem("rt.splash","1");}catch(e){return;}
+try{var r=JSON.parse(L.getItem("rt.theme"));if(r)t=r;}catch(e){}h=/[#&]theme=(\w+)/.exec(location.hash);if(h)t=h[1];
+d.dataset.splash="1";d.style.setProperty("--ut-guard",t==="white"?"#ffffff":t==="light"?"#e8e0cc":"#040404");setTimeout(function(){d.removeAttribute("data-splash");},4000);})();</script>
+<style>html[data-splash="1"] body::before{content:"";position:fixed;inset:0;z-index:2147483000;background:var(--ut-guard,#040404)}</style>
+<link rel="stylesheet" href="/static/splash.css?v=1">
+<script src="/static/splash.js?v=1" defer></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<!-- t-web-audit-2: brand serif fonts load without blocking first paint (only the splash title card uses them) -->
+<!-- t-web-audit-2: brand serif fonts load without blocking first paint (brand serif: 委托完成 title card) -->
 <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Cinzel+Decorative:wght@700&family=Noto+Serif+SC:wght@600&display=swap" onload="this.onload=null;this.rel='stylesheet'">
 <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Cinzel+Decorative:wght@700&family=Noto+Serif+SC:wght@600&display=swap"></noscript>
-<link rel="stylesheet" href="/static/style.css?v=137">
+<link rel="stylesheet" href="/static/style.css?v=138">
 <link rel="stylesheet" href="/static/mobile.css?v=111" media="(max-width: 760px)">
 <link rel="stylesheet" href="/static/home-app.css?v=6">   <!-- t-home-applike: desktop app-style 首页 (scoped to html[data-home=app]) -->
 <link rel="stylesheet" href="/static/widgets.css?v=8">   <!-- t-home-widgets: desktop widget 首页 (scoped to html[data-home=widgets]) -->
@@ -61,10 +70,10 @@ var c=document.querySelector('meta[name="theme-color"]');if(c)c.content=t==="whi
 <div id="modal" hidden></div>
 <div id="toast" hidden></div>
 <script src="/static/md.js?v=2"></script>
-<script src="/static/fx.js?v=7"></script>
+<script src="/static/fx.js?v=8"></script>
 <script src="/static/office.js?v=19"></script>
 <script src="/static/diff.js?v=1"></script>
-<script src="/static/app.js?v=158"></script>
+<script src="/static/app.js?v=159"></script>
 <script src="/static/preview.js?v=1"></script>
 <script src="/static/palette.js?v=10"></script>
 <script src="/static/home.js?v=13"></script>

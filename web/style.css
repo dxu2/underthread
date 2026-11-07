@@ -628,7 +628,6 @@ textarea { font-family: var(--f-body); }
   text-shadow: 0 0 40px var(--glow-a), 0 0 2px rgba(255,255,255,.3); animation: tc-in 1.6s var(--ease) both; }
 .title-card.cjk .tc-main { font-family: var(--f-brand-cjk); letter-spacing: .5em; padding-left: .5em; }
 @keyframes tc-in { from { opacity: 0; letter-spacing: .7em; filter: blur(10px); } }
-.title-card.splash { background: var(--void); }
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
@@ -1295,7 +1294,6 @@ html[data-theme="light"] .mc-flash { background: rgba(0,0,0,.28); }
 html[data-theme="white"] .title-card { background: radial-gradient(ellipse 50% 32% at 50% 50%, rgba(255,255,255,.94), transparent 75%); }
 html[data-theme="white"] .mc-st { --streak: rgba(0,0,0,.10); }
 html[data-theme="white"] .mc-flash { background: rgba(0,0,0,.28); }
-html[data-theme="white"] .title-card.splash { background: var(--void); }
 /* D2: three-way theme picker in the header (dark / light / white swatches). Clicks go through [data-theme-set] (mobile.js), the same path and rt.theme key as the phone menu. */
 .hdr-ctrl .hc-theme { display: inline-flex; align-items: center; gap: 2px; padding: 3px; border-radius: 999px; background: var(--chip); box-shadow: inset 0 0 0 1px var(--line); }
 .hdr-ctrl .hc-th { width: 24px; height: 24px; padding: 0; justify-content: center; border-radius: 50%; }
@@ -2545,3 +2543,15 @@ html[data-theme="light"] .brand img.wm-l, html[data-theme="white"] .brand img.wm
 #drawer .composer textarea, #right .ch-comp textarea { resize: none; scrollbar-width: none; overflow-y: auto; }
 #drawer .composer textarea::-webkit-scrollbar, #right .ch-comp textarea::-webkit-scrollbar { display: none; width: 0; height: 0; }
 @media (min-width: 761px) { #drawer .composer textarea { max-height: 200px; } }
+
+/* ===== t-splash: Settings › 开屏动画 row (a div with two buttons: 预览 + the switch) ===== */
+.st-row.st-sp .st-tx { flex: 1; min-width: 0; }
+.st-prev { flex: none; display: inline-flex; align-items: center; gap: 6px; height: 30px; padding: 0 12px; border-radius: 999px; border: 1px solid var(--line2);
+  background: none; color: var(--ink2); font: inherit; font-size: var(--fs-12); cursor: pointer; transition: background-color .2s, color .2s, border-color .2s, transform .15s var(--ease); }
+.st-prev i { font-style: normal; font-size: 9px; transition: transform .2s var(--ease); }
+.st-prev:hover { background: color-mix(in srgb, var(--ink) 6%, transparent); color: var(--ink); border-color: var(--line3); }
+.st-prev:hover i { transform: translateX(2px); }
+.st-prev:active { transform: scale(.96); }
+.st-swb { flex: none; display: inline-flex; padding: 4px; margin: -4px; border: 0; background: none; cursor: pointer; border-radius: 999px; }
+.st-swb:focus-visible, .st-prev:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+@media (prefers-reduced-motion: reduce) { .st-prev, .st-prev i { transition: background-color .2s, color .2s, border-color .2s !important; transform: none !important; } }

@@ -1592,6 +1592,7 @@
         stSeg("tmode", [["auto", "自动", "Auto"], ["dark", "夜", "Night"], ["white", "昼", "Day"]], mode === "auto" ? "auto" : cur, "data-tmode"), "", "div")
       + stRow(en ? "Stage background" : "舞台背景", en ? "Your terrace office behind everything; night / day follow the theme" : "你画的露台办公室做背景，夜 / 昼跟着上面的主题", stSw(!!R.dataset.stage), `data-stage-tog aria-pressed="${!!R.dataset.stage}"`)
       + stRow(en ? "Power saving" : "省电模式", psSub(psNow()), stSw(psNow()), `data-power-tog aria-pressed="${psNow()}"`)
+      + spRow(en)
       + (MOBQ.matches ? "" : stRow(en ? "Home style" : "首页样式", en ? "This computer only" : "只在这台电脑生效", stSeg("homestyle", [["dense", "紧凑", "Dense"], ["widgets", "小组件", "Widgets"], ["app", "app 式", "App"], ["classic", "原来的", "Classic"]], UI.home, "data-home-set"), "", "div"))
       + stRow(en ? "Language" : "界面语言", "", stSeg("lang", [["zh", "中文", "中文"], ["en", "English", "English"]], UI.lang, "data-lang-set"), "", "div");
     const P = window.Push ? Push.status() : null;
@@ -1623,6 +1624,31 @@
     const sm = p.querySelector(".st-tx small");
     if (sm) { sm.classList.remove("st-swap"); void sm.offsetWidth; sm.textContent = psSub(on); sm.classList.add("st-swap"); }
   });
+  /* t-splash: 开屏动画 (rt.splash.mode "session" | "off", read by the inline guard in index.html). A div row with two real buttons: the switch flips in place
+     (no re-render, like 省电模式) and 预览 plays the opening on this page now (UTSplash.play, does not touch rt.splash). */
+  const spOn = () => { try { return JSON.parse(localStorage.getItem("rt.splash.mode")) !== "off"; } catch { return true; } };
+  const spSub = on => UI.lang === "en" ? (on ? "Plays once each time you open the dashboard; tap or press any key to skip" : "Off: the dashboard opens straight away")
+    : (on ? "每次打开看板播一次，点一下或按任意键跳过" : "已关：打开看板直接进");
+  function spRow(en) {
+    const on = spOn();
+    return `<div class="st-row st-sp"><span class="st-tx"><b>${en ? "Opening animation" : "开屏动画"}</b><small>${spSub(on)}</small></span>`
+      + `<button type="button" class="st-prev" data-splash-prev aria-label="${en ? "Preview the opening" : "预览开屏动画"}"><i aria-hidden="true">▶</i>${en ? "Preview" : "预览"}</button>`
+      + `<button type="button" class="st-swb" data-splash-tog role="switch" aria-checked="${on}" aria-label="${en ? "Opening animation" : "开屏动画"}">${stSw(on)}</button></div>`;
+  }
+  function spPaint(on) {
+    document.querySelectorAll("[data-splash-tog]").forEach(b => {
+      b.setAttribute("aria-checked", String(on)); const sw = b.querySelector(".sw"); if (sw) sw.classList.toggle("on", on);
+      const sm = b.closest(".st-row") && b.closest(".st-row").querySelector(".st-tx small");
+      if (sm && sm.textContent !== spSub(on)) { sm.classList.remove("st-swap"); void sm.offsetWidth; sm.textContent = spSub(on); sm.classList.add("st-swap"); }
+    });
+  }
+  document.addEventListener("click", e => {
+    const t = e.target.closest && e.target.closest("[data-splash-tog],[data-splash-prev]"); if (!t) return;
+    if (t.hasAttribute("data-splash-prev")) { if (window.UTSplash) UTSplash.play({ force: true }); return; }
+    const on = !spOn(); try { localStorage.setItem("rt.splash.mode", JSON.stringify(on ? "session" : "off")); } catch { }
+    spPaint(on);
+  });
+  addEventListener("storage", e => { if (e.key === "rt.splash.mode") spPaint(spOn()); });   // another tab flipped it
   PAGES.settings = function () {
     const k = SET_TABS.includes(UI.setTab) ? UI.setTab : "general", en = UI.lang === "en";
     const tabs = `<div class="st-tabs"><div class="seg" data-seg="settab" role="tablist">${SET_TABS.map(x => `<button type="button" class="seg-i ${x === k ? "on" : ""}" role="tab" aria-selected="${x === k}" data-settab="${x}">${ST_L[x][en ? 1 : 0]}</button>`).join("")}</div></div>`;

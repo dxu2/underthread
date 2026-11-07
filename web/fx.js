@@ -190,13 +190,7 @@
     return el;
   }
 
-  // ---------- splash (once per browser session) ----------
-  function splash() {
-    let seen = false;
-    try { seen = sessionStorage.getItem("rt.splash") === "1"; sessionStorage.setItem("rt.splash", "1"); } catch { }
-    if (seen || reduce) return;
-    titleCard("Underthread", "Personal Agent Team", { cls: "splash", hold: 1500 });
-  }
+  /* the opening splash moved to splash.js (t-splash, B 穿针); titleCard stays for 委托完成 */
 
   // ---------- count-up for changing numbers ----------
   const lastNum = new WeakMap();
@@ -276,6 +270,5 @@
   addEventListener("storage", e => { if (e.key === "rt.powerSave") applyPower(psOn()); });
 
   ambience(); pointerGlow();
-  if (document.readyState === "loading") addEventListener("DOMContentLoaded", splash); else splash();
   window.FX = { enter, rows, burst, titleCard, countUp, reduce, missionComplete, idle: { isOn: () => idle.on, sleep, wake }, power: { isOn: psOn, set: power } };
 })();
