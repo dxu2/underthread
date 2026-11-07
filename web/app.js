@@ -2213,6 +2213,7 @@
   const drawerAtt = [];
   const DW = { to: null, pop: [], sel: 0, open: new Set(), n: 0, fresh: false, stampPre: null, askOpen: new Set(), sumOpen: new Set() };   // askOpen / sumOpen: item ids (t-ui-next 1, 4)
   const PHONE = matchMedia("(max-width: 760px)");
+  const NR_HIT = 4500;   // t-detail-jump-fix: how long the 新回复 box stays (CSS nrHitFade fades it in the last part)
   const nearEnd = sc => sc.scrollHeight - sc.scrollTop - sc.clientHeight < 60;
   const dwPinned = () => DW.pin && Date.now() < DW.pinUntil;   // t-detail-jump
   function dwPinEnd() { const sc = $("#drawer .dw-scroll"); if (!sc || !dwPinned()) return; sc.scrollTop = sc.scrollHeight; jumpState(); }
@@ -2785,8 +2786,13 @@
     // folded cards only need the toggle when they actually overflow
     $$(".cs-card.draftc", sc).forEach(c => { const m = $(".md", c), b = $(".cs-more", c); if (!c.classList.contains("folded")) { c.classList.add("folded"); const long = m.scrollHeight > m.clientHeight + 4; c.classList.remove("folded"); b.hidden = !long; } else b.hidden = m.scrollHeight <= m.clientHeight + 4; });
     const jumpEl = first && DW.jumpT ? [...sc.querySelectorAll(".cs-card[data-t]")].find(x => Date.parse(x.dataset.t) >= DW.jumpT) : null;   // t-home-newreplies
-    if (jumpEl) { DW.pin = false; DW.jumpT = 0; DW.hitT = jumpEl.dataset.t; sc.scrollTop = Math.max(0, jumpEl.getBoundingClientRect().top - sc.getBoundingClientRect().top + sc.scrollTop - 24); }
-    if (DW.hitT) { const h = sc.querySelector(`.cs-card[data-t="${CSS.escape(DW.hitT)}"]`); if (h) h.classList.add("nr-hit"); }   // stays marked across poll re-renders
+    if (jumpEl) { DW.pin = false; DW.jumpT = 0; DW.hitT = jumpEl.dataset.t; DW.hitAt = Date.now(); }
+    // t-detail-jump-fix: the 新回复 mark is only a mark. It used to head the else-if chain below, so after a jump no re-render ever pinned,
+    // followed new messages or kept the reading position again while the card stayed open. It now fades out (NR_HIT ms, poll-safe delay).
+    const hitAge = DW.hitT ? Date.now() - (DW.hitAt || 0) : NR_HIT;
+    const hitEl = hitAge < NR_HIT ? sc.querySelector(`.cs-card[data-t="${CSS.escape(DW.hitT)}"]`) : null;
+    if (hitEl) { hitEl.classList.add("nr-hit"); hitEl.style.animationDelay = -hitAge + "ms"; } else DW.hitT = "";
+    if (first && hitEl) sc.scrollTop = Math.max(0, hitEl.getBoundingClientRect().top - sc.getBoundingClientRect().top + sc.scrollTop - 24);   // opened from 新回复: start at the first unread reply
     else if (first || dwPinned()) { sc.scrollTop = sc.scrollHeight; dwPinWatch(sc); }   // t-detail-jump: open at the newest message (was: review cards at the current draft, others at the top)
     else if (wasEnd) { DW.pin = true; DW.pinUntil = Math.max(DW.pinUntil || 0, Date.now() + 1500); sc.scrollTop = sc.scrollHeight; dwPinWatch(sc); }   // t-detail-jump: already at the end → stay there while the re-rendered images settle
     else { sc.scrollTop = keep; if (grew) DW.fresh = true; }

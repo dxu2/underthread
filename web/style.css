@@ -2042,7 +2042,9 @@ html[data-theme] #toast::before, html[data-theme] #toast::after { display: none;
 .nr-r > .nr-dot { grid-column: 3; justify-self: end; margin: 0; }
 .nr-n { position: absolute; left: 38px; top: 5px; min-width: 16px; height: 16px; padding: 0 4px; border-radius: 8px; background: var(--accent); color: var(--accent-ink, #fff); font: 600 var(--fs-10)/16px var(--f-sys); text-align: center; }
 .nr-dot { display: inline-block; width: 8px; height: 8px; margin: 0 6px 0 0; border-radius: 50%; background: var(--accent); vertical-align: .15em; }
-#drawer .cs-card.nr-hit { box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--accent) 55%, transparent); }
+#drawer .cs-card.nr-hit { box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--accent) 55%, transparent); animation: nrHitFade 4500ms linear both; }
+@keyframes nrHitFade { 0%, 66% { box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--accent) 55%, transparent); } 100% { box-shadow: inset 0 0 0 1.5px transparent; } }   /* t-detail-jump-fix: plays once; re-renders pass a negative delay */
+@media (prefers-reduced-motion: reduce) { #drawer .cs-card.nr-hit { animation-timing-function: steps(1, end); } }
 
 /* ===== t-ask-bottom (2026-11-02): the unanswered question bar right above the detail's reply box (desktop and phone). One soft rounded block, no rule lines
    (matches t-detail-round2). The scroller shrinks for it on desktop (flex); on the phone the dock padding (--dock-h) grows and the open-pin re-pins. ===== */
