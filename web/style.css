@@ -636,6 +636,7 @@ textarea { font-family: var(--f-body); }
 
 /* ---------- English: Latin text wants tighter tracking and the display face ---------- */
 html[lang="en"] .nav-i { font-family: "Nunito", var(--f-sys); font-size: var(--fs-15); letter-spacing: .01em; }   /* t-nav-shoot: was Cinzel + .14em */
+@media (min-width: 761px) { html[lang="en"] #nav .nav-i { font-size: var(--fs-16); } html[lang="en"] #nav > .nav-sep ~ .nav-i { font-size: var(--fs-15); } }   /* t-rail-font: desktop 16/15 like zh (glass.css wins when glass is on); phone keeps 15 */
 html[lang="en"] .ph h1 { font-family: var(--f-display); letter-spacing: .3em; padding-left: .3em; font-size: var(--fs-28); }
 html[lang="en"] .btn, html[lang="en"] .hdr-ctrl, html[lang="en"] .grp-h, html[lang="en"] .col-h { letter-spacing: .1em; }
 html[lang="en"] .ch-who .nm, html[lang="en"] .rc-h .nm { font-family: var(--f-display); letter-spacing: 0; }

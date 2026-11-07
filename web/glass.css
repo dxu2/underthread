@@ -223,14 +223,16 @@ html[data-theme]:not([data-glass="0"]) .dw-toc .toc-bar i { background: linear-g
   html[data-theme]:not([data-glass="0"]) #nav { display: flex; flex-direction: column; gap: 1px; margin-bottom: 6px; }
   html[data-theme]:not([data-glass="0"]) #nav .nav-pill { background: var(--sl-on); box-shadow: none; }
   html[data-theme]:not([data-glass="0"]) #nav .nav-i, html[data-theme]:not([data-glass="0"]) #nav > .nav-sep ~ .nav-i {
-    justify-content: space-between; min-height: 30px; padding: 0 12px; margin: 0; border-radius: var(--r-s); font-size: var(--fs-14); font-weight: 400;
+    justify-content: space-between; min-height: 30px; padding: 0 12px; margin: 0; border-radius: var(--r-s); font-size: var(--fs-16); font-weight: 400;
     color: var(--ink2); background: transparent; box-shadow: none; }
+  html[data-theme]:not([data-glass="0"]) #nav > .nav-sep ~ .nav-i { font-size: var(--fs-15); }   /* t-rail-font (11-05, user 16/15): main rows 16, rows under the divider 15. Was 14 / 14. Backup .bak-railfont1 */
   html[data-theme]:not([data-glass="0"]) #nav .nav-i:hover, html[data-theme]:not([data-glass="0"]) #nav > .nav-sep ~ .nav-i:hover { color: var(--ink); background: var(--sl-hov); transform: none; }
   html[data-theme]:not([data-glass="0"]) #nav .nav-i:active, html[data-theme]:not([data-glass="0"]) #nav > .nav-sep ~ .nav-i:active { transform: scale(var(--m-press)); }
   html[data-theme]:not([data-glass="0"]) #nav .nav-i.on { color: var(--ink); font-weight: 600; }
   html[data-theme]:not([data-glass="0"]) #nav:not(:has(.nav-pill)) .nav-i.on { background: var(--sl-on); box-shadow: none; }
   html[data-theme]:not([data-glass="0"]) #nav > .nav-sep ~ .nav-i > span:first-child { overflow: visible; }
-  html[data-theme]:not([data-glass="0"]) #nav .nav-i .n:not(.z) { min-width: 0; padding: 0; background: none; color: var(--dim); font-size: var(--fs-12); font-weight: 400; }
+  html[data-theme]:not([data-glass="0"]) #nav .nav-i .n:not(.z) { min-width: 0; padding: 0; background: none; color: var(--dim); font-size: var(--fs-13); font-weight: 400; }
+  html[data-theme]:not([data-glass="0"]) #nav > .nav-sep ~ .nav-i .n:not(.z):not(.mb) { font-size: var(--fs-12); }   /* t-rail-font: counts one step under their row (16/13, 15/12); the red 信箱 chip keeps its own 11px */
   html[data-theme]:not([data-glass="0"]) #nav .nav-i.on .n:not(.z) { background: none; color: var(--ink); }
   html[data-theme]:not([data-glass="0"]) #nav .nav-i.urgent .n:not(.z) { color: var(--urgent); text-shadow: none; }
   html[data-theme]:not([data-glass="0"]) #nav .nav-sep { height: 1px; margin: 6px 12px; background: var(--line2); }
@@ -267,7 +269,7 @@ html[data-theme]:not([data-glass="0"]) #nav .nav-i .n.mb, #nav .nav-i .n.mb, #na
   /* ②4 alignment: rows share one 12px inset with the nav text; tighter rows so 8 people fit a 900px screen */
   html[data-theme]:not([data-glass="0"]) #left > #team { margin-right: 0; padding-right: 0; padding-bottom: 8px; }
   html[data-theme]:not([data-glass="0"]) #nav { gap: 0; }
-  html[data-theme]:not([data-glass="0"]) #nav .nav-i, html[data-theme]:not([data-glass="0"]) #nav > .nav-sep ~ .nav-i { min-height: 28px; }
+  html[data-theme]:not([data-glass="0"]) #nav .nav-i, html[data-theme]:not([data-glass="0"]) #nav > .nav-sep ~ .nav-i { min-height: 30px; }   /* t-rail-font: 28 -> 30 for the 16px text */
   html[data-theme]:not([data-glass="0"]) #team .side-h { margin-top: 6px; }
   html[data-theme]:not([data-glass="0"]) #team .team-i { padding: 1px 8px 1px 12px; }   /* left 12 = nav text inset; right 8 keeps room for name + 执行中 + 排队 */
   html[data-theme]:not([data-glass="0"]) #team .team-i .nm { gap: 5px; }
