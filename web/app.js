@@ -49,7 +49,7 @@
       lessons: "规则提议", adopt: "采纳", drop: "丢弃", dm: "私信",
       closed: "已完成", first_pass: "一次通过", adopted: "已采纳规则",
       all: "全部", unread: "未读", replies: "回复", updates: "更新", mark_all: "全部已读",
-      week_done: "本周交付", in_review: "待审核", in_progress: "进行中", pending_rules: "待采纳规则",
+      week_done: "近 7 天交付", in_review: "待审核", in_progress: "进行中", pending_rules: "待采纳规则",
       days7: "7 天前", now: "现在", add: "添加",
       mgr_offline: "管家离线：有 {n} 条指令还没处理。启动 manager session。",
       sleeping: "休眠", sleep_at: "休眠 · {t} 复活", waking: "复活中",
@@ -87,7 +87,7 @@
       lessons: "Rule proposals", adopt: "Adopt", drop: "Drop", dm: "DM",
       closed: "closed", first_pass: "first-pass", adopted: "rules adopted",
       all: "All", unread: "Unread", replies: "Replies", updates: "Updates", mark_all: "Mark all read",
-      week_done: "Shipped this week", in_review: "In review", in_progress: "In progress", pending_rules: "Pending rules",
+      week_done: "Shipped · 7 days", in_review: "In review", in_progress: "In progress", pending_rules: "Pending rules",
       days7: "7d ago", now: "now", add: "Add",
       mgr_offline: "Manager offline: {n} instructions waiting. Start the manager session.",
       sleeping: "asleep", sleep_at: "asleep · back {t}", waking: "waking",
@@ -1652,13 +1652,13 @@
     review() {
       if (widgetHome()) return window.Widgets ? Widgets.html($("#pagebody"), rulesBlock()) : rulesBlock();   // t-home-widgets: null = keep the current DOM
       const phoneLike = MOBQ.matches || appHome();   // t-home-applike: the desktop app-style home renders the phone home
-      const hf = phoneLike ? (UI.hf || "review") : "review", wkc = Date.now() - 7 * 864e5;   // hf: set by the phone home strip's stat row
+      const hf = phoneLike ? (UI.hf || "review") : "review", wkc = wkFrom();   /* ri1107-P3: same 7 calendar days as the count */   // hf: set by the phone home strip's stat row
       const list = items().filter(i => i.id !== RV.pending && (hf === "week" ? (i.stage === "done" && i.closed && new Date(i.closed) > wkc) : hf === "review" ? onYouCard(i) : grpOf(i) === hf)).sort(UI.sort === "created" ? byCreated : byAct);
       const dec = hf === "review" ? decisions() : [];   // t-imp-p1
       const decH = dec.length ? decHead(list.length, dec) : "", decR = dec.map(decRow).join(""), today = hf === "review" && !list.length ? todayBlock() : "";
       const bar = (hf === "review" ? nrBlock() : "") + `<div class="ph-bar"><button data-sort="activity" class="${UI.sort === "activity" ? "on" : ""}">${t("by_activity")}</button>
         <button data-sort="created" class="${UI.sort === "created" ? "on" : ""}"><span class="gl" aria-hidden="true">▼ </span>${t("by_created")}</button>
-        <span class="count">${hf === "review" ? (UI.lang === "en" ? "On you" : "等你拍板") : hf === "week" ? "本周交付" : stageLabel(hf)} <b>${list.length + dec.length}</b></span></div>`;   // t-home-nobtn: the 切回 button is gone; ⌘K「首页样式」and #home=classic stay as the back door
+        <span class="count">${hf === "review" ? (UI.lang === "en" ? "On you" : "等你拍板") : hf === "week" ? (UI.lang === "en" ? "Shipped · 7 days" : "近 7 天交付") : stageLabel(hf)} <b>${list.length + dec.length}</b></span></div>`;   // t-home-nobtn: the 切回 button is gone; ⌘K「首页样式」and #home=classic stay as the back door
       const sz = hf === "review" ? snzLine() : "";   // ri1103-P2
       /* t-ri1104-p5: phone (and app-style desktop) home with nothing to approve: one quiet line instead of the big empty block,
          and no sort row (nothing to sort), so 此刻 / 今天交付 move up into the first screen. The sort row comes back with the first card. */
@@ -2387,8 +2387,10 @@
   if (window.visualViewport) visualViewport.addEventListener("resize", () => hpPlace());
 
   // t-office-d1-s12: the four numbers of the home strip (they also drive the list filter UI.hf on phones)
+  /* ri1107-P3: 近 7 天交付 = done cards closed since 00:00 six days ago (7 calendar days incl. today), the same as the widget home's bar chart */
+  function wkFrom() { const d = new Date(); d.setHours(0, 0, 0, 0); d.setDate(d.getDate() - 6); return d.getTime(); }
   function homeCounts() {   // t-imp-p1: review = 等你拍板 (review items + plans / questions parked in waiting)
-    const its = items(), wk = Date.now() - 7 * 864e5, rev = its.filter(i => onYouCard(i) && i.id !== RV.pending);
+    const its = items(), wk = wkFrom(), rev = its.filter(i => onYouCard(i) && i.id !== RV.pending);
     return { review: rev.length + its.filter(i => awaitsUser(i) && !busy(i) && !snoozed(i)).length + newReplies().length, doing: its.filter(i => grpOf(i) === "doing").length, todo: its.filter(i => grpOf(i) === "todo").length,
       week: its.filter(i => i.stage === "done" && i.closed && new Date(i.closed) > wk).length, oldest: rev.length ? Math.min(...rev.map(i => new Date(i.activity || i.updated))) : null };
   }

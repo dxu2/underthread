@@ -13,13 +13,13 @@
   // ---------- copy (zh | en, follows App.UI.lang) ----------
   const COPY = {
     zh: { busy: n => `<b>${n}</b> 在忙`, rest: `都在休息 · ${REPORT} 日报`, rev: n => `${n} 等你`, team: "团队",
-      st: ["待你拍板", "进行中", "待办", "本周交付"], wait: n => `${n} 件等你拍板`, oldest: d => `最久 ${d}`,
+      st: ["待你拍板", "进行中", "待办", "近 7 天交付"], wait: n => `${n} 件等你拍板`, oldest: d => `最久 ${d}`,
       m: n => `${n} 分钟`, hm: (h, m) => `${h} 时 ${m} 分`, h: n => `${n} 小时`, d: n => `${n} 天`,
       working: "工作中", resting: "休息中", chat: "点一下，和 TA 聊聊", since: (c, d) => `${c} 起 · ${d}`, mgr: "在线 · 看着信箱", online: "在线", ago: d => `${d}前活动`,
       aria: (nm, w, t, act) => `${nm}，${w}${t ? "：" + t : ""}。${act}`, tapOpen: "点按打开单子", tapChat: "点按打开私信", tapExp: "点按展开",
       open: "打开单子", dm: "私信", dmSub: "打开和 TA 的对话", cancel: "取消", done: "委托完成", sep: " · " },
     en: { busy: n => `<b>${n}</b> working`, rest: `All resting · report at ${REPORT}`, rev: n => `${n} on you`, team: "Team",
-      st: ["On you", "Doing", "To do", "This week"], wait: n => `${n} waiting on you`, oldest: d => `oldest ${d}`,
+      st: ["On you", "Doing", "To do", "7-day shipped"], wait: n => `${n} waiting on you`, oldest: d => `oldest ${d}`,
       m: n => `${n} min`, hm: (h, m) => `${h} h ${m} min`, h: n => `${n} h`, d: n => `${n} d`,
       working: "Working", resting: "Resting", chat: "Tap to chat", since: (c, d) => `since ${c} · ${d}`, mgr: "Online · watching the inbox", online: "Online", ago: d => `active ${d} ago`,
       aria: (nm, w, t, act) => `${nm}, ${w.toLowerCase()}${t ? ": " + t : ""}. ${act}`, tapOpen: "Tap to open the item", tapChat: "Tap to open the chat", tapExp: "Tap to expand",
@@ -65,12 +65,11 @@
   }
   function build(ob, d) {
     const as = ordered(d.agents); S.act = null; S.prev = {}; ob.dataset.lang = lang();
-    const stats = ["review", "doing", "todo", "week"].map((k, i) => [k, L().st[i]]).map(([k, l], i) => `<div class="hd-stat" role="button" tabindex="0" data-hd-f="${k}" style="--i:${i}"><b data-k="${k}">0</b><i class="hd-rdot"></i><span>${l}</span></div>`).join("");
+    const stats = ["review", "doing", "todo", "week"].map((k, i) => [k, L().st[i]]).map(([k, l], i) => `<div class="hd-stat" role="button" tabindex="0" data-hd-f="${k}" style="--i:${i}"><b data-k="${k}">0</b><i class="hd-rdot"></i><span>${l}</span>${k === "review" ? '<small class="hd-old"></small>' : ""}</div>`).join("");   /* ri1107-P5: 「最久 N」 lives under 待你拍板 (the red 「N 件等你拍板」 bar is gone) */
     ob.innerHTML = `<div class="hd hd-enter">
       <div class="hd-h"><span class="hd-sum"></span><button type="button" class="hd-srch" data-msearch aria-label="${A().UI.lang === "en" ? "Search" : "搜索"}"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="M16 16 L20.5 20.5"/></svg></button></div>
       <div class="hd-tool"></div>
       <div class="dp-strip" role="group" aria-label="${L().team}">${as.map(panel).join("")}</div>
-      <div class="hd-alert"><div class="hd-alert-in"><div class="hd-chip" role="button" data-hd-f="review"><i class="hd-red"></i><b></b><span class="t"></span>${CHEV}</div></div></div>
       <div class="hd-stats">${stats}</div></div>`;
     wire(ob);
     setTimeout(() => { const r = $(".hd-enter", ob); if (r) r.classList.remove("hd-enter"); }, 1000);
@@ -172,9 +171,7 @@
     setH($(".hd-sum", root), sumHTML(d.agents, c));
     apply(ob, d, true);
     if (first) as.forEach(a => { S.prev[a.id] = { w: isW(a), item: a.item }; });
-    const al = $(".hd-alert", root), on = urgent(c);
-    al.classList.toggle("on", on);
-    if (on) { setT($(".hd-chip b", al), L().wait(c.review)); setT($(".hd-chip .t", al), oldest(c)); }
+    const old = $(".hd-old", root); if (old) { setT(old, c.review ? oldest(c) : ""); old.classList.toggle("hot", !!c.review && !!c.oldest && mins(new Date(c.oldest).toISOString()) > 12 * 60); }   /* ri1107-P5 */
     root.querySelectorAll(".hd-stat").forEach(s => {
       const k = s.dataset.hdF, b = $("b", s), v = String(c[k]);
       s.classList.toggle("on", hf === k); s.classList.toggle("alert", k === "review" && c.review > 0);

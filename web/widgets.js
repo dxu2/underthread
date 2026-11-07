@@ -310,11 +310,11 @@
       ${B.length ? B.map(wRow).join("") : `<div class="d-calm">${calmText("busy")}</div>`}
       ${stand.length ? `<div class="d-sb"><span>${zh ? "待机" : "Standby"} · ${stand.length}</span>${stand.map(a => `<button type="button" data-chat="${esc(a.id)}" title="${esc(A().aname(a))}"><img src="${A().avatarUrl(a)}" alt=""></button>`).join("")}${stand.length > 5 ? `<i class="d-sbn">+${stand.length - 5}</i>` : ""}</div>` : ""}</section>`;   /* t-home-tight: under 640px the strip shows 5 faces + this count (CSS) */
     // 5 small cards
-    const mx = Math.max(1, ...D.days.map(x => x.n)), wk = D.days.reduce((t, x) => t + x.n, 0), u = X.meta.usage || {}, rl = (X.meta.routines || []).filter(r => !r.paused && !r.disabled);
+    const mx = Math.max(1, ...D.days.map(x => x.n)), wk = D.days.reduce((t, x) => t + x.n, 0), UL = A().usage ? A().usage() : {}, rl = (X.meta.routines || []).filter(r => !r.paused && !r.disabled);
     const ran = X.rts.filter(r => r.ran).length;
-    const minis = `<section class="d-minis" data-sec="minis"><button type="button" class="d-mini" data-go="board"><small>${zh ? "本周交付" : "Shipped · 7 days"}</small><b>${wk}</b><span class="bars">${D.days.map((x, k) => `<i class="${k === 6 ? "on" : ""}" style="height:${Math.max(8, Math.round(x.n / mx * 100))}%"></i>`).join("")}</span></button>
+    const minis = `<section class="d-minis" data-sec="minis"><button type="button" class="d-mini" data-go="board"><small>${zh ? "近 7 天交付" : "Shipped · 7 days"}</small><b>${wk}</b><span class="bars">${D.days.map((x, k) => `<i class="${k === 6 ? "on" : ""}" style="height:${Math.max(8, Math.round(x.n / mx * 100))}%"></i>`).join("")}</span></button>
       <button type="button" class="d-mini" data-go="ongoing"><small>${nm("ongoing")}</small><b>${rl.length}</b><span class="tx">${zh ? `今天已跑 ${ran}` : `${ran} ran today`}${next ? `<br>${zh ? "下个" : "next"} ${hm(next.t)}` : ""}</span></button>
-      <button type="button" class="d-mini" data-ru-open><small>${nm("usage")}</small><b>${u.five_hour ? Math.round(u.five_hour.used) + "%" : "—"}</b><span class="tx">${zh ? "5 小时额度" : "5-hour quota"}${u.seven_day ? `<br>${zh ? "本周" : "week"} ${Math.round(u.seven_day.used)}%` : ""}</span></button></section>`;
+      <button type="button" class="d-mini" data-ru-open><small>${nm("usage")}</small><b>${UL.left != null ? UL.left + "%" : "—"}</b><span class="tx">${zh ? "5 小时剩余" : "5-hour left"}${UL.week != null ? `<br>${zh ? "本周剩" : "week left"} ${UL.week}%` : ""}</span></button></section>`;
     return [["tl", tl], ["needs", needs], ["goals", goals], ["side", `<div class="d-side" data-sec="side">${work.replace(' data-sec="work"', "")}${minis.replace(' data-sec="minis"', "")}</div>`]];   /* t-home-tight: work + minis share the right column */
   };
   const DZ = { prev: null };
