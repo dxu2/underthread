@@ -1990,7 +1990,7 @@ html[data-theme] #toast::before, html[data-theme] #toast::after { display: none;
 @media (prefers-reduced-motion: reduce) { html[data-theme] #toast { animation: none; } }
 /* ===== t-detail-round2 (2026-11-02): same rounded detail, fewer layers (user: 「有点臃肿，套了这么多层」).
    One outer panel only (no inset rule, no 40px spread ring: the page under an open detail is hidden instead, so nothing peeks through the margin);
-   the draft has no frame (a very faint fill); only the other side's messages are bubbles, mine are plain right-aligned text; no timeline rule,
+   the draft has no frame (a very faint fill); only the other side's messages are bubbles (t-me-bubble 11-05: mine are bubbles again, see below); no timeline rule,
    no hairlines above the composer / buttons, composer and buttons pulled together. Desktop only. ===== */
 @media (min-width: 761px) {
   #drawer, html[data-stage] #drawer { box-shadow: 0 18px 50px rgba(0,0,0,.26); }
@@ -2000,8 +2000,8 @@ html[data-theme] #toast::before, html[data-theme] #toast::after { display: none;
   #main:has(> #drawer.open)::before, #main:has(> #drawer.open)::after { display: none; }
   #drawer .dw-top::after, #drawer .composer::before, #drawer .dw-acts::before { display: none; }
   #drawer .cs-card.draftc { background: color-mix(in srgb, var(--ink) 3.5%, transparent); box-shadow: none; border-radius: 20px; padding: 14px 18px 10px; }
-  #drawer .cs-me { background: none; padding: 2px 4px; border-radius: 0; text-align: right; }
-  #drawer .cs-me .cs-h { justify-content: flex-end; }
+  /* t-me-bubble (2026-11-05, user 「加回来」): my messages are a bubble again: right side, light ink tint, the DM page's 20/6/20/20 corner */
+  #drawer .cs-me { background: color-mix(in srgb, var(--ink) 10%, transparent); padding: 10px 16px 12px; border-radius: 20px 6px 20px 20px; text-align: left; }
   #drawer .cs-line { margin-left: 0; padding-left: 4px; }
   #drawer .cs-line::before, #drawer .cs-line::after { display: none; }
   #drawer .composer { padding-top: 6px; padding-bottom: 4px; }
