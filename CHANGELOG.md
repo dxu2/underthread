@@ -5,6 +5,10 @@ What changed in Underthread, newest first. Each release is a sync from the autho
 ## 2026-11-07
 
 ### Added
+- **Underthread look, now the default**: a solid coffee and cream palette (`web/theme-ut.css`) with embroidered-patch avatars for every role (`avatars/ut/`), stitched card edges and spool-drawn empty states. Settings → Appearance → Palette switches back to Ink.
+- **Textures**: Stitch and Sweater (knit), Leather and Saddle. These are procedurally generated images that sit on top of the palette.
+- **Logo**: the Underthread wordmark in the header, plus new app icons and favicons.
+- **Opening animation**: plays once per session; you can skip it or turn it off in Settings.
 - **Power-saving switch** in Settings. Turn it off and looping animations keep playing when idle.
 - **Browser-in-use badge**: the rail, home and widgets show which agent is driving a browser or the desktop, and for how long (`stateutil.py set-agent --tool chrome|computer|""`).
 - **Quoted quick replies**: tapping a quick option in chat quotes the question it answers.

@@ -25,7 +25,7 @@ You talk to one **manager**. It turns your messages into cards, hands each card 
   - [Routines, daily report and usage](#routines-daily-report-and-usage)
   - [Desktop dashboard](#desktop-dashboard)
   - [Phone app](#phone-app)
-  - [Themes and home styles](#themes-and-home-styles)
+  - [Look: Underthread palette, textures, home styles](#look-underthread-palette-textures-home-styles)
   - [Performance and power](#performance-and-power)
   - [Tools and running it day to day](#tools-and-running-it-day-to-day)
 - [The bundled team preset](#the-bundled-team-preset)
@@ -155,7 +155,7 @@ When you reject something with a reason, the manager turns the reason into a one
 
 ### Desktop dashboard
 
-![Settings: theme, power saving, home style, language (example data)](docs/img/settings.png)
+![Settings: theme, palette, texture, power saving, opening animation, home style, language (example data)](docs/img/settings.png)
 
 - **Dense home** (the default): today's timeline, waiting on you, today's goals, working now with an ETA, and small counters, all on the first screen.
 - **Lean left rail:** your queues (Home, Main quest, Side quest, Daily, Urgent, Ongoing), then Studio, Reports, Mailbox and Settings, then the team.
@@ -175,11 +175,15 @@ The same dashboard, laid out for a phone. Add it to your home screen and it runs
 - **Pull to refresh**, and search that also finds finished cards' drafts.
 - **Push notifications** (optional, Web Push), set per device: only decisions, decisions plus replies, or everything; quiet hours (23:00–09:00 by default) with a morning digest. They need the page served over https; see [Privacy and safety](#privacy-and-safety).
 
-### Themes and home styles
+### Look: Underthread palette, textures, home styles
 
-![The same home in night and day, and the four home styles (example data)](docs/img/themes.png)
+![The Underthread palette in night and day with the Sweater texture, then the Ink palette and the Stitch, Leather and Saddle textures (example data)](docs/img/themes.png)
+
+The dashboard's default look is **Underthread**: solid coffee and cream colours, with no glass. Each role has an embroidered-patch avatar, and the cards have stitched edges, spool-drawn empty states and an optional knit or leather texture. Every screenshot in this README uses it, with the Sweater texture. If you prefer black glass, switch the palette to **Ink** in Settings → Appearance. The avatars live in `avatars/ut/`. To use your own, replace a role's PNG and run `python3 tools/avatar_sizes.py` (it needs `cwebp`).
 
 - **Night, day or auto.** Auto follows your system's light and dark setting.
+- **Palette:** Underthread (the default) or Ink. **Texture:** Off, Stitch, Sweater, Leather or Saddle. The textures are generated images, a few KB each, and the colours stay the same.
+- **Opening animation:** a needle threads the logo once per session. Tap or press any key to skip it, or turn it off in Settings.
 - **Four home styles** on the desktop: Dense, Widgets, App and Classic. The choice is kept per computer.
 - **Motion with feedback:** every button, tab and switch responds to hover, press and switch.
 
@@ -249,11 +253,11 @@ This repository contains no characters from any game or anime. Please don't comm
 
 | Not included | Notes |
 |---|---|
-| Your data | `config.json`, `roster.json`, `state.json`, `archive.json`, `inbox.jsonl`, `uploads/`, `work/`, `logs/`, `avatars/` |
+| Your data | `config.json`, `roster.json`, `state.json`, `archive.json`, `inbox.jsonl`, `uploads/`, `work/`, `logs/`, everything in `avatars/` except the bundled `avatars/ut/` set |
 | Keys | `vapid.json` and tokens are created on your machine; never commit them |
 | Models | No whisper, ComfyUI or other model weights; follow each model's own licence |
 | Voice | The author's build has local voice calls with the manager; that code is not in this repository |
-| Artwork | No character art. Roles without an avatar get a colour disc with an initial |
+| Artwork | No character art. The Underthread avatars, logo and textures ship with the repo. Under the Ink palette, a role with no avatar of yours gets a colour disc with an initial |
 
 ---
 
@@ -274,4 +278,4 @@ See [CHANGELOG.md](CHANGELOG.md).
 
 ## License
 
-Code is [MIT](LICENSE). It covers this repository's code only; models, fonts, voices and images you plug in keep their own licences. The bundled fonts (Nunito, Cinzel) are under the SIL Open Font License 1.1; their licence texts are in `web/fonts/`.
+Code is [MIT](LICENSE). It covers this repository's code only; models, fonts, voices and images you plug in keep their own licences. The bundled fonts (Nunito, Cinzel) are under the SIL Open Font License 1.1; their licence texts are in `web/fonts/`. The Underthread logo, embroidered-patch avatars and textures were made for this project and contain no third-party artwork.
