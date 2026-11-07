@@ -947,12 +947,6 @@ html[data-theme] #tabbar .tb-row button, html[data-theme] #tabbar .tb-row button
 .act-chip { flex: none; max-width: 84px; padding: 0 8px; line-height: 18px; font-size: var(--fs-11); border-radius: 9px; border: 1px solid var(--line2); color: var(--ink2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .act-n { flex: none; min-width: 19px; padding: 0 6px; box-sizing: border-box; line-height: 18px; text-align: center; font-size: var(--fs-11); font-weight: 600; border-radius: 9px; border: 1px solid var(--line2); color: var(--ink2); }
 .act-n.on { background: var(--dotc); border-color: transparent; color: var(--accent-ink); }
-/* the bottom 未读 toggle: a small pill that floats above the tab bar while the list scrolls */
-.act-foot { position: sticky; bottom: 6px;  /* sticky measures from the scroller's content edge, #page's bottom padding already clears the tab bar */
-  z-index: 5; display: flex; justify-content: center; margin-top: 18px; pointer-events: none; }
-.act-tog { pointer-events: auto; min-height: 34px; padding: 0 16px; border-radius: 17px; font-size: var(--fs-13); color: var(--ink2); background: var(--glass-solid); border: 1px solid var(--glass-line); box-shadow: var(--glass-rim), var(--glass-shadow); -webkit-backdrop-filter: var(--glass-bf); backdrop-filter: var(--glass-bf); }
-.act-tog.on { background: var(--accent); color: var(--accent-ink); border-color: transparent; box-shadow: var(--glass-shadow); -webkit-backdrop-filter: none; backdrop-filter: none; }
-.act-tog:active { transform: scale(.96); }
 /* calm empty state: no ornament, no italics */
 .empty.calm { padding: 56px 0 40px; font-style: normal; letter-spacing: 0; font-size: var(--fs-14); }
 .empty.calm::before { display: none; }
@@ -970,8 +964,6 @@ html[data-theme] #tabbar .tb-row button, html[data-theme] #tabbar .tb-row button
 .act-row:active { transform: scale(var(--m-press-row)); background: var(--chip); transition-duration: var(--m-instant), var(--m-instant); transition-timing-function: ease-out; }
 .card { transition: transform var(--m-release) var(--m-spring), background-color var(--m-quick) ease-out, box-shadow var(--m-quick) ease-out; }
 .card:active { transform: scale(var(--m-press-card)); box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent) 24%, transparent), 0 10px 24px -14px color-mix(in srgb, var(--ink) 36%, transparent); transition-duration: var(--m-instant), var(--m-instant), var(--m-instant); transition-timing-function: ease-out; }
-.act-tog { transition: transform var(--m-release) var(--m-spring), background-color var(--m-quick) ease-out, color var(--m-quick) ease-out; }
-.act-tog:active { transform: scale(var(--m-press-pill)); transition-duration: var(--m-instant), var(--m-quick), var(--m-quick); transition-timing-function: ease-out; }
 .enter .card { animation: none; }   /* fx.js rows() animates cards on phones */
 .enter .grp-h, .enter .ph-bar, .enter .filters { animation: m-rise var(--m-base) var(--m-ease-emph) both; animation-delay: calc(min(var(--i, 0), 8) * var(--m-stagger) + 60ms); }
 @keyframes m-rise { from { opacity: 0; transform: translateY(var(--m-rise)); } }

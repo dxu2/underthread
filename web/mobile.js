@@ -367,10 +367,6 @@
     if (!prev) return;
     rows.forEach(r => { if (prev.has(r.dataset.item || r.dataset.mail)) return; const d = r.querySelector(".act-dot"); if (d) tbmAnim(d, [{ transform: "scale(.2)", opacity: 0 }, { transform: "scale(1)", opacity: 1 }], { duration: 300, easing: TBM.spring || TBM_EASE }); });
   }
-  document.addEventListener("click", e => {   // the 未读 toggle re-renders the list synchronously (app.js runs first): fade the new list in, opacity only
-    if (!mq.matches || !e.target.closest("[data-mailunread]") || TBM.rm.matches) return;
-    const l = $("#pagebody .act-list"); if (l) tbmAnim(l, [{ opacity: .3 }, { opacity: 1 }], { duration: 180, easing: "ease-out" });
-  });
 
   // ---------- routing glue ----------
   // anything that navigates to a page or a chat switches to that screen

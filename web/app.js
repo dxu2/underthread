@@ -42,7 +42,7 @@
       k_plan: "方案", k_deliverable: "交付", k_question: "提问", k_task: "草稿",
       online: "在线", offline: "离线", working: "执行中", idle: "待机",
       by_activity: "按最新动态", by_created: "最新创建", pending: "待审核",
-      empty_review: "没有等你审核的东西。去喝杯水。", empty_ok: "没有等你拍板的 · 去喝杯水", empty: "这里是空的。", empty_mail: "没有新动态", mail_thread: "{n} 条", unread_only: "未读",
+      empty_review: "没有等你审核的东西。去喝杯水。", empty_ok: "没有等你拍板的 · 去喝杯水", empty: "这里是空的。", empty_mail: "没有新动态", mail_thread: "{n} 条",
       wake: "唤醒管家", refresh_usage: "刷新用量", settings: "设置", write_report: "日报", report_req: "让管家写日报", theme: "主题",
       cancel: "取消",
       reject_t: "驳回", reject_reason: "原因（会被整理成规则提议）",
@@ -80,7 +80,7 @@
       k_plan: "Plan", k_deliverable: "Deliverable", k_question: "Question", k_task: "Draft",
       online: "online", offline: "offline", working: "working", idle: "idle",
       by_activity: "Latest activity", by_created: "Newest", pending: "Pending",
-      empty_review: "Nothing waiting on you.", empty_ok: "Nothing waiting on you", empty: "Nothing here.", empty_mail: "Nothing new", mail_thread: "{n}", unread_only: "Unread",
+      empty_review: "Nothing waiting on you.", empty_ok: "Nothing waiting on you", empty: "Nothing here.", empty_mail: "Nothing new", mail_thread: "{n}",
       wake: "Ping manager", refresh_usage: "Refresh usage", settings: "Settings", write_report: "Report", report_req: "Ask for a report", theme: "Theme",
       cancel: "Cancel",
       reject_t: "Reject", reject_reason: "Reason (becomes a rule proposal)",
@@ -1258,7 +1258,7 @@
   const MOBQ = matchMedia("(max-width: 760px)");
   const lsGet = (k, d) => { try { const v = localStorage.getItem(k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } };
   const lsSet = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} };
-  UI.mailUnread = lsGet("rt.mailUnread", false) === true;
+  try { localStorage.removeItem("rt.mailUnread"); } catch (e) {}   /* t-mail-unread-pill: the floating 未读 toggle is gone (the filter bar has 未读); drop its saved state */
   function actRow(o) {   // one shared row: avatar (+unread dot) | name + title ... time | preview ... chips
     const ws = o.ws || [];
     return `<div class="act-row ${o.unread ? "unread" : ""}${ws.length ? " wk-on" : ""}" ${o.attr}${wkAttr(ws)}>${wkFx(ws)}
@@ -1713,14 +1713,12 @@
     mail() {
       const f = UI.mailFilter, mob = MOBQ.matches;
       let list = mailFiltered(300);
-      if (mob && UI.mailUnread) list = list.filter(m => !m.read);
       const fs = [["all", t("all")], ["unread", t("unread")], ["reply", t("replies")], ["update", t("updates")], ["urgent", t("urgent")]];
       const segs = `<div class="seg" data-seg="mail">${fs.map(([k, n]) => `<button class="seg-i ${f === k ? "on" : ""}" data-mailf="${k}">${n}</button>`).join("")}</div>`;
       const head = mob   // t-mailbox-polish: phone = one row, filters + a small 全部已读 pill (masthead is hidden there)
         ? pageHead("mail") + `<div class="filters mb-row">${segs}<button class="btn-s mb-readall" data-mailall>${t("mark_all")}</button></div>`
         : pageHead("mail", `<div class="ph-bar"><button class="btn-s" data-mailall>${t("mark_all")}</button></div>`) + `<div class="filters">${segs}</div>`;
-      if (mob) return head + (list.length ? `<div class="act-list">${ringOnce(() => mailGroups(list).map(mailRow).join(""))}</div>` : `<div class="empty calm">${t("empty_mail")}</div>`) +
-        `<div class="act-foot"><button class="act-tog ${UI.mailUnread ? "on" : ""}" data-mailunread aria-pressed="${UI.mailUnread}">${t("unread_only")}</button></div>`;
+      if (mob) return head + (list.length ? `<div class="act-list">${ringOnce(() => mailGroups(list).map(mailRow).join(""))}</div>` : `<div class="empty calm">${t("empty_mail")}</div>`);
       return head +
         (list.length ? ringOnce(() => list.map(m => `<div class="mail-i ${m.read ? "" : "unread"}" data-mail="${m.id}"><span class="u"></span><span class="tm">${whenH(m.t)}</span>${m.agent ? av(agent(m.agent), "sm") : "<span></span>"}<span class="tx">${esc(mailPv(m.text, m.agent && agent(m.agent)))}</span></div>`).join("")) : `<div class="empty">${t("empty")}</div>`);
     },
@@ -2484,7 +2482,6 @@
     const ls = e.target.closest("[data-lesson]"); if (ls) api("lesson", { id: ls.dataset.lesson, decision: ls.dataset.d });
     const mf = e.target.closest("[data-mailf]"); if (mf) { UI.mailFilter = mf.dataset.mailf; renderPage(); renderMailbox(); }
     if (e.target.closest("[data-mailall]")) api("mail_read", { all: true });
-    if (e.target.closest("[data-mailunread]")) { UI.mailUnread = !UI.mailUnread; lsSet("rt.mailUnread", UI.mailUnread); renderPage(); }
     const ml = e.target.closest("[data-mail]");
     if (ml) {
       const m = mailAll().find(x => x.id === ml.dataset.mail); if (!m) return;
