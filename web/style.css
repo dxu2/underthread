@@ -2631,3 +2631,16 @@ div.rq { cursor: default; } div.rq:hover { background: color-mix(in srgb, var(--
   .rq-hit { animation: none; box-shadow: 0 0 0 2px var(--accent); }
 }
 #right .msg.me > .rq ~ .m-meav { top: 34px; }   /* the avatar stays beside the bubble, not the quote line */
+
+/* ===== t-perf C: the message you just sent is drawn at once (app.js PEND). Gray while sending, normal once the server said ok
+   (it is swapped for the server copy on the next poll), red outline + 重试 / 删除 when the POST failed. */
+#right .msg.pend .mb { transition: opacity var(--m-quick, .18s) var(--m-ease-std, ease), box-shadow var(--m-quick, .18s) var(--m-ease-std, ease); }
+#right .msg.pend:not(.pend-ok):not(.pend-fail) .mb { opacity: .55; }
+#right .msg.pend-fail .mb { box-shadow: 0 0 0 1.5px var(--urgent); }
+#right .msg.me.pend:not(.pend-ok) .mt { display: flex; justify-content: flex-end; align-items: center; gap: 8px; margin-top: 4px; font-size: var(--fs-11, 11px); color: var(--dim); text-align: right; }
+#right .msg.pend .pend-x { color: var(--urgent); }
+#right .msg.pend .pend-b { font: inherit; color: var(--ink2); background: var(--chip); border: 1px solid var(--line2); border-radius: 999px; padding: 2px 10px; cursor: pointer;
+  transition: color var(--m-quick, .18s) var(--m-ease-std, ease), border-color var(--m-quick, .18s) var(--m-ease-std, ease), background var(--m-quick, .18s) var(--m-ease-std, ease); }
+#right .msg.pend .pend-b:hover { color: var(--ink); border-color: var(--line3); background: var(--accent-soft); }
+#right .msg.pend .pend-b[data-pend-retry] { color: var(--urgent); border-color: var(--urgent); }
+@media (prefers-reduced-motion: reduce) { #right .msg.pend .mb, #right .msg.pend .pend-b { transition: none; } }

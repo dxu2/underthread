@@ -310,11 +310,15 @@
     const el = $("#toast"); el.textContent = msg; el.className = err ? "err" : ""; el.hidden = false;
     clearTimeout(toast._t); toast._t = setTimeout(() => el.hidden = true, 2600);
   }
+  async function postAct(kind, body = {}) {   // t-perf C: the bare POST (no toast, no poll); api() and the optimistic chat send share it
+    const r = await fetch("/api/action", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ kind, ...body }) });
+    const j = await r.json();
+    if (!r.ok) throw new Error(j.error || r.statusText);
+    return j;
+  }
   async function api(kind, body = {}) {
     try {
-      const r = await fetch("/api/action", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ kind, ...body }) });
-      const j = await r.json();
-      if (!r.ok) throw new Error(j.error || r.statusText);
+      const j = await postAct(kind, body);
       await poll(true);
       return j;
     } catch (e) { toast(String(e.message || e), true); throw e; }
@@ -634,7 +638,7 @@
   function render() {
     document.documentElement.dataset.theme = UI.theme;
     document.documentElement.lang = UI.lang === "en" ? "en" : "zh";
-    renderChrome(); renderLeft(); renderPage(); if (UI.item) renderDrawer(); renderChat(); renderMailbox();
+    renderChrome(); renderLeft(); renderPage(); if (UI.item && dwSig() !== DW.sig) renderDrawer(); renderChat(); renderMailbox();   // t-perf E: an unchanged open card is not rebuilt
     appBadge();
     hooks.forEach(f => f("all"));
     vmSync();
@@ -2840,6 +2844,17 @@
   // t-m2-a ③: skeleton while a slim card's drafts load (/api/item). CSS keeps it invisible for the first 150 ms (a LAN answer never shows it);
   // ONE sweep for the whole block (.sk::after), gone with the block when the full card renders.
   const skDraft = () => `<div class="sk sk-dw" data-sk aria-busy="true" aria-label="${UI.lang === "en" ? "Loading drafts" : "草稿加载中"}"><div class="sk-c"><i style="width:34%"></i><i></i><i style="width:92%"></i><i style="width:78%"></i><i style="width:56%"></i></div><div class="sk-c"><i style="width:28%"></i><i style="width:86%"></i><i style="width:64%"></i></div></div>`;
+  // t-perf E: everything a poll can change that the open detail draws: the card, its parent / sub-cards, the team (rings, names, tool badges),
+  // routines, owner name / avatars, language. A poll whose signature matches skips renderDrawer, so the DOM (scroll, selection, running
+  // animations such as the 新回复 ring) stays as it is. Every direct renderDrawer() call (your clicks, opening, folding) still rebuilds.
+  const DW_SKIP = { last_seen: 1, activity: 1 };
+  function dwSig() {
+    const it = (ST.items || []).find(i => i.id === UI.item); if (!it) return "gone";
+    const par = parentOf(it), kids = childrenOf(it), ags = ST.agents || {};
+    return JSON.stringify([UI.item, UI.lang, MOBQ.matches, it, par && [par.id, par.title, par.stage, par.kind, par.updated, par.snooze],
+      kids.map(k => [k.id, k.title, k.stage, k.kind, k.owner, k.updated, k.activity, k.asks, k.snooze]),
+      Object.keys(ags).map(k => JSON.stringify(ags[k], (key, v) => DW_SKIP[key] ? undefined : v)), routineOf(it), ST.meta.owner, ST.meta.avatars]);
+  }
   function renderDrawer(first) {
     if (!first && annSelInDraft()) { ANN.deferred = true; return; }   // t-imp29-p2: a poll must not wipe the text you are selecting
     const it = (ST.items || []).find(i => i.id === UI.item);
@@ -2915,6 +2930,7 @@
     }
     annPaint();   // t-imp29-p2
     if (window.Preview) Preview.decorate($('.cs-card.draftc[data-vkey="cur"]', sc), it);   // t-imp29-p3: 文稿 / 平台预览 on the current draft
+    DW.sig = dwSig();   // t-perf E
   }
   // ===== ri1103-P2: 稍后 ▾ = push a card to 今晚 20:00 / 明早 09:00 / 下周一 09:00 / the specialist's next reply / a picked time.
   // The server keeps it (it.snooze), so desktop and phone agree. Desktop: a small menu over the button; phone: a bottom sheet.
@@ -3137,7 +3153,7 @@
   const CHN = { for: null, t: "", on: false };   // r-improve-1102 P4: 「以下 N 条是新消息」 — where you had read up to when this thread was opened
   // t-mobile-crash B: a thread renders only from chatFrom on (the newest CHAT_N when it opens; 「加载更早的消息」 moves it back by CHAT_N).
   // chatFrom stays put while new messages arrive (so the phone still sees the count grow and plays m-new); it re-anchors on a chat switch or past CHAT_N + 60.
-  const CHAT_N = 20; let chatFrom = 0, chatHold = false;   // chatHold: a ↩ quote jumped far back (t-option-quote); keep that range until the thread changes
+  const CHAT_N = 20; let chatFrom = 0, chatHold = false, chatBottom = false, chatMore = false;   // chatBottom: you just sent, so the next render lands on the newest message (t-perf C)   // chatHold: a ↩ quote jumped far back (t-option-quote); keep that range until the thread changes
   // ui10 (t-pixel-click): a click on a pixel character opens the detail of the item they are on now.
   // Before: it opened that character's DM chat (setChat). The DM is still one tap away via the chat-head avatar row, the Team page 私信 button, and Shift/Alt-click on the sprite.
   function pixelOpen(id, e) {
@@ -3172,7 +3188,8 @@
       if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
         e.preventDefault(); const text = ta.value.trim(); if (!text && !chatAtt.length) return;
         if (stillUploading(chatAtt)) return toast(UI.lang === "en" ? "Still uploading…" : "文件还在上传……");
-        const dmTo = UI.chat; await sendChat(text || "📎", chatAtt.slice()); DRAFT.set("dm:" + dmTo, ""); ta.value = ""; ta.style.height = ""; chatAtt.length = 0; showAtt();
+        const dmTo = UI.chat, att = chatAtt.slice(); DRAFT.set("dm:" + dmTo, ""); ta.value = ""; ta.style.height = ""; chatAtt.length = 0; showAtt();   // t-perf C: clear first, the bubble is already up
+        sendChat(text || "📎", att);
       }
     });
     // t-rail-tip: folded rail (one column of avatars) → our own name tip, to the LEFT of the avatar and vertically centred, on <body> with position:fixed
@@ -3195,6 +3212,8 @@
     r.addEventListener("click", e => {
       const o = e.target.closest("[data-opt]"); if (o) { RQ.fresh = o.dataset.mid || ""; sendChat(o.dataset.opt, [], o.dataset.mid); }
       const q = e.target.closest(".rq[data-rq]"); if (q) { rqSeek(q.dataset.rq); return; }
+      const pr = e.target.closest("[data-pend-retry]"), pd = e.target.closest("[data-pend-drop]");   // t-perf C: a failed bubble
+      if (pr || pd) { const p = PEND.list.find(x => x.pend === (pr || pd).dataset[pr ? "pendRetry" : "pendDrop"]); if (p) { if (pd) { PEND.list.splice(PEND.list.indexOf(p), 1); chatCount = -1; renderChat(); hooks.forEach(f => f("all")); } else { pendPost(p); pendPaint(p); } } return; }
       railHide();
       const p = e.target.closest("[data-pick]"); if (p) { if (UI.chatFold) foldChat(false); setChat(p.dataset.pick); }
       if (e.target.closest("[data-more]")) { moreChat($(".ch-msgs", r)); return; }
@@ -3247,10 +3266,40 @@
     UI.chatFold = on; LS.set("chatFold", on); applyChatW();
     setTimeout(() => dispatchEvent(new Event("resize")), 520);  // let the office canvas refit after the slide
   }
+  // t-perf C (was t-send-lag): the bubble goes up the moment you send, gray while the POST is out (st "sending"), normal once the server said ok ("ok"),
+  // red with 重试 / 删除 if it failed ("fail"). It stays a local bubble until a poll brings the server's copy (matched by text after the last
+  // message that was there when you sent), then the real message replaces it. No forced full re-download any more: one ordinary rev poll.
+  const PEND = { n: 0, list: [] };
+  const isoNow = () => { const d = new Date(), o = -d.getTimezoneOffset(), p = n => String(Math.floor(Math.abs(n))).padStart(2, "0");
+    return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}${o >= 0 ? "+" : "-"}${p(o / 60)}:${p(o % 60)}`; };
   function sendChat(text, attachments, replyTo) {
-    const b = { text, attachments }; if (replyTo) b.reply_to = replyTo;   // t-option-quote: the server snapshots the quoted message
-    return UI.chat === "manager" ? api("chat", b) : api("dm", Object.assign({ agent: UI.chat }, b));
+    const chat = UI.chat, L = chatList(chat), src = replyTo && L.find(x => x.id === replyTo);
+    const p = { pend: "p" + (++PEND.n), chat, who: "me", text, att: attachments || [], t: isoNow(), st: "sending", after: L.length ? L[L.length - 1].id : null,
+      attachments: (attachments || []).map(a => typeof a === "string" ? a : a && a.path).filter(Boolean) };
+    if (replyTo) { p.reply_to = replyTo; if (src) p.rq = { who: src.who, text: String(src.text || "").replace(/\s+/g, " ").slice(0, 80) }; }
+    PEND.list.push(p); chatBottom = true;
+    if (UI.chat === chat) { renderChat(); hooks.forEach(f => f("all")); }
+    return pendPost(p);
   }
+  function pendPost(p) {
+    p.st = "sending"; p.okAt = 0;
+    const b = { text: p.text, attachments: p.att }; if (p.reply_to) b.reply_to = p.reply_to;   // t-option-quote: the server snapshots the quoted message
+    return postAct(p.chat === "manager" ? "chat" : "dm", p.chat === "manager" ? b : Object.assign({ agent: p.chat }, b))
+      .then(j => { p.st = "ok"; p.okAt = Date.now(); pendPaint(p); poll(); return j; },
+        e => { p.st = "fail"; pendPaint(p); toast((UI.lang === "en" ? "Not sent: " : "没发出去：") + String(e.message || e), true); });
+  }
+  function pendPaint(p) { if (PEND.list.includes(p) && UI.chat === p.chat && ST) { chatCount = -1; renderChat(); hooks.forEach(f => f("all")); } }
+  function pendSync() {   // drop the local bubbles whose server copy has arrived
+    if (!PEND.list.length) return;
+    const claimed = new Set();
+    PEND.list = PEND.list.filter(p => {
+      const L = chatList(p.chat); let from = 0;
+      if (p.after) { let i = L.length - 1; while (i >= 0 && L[i].id !== p.after) i--; from = i >= 0 ? i + 1 : Math.max(0, L.length - 50); }
+      for (let k = from; k < L.length; k++) { const m = L[k], key = p.chat + ":" + (m.id || k); if (m.who === "me" && m.text === p.text && !claimed.has(key)) { claimed.add(key); return false; } }
+      return !(p.st === "ok" && Date.now() - p.okAt > 60e3);   // safety net: the server has had it for a minute
+    });
+  }
+  const pendOf = id => PEND.list.filter(p => p.chat === id);
   // ===== t-option-quote: a reply that quotes an earlier message (a quick-option click) draws ↩ who · first line above its bubble.
   // Tapping it scrolls back to the original (loading earlier pages, at most 5) and rings it; a trimmed original gets a toast, the snapshot stays.
   const RQ = { fresh: "", seen: new Set(), for: null };
@@ -3335,7 +3384,7 @@
     const top = box.querySelector(".msg[data-t]"); if (!top) return;
     const key = top.dataset.t, off = top.getBoundingClientRect().top - box.getBoundingClientRect().top;
     box.style.overflowAnchor = "none";
-    chatFrom = Math.max(0, chatFrom - CHAT_N); box._n = 1e9; chatCount = -1; renderChat(); hooks.forEach(f => f("all"));
+    chatFrom = Math.max(0, chatFrom - CHAT_N); box._n = 1e9; chatCount = -1; chatMore = true; renderChat(); hooks.forEach(f => f("all"));   // chatMore: this render is the page you asked for, never clamp it (t-perf D)
     let live = true;
     const align = () => { if (!live) return; const el = box.querySelector(`.msg[data-t="${CSS.escape(key)}"]`); if (el) box.scrollTop += el.getBoundingClientRect().top - box.getBoundingClientRect().top - off; };
     const stop = () => { if (!live) return; live = false; box.style.overflowAnchor = ""; box.removeEventListener("touchstart", stop); box.removeEventListener("wheel", stop); };
@@ -3358,18 +3407,23 @@
       return `<button data-pick="${x.id}" class="${x.id === UI.chat ? "on" : ""}">${av(x)}<span>${esc(aname(x))}</span>${un ? `<i class="unread n">${unreadTag(un)}</i>` : ""}${qBadge(x.id, true)}</button>`;
     }).join("").replace(UI.chatFold && !MOBQ.matches ? / title="[^"]*"/g : /$^/, "");   // t-rail-tip: folded rail shows #rail-tip, never the OS tooltip
     $("textarea", r).placeholder = MOBQ.matches ? t("chat_ph", { n: aname(a) }) : (UI.lang === "en" ? `Message ${aname(a)}…` : `对${aname(a)}说……`);   // t-web-dm: desktop moves the shortcut hint below the field
-    const list = chatList(UI.chat);
+    pendSync();
+    const real = chatList(UI.chat), pl = pendOf(UI.chat), list = pl.length ? real.concat(pl) : real;   // t-perf C: local bubbles ride at the end
+    const sig = list.length + (pl.length ? "|" + pl.map(p => p.pend + p.st).join(",") : "");
     const box = $(".ch-msgs", r);
-    if (chatRenderedFor === UI.chat && chatCount === list.length) { decorateDesk(box, list); return; }
+    if (chatRenderedFor === UI.chat && chatCount === sig) { decorateDesk(box, list); return; }
     if (chatRenderedFor !== UI.chat) chatHold = false;
-    if (chatRenderedFor !== UI.chat || chatFrom > list.length || (!chatHold && list.length - chatFrom > CHAT_N + 60)) chatFrom = Math.max(0, list.length - CHAT_N);
+    const nearBottom = chatBottom || box.scrollHeight - box.scrollTop - box.clientHeight < 80 || chatRenderedFor !== UI.chat; chatBottom = false;
+    // t-perf D: the window only shrinks back to the newest CHAT_N while you sit at the bottom; paging back with 加载更早 keeps every page you loaded
+    // (before: past CHAT_N + 60 the next render snapped to the newest 20, so the 4th 加载更早 jumped back down)
+    if (chatRenderedFor !== UI.chat || chatFrom > list.length || (!chatHold && !chatMore && nearBottom && list.length - chatFrom > CHAT_N + 60)) chatFrom = Math.max(0, list.length - CHAT_N);
+    chatMore = false;
     const view = list.slice(chatFrom);
     // t-mobile-crash A: the manager is "working" whenever it is online, and each ring is 3 infinite animations (= composited layers on iOS).
     // One ring per thread: only the newest message from someone else keeps it, older avatars are drawn idle.
     let ringAt = -1; for (let i = view.length - 1; i >= 0; i--) if (view[i].who !== "me") { ringAt = i; break; }
     const mav = (m, i) => { const x = agent(m.who); return av(i === ringAt ? x : Object.assign({}, x, { status: "idle" }), "sm"); };
     const more = chatFrom > 0 ? `<button class="ch-more" data-more>${UI.lang === "en" ? `Load earlier messages (${chatFrom})` : `加载更早的消息（还有 ${chatFrom} 条）`}</button>` : "";
-    const nearBottom = box.scrollHeight - box.scrollTop - box.clientHeight < 80 || chatRenderedFor !== UI.chat;
     // r-improve-1102 P1: quick options on a message you have already answered (you wrote anything after it) fold to one quiet line
     const nextMe = []; { let nx = null; for (let k = list.length - 1; k >= 0; k--) { nextMe[k] = nx; if (list[k].who === "me") nx = list[k]; } }
     if (list.length && CHN.for !== UI.chat) { CHN.for = UI.chat; CHN.t = seenOf(UI.chat); CHN.on = !!CHN.t; CHN.fresh = true; }   // P4: captured on the first render with messages, before it marks the thread read
@@ -3384,17 +3438,21 @@
     if (RQ.for !== UI.chat) { RQ.for = UI.chat; list.forEach(x => RQ.seen.add(x.id)); }
     const optsOf = (m, i) => { if (!m.options) return ""; const q = m.id && quoted[m.id]; if (q) return optDone(m.options, q.text, q.t);
       const r = nextMe[chatFrom + i]; if (!r || r.reply_to) return optChips(m.options, m.id); return optDone(m.options, r.text); };
-    box.innerHTML = list.length ? more + view.map((m, i) => sepHTML(i) + (m.who === "me"
+    const pendSt = m => m.st === "fail" ? `<span class="pend-x">${UI.lang === "en" ? "Not sent" : "没发出去"}</span><button type="button" class="pend-b" data-pend-retry="${m.pend}">${UI.lang === "en" ? "Retry" : "重试"}</button><button type="button" class="pend-b" data-pend-drop="${m.pend}">${UI.lang === "en" ? "Delete" : "删除"}</button>`
+      : m.st === "ok" ? whenH(m.t) : (UI.lang === "en" ? "Sending…" : "发送中…");
+    box.innerHTML = list.length ? more + view.map((m, i) => sepHTML(i) + (m.pend
+      ? `<div class="msg me pend${m.st === "ok" ? " pend-ok" : m.st === "fail" ? " pend-fail" : ""}" data-t="${esc(m.t)}" data-pend="${m.pend}">${rqLine(m)}<div class="mb">${md(m.text)}${attHTML(m.attachments)}</div><div class="mt">${pendSt(m)}</div></div>`
+      : m.who === "me"
       ? `<div class="msg me" data-t="${esc(m.t)}"${m.id ? ` data-mid="${esc(m.id)}"` : ""}>${rqLine(m)}<div class="mb">${md(m.text)}${attHTML(m.attachments)}</div><div class="mt">${whenH(m.t)}</div></div>`
       : `<div class="msg" data-t="${esc(m.t)}"${m.id ? ` data-mid="${esc(m.id)}"` : ""} data-who="${esc(m.who)}"><div class="mh">${mav(m, i)}${esc(aname(agent(m.who)))} <small>${whenH(m.t)}</small></div><div class="mb md">${chipParens(md(m.text))}</div>${attHTML(m.attachments)}
          ${optsOf(m, i)}</div>`)).join("")
       : `<div class="empty">${UI.chat === "manager" ? (UI.lang === "en" ? "Tell the manager what you want done." : "跟管家说你想做什么。") : (UI.lang === "en" ? "DM goes through the manager to this agent." : "私信会由管家转给这个角色。")}</div>`;
     if (nearBottom) box.scrollTop = box.scrollHeight;
     const opened = !!CHN.fresh; CHN.fresh = false;
-    chatRenderedFor = UI.chat; chatCount = list.length;
+    chatRenderedFor = UI.chat; chatCount = sig;
     decorateDesk(box, list);
     newSepPlace(box, opened);
-    if (list.length && (!document.body.dataset.mtab || (document.body.dataset.mtab === "chat" && document.body.dataset.cv === "thread"))) { UI.seen["chat." + UI.chat] = list[list.length - 1].t; LS.set("seen", UI.seen); chatMailRead(UI.chat, list[list.length - 1].t); }  // phones: only an open thread counts as read; P3: and the mailbox copies
+    if (real.length && (!document.body.dataset.mtab || (document.body.dataset.mtab === "chat" && document.body.dataset.cv === "thread"))) { UI.seen["chat." + UI.chat] = real[real.length - 1].t; LS.set("seen", UI.seen); chatMailRead(UI.chat, real[real.length - 1].t); }   /* t-perf C: read marks only from server messages */  // phones: only an open thread counts as read; P3: and the mailbox copies
   }
 
   // r-improve-1102 P4: on the desktop, opening a thread with more than a screen of new messages lands on the divider (the phone keeps
