@@ -1121,16 +1121,16 @@
   const recOf = a => (a && a.rec && a.options.includes(a.rec)) ? a.rec : ((a && a.options) || []).find(o => REC_TXT.test(o)) || null;
   // t-opt-star: chat quick-reply chips. "B*" marks the manager's recommendation (same convention as --ask): the * is never shown or sent;
   // the starred chip gets the 推荐 outline + badge. An option whose text already says （推荐） gets the outline only.
-  const optChips = opts => { const clean = o => String(o).replace(/\s*[*＊]\s*$/, ""); const star = opts.find(o => /[*＊]\s*$/.test(o)); const rec = star || opts.find(o => REC_TXT.test(o)) || null;
-    return `<div class="opts">${opts.map(o => { const c = clean(o), r = o === rec; return `<button class="btn-s${r ? " rec" : ""}" data-opt="${esc(c)}">${esc(c)}${r && !REC_TXT.test(c) ? `<i class="rec-b">${UI.lang === "en" ? "Rec." : "推荐"}</i>` : ""}</button>`; }).join("")}</div>`; };
+  const optChips = (opts, mid) => { const clean = o => String(o).replace(/\s*[*＊]\s*$/, ""); const star = opts.find(o => /[*＊]\s*$/.test(o)); const rec = star || opts.find(o => REC_TXT.test(o)) || null;
+    return `<div class="opts">${opts.map(o => { const c = clean(o), r = o === rec; return `<button class="btn-s${r ? " rec" : ""}" data-opt="${esc(c)}"${mid ? ` data-mid="${esc(mid)}"` : ""}>${esc(c)}${r && !REC_TXT.test(c) ? `<i class="rec-b">${UI.lang === "en" ? "Rec." : "推荐"}</i>` : ""}</button>`; }).join("")}</div>`; };
   // r-improve-1102 P2: a card chip wrapped in full-width brackets 「（chip）」 already reads as a bracket; drop the pair so the line does not break three ways
   const CHIP_RE = '<span class="idc[^"]*"[^>]*>(?:(?!<\\/span>)[\\s\\S])*<\\/span>';
   const chipParens = h => String(h).replace(new RegExp(`（\\s*(${CHIP_RE})\\s*）`, "g"), " $1 ")
     .replace(new RegExp(`(${CHIP_RE})\\s*([。，、；：！？」』]+)`, "g"), '<span class="idc-nw">$1$2</span>');   // punctuation stays on the chip's line
-  const optDone = (opts, said) => {   // r-improve-1102 P1
+  const optDone = (opts, said, at) => {   // r-improve-1102 P1; t-option-quote: at = time of the quoting reply
     const norm = x => String(x || "").replace(/\s*[*＊]\s*$/, "").replace(/\s+/g, " ").trim(), s = norm(said), en = UI.lang === "en";
     const hit = opts.map(norm).find(o => o && (s === o || s.startsWith(o)));
-    return `<div class="opt-done">${hit ? (en ? `✓ You chose “${esc(hit)}”` : `✓ 你选了「${esc(hit)}」`) : (en ? "Replied" : "已回复")}</div>`;
+    return `<div class="opt-done">${hit ? (en ? `✓ You chose “${esc(hit)}”` : `✓ 你选了「${esc(hit)}」`) : (en ? "Replied" : "已回复")}${hit && at ? ` · ${whenH(at)}` : ""}</div>`;
   };
   const AR = { pending: null, timer: 0 };   // pending = { id, picks: [{ ask, opt }] }
   const arPick = (id, askId) => { const p = AR.pending; return p && p.id === id ? (p.picks.find(x => x.ask === askId) || {}).opt : undefined; };
@@ -1171,7 +1171,7 @@
   function askCard(it, a, n) {
     const zh = UI.lang !== "en", by = aname(agent(a.by || it.owner));
     const ans = a.answer ? `<div class="ask-a">${zh ? `你选了「${esc(a.answer.opt)}」· ${when(a.answer.t)} · 已转给${esc(by)}${it.stage !== "done" ? " · 点别的选项可以改选" : ""}` : `You chose “${esc(a.answer.opt)}” · ${when(a.answer.t)} · sent to ${esc(by)}`}</div>` : "";
-    return `<div class="ask${a.answer ? " done" : ""}"><div class="ask-q"><span class="n">${a.answer ? "✓" : n}</span><span>${esc(a.q)}</span></div>${askChips(it, a)}${ans}</div>`;
+    return `<div class="ask${a.answer ? " done" : ""}" data-askq="${esc(a.id)}"><div class="ask-q"><span class="n">${a.answer ? "✓" : n}</span><span>${esc(a.q)}</span></div>${askChips(it, a)}${ans}</div>`;
   }
   function askBlock(it) {
     const all = liveAsks(it); if (!all.length) return "";
@@ -2638,8 +2638,10 @@
     }
     if (e.kind === "msg" && e.who === "me") {
       const to = e.to || "manager";
+      const aq = /^(回答|改选) · ([\s\S]+) → ([^\n]+)$/.exec(e.text || ""), aid = String(e.reply_to || "").startsWith("ask:") ? e.reply_to.slice(4) : "";   // t-option-quote (old answers: display only)
+      const tg = aid ? "button" : "div", body = aq ? `<${tg}${aid ? ` type="button" data-rq-ask="${esc(aid)}"` : ""} class="rq rq-ask" title="${esc(aq[2])}"><i aria-hidden="true">↩</i><b>${esc(whoName(to))}</b><span>${UI.lang === "en" ? "Q: " : "问："}${esc(aq[2])}</span></${tg}><div class="md">${aq[1] === "改选" ? (UI.lang === "en" ? "Changed to: " : "改选：") : ""}${esc(aq[3])}</div>` : `<div class="md">${md(e.text)}</div>`;
       return `<div class="cs-me" data-ti="${e._i}"><div class="cs-h"><span class="nm">${esc(whoName("me"))}</span><span class="at">@${esc(whoName(to))}</span><span class="tm">· ${hm(e.t)}</span></div>
-        <div class="md">${md(e.text)}</div>${attHTML(e.attachments)}</div>`;
+        ${body}${attHTML(e.attachments)}</div>`;
     }
     if (e.kind === "msg") {
       return `<div class="cs-card" data-t="${esc(e.t)}" data-ti="${e._i}" style="--acc:${esc(acc)}"><div class="cs-h">${av(agent(e.who), "sm")}<span class="nm">${esc(whoName(e.who))}</span><span class="at">@${esc(whoName(e.to || "me"))}</span><span class="tm">· ${hm(e.t)}</span></div>
@@ -3135,7 +3137,7 @@
   const CHN = { for: null, t: "", on: false };   // r-improve-1102 P4: 「以下 N 条是新消息」 — where you had read up to when this thread was opened
   // t-mobile-crash B: a thread renders only from chatFrom on (the newest CHAT_N when it opens; 「加载更早的消息」 moves it back by CHAT_N).
   // chatFrom stays put while new messages arrive (so the phone still sees the count grow and plays m-new); it re-anchors on a chat switch or past CHAT_N + 60.
-  const CHAT_N = 20; let chatFrom = 0;
+  const CHAT_N = 20; let chatFrom = 0, chatHold = false;   // chatHold: a ↩ quote jumped far back (t-option-quote); keep that range until the thread changes
   // ui10 (t-pixel-click): a click on a pixel character opens the detail of the item they are on now.
   // Before: it opened that character's DM chat (setChat). The DM is still one tap away via the chat-head avatar row, the Team page 私信 button, and Shift/Alt-click on the sprite.
   function pixelOpen(id, e) {
@@ -3191,7 +3193,8 @@
     r.addEventListener("focusout", railHide);
     addEventListener("scroll", railHide, true);
     r.addEventListener("click", e => {
-      const o = e.target.closest("[data-opt]"); if (o) sendChat(o.dataset.opt, []);
+      const o = e.target.closest("[data-opt]"); if (o) { RQ.fresh = o.dataset.mid || ""; sendChat(o.dataset.opt, [], o.dataset.mid); }
+      const q = e.target.closest(".rq[data-rq]"); if (q) { rqSeek(q.dataset.rq); return; }
       railHide();
       const p = e.target.closest("[data-pick]"); if (p) { if (UI.chatFold) foldChat(false); setChat(p.dataset.pick); }
       if (e.target.closest("[data-more]")) { moreChat($(".ch-msgs", r)); return; }
@@ -3244,8 +3247,42 @@
     UI.chatFold = on; LS.set("chatFold", on); applyChatW();
     setTimeout(() => dispatchEvent(new Event("resize")), 520);  // let the office canvas refit after the slide
   }
-  function sendChat(text, attachments) {
-    return UI.chat === "manager" ? api("chat", { text, attachments }) : api("dm", { agent: UI.chat, text, attachments });
+  function sendChat(text, attachments, replyTo) {
+    const b = { text, attachments }; if (replyTo) b.reply_to = replyTo;   // t-option-quote: the server snapshots the quoted message
+    return UI.chat === "manager" ? api("chat", b) : api("dm", Object.assign({ agent: UI.chat }, b));
+  }
+  // ===== t-option-quote: a reply that quotes an earlier message (a quick-option click) draws ↩ who · first line above its bubble.
+  // Tapping it scrolls back to the original (loading earlier pages, at most 5) and rings it; a trimmed original gets a toast, the snapshot stays.
+  const RQ = { fresh: "", seen: new Set(), for: null };
+  document.addEventListener("click", e => {   // card thread: ↩ on an answer scrolls to that question in 「要你拿主意」 and rings it
+    const b = e.target.closest && e.target.closest("[data-rq-ask]"); if (b) askSeek(b.dataset.rqAsk);
+  });
+  function askSeek(id, n = 0) {
+    const q = document.querySelector(`.ask[data-askq="${CSS.escape(id)}"]`), sum = !q && document.querySelector('[data-uin-asks][aria-expanded="false"]');
+    if (sum && !n) { sum.click(); setTimeout(() => askSeek(id, 1), 150); return; }   // all answered: the questions sit folded behind one summary row
+    if (!q) { toast(UI.lang === "en" ? "That question is no longer on the card" : "这个问题已经不在卡上了"); return; }
+    q.scrollIntoView({ block: "center", behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" });
+    q.classList.remove("rq-hit"); void q.offsetWidth; q.classList.add("rq-hit"); setTimeout(() => q.classList.remove("rq-hit"), 1300);
+  }
+  function rqLine(m) {
+    if (!m.reply_to || !m.rq) return "";
+    const w = m.rq.who, nm = w === "me" ? (UI.lang === "en" ? "You" : "你") : aname(agent(w)), tx = String(m.rq.text || "");
+    const nw = m.who === "me" && RQ.fresh === m.reply_to && !RQ.seen.has(m.id); RQ.seen.add(m.id); if (nw) RQ.fresh = "";
+    return `<button type="button" class="rq${nw ? " rq-new" : ""}" data-rq="${esc(m.reply_to)}" title="${esc(tx)}"><i aria-hidden="true">↩</i><b>${esc(nm)}</b><span>${esc(tx)}</span></button>`;
+  }
+  function rqSeek(mid, n = 0) {
+    const box = $("#right .ch-msgs"); if (!box) return;
+    const m = box.querySelector(`.msg[data-mid="${CSS.escape(mid)}"]`);
+    if (m) {
+      const RM = matchMedia("(prefers-reduced-motion: reduce)").matches;
+      box.scrollTo({ top: Math.max(0, box.scrollTop + m.getBoundingClientRect().top - box.getBoundingClientRect().top - Math.min(140, box.clientHeight * 0.3)), behavior: RM ? "auto" : "smooth" });
+      m.classList.remove("rq-hit"); void m.offsetWidth; m.classList.add("rq-hit"); setTimeout(() => m.classList.remove("rq-hit"), 1300);
+      return;
+    }
+    const list = chatList(UI.chat), at = list.findIndex(x => x.id === mid);
+    if (at < 0 || n >= 2 || at >= chatFrom) { toast(UI.lang === "en" ? "That message is too old; it is no longer in the record" : "原消息太早，已不在记录里"); return; }
+    chatHold = true; chatFrom = Math.max(0, at - 3); box._n = 1e9; chatCount = -1; renderChat(); hooks.forEach(f => f("all"));   // render from just above the original
+    setTimeout(() => rqSeek(mid, n + 1), 120);
   }
   // ===== t-web-dm: the desktop chat panel (and its <=1180px pop-over) gets the phone thread's major design (P3): a stamp only after a 5-minute gap,
   // one avatar per run of messages, my avatar on the right, a typing bubble, and the exact time on hover. Same class names as mobile.js decorateThread(),
@@ -3324,7 +3361,8 @@
     const list = chatList(UI.chat);
     const box = $(".ch-msgs", r);
     if (chatRenderedFor === UI.chat && chatCount === list.length) { decorateDesk(box, list); return; }
-    if (chatRenderedFor !== UI.chat || chatFrom > list.length || list.length - chatFrom > CHAT_N + 60) chatFrom = Math.max(0, list.length - CHAT_N);
+    if (chatRenderedFor !== UI.chat) chatHold = false;
+    if (chatRenderedFor !== UI.chat || chatFrom > list.length || (!chatHold && list.length - chatFrom > CHAT_N + 60)) chatFrom = Math.max(0, list.length - CHAT_N);
     const view = list.slice(chatFrom);
     // t-mobile-crash A: the manager is "working" whenever it is online, and each ring is 3 infinite animations (= composited layers on iOS).
     // One ring per thread: only the newest message from someone else keeps it, older avatars are drawn idle.
@@ -3340,10 +3378,15 @@
       const lastMe = list.reduce((t, m) => m.who === "me" && m.t > t ? m.t : t, ""), from = lastMe > CHN.t ? lastMe : CHN.t;
       newAt = view.findIndex(m => m.who !== "me" && m.t > from); if (newAt >= 0) newN = view.length - newAt; }
     const sepHTML = i => i !== newAt ? "" : `<div class="new-sep" data-newsep>${UI.lang === "en" ? `${newN} new message${newN > 1 ? "s" : ""} below · you last read ${whenH(CHN.t)}` : `以下 ${newN} 条是新消息 · 你上次看到 ${whenH(CHN.t)}`}</div>`;
-    const optsOf = (m, i) => { if (!m.options) return ""; const r = nextMe[chatFrom + i]; if (!r) return optChips(m.options); return optDone(m.options, r.text); };
+    // t-option-quote: a reply that quotes this message folds it to 「你选了 X · time」; the plain "next message of yours" rule only applies when that
+    // next message quotes nothing (one that quotes another message leaves these options open). Old messages have no reply_to: unchanged.
+    const quoted = {}; for (const x of list) if (x.who === "me" && x.reply_to && !quoted[x.reply_to]) quoted[x.reply_to] = x;
+    if (RQ.for !== UI.chat) { RQ.for = UI.chat; list.forEach(x => RQ.seen.add(x.id)); }
+    const optsOf = (m, i) => { if (!m.options) return ""; const q = m.id && quoted[m.id]; if (q) return optDone(m.options, q.text, q.t);
+      const r = nextMe[chatFrom + i]; if (!r || r.reply_to) return optChips(m.options, m.id); return optDone(m.options, r.text); };
     box.innerHTML = list.length ? more + view.map((m, i) => sepHTML(i) + (m.who === "me"
-      ? `<div class="msg me" data-t="${esc(m.t)}"><div class="mb">${md(m.text)}${attHTML(m.attachments)}</div><div class="mt">${whenH(m.t)}</div></div>`
-      : `<div class="msg" data-t="${esc(m.t)}" data-who="${esc(m.who)}"><div class="mh">${mav(m, i)}${esc(aname(agent(m.who)))} <small>${whenH(m.t)}</small></div><div class="mb md">${chipParens(md(m.text))}</div>${attHTML(m.attachments)}
+      ? `<div class="msg me" data-t="${esc(m.t)}"${m.id ? ` data-mid="${esc(m.id)}"` : ""}>${rqLine(m)}<div class="mb">${md(m.text)}${attHTML(m.attachments)}</div><div class="mt">${whenH(m.t)}</div></div>`
+      : `<div class="msg" data-t="${esc(m.t)}"${m.id ? ` data-mid="${esc(m.id)}"` : ""} data-who="${esc(m.who)}"><div class="mh">${mav(m, i)}${esc(aname(agent(m.who)))} <small>${whenH(m.t)}</small></div><div class="mb md">${chipParens(md(m.text))}</div>${attHTML(m.attachments)}
          ${optsOf(m, i)}</div>`)).join("")
       : `<div class="empty">${UI.chat === "manager" ? (UI.lang === "en" ? "Tell the manager what you want done." : "跟管家说你想做什么。") : (UI.lang === "en" ? "DM goes through the manager to this agent." : "私信会由管家转给这个角色。")}</div>`;
     if (nearBottom) box.scrollTop = box.scrollHeight;

@@ -796,14 +796,21 @@ def act(body):
                      "category": body.get("category"), "attachments": att}
 
         elif k == "chat":
-            st["chat"].append(S._chat_entry(me, body["text"], attachments=att))
+            src = S.find_msg(st["chat"], body.get("reply_to"))   # t-option-quote: unknown / trimmed ids are ignored, the message still goes out
+            st["chat"].append(S._chat_entry(me, body["text"], attachments=att, quote=src))
             inbox = {"kind": "manager", "text": body["text"], "attachments": att}
+            if src:
+                inbox.update(S.reply_fields(src))
 
         elif k == "dm":
             if body["agent"] == "manager":
                 raise ValueError("use chat for the manager")
-            st["dms"].setdefault(body["agent"], []).append(S._chat_entry(me, body["text"], attachments=att))
+            lst = st["dms"].setdefault(body["agent"], [])
+            src = S.find_msg(lst, body.get("reply_to"))
+            lst.append(S._chat_entry(me, body["text"], attachments=att, quote=src))
             inbox = {"kind": "dm", "agent": body["agent"], "text": body["text"], "attachments": att}
+            if src:
+                inbox.update(S.reply_fields(src))
 
         elif k == "comment":
             to = body.get("to") or it["owner"]
@@ -847,7 +854,7 @@ def act(body):
         elif k == "answer":   # t-open-questions: a click on one of an ask's options; the stage stays as it is
             a, changed = S.answer_ask(it, body.get("ask"), body.get("opt"), me)
             inbox = {"kind": "answer", "item": it["id"], "ask": a["id"], "q": a["q"], "opt": a["answer"]["opt"],
-                     "to": a.get("by") or it["owner"], "changed": changed}
+                     "to": a.get("by") or it["owner"], "changed": changed, "reply_to": "ask:" + a["id"]}
 
         elif k == "reopen":
             it["stage"] = "doing"

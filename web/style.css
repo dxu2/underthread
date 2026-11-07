@@ -2606,3 +2606,28 @@ html[data-theme="light"] .brand img.wm-l, html[data-theme="white"] .brand img.wm
 /* ===== t-sync-pill batch 2: usage rows. The name is its own span so the ellipsis works (.ru-n is a flex box; text-overflow does nothing on a bare text node). ===== */
 .ru-n .t { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .ru-n .ru-on { flex: none; }
+
+/* ===== t-option-quote: ↩ quote line above a reply that answers an earlier message (quick option) / a card ask ===== */
+.rq { display: flex; align-items: center; gap: 6px; max-width: min(76%, 420px); min-width: 0; margin: 0 0 4px; padding: 4px 10px 4px 8px; box-sizing: border-box;
+  border: 0; border-left: 2px solid var(--accent); border-radius: 4px 10px 10px 4px; background: color-mix(in srgb, var(--ink) 6%, transparent);
+  color: var(--dim); font: inherit; font-size: var(--fs-12); line-height: 1.4; text-align: left; cursor: pointer;
+  transition: background var(--m-quick, .14s) ease, transform var(--m-quick, .14s) ease; }
+.rq i { font-style: normal; flex: none; transition: transform var(--m-quick, .14s) ease; }
+.rq b { flex: none; font-weight: 600; color: var(--ink2); }
+.rq span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rq:hover { background: color-mix(in srgb, var(--ink) 11%, transparent); } .rq:hover i { transform: translateX(-2px); }
+.rq:active { transform: scale(.98); }
+.rq:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+div.rq { cursor: default; } div.rq:hover { background: color-mix(in srgb, var(--ink) 6%, transparent); } div.rq:hover i { transform: none; }
+.msg.me > .rq { align-self: flex-end; margin-left: auto; }
+.cs-me .rq { max-width: 100%; margin: 4px 0 4px; }
+.rq-new { animation: rq-in .2s var(--m-ease-std, ease) both; }
+@keyframes rq-in { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+.rq-hit { animation: rq-ring 1.22s ease both; border-radius: 12px; }
+@keyframes rq-ring { 0% { box-shadow: 0 0 0 0 transparent; } 10%, 67% { box-shadow: 0 0 0 2px var(--accent); } 100% { box-shadow: 0 0 0 2px transparent; } }
+@media (prefers-reduced-motion: reduce) {
+  .rq, .rq i { transition: none; } .rq:hover i { transform: none; } .rq:active { transform: none; }
+  .rq-new { animation: none; }
+  .rq-hit { animation: none; box-shadow: 0 0 0 2px var(--accent); }
+}
+#right .msg.me > .rq ~ .m-meav { top: 34px; }   /* the avatar stays beside the bubble, not the quote line */
