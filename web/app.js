@@ -1756,7 +1756,7 @@
     const live = rs.filter(r => !r.paused && !r.disabled).length;
     const runIds = new Set(rs.flatMap(r => runsOf(r).map(k => k.id)));
     const rest = all.filter(i => !rIds.has(i.id) && !runIds.has(i.id)), od = rest.filter(i => grpOf(i) !== "done"), done = rest.filter(i => grpOf(i) === "done");
-    const odRow = i => { const a = agent(i.owner); return `<div class="rs-row od" data-item="${esc(i.id)}"><div class="rs-m"><div class="rs-n">${a ? av(a, "rs-av", i.id) : ""}<b>${esc(i.title)}</b></div><div class="rs-s">${en ? "Runs when the manager starts it" : "管家说开工才跑"} · ${en ? "last" : "上次"} ${esc(when(i.activity || i.updated))}</div></div><span class="rs-nx dim">${en ? "On call" : "等管家叫"}</span></div>`; };
+    const odRow = i => { const a = agent(i.owner); return `<div class="rs-row od" data-item="${esc(i.id)}"><div class="rs-m"><div class="rs-n">${a ? av(a, "rs-av", i.id) : ""}<b>${esc(i.title)}</b></div><div class="rs-s">${en ? "Runs when the manager starts it" : "管家说开工才跑"} · ${en ? "last" : "上次"} ${esc(when(i.activity || i.updated))}</div></div><span class="rs-nx dim">${i.paused && i.stage === "doing" ? (en ? "Paused" : "已暂停") : (en ? "On call" : "等管家叫")}</span></div>`; };   /* t-routine-detect: it.paused */
     return pageHead("ongoing") +
       `<div class="rs-h"><b>${en ? "Daily rhythm" : "每天的固定节奏"}</b><span>${en ? `${rs.length} · ${live} running · last 7 days` : `${rs.length} 项 · ${live} 项在跑 · 最近 7 天`}</span></div>` +
       ringOnce(() => `<div class="rs-list">${sorted.map(row).join("")}</div>` +
@@ -2749,7 +2749,7 @@
         const nd = rt.next && new Date(rt.next), nx = !nd || isNaN(nd) ? "" : dayKey(nd) === dayKey(new Date()) ? `${zh ? "今天" : "today"} ${hm(rt.next)}` : dayKey(nd) === dayKey(new Date(Date.now() + 864e5)) ? `${zh ? "明天" : "tomorrow"} ${hm(rt.next)}` : when(rt.next);
         acts.dataset.st = rt.paused ? "rt-off" : "rt"; acts.innerHTML = rt.paused
         ? `<span class="rt-off"><i class="rt-dot"></i>${zh ? "暂停" : "Paused"}</span><button class="ab ok rt-sw" data-rt="resume" role="switch" aria-checked="false"><b>${zh ? "开启" : "Turn on"}</b></button>`
-        : `<span class="rt-on"><i class="rt-dot"></i>${rt.unknown ? (zh ? "开启中" : "On") : `${zh ? "开启中 · 下次 " : "On · next "}${esc(nx || "—")}`}</span><button class="ab no rt-sw" data-rt="pause" role="switch" aria-checked="true">${zh ? "暂停" : "Pause"}</button>`; }
+        : `<span class="rt-on"><i class="rt-dot"></i>${rt.unknown || rt.ondemand ? (zh ? "开启中" : "On") : `${zh ? "开启中 · 下次 " : "On · next "}${esc(nx || "—")}`}</span><button class="ab no rt-sw" data-rt="pause" role="switch" aria-checked="true">${zh ? "暂停" : "Pause"}</button>`; }
       else acts.innerHTML = st === "done" ? `<button class="ab re" data-act="reopen"><span aria-hidden="true">↺</span>${t("reopen")}</button>${stampHTML(it)}`
         : closeBtn() + (st === "solo" ? snzBtn(it) + `<button class="ab ok solo${openAsks(it).length ? " has-ask" : ""}" data-act="done"><b>${zh ? "完成委托" : "Mark done"}</b>${askLeft(it) ? `<small class="ok-ask">${askLeft(it)}</small>` : ""}</button>`
         : `<button class="ab no" data-act="reject">${t("reject")}</button>${snzBtn(it)}<button class="ab ok${openAsks(it).length ? " has-ask" : ""}" data-act="approve">${okBtnIn(it)}</button>`);   // ri1103-P2: 稍后 between 驳回 and 验收
@@ -2848,12 +2848,20 @@
   function routineOf(it) {
     if (!it) return null;
     const rs = ST.meta && ST.meta.routines;
-    if (Array.isArray(rs)) return rs.find(r => r.item === it.id) || null;
+    const own = Array.isArray(rs) ? rs.find(r => r.item === it.id) : null;
+    if (own) return own;
+    /* t-routine-detect: an ongoing card in doing that is not a child card is a standing card too (按需常驻: no server timer, the manager runs it, e.g. t-oss-sync).
+       id null = never send its id as a config routine; pause / resume go by item (server.py keeps it.paused). Before t-routine-detect only r-* without meta.routines counted. */
+    if (it.category === "ongoing" && it.stage === "doing" && !parentOf(it)) return { id: null, item: it.id, ondemand: true, paused: (it.paused && it.paused.at) || null };
+    if (Array.isArray(rs)) return null;
     return it.category === "ongoing" && /^r-/.test(it.id) && !parentOf(it) ? { id: it.id.slice(2), item: it.id, unknown: true } : null;
   }
   function rtLine(it) {
     const r = routineOf(it); if (!r) return "";
     const en = UI.lang === "en";
+    if (r.ondemand) return r.paused   /* t-routine-detect */
+      ? `<div class="dw-rt off"><b>${en ? "Paused" : "暂停"}</b><span>${en ? `since ${when(r.paused)} · the manager skips this card` : `${when(r.paused)} 暂停的 · 管家不再做这张卡`}</span></div>`
+      : `<div class="dw-rt"><b>${en ? "On demand" : "按需常驻"}</b><span>${en ? "No fixed time · runs when the manager starts it" : "没有固定时间 · 管家说开工才跑"}</span></div>`;
     if (r.unknown) return `<div class="dw-rt"><b>${en ? "Routine" : "常驻任务"}</b><span>${en ? "Schedule shows after the dashboard restarts" : "看板重启后显示定时和下次时间"}</span></div>`;
     if (r.paused) return `<div class="dw-rt off"><b>${en ? "Paused" : "暂停"}</b><span>${en ? `since ${when(r.paused)} · no new runs` : `${when(r.paused)} 暂停的 · 不再开新的子卡`}</span></div>`;
     const nd = r.next && new Date(r.next), tmr = dayKey(new Date(Date.now() + 864e5));
@@ -2869,9 +2877,16 @@
   function rtToggle(it, r, pause) {
     const zh = UI.lang !== "en";
     if (r.unknown) return toast(zh ? "这个按钮要等看板重启后才能用" : "Needs a dashboard restart first", true);
+    if (r.ondemand) {   /* t-routine-detect: by item only, never a made-up routine id */
+      if (pause && !confirm(zh ? `暂停常驻「${it.title}」？\n暂停以后管家不再做这张卡，随时可以再开启。` : `Pause "${it.title}"? The manager skips it until you turn it back on.`)) return;
+      api(pause ? "routine_pause" : "routine_resume", { item: it.id })
+        .then(() => toast(pause ? (zh ? "已暂停 · 管家不再做这张卡" : "Paused") : (zh ? "已开启" : "Turned on")))
+        .catch(e => { if (/no routine/.test(String(e && e.message))) toast(zh ? "这个按钮要等看板重启后才能用" : "Needs a dashboard restart first", true); });
+      return;
+    }
     if (pause && !confirm(zh ? `暂停常驻任务「${it.title}」？\n暂停以后每天 ${r.time} 不再自动开子卡；已有的子卡不受影响。随时可以再开启。` : `Stop "${it.title}"? No new daily runs until you resume.`)) return;
     api(pause ? "routine_pause" : "routine_resume", { routine: r.id, item: it.id })
-      .then(() => toast(pause ? (zh ? "已暂停 · 不会再定时触发" : "Paused") : (zh ? "已开启 · 每天 " + r.time : "Turned on")));
+      .then(() => toast(pause ? (zh ? "已暂停 · 不会再定时触发" : "Paused") : (zh ? "已开启 · 每天 " + r.time : "Turned on"))).catch(() => { });   /* api() already toasts the error */
   }
   document.addEventListener("click", e => {
     const b = e.target.closest("[data-rtq]"); if (!b) return;

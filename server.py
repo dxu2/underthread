@@ -929,24 +929,39 @@ def act(body):
 
         elif k in ("routine_pause", "routine_resume"):   # t-routine-close
             r = next((x for x in CONFIG.get("routines") or [] if isinstance(x, dict) and x.get("id") == body.get("routine")), None)
-            if not r:
-                raise ValueError(f"no routine {body.get('routine')}")
-            rid = r["id"]
-            it = it or S.find_item(st, routine_item(r))
-            pmap = st["meta"].setdefault("routines_paused", {})
-            if k == "routine_pause":
-                pmap[rid] = {"at": S.now(), "by": me}
-                msg = "停止常驻任务 · 定时器已停，不会再开新的子卡"
-            else:
-                pmap.pop(rid, None)
-                nowt = dt.datetime.now()
-                # resuming after today's time never starts a same-day run: mark today as fired, next run is tomorrow
-                if nowt.strftime("%H:%M") >= str(r.get("time", "10:00")):
-                    st["meta"].setdefault("routines_fired", {})[rid] = nowt.date().isoformat()
-                msg = f"恢复常驻任务 · 每天 {r.get('time', '10:00')}"
-            if it is not None:
+            if not r and it is not None and not body.get("routine"):
+                # t-routine-detect: a standing card with no server timer (按需常驻, e.g. t-oss-sync): paused by item. Same test as app.js routineOf:
+                # ongoing, in doing, not a child card (no tag naming another card). The manager skips a card with it["paused"].
+                child = any(t != it["id"] and S.find_item(st, t) for t in it.get("tags") or [])
+                if it.get("category") != "ongoing" or it.get("stage") != "doing" or child:
+                    raise ValueError(f"not a standing card {it['id']}")
+                if k == "routine_pause":
+                    it["paused"] = {"at": S.now(), "by": me}
+                    msg = "暂停常驻 · 管家不再做这张卡"
+                else:
+                    it.pop("paused", None)
+                    msg = "恢复常驻 · 管家照常做这张卡"
                 S.add_thread(it, me, msg, "event")
-            inbox = {"kind": k, "routine": rid, "item": it["id"] if it else None}
+                inbox = {"kind": k, "routine": None, "item": it["id"]}
+            elif not r:
+                raise ValueError(f"no routine {body.get('routine')}")
+            else:
+                rid = r["id"]
+                it = it or S.find_item(st, routine_item(r))
+                pmap = st["meta"].setdefault("routines_paused", {})
+                if k == "routine_pause":
+                    pmap[rid] = {"at": S.now(), "by": me}
+                    msg = "停止常驻任务 · 定时器已停，不会再开新的子卡"
+                else:
+                    pmap.pop(rid, None)
+                    nowt = dt.datetime.now()
+                    # resuming after today's time never starts a same-day run: mark today as fired, next run is tomorrow
+                    if nowt.strftime("%H:%M") >= str(r.get("time", "10:00")):
+                        st["meta"].setdefault("routines_fired", {})[rid] = nowt.date().isoformat()
+                    msg = f"恢复常驻任务 · 每天 {r.get('time', '10:00')}"
+                if it is not None:
+                    S.add_thread(it, me, msg, "event")
+                inbox = {"kind": k, "routine": rid, "item": it["id"] if it else None}
         else:
             raise ValueError(f"unknown action {k}")
 
