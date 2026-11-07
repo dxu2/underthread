@@ -64,7 +64,7 @@
     review(s, D) {
       const L = D.waiting, { n, foot } = fitM(s, L.length, 5);
       return eb("review", L.length, true) + L.slice(0, n).map(i => { const a = A().agent(i.owner);
-        return `<div class="wg-row" data-item="${esc(i.id)}"><img class="wg-av" src="${A().avatarUrl(a)}" alt=""><div class="t">${esc(i.title)}<small>${esc(A().aname(a))} · ${en() ? "waiting" : "等了"} ${ago(i.activity || i.updated)}</small></div>${i.snoozed ? `<span class="wg-tg snz">${en() ? "Snoozed" : "推迟过"}</span>` : ""}<span class="wg-tg${i.kind === "plan" ? "" : " hot"}">${kindL(i)}</span></div>`; }).join("") +
+        return `<div class="wg-row" data-item="${esc(i.id)}"><img class="wg-av" src="${A().avatarUrl(a)}" alt=""><div class="t">${A().nrDot ? A().nrDot(i.id) : ""}${esc(i.title)}<small>${esc(A().aname(a))} · ${en() ? "waiting" : "等了"} ${ago(i.activity || i.updated)}</small></div>${i.snoozed ? `<span class="wg-tg snz">${en() ? "Snoozed" : "推迟过"}</span>` : ""}<span class="wg-tg${i.kind === "plan" ? "" : " hot"}">${kindL(i)}</span></div>`; }).join("") +
         (!foot ? "" : `<div class="wg-more">${L.length > n ? `<span data-go="board">${en() ? `${L.length - n} more ›` : `还有 ${L.length - n} 件 ›`}</span>` : `${en() ? "Oldest waiting" : "最久的已经等了"} ${ago(L[0].activity || L[0].updated)}`}</div>`);
     },
     busy(s, D) {
@@ -77,8 +77,8 @@
         ${side.length || more > 0 ? `<div class="wg-side">${side.map(x => `<div class="wg-sr" data-item="${esc(x.it.id)}"><img src="${A().avatarUrl(x.a)}" alt="" data-chat="${esc(x.a.id)}"><div class="st"><b>${esc(A().aname(x.a))}${A().qBadge ? A().qBadge(x.a.id) : ""}</b><span>${esc(x.it.title)}</span><i><em style="width:${bar(x)}%"></em></i></div><time>${ago(x.since)}</time></div>`).join("")}${more > 0 ? `<div class="wg-sr plus" data-go="board">${en() ? `+${more} more working ›` : `+${more} 人在忙 · 看全部 ›`}</div>` : ""}</div>` : ""}</div>`;
     },
     replies(s, D) {
-      const { n } = fitM(s, D.nr.length, 4), N = D.nr.reduce((t, g) => t + g.ms.length, 0);
-      return eb("replies", N) + D.nr.slice(0, n).map(g => { const m = g.ms[g.ms.length - 1], a = A().agent(m.agent);
+      const { n } = fitM(s, D.nr.length, 4);
+      return eb("replies", D.nr.length) + D.nr.slice(0, n).map(g => { const m = g.ms[g.ms.length - 1], a = A().agent(m.agent);
         return `<div class="wg-row" data-item="${esc(g.it.id)}"><img class="wg-av" src="${A().avatarUrl(a)}" alt=""><div class="t">${esc(g.it.title)}<small>${esc(String(m.text || "").replace(/^[^:：\n]{1,8}[:：]\s*/, "").split(/\n/)[0])}</small></div><time>${ago(m.t)}</time></div>`; }).join("") +
         (D.nr.length > n ? `<div class="wg-more"><span data-go="mail">${en() ? `${D.nr.length - n} more cards ›` : `还有 ${D.nr.length - n} 张卡 · 去信箱 ›`}</span></div>` : "");
     },
@@ -286,7 +286,7 @@
       ${X.cal.filter(e => e.time).map(e => `<b class="ev" style="left:${pct(tlX(dayAt(e.time)))}" title="${esc(e.time + " " + (e.title || ""))}"></b>`).join("")}
       ${X.rts.map(r => `<em class="rt${r.ran ? " ran" : ""}" style="left:${pct(tlX(r.t))}"${r.item ? ` data-item="${esc(r.item)}"` : ""}><u>${hm(r.t)} ${esc(r.name)}</u></em>`).join("")}
       <span class="now"><u><span class="d-tk" data-now="1">${(zh ? "现在 " : "now ") + hm(now)}</span></u></span></div>
-      <div class="d-tl-ft">${zh ? `今天交付 <b>${D.shipped.length}</b> 件 · ${evN ? `${evN} 个日程` : "没有会议"}` : `<b>${D.shipped.length}</b> shipped today · ${evN ? `${evN} events` : "no meetings"}`}${next ? ` · ${zh ? "下一个" : "next"}：${hm(next.t)} ${esc(next.name)}（<span class="d-tk" data-at="${next.t}">${inH(next.t)}</span>）` : ""}${D.nr.length ? ` · <button type="button" class="d-link in" data-go="mail">${zh ? `新回复 ${D.nr.reduce((t, g) => t + g.ms.length, 0)} 条 ›` : `${D.nr.reduce((t, g) => t + g.ms.length, 0)} new replies ›`}</button>` : ""}${A().snzLine ? A().snzLine() : ""}</div></section>`;
+      <div class="d-tl-ft">${zh ? `今天交付 <b>${D.shipped.length}</b> 件 · ${evN ? `${evN} 个日程` : "没有会议"}` : `<b>${D.shipped.length}</b> shipped today · ${evN ? `${evN} events` : "no meetings"}`}${next ? ` · ${zh ? "下一个" : "next"}：${hm(next.t)} ${esc(next.name)}（<span class="d-tk" data-at="${next.t}">${inH(next.t)}</span>）` : ""}${D.nr.length ? ` · <button type="button" class="d-link in" data-go="mail">${zh ? `${D.nr.length} 张卡有新回复 ›` : `${D.nr.length} cards with new replies ›`}</button>` : ""}${A().snzLine ? A().snzLine() : ""}</div></section>`;
     // 2 等你拍板
     const W = X.waiting, tag = i => i.category === "urgent" ? `<em class="u">${zh ? "紧急" : "Urgent"}</em>` : `<em>${kindL(i)}</em>`;
     const needs = `<section class="d-needs${W.length ? "" : " d-needs0"}" data-sec="needs"><div class="d-h"><b>${nm("review")}</b>${W.length ? `<span class="n hot">${W.length}</span>` : ""}${W.length ? "" : `<span class="d-ok">✓ ${calmText("review")}</span>`}<span class="sp"></span>${W.length > 2 ? `<button type="button" class="d-link" data-go="board">${zh ? "全部" : "All"} ${W.length} ›</button>` : ""}</div>

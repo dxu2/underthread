@@ -1149,6 +1149,7 @@
     c.pipe = items().filter(i => i.stage !== "done" && isContent(i)).length;   // t-imp-p3
     c.mail = mailUnread();   /* t-hdr-trim ①: 信箱 row in the rail; ri1105-P4: server count */
     for (const it of items()) { if (onYou(it)) c.review++; if (it.stage !== "done") c[it.category] = (c[it.category] || 0) + 1; }
+    c.review += newReplies().length;   // t-review-unread: cards with unread replies (never one already counted above)
     return c;
   }
   function renderLeft() {
@@ -1465,7 +1466,7 @@
   function decRow(it) {
     const a = agent(it.owner), zh = UI.lang !== "en", plan = it.kind === "plan";
     const what = plan ? (zh ? "方案待批" : "Plan to approve") : (zh ? "问题待答" : "Question for you");
-    return `<div class="dc-row" data-item="${it.id}">${av(a, "", it.id)}<div class="dc-main"><div class="dc-t">${esc(it.title)}</div>
+    return `<div class="dc-row" data-item="${it.id}">${av(a, "", it.id)}<div class="dc-main"><div class="dc-t">${nrDot(it.id)}${esc(it.title)}</div>
       <div class="dc-s">${what} · ${esc(aname(a))} · ${agoH(it.activity || it.updated)}${waitTag(it)}${openAsks(it).length ? ` · <b class="ask-n">${zh ? `${openAsks(it).length} 个问题要你选` : `${openAsks(it).length} to answer`}</b>` : ""}</div></div>
       <button class="dc-btn${plan ? "" : " g"}" data-rv-open="${it.id}">${plan ? (zh ? "看方案" : "Review") : (zh ? "去回答" : "Answer")}</button></div>`;
   }
@@ -1655,7 +1656,7 @@
       const list = items().filter(i => i.id !== RV.pending && (hf === "week" ? (i.stage === "done" && i.closed && new Date(i.closed) > wkc) : hf === "review" ? onYouCard(i) : grpOf(i) === hf)).sort(UI.sort === "created" ? byCreated : byAct);
       const dec = hf === "review" ? decisions() : [];   // t-imp-p1
       const decH = dec.length ? decHead(list.length, dec) : "", decR = dec.map(decRow).join(""), today = hf === "review" && !list.length ? todayBlock() : "";
-      const bar = (phoneLike && hf === "review" ? nrBlock() : "") + `<div class="ph-bar"><button data-sort="activity" class="${UI.sort === "activity" ? "on" : ""}">${t("by_activity")}</button>
+      const bar = (hf === "review" ? nrBlock() : "") + `<div class="ph-bar"><button data-sort="activity" class="${UI.sort === "activity" ? "on" : ""}">${t("by_activity")}</button>
         <button data-sort="created" class="${UI.sort === "created" ? "on" : ""}"><span class="gl" aria-hidden="true">▼ </span>${t("by_created")}</button>
         <span class="count">${hf === "review" ? (UI.lang === "en" ? "On you" : "等你拍板") : hf === "week" ? "本周交付" : stageLabel(hf)} <b>${list.length + dec.length}</b></span></div>`;   // t-home-nobtn: the 切回 button is gone; ⌘K「首页样式」and #home=classic stay as the back door
       const sz = hf === "review" ? snzLine() : "";   // ri1103-P2
@@ -2388,7 +2389,7 @@
   // t-office-d1-s12: the four numbers of the home strip (they also drive the list filter UI.hf on phones)
   function homeCounts() {   // t-imp-p1: review = 等你拍板 (review items + plans / questions parked in waiting)
     const its = items(), wk = Date.now() - 7 * 864e5, rev = its.filter(i => onYouCard(i) && i.id !== RV.pending);
-    return { review: rev.length + its.filter(i => awaitsUser(i) && !busy(i) && !snoozed(i)).length, doing: its.filter(i => grpOf(i) === "doing").length, todo: its.filter(i => grpOf(i) === "todo").length,
+    return { review: rev.length + its.filter(i => awaitsUser(i) && !busy(i) && !snoozed(i)).length + newReplies().length, doing: its.filter(i => grpOf(i) === "doing").length, todo: its.filter(i => grpOf(i) === "todo").length,
       week: its.filter(i => i.stage === "done" && i.closed && new Date(i.closed) > wk).length, oldest: rev.length ? Math.min(...rev.map(i => new Date(i.activity || i.updated))) : null };
   }
   // t-visual-stage: pins on the terrace picture (positions are fractions of the hero image; a new role without a seat is skipped)
@@ -2404,19 +2405,22 @@
     if (ob._stg !== html) { ob.innerHTML = html; ob._stg = html; const d = `-${(Date.now() % 2000) / 1000}s`; ob.querySelectorAll(".stg-pin.w").forEach(p => p.style.setProperty("--d", d)); }
   }
   // ===== t-home-newreplies: 「新回复」 = the server's reply mail (kind "reply", written for every msg / reply an agent posts on a card; log lines and events
-  // are not mailed) that is still unread, from the last 3 days, grouped by card. Read flags live on the server (mail_read), so phone and desktop agree.
+  // are not mailed) that is still unread, grouped by card. Read flags live on the server (mail_read), so phone and desktop agree.
   // Opening a card marks its replies read; the first unread reply is where the detail opens.
-  const NR_MS = 3 * 864e5;
-  const nrMail = id => (ST.mail || []).filter(m => m.kind === "reply" && !m.read && m.item && m.item !== "None" && (!id || m.item === id) && Date.now() - Date.parse(m.t) < NR_MS);
+  // t-review-unread: no 3-day window any more (a reply counts until it is read), and a card already listed as on you (review row / decision row)
+  // or done / archived / snoozed / held for approve-undo is left out, so no card shows twice. These cards are added to every 等你拍板 count
+  // (homeCounts, counts, mobile tab dot, server pending_count): the count and what you can see stay the same.
+  const nrMail = id => (ST.mail || []).filter(m => m.kind === "reply" && !m.read && m.item && m.item !== "None" && (!id || m.item === id));
+  const nrCard = it => !!it && !it.archived && it.stage !== "done" && !snoozed(it) && !onYou(it) && it.id !== RV.pending;
   function newReplies() {
-    const by = {}; nrMail().forEach(m => { const it = (ST.items || []).find(i => i.id === m.item); if (it) (by[m.item] = by[m.item] || { it, ms: [] }).ms.push(m); });
+    const by = {}; nrMail().forEach(m => { const it = (ST.items || []).find(i => i.id === m.item); if (nrCard(it)) (by[m.item] = by[m.item] || { it, ms: [] }).ms.push(m); });
     return Object.values(by).map(g => (g.ms.sort((a, b) => a.t.localeCompare(b.t)), g)).sort((a, b) => b.ms[b.ms.length - 1].t.localeCompare(a.ms[a.ms.length - 1].t));
   }
   const nrDot = id => nrMail(id).length ? `<i class="nr-dot" title="${UI.lang === "en" ? "New reply" : "有新回复"}"></i>` : "";
   const nrFirst = t => (String(t || "").replace(/^[^:：\n]{1,8}[:：]\s*/, "").split(/(?<=[。！？!?])|\n/)[0] || "").trim();
   function nrBlock() {
     const g = newReplies(); if (!g.length) return "";
-    const zh = UI.lang !== "en", n = g.reduce((s, x) => s + x.ms.length, 0), shown = g.slice(0, 4);
+    const zh = UI.lang !== "en", n = g.length, shown = g.slice(0, 4);   // t-review-unread: n = cards, the same unit as the badges
     return `<div class="nr"><div class="nr-h"><b>${zh ? "新回复" : "New replies"}</b><small>${n}</small><span class="sp"></span><button class="nr-all" data-nr-all>${zh ? "全部标为已读" : "Mark all read"}</button></div>` +
       shown.map(({ it, ms }) => { const m = ms[ms.length - 1], a = agent(m.agent);
         return `<div class="nr-r" role="link" tabindex="0" data-nr="${esc(it.id)}">${av(a)}${ms.length > 1 ? `<span class="nr-n">${ms.length}</span>` : ""}<b>${esc(aname(a))} <i>· ${esc(it.title)}</i></b><time>${agoH(m.t)}</time><p>${esc(nrFirst(m.text))}</p><i class="nr-dot"></i></div>`; }).join("") +
@@ -4007,7 +4011,7 @@
   // ---------- API for the mobile layer (mobile.js) ----------
   window.App = {
     okLabel, okDone, askLeft, openAsks: it => openAsks(it),   // t-btn-names
-    rvApprove: id => rvApprove(id, null), rvCanApprove: it => rvCanApprove(it), awaitsUser: it => awaitsUser(it), busy: it => busy(it), onYou: it => onYou(it), onYouCard: it => onYouCard(it), grpOf: it => grpOf(it), newReplies: () => newReplies(), decisions: () => decisions(),   // t-imp-p5 (palette)
+    rvApprove: id => rvApprove(id, null), rvCanApprove: it => rvCanApprove(it), awaitsUser: it => awaitsUser(it), busy: it => busy(it), onYou: it => onYou(it), onYouCard: it => onYouCard(it), grpOf: it => grpOf(it), newReplies: () => newReplies(), nrDot: id => nrDot(id), decisions: () => decisions(),   // t-imp-p5 (palette)
     /* t-chrome-badge (home.js .hd-tool) */
     toolLine: w => toolLine(w), toolBadge: a => toolBadge(a), toolWhat: a => toolWhat(a),
     UI, get ST() { return ST; }, roll, modalStatus: () => modalStatus(), ghOpen: () => ghOpen(), ghLabel: () => ghLabel(), statusSummary: () => statusSummary(statusRows()), loadHealth: a => loadHealth(a), refreshPage: () => renderPage(), phaseFree, avatarUrl, t, items, agent, aname, atitle, av, when, whenH, agoH, ago, byAct, PLAT, stageLabel,

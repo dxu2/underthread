@@ -413,8 +413,13 @@ def push_status(endpoint=None):
 def pending_count(st):
     """t-app-badge: the app-icon badge = the home page's 「等你拍板」 count. Mirrors web/app.js counts().review
     (stage review, or awaitsUser(): waiting + kind plan/question; archived items excluded). Change both together."""
-    return sum(1 for i in st.get("items", []) if not i.get("archived") and not snooze_active(i)   # ri1103-P2: snoozed cards don't count
-               and (i.get("stage") == "review" or (i.get("stage") == "waiting" and i.get("kind") in ("plan", "question"))))
+    on = {i["id"] for i in st.get("items", []) if not i.get("archived") and not snooze_active(i)   # ri1103-P2: snoozed cards don't count
+          and (i.get("stage") == "review" or (i.get("stage") == "waiting" and i.get("kind") in ("plan", "question")))}
+    # t-review-unread: + open cards with an unread team reply (mail kind "reply" with a card id), each card once. Mirrors app.js newReplies().
+    nr = {m.get("item") for m in st.get("mail", []) if m.get("kind") == "reply" and not m.get("read") and m.get("item") not in (None, "", "None")}
+    nr = {i["id"] for i in st.get("items", []) if i["id"] in nr and i["id"] not in on and not i.get("archived")
+          and i.get("stage") != "done" and not snooze_active(i)}
+    return len(on) + len(nr)
 
 
 def notify(n, only=None):
