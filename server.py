@@ -1775,12 +1775,38 @@ def main():
     if not os.environ.get("NO_LOOPS"):
         for fn in (comfy_probe_loop, report_loop, roster_watch_loop, push_loop, wake_loop, routine_loop, snooze_loop):
             threading.Thread(target=fn, daemon=True).start()
-    srv = ThreadingHTTPServer(("127.0.0.1", port), H)
+    srv = QuietServer(("127.0.0.1", port), H)
     print(f"Underthread → http://127.0.0.1:{port}")
     try:
         srv.serve_forever()
     except KeyboardInterrupt:
         pass
+
+
+class QuietServer(ThreadingHTTPServer):
+    """t-ri1106-b (r-improve-1106 P2): a phone or browser dropping an idle keep-alive connection raised BrokenPipe / ConnectionReset /
+    ConnectionAborted inside socketserver, which printed a ~30-line traceback each time (45% of logs/server.log on 11-06).
+    Those are now only counted, and one line per hour sums them up: "[time] conn: N client disconnects in the last hour".
+    Every other exception still goes to the stock handle_error (full traceback ending in "XxxError: ...")."""
+    QUIET = (BrokenPipeError, ConnectionResetError, ConnectionAbortedError)
+
+    def __init__(self, *a, **k):
+        super().__init__(*a, **k)
+        self._qlock = threading.Lock()
+        self._qn = 0
+        self._qt = time.time()
+
+    def handle_error(self, request, client_address):
+        e = sys.exc_info()[1]
+        if not isinstance(e, self.QUIET):
+            return super().handle_error(request, client_address)
+        with self._qlock:
+            self._qn += 1
+            now = time.time()
+            if now - self._qt < 3600:
+                return
+            n, self._qn, self._qt = self._qn, 0, now
+        print(f"[{dt.datetime.now():%Y-%m-%d %H:%M:%S}] conn: {n} client disconnects in the last hour", flush=True)
 
 
 if __name__ == "__main__":
