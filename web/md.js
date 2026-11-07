@@ -19,7 +19,7 @@
     s = esc(s);
     s = s.replace(/\[([^\]]+)\]\(((?:https?:\/\/|\/|uploads\/|work\/)[^)\s]+)\)/g,
       (_, t, u) => `<a href="${u}" target="_blank" rel="noopener">${t}</a>`);
-    s = s.replace(/(^|[\s(])(https?:\/\/[^\s<)]+)/g, (_, p, u) => `${p}<a href="${u}" target="_blank" rel="noopener">${u}</a>`);
+    s = s.replace(/(^|[^a-zA-Z0-9\/._%?#=&+-])(https?:\/\/[^\s<)（）「」【】]+)/g, (_, p, u) => `${p}<a href="${u}" target="_blank" rel="noopener">${u}</a>`);
     s = s.replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
     s = s.replace(/(^|[^*])\*([^*\s][^*]*)\*/g, "$1<em>$2</em>");
     s = s.replace(/~~([^~]+)~~/g, "<del>$1</del>");
