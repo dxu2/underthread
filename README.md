@@ -2,38 +2,44 @@
 
 **A personal AI agent team that works 24/7.**
 
-[中文简介](#中文简介)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+![Python 3.10+, standard library only](https://img.shields.io/badge/python-3.10%2B%20%C2%B7%20stdlib%20only-informational)
+![Runs on Claude Code](https://img.shields.io/badge/runs%20on-Claude%20Code-orange)
 
-You talk to one **manager**. It takes your messages, breaks them into tasks, hands them to a team of **specialist agents**, and keeps you in sync on a local **dashboard** you can also use from your phone. The agents do the work and hand back drafts. Your part is to approve, reject or comment.
+![The desktop dashboard: today's timeline, waiting on you, today's goals, working now (example data)](docs/img/hero-home.png)
 
-> Status: early version. The framework runs end to end on one machine. Voice calls and some optional artwork are not part of this repository.
+You talk to one **manager**. It turns your messages into cards, hands each card to the right **specialist agent**, and keeps you in sync on a local **dashboard** that also works as a phone app. The specialists do the work and hand back drafts, plans and files. Your part is to approve, reject with a reason, or tap an answer to a question. When you reject something, the reason becomes a rule that the agent follows next time. Everything runs and stays on your own machine.
 
-![Dashboard home (example data)](docs/screenshot-desktop.jpg)
+> **Status: early version.** The whole loop runs end to end on one machine. Expect rough edges, and please open an issue when you hit one.
 
-## What it is
+## Contents
 
-- A **long-running manager session** in [Claude Code](https://docs.claude.com/en/docs/claude-code). It watches your inbox, sorts each request, dispatches it and follows up.
-- A **team of specialists**: Claude Code subagents, each with its own role notes, rules and memory. You decide what roles you need.
-- A **local dashboard** (`server.py` + `web/`): cards, a review queue, chat with the manager and each agent, notifications, and a phone layout.
-- **One state file** behind it (`state.json`, written only through `stateutil.py`, with file locking). Nothing leaves your machine unless an agent is asked to call an outside tool.
+- [Quick start](#quick-start)
+- [How it works](#how-it-works)
+- [Features](#features)
+  - [Manager and specialists](#manager-and-specialists)
+  - [Cards and review](#cards-and-review)
+  - [Questions you answer with a tap](#questions-you-answer-with-a-tap)
+  - [Rules that grow](#rules-that-grow)
+  - [Chat and mailbox](#chat-and-mailbox)
+  - [Routines, daily report and usage](#routines-daily-report-and-usage)
+  - [Desktop dashboard](#desktop-dashboard)
+  - [Phone app](#phone-app)
+  - [Themes and home styles](#themes-and-home-styles)
+  - [Performance and power](#performance-and-power)
+  - [Tools and running it day to day](#tools-and-running-it-day-to-day)
+- [The bundled team preset](#the-bundled-team-preset)
+- [Privacy and safety](#privacy-and-safety)
+- [Not included](#not-included)
+- [Roadmap](#roadmap)
+- [Changelog](CHANGELOG.md)
+- [License](#license)
 
-## Core concepts
+---
 
-| Concept | What it means |
-|---|---|
-| **Manager** | Your single point of contact. Turns a message into one or more cards, picks the right specialist, dispatches, checks the result and writes a daily report. |
-| **Specialists** | Configurable agents (for example a researcher, a writer, a designer, a tooling keeper). Each gets a role file in `roles/` and a subagent file generated from `roster.json`. |
-| **Cards** | Every piece of work is a card with a stage (to do → doing → review → done), an owner, a thread and versioned drafts. |
-| **Review** | Agents deliver drafts or plans to *review*. You approve, reject with a reason, or answer the clickable questions they attach. Big jobs go through a plan first. |
-| **Rules that grow** | When you reject something, the manager turns your reason into a rule proposal. Once you confirm it, it lands in that role's `## Confirmed rules`. |
-| **Dashboard** | A dense desktop home (today's timeline, waiting on you, today's goals, working now with an ETA, small counters; the older widget / app / classic homes stay selectable), a lean left rail with each agent's status and duty, card detail with diffs, chat, mailbox, a routines schedule, a 设置 page with tabs, token usage per role, ⌘K palette. Idle animations pause after 20 seconds to save power. |
-| **Phone** | The same dashboard as a home-screen web app: tab bar, chat list, pull to refresh, optional Web Push notifications. |
+## Quick start
 
-<img src="docs/screenshot-phone.jpg" alt="Phone layout (example data)" width="300"> <img src="docs/screenshot-sidebar.png" alt="Desktop left rail, light theme (example data)" width="240">
-
-## Getting started
-
-Requirements: macOS or Linux, Python 3.10+ (standard library only) and Claude Code.
+Requirements: macOS or Linux, Python 3.10+ (standard library only) and [Claude Code](https://docs.claude.com/en/docs/claude-code).
 
 ```bash
 git clone https://github.com/dxu2/underthread.git && cd underthread
@@ -51,76 +57,221 @@ cp claude-settings.example.json .claude/settings.json
 claude "Start the manager per manager.md"
 ```
 
-Then write to the manager from the dashboard's chat. See [SETUP-GUIDE.md](SETUP-GUIDE.md) for the full walkthrough (architecture, roles, restarts, optional tools).
+Then write to the manager from the dashboard's chat. [SETUP-GUIDE.md](SETUP-GUIDE.md) has the full walkthrough: architecture, roles, restarts and optional tools.
 
-To try changes to the UI, run a copy first: `PORT=8799 NO_LOOPS=1 python3 server.py`, never against your real `state.json`.
+**Try changes on a copy first.** `PORT=8799 NO_LOOPS=1 python3 server.py` starts a second dashboard with the background loops off. Never test UI changes against your real `state.json`.
 
-### Optional tools
+---
 
-- `tools/comfy.py`: image generation through your own ComfyUI box (SSH tunnel).
-- `tools/transcribe.py`: voice memo transcription with whisper.cpp.
-- `tools/ghcred.py`: store a GitHub push token once from the dashboard (keychain or a 0600 file); set `UNDERTHREAD_GH_REPO=owner/name` for the push check.
+## How it works
+
+```mermaid
+flowchart LR
+  You((You)) -- messages, approvals --> UI[Dashboard<br/>desktop + phone]
+  UI <--> SRV[server.py<br/>local JSON API]
+  SRV -- new requests --> IN[(inbox.jsonl)]
+  IN --> MGR[Manager<br/>long-running Claude Code session]
+  MGR -- dispatch --> AG[Specialists<br/>Claude Code subagents]
+  MGR --> SU[stateutil.py]
+  AG --> SU
+  SU -- file-locked writes --> ST[(state.json)]
+  ST --> SRV
+```
+
+- **One state file.** Cards, chat, agent status and rules live in `state.json`. Only `stateutil.py` writes to it, under an exclusive file lock, so the server, the manager and every agent can write at the same time without clobbering each other.
+- **One inbox.** What you type on the dashboard lands in `inbox.jsonl`. The manager watches it, acknowledges each entry and acts on it.
+- **Agents from a roster.** `roster.json` lists the roles. `make_agents.py` turns each one into a Claude Code subagent (`.claude/agents/`) with its own role notes in `roles/` and its own memory folder.
+- **No build step.** The dashboard is plain HTML, CSS and JavaScript served by `server.py`, a standard-library Python server.
+
+---
+
+## Features
+
+### Manager and specialists
+
+![Left rail: each agent with a status word, what it is doing, and a browser-in-use badge (example data)](docs/img/team-rail.png)
+
+The manager is your single point of contact. It sorts each request into a card, picks the specialist, dispatches, checks what comes back and follows up. The specialists do the actual work.
+
+- **Configurable roles.** Add, remove or rename roles in `roster.json`: name, title, duty, tone, colour. Run `make_agents.py` and the manager's dispatch table updates with them.
+- **Role notes and memory.** Each role reads its notes in `roles/<id>.md` at the start of every job, and keeps a small memory folder for facts it will need again. You can read every agent's memory from the dashboard.
+- **Live status.** The left rail shows every agent's state (working, idle), the card it is on and a one-line activity, so you can see at a glance who is busy with what.
+- **Browser-in-use badge.** When an agent is driving a browser or the desktop, its row, the home page and the widgets show a badge with the agent and how long it has been at it (`stateutil.py set-agent --tool chrome|computer`).
+- **Plan first.** Big or risky jobs (long, many generations, or touching files outside the card's folder) start with a plan. Work only begins after you approve it.
+
+### Cards and review
+
+![Card detail: draft with a table of contents, comparing version 1 and version 2 (example data)](docs/img/card-diff.png)
+
+Every piece of work is a card: a category, an owner, a stage (to do, doing, review, done), a thread and a history of drafts.
+
+- **Versioned drafts.** Each new delivery keeps the old one as a version with a label ("v2: tighter intro"). Any two versions can be compared side by side.
+- **Three kinds of delivery.** A *plan* asks for a go-ahead, a *deliverable* is the finished thing, and a *question* means the agent is blocked on you.
+- **Waiting on you.** One review queue collects cards that need a decision, plus cards with replies you have not read yet (marked with a new-reply dot). Open the card and it leaves the queue.
+- **Attachments.** Images show inline, video plays in place, other files are links. Add them with the attach button or by dropping them on the page.
+- **Image viewer.** Click to zoom. On the phone you can save any card image at full size, not the thumbnail.
+- **Links just work.** URLs in card text are clickable, including right after Chinese punctuation.
+- **Mission complete.** Accepting a delivery plays a short "mission complete" scene. Add your own role art in `web/art/` (a transparent cut-out works best) and it appears there; without art the scene plays without a portrait.
+- **Archive.** Done cards that have not moved for a while go to `archive.json`, so the dashboard stays fast. Search still finds them (`stateutil.py archive sweep|list|unarchive-all`).
+
+### Questions you answer with a tap
+
+![Answering a question: tap the recommended option, the panel folds away, the card goes back to work (example data)](docs/img/ask-flow.gif)
+
+Agents don't bury decisions in the middle of a draft. They attach clickable questions to the card.
+
+- **Options with a recommendation.** Each question has two to four options. When the agent has a preference it marks one, and that one is shown first.
+- **"Other…"** is always there for an answer the agent did not think of.
+- **A compact panel.** Open questions sit in a panel at the bottom of the card. On the phone it folds to one line until you open it.
+- **Quoted replies.** Tapping a quick option in chat quotes the question it answers, so the thread stays readable later.
+- **Withdrawn questions** disappear when they no longer apply (`stateutil.py ask-close`).
+
+### Rules that grow
+
+![Rules page: one rule proposal waiting, confirmed rules per role below (example data)](docs/img/rules.png)
+
+When you reject something with a reason, the manager turns the reason into a one-line rule proposal for that role. Confirm it and it lands in the role's `## Confirmed rules`, which the agent reads before every job and which override its defaults. Over time the team stops repeating the same mistakes.
+
+### Chat and mailbox
+
+![Chat with the manager: a quick reply quoting the question it answers; the mailbox open from the top bar (example data)](docs/img/chat-mailbox.png)
+
+- **Manager chat** on the right of the desktop and as its own tab on the phone.
+- **Direct messages** with each specialist.
+- **Mailbox** in the top bar: every reply, delivery and notice in one list, with filters (All, Unread, Replies, Updates, Urgent).
+- **Your messages as bubbles** in card threads, and a composer that starts one line tall and grows as you type.
+- **⌘K palette** (or `/`) to search cards and what was said in chats, and to run actions such as approving a card.
+- **Voice memos** (optional): upload a recording and it is transcribed on your machine with whisper.cpp (`tools/transcribe.py`).
+
+### Routines, daily report and usage
+
+![Routines page with a seven-day run row, beside today's token usage per role (example data)](docs/img/routines-usage.png)
+
+- **Routines.** Recurring jobs (`config.json` → `routines`) fire at a set time each day. The routines page shows them as a schedule with a seven-day row of past runs. Pause one with a switch; it never fires twice after a restart.
+- **Daily report.** At `report_time` the manager writes a report: what waits on you, what shipped, what is in progress, rules adopted, anything that went wrong.
+- **Usage by role.** Today's tokens per role, read from Claude Code's own transcripts on this machine (`usage_roll.py`), on the home page and in Settings.
+- **Plan usage.** The stamina orb shows how much of your Claude plan window is left (`tools/statusline.py`). When it runs out, the manager can sleep until the window resets.
+- **Wake the manager** from Settings if it is asleep or offline: it drops a ping in the inbox.
+
+### Desktop dashboard
+
+![Settings: theme, power saving, home style, language (example data)](docs/img/settings.png)
+
+- **Dense home** (the default): today's timeline, waiting on you, today's goals, working now with an ETA, and small counters, all on the first screen.
+- **Lean left rail:** your queues (Home, Main quest, Side quest, Daily, Urgent, Ongoing), then Studio, Reports, Mailbox and Settings, then the team.
+- **Studio** groups the production pages (Pipeline, Board, Channels, Assets) under one tab.
+- **Top bar sync pill:** when the dashboard last synced and whether the manager is online, in one place.
+- **Settings in tabs:** General, Roles, Docs, Logs, System. Roles shows each agent's notes and rules; Docs and Logs let you read the project files and server logs; System shows health checks and a GitHub push token you can store once.
+- **Chinese or English UI**, switchable in Settings.
+
+### Phone app
+
+![Phone: home and a card with the question panel folded, floating tab bar at the bottom; night and day (example data)](docs/img/phone.png)
+
+The same dashboard, laid out for a phone. Add it to your home screen and it runs as a web app.
+
+- **Floating tab bar:** icons only, a long press shows the name, unread counts are a red dot.
+- **Home** with what waits on you, the team panel and what shipped today. When nothing waits, that part folds to one line.
+- **Pull to refresh**, and search that also finds finished cards' drafts.
+- **Push notifications** (optional, Web Push), set per device: only decisions, decisions plus replies, or everything; quiet hours (23:00–09:00 by default) with a morning digest. They need the page served over https; see [Privacy and safety](#privacy-and-safety).
+
+### Themes and home styles
+
+![The same home in night and day, and the four home styles (example data)](docs/img/themes.png)
+
+- **Night, day or auto.** Auto follows your system's light and dark setting.
+- **Four home styles** on the desktop: Dense, Widgets, App and Classic. The choice is kept per computer.
+- **Motion with feedback:** every button, tab and switch responds to hover, press and switch.
+
+### Performance and power
+
+The dashboard is meant to stay open all day, on a laptop and on a phone.
+
+| What | How |
+|---|---|
+| Fast first open | The page shows a snapshot right away, then fills in |
+| Light polling | Polls leave out what you are not looking at; long polling instead of tight loops; older chat, letters and logs load on demand |
+| Long-lived cache | Static files carry a version (`?v=`) and are cached for a year |
+| Small avatars | `tools/avatar_sizes.py` makes small WebP copies for lists |
+| Instant send | Your message shows before the server answers |
+| Power saving | After 20 seconds without input, or when the window is in the background, looping animations pause. A switch in Settings turns this off |
+| Quiet logs | Dropped connections are counted and summarised once an hour, not logged one by one |
+| No font requests | Nunito and Cinzel (Latin subsets, SIL OFL 1.1) are served locally |
+
+### Tools and running it day to day
+
+| Tool | What it does |
+|---|---|
+| `tools/keepalive.sh` | Runs the dashboard and restarts it if it exits |
+| `tools/install_service.sh` | Installs the dashboard as a macOS LaunchAgent (starts at login, restarts if it dies) |
+| `tools/ensure_server.py` | Starts the dashboard if it is not answering; safe to run any time |
+| `tools/statusline.py` | Claude Code status line that feeds plan usage into the dashboard |
+| `tools/comfy.py` | Optional: image generation through your own ComfyUI machine over an SSH tunnel |
+| `tools/transcribe.py` | Optional: voice memo transcription with whisper.cpp |
+| `tools/ghcred.py` | Optional: store a GitHub push token once (keychain or a 0600 file); set `UNDERTHREAD_GH_REPO=owner/name` for the push check |
+| `tools/webpush.py` | Web Push sender used by the server |
+
+---
 
 ## The bundled team preset
 
-The framework itself is general: the manager, cards, review, rules and dashboard don't assume any kind of work. Roles, rules, categories and platforms are all configuration.
+The framework is general: the manager, cards, review, rules and dashboard don't assume any kind of work. Roles, rules, categories and platforms are all configuration.
 
-What ships in the repository is **one ready-made example preset: a content-creator team** (Bilibili / YouTube / Xiaohongshu). It sets the tone of `manager.md`, `policy.md`, `roles/*.md`, `roster.example.json` (a manager plus six specialists with placeholder names) and `config.example.json`, so you can see a complete team working out of the box.
+What ships in the repository is **one ready-made example preset: a content-creator team** (Bilibili / YouTube / Xiaohongshu) with a steward plus six specialists (researcher, writer, director, artist, growth, tooling keeper), all with placeholder names. It sets the tone of `manager.md`, `policy.md`, `roles/*.md`, `roster.example.json` and `config.example.json`, so you can watch a complete team work out of the box.
 
-For a different workflow, edit those files: rewrite the role notes in `roles/*.md`, rename and redefine roles in `roster.json`, adjust `policy.md` and `config.json`, then run `make_agents.py` again. No code changes are needed.
+For a different workflow, rewrite the role notes in `roles/*.md`, rename and redefine the roles in `roster.json`, adjust `policy.md` and `config.json`, then run `make_agents.py` again. No code changes are needed.
 
-This repository contains no characters from any game or anime; please don't commit other people's characters or artwork.
+This repository contains no characters from any game or anime. Please don't commit other people's characters or artwork.
 
-## Privacy
+---
 
-- **Your data stays local.** Cards, chat, logs, uploads and agent memory live in files in the project folder (`state.json`, `uploads/`, `work/`, `logs/`, `.claude/agent-memory/`) and are all in `.gitignore`.
-- The dashboard listens on `127.0.0.1` only. To use it from your phone you have to expose it yourself, for example through a private network such as Tailscale Serve (push notifications need https).
-- Secrets are generated or stored locally with mode 600 (`vapid.json` for push, the optional GitHub token) and never sent back to the page.
-- The only outside calls are the ones you configure: Claude Code itself, and any optional tool you enable.
-- The usage-by-role numbers come from Claude Code's own transcripts on this machine (`~/.claude/projects/<this project>/`); `usage_roll.py` only reads token counts from them and keeps a small rollup in `work/usage/` (ignored by git).
+## Privacy and safety
 
-## Ground rules the agents follow
+**Your data stays on your machine.**
 
-- **Drafts only.** Agents never publish, post, upload or send anything to an outside service on your behalf.
-- **Plan first** for big or risky changes; work starts after you approve.
-- **Backups** before edits (`name.bak-<tag>`, ignored by git).
+- Cards, chat, logs, uploads and agent memory are files in the project folder (`state.json`, `archive.json`, `uploads/`, `work/`, `logs/`, `.claude/agent-memory/`), and all of them are in `.gitignore`.
+- The dashboard listens on `127.0.0.1` only. To use it from your phone you expose it yourself, for example over a private network such as Tailscale Serve. Push notifications need https.
+- Secrets are generated or stored locally with mode 600 (`vapid.json` for push, the optional GitHub token) and are never sent back to the page.
+- Usage numbers come from Claude Code's own transcripts on this machine. `usage_roll.py` reads only the token counts and keeps a small rollup in `work/usage/` (ignored by git).
+- The only outside calls are the ones you set up: Claude Code itself, and any optional tool you turn on.
+
+**Ground rules the team follows** (written into each agent file by `make_agents.py`, plus the role notes and `manager.md`):
+
+- **Drafts only.** Agents never publish, post, upload, comment or send anything to an outside service. You do the publishing.
+- **Plan first** for big or risky work.
+- **Never touch your files.** Agents write new files under `work/<card>/`; they don't delete or overwrite your uploads or anything outside `work/`.
+- **Backups before edits** to code and config (`name.bak-<tag>`, ignored by git).
+- **Honest confidence.** Each delivery says how sure the agent is and what it did not check.
+
+---
 
 ## Not included
 
 | Not included | Notes |
 |---|---|
-| Your data | `config.json`, `roster.json`, `state.json`, `inbox.jsonl`, `uploads/`, `work/`, `logs/`, `avatars/` |
+| Your data | `config.json`, `roster.json`, `state.json`, `archive.json`, `inbox.jsonl`, `uploads/`, `work/`, `logs/`, `avatars/` |
 | Keys | `vapid.json` and tokens are created on your machine; never commit them |
-| Models | No whisper, ComfyUI or other model weights; follow each model's own license |
-| Voice | No voice samples or voice features in this release |
-| Artwork | No character art; the UI falls back to text and avatars |
-
-## Changelog
-
-### 2026-11-04
-- **Dense desktop home** is the new default: today's timeline, waiting on you, today's goals, working now (with an ETA), small counters; tightened so all five sections fit a 900px-tall window.
-- **Lean left rail**: plain text rows instead of a glass panel; each agent row shows a status word and one duty line; today's schedule hides on the dense home.
-- **Settings page** with tabs (settings / roles / docs / logs) replaces the separate pages.
-- **Usage by role**: tokens per role today (`/api/usage`, `usage_roll.py`) on the home, the phone card and the system panel.
-- **Routines page** as a schedule with a 7-day run row; the server now keeps a dated run history (`meta.routines_log`).
-- **Power saving**: idle animations pause after 20 s without input; lighter working rings; slower polling in a hidden tab.
-- Glass card list (owner avatar first), draft TOC with a sliding indicator, a motion pass so every button and tab has hover / press / switch feedback, click-to-zoom in the image viewer.
-- Fixes: one unread count for desktop and phone, no stale 待审核 line in the activity feed, a one-line phone home when nothing waits, readable phone tab pill, wider folded chat rail, no flowing edge rail on busy cards.
-
-## License
-
-Code is [MIT](LICENSE). It covers this repository's code only; models, fonts, voices and images you plug in keep their own licenses.
+| Models | No whisper, ComfyUI or other model weights; follow each model's own licence |
+| Voice | The author's build has local voice calls with the manager; that code is not in this repository |
+| Artwork | No character art. Roles without an avatar get a colour disc with an initial |
 
 ---
 
-## 中文简介
+## Roadmap
 
-**Underthread（暗线）：一支 24 小时在线的个人 AI agent 团队。**
+Ideas being explored, not promises:
 
-你只跟一个「管家」说话。管家接你的消息，拆成任务卡，派给各个专员 agent，并在本地看板上跟你同步。电脑和手机都能用。专员做事、交草稿，你只负责拍板：批准、驳回或评论。
+- Specialists handing work to each other when one card depends on another.
+- Agent memory you can edit from the dashboard, not only read.
+- Approvals with a scope ("yes for this card", "yes for this kind of change").
+- Packaging the setup as a Claude Code plugin.
 
-- 核心概念：管家、可配置的专员、卡片与审核、看板（紧凑首页、详情、聊天、信箱、常驻活动日程表、设置页、各角色用量）、手机端。
-- 2026-11-04 更新：紧凑首页成为默认、左栏改成克制的文字行、设置页合并成 tab、各角色用量、常驻活动日程表、闲置 20 秒自动暂停动画省电。完整列表见上面的 Changelog。
-- 仓库自带的是一套现成的示例团队预设：「内容创作者团队（B站 / YouTube / 小红书）」。框架本身是通用的，想用在别的工作流上，改 `roles/*.md`、`roster.json`、`policy.md` 和 `config.json`，再跑一次 `make_agents.py` 就行，不用改代码。
-- 上手：照上面 Getting started 的四步做。详细说明见 [SETUP-GUIDE.md](SETUP-GUIDE.md)。
-- 隐私：所有数据都存在本机的项目目录里，并且已经写进 `.gitignore`。看板默认只监听 `127.0.0.1`。
+---
+
+## Changelog
+
+See [CHANGELOG.md](CHANGELOG.md).
+
+## License
+
+Code is [MIT](LICENSE). It covers this repository's code only; models, fonts, voices and images you plug in keep their own licences. The bundled fonts (Nunito, Cinzel) are under the SIL Open Font License 1.1; their licence texts are in `web/fonts/`.
