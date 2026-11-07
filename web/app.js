@@ -187,9 +187,15 @@
       fetch(`/avatars/${encodeURIComponent(f)}`, { method: "HEAD", cache: "no-cache" }).then(r => { if (r.ok && r.headers.get("ETag") && r.headers.get("ETag") !== m.etag) { AVS.bad.add(id); render(); } }).catch(() => { }); });
     (window.requestIdleCallback || (f => setTimeout(f, 1500)))(run);
   }
+  /* t-rm-pixel-office: a role with no avatars/<id> file gets a colour disc with the first character of its name (was office.js's pixel head) */
+  const AVSVG = {};
+  function avatarSvg(a) {
+    const ch = ([...String(aname(a) || a.id || "?").trim()][0] || "?").toUpperCase(), c = /^#[0-9a-f]{3,8}$/i.test(a.color || "") ? a.color : "#888", k = c + ch;
+    return AVSVG[k] || (AVSVG[k] = "data:image/svg+xml," + encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" fill="${c}"/><text x="32" y="34" text-anchor="middle" dominant-baseline="central" font-family="-apple-system,PingFang SC,Hiragino Sans GB,sans-serif" font-size="30" font-weight="600" fill="#fff">${esc(ch)}</text></svg>`));
+  }
   function avatarUrl(a, big) {
     const f = ST.meta.avatars && ST.meta.avatars[a.id];
-    if (!f) return Office.avatar(a);
+    if (!f) return avatarSvg(a);
     const m = AVS.m && AVS.m[a.id];
     if (m && m.src === f && !AVS.bad.has(a.id)) return `/avatars/_s/${encodeURIComponent(a.id)}-${big ? 512 : 160}.webp?${encodeURIComponent(m.etag.replace(/"/g, ""))}`;
     return `/avatars/${encodeURIComponent(f)}`;
@@ -2113,16 +2119,6 @@
     return html + stageGroups(list, c);
   }
 
-  let officeMounted = false;
-  function officeStats() {
-    const its = items(), c = counts();
-    const days = Array.from({ length: 7 }, (_, i) => dayKey(new Date(Date.now() - (6 - i) * 864e5)));
-    const spark = days.map(d => its.filter(i => i.stage === "done" && i.closed && dayKey(new Date(i.closed)) === d).length);
-    const week = spark.reduce((a, b) => a + b, 0), doing = its.filter(i => grpOf(i) === "doing").length;
-    const en = UI.lang === "en";
-    return { spark, s1: en ? `On you ${c.review}` : `待拍板 ${c.review}`, s2: en ? `Doing ${doing}` : `进行中 ${doing} · 待办 ${its.filter(i => grpOf(i) === "todo").length}`,
-      n1: en ? `Shipped ${week}` : `本周交付 ${week}` };
-  }
   // ===== t-imp29-p4: 素材库 (asset library). Every attachment on every card (archived ones too), built from the loaded state; no new API.
   // uploads/voices/ is private voice material (仅本机私用): hidden until switched on, then flagged. Only uploads/ and work/ paths show (never tools/).
   // Lazy: 60 tiles per batch (an IntersectionObserver on .lib-more adds the next 60), images via /api/thumb + loading=lazy, no video posters
@@ -2373,19 +2369,11 @@
     return { review: rev.length + its.filter(i => awaitsUser(i) && !busy(i) && !snoozed(i)).length, doing: its.filter(i => grpOf(i) === "doing").length, todo: its.filter(i => grpOf(i) === "todo").length,
       week: its.filter(i => i.stage === "done" && i.closed && new Date(i.closed) > wk).length, oldest: rev.length ? Math.min(...rev.map(i => new Date(i.activity || i.updated))) : null };
   }
-  // t-visual-stage: pins on the terrace office (positions are fractions of the hero image; a new role without a seat is skipped)
+  // t-visual-stage: pins on the terrace picture (positions are fractions of the hero image; a new role without a seat is skipped)
   const STG_SEAT = { manager: [.40, .56], smith: [.66, .70], writer: [.16, .30], director: [.30, .27], artist: [.80, .52], scout: [.53, .40], ops: [.90, .72] };
   function stageHero(ob) {
     if (ob.dataset.hv !== "stage") { ob.dataset.hv = "stage"; ob.innerHTML = ""; ob._stg = ""; }
     const en = UI.lang === "en", A = agents(), busy = A.filter(a => a.status === "working" && !mgrOnline(a)), c = homeCounts();
-    const capHTML = `<span><i class="${c.review ? "" : "z"}"></i>${c.review} ${en ? "on you" : "等你拍板"}</span><span>${busy.length} ${en ? "busy" : "在忙"} · ${A.length - busy.length} ${en ? "idle" : "待机"}</span>`;
-    if (window.Office && Office.hero) {   // t-office-v3: the terrace pixel people (office3.js, same picture as hero.jpg) instead of avatar pins
-      if (!ob.querySelector(".o3-hero")) Office.hero(ob, pixelOpen);
-      Office.heroUpdate(A, a => aname(a));
-      let cap = ob.querySelector(".stg-cap"); if (!cap) { cap = document.createElement("div"); cap.className = "stg-cap"; ob.appendChild(cap); }
-      if (cap._h !== capHTML) { cap.innerHTML = capHTML; cap._h = capHTML; }
-      return;
-    }
     const pins = A.filter(a => STG_SEAT[a.id]).map(a => { const [x, y] = STG_SEAT[a.id], w = a.status === "working" && !mgrOnline(a), it = w ? liveItem(a) : null;
       const pos = `left:${x * 100}%;top:${y * 100}%`;
       return `<span role="button" tabindex="0" class="stg-pin${w ? " w" : ""}" style="${pos};background-image:url('${avatarUrl(a)}')"${it ? ` data-item="${it.id}"` : ""} title="${esc(aname(a))}${it ? " · " + esc(it.title) : ""}" aria-label="${esc(aname(a))}"></span>`
@@ -2440,20 +2428,16 @@
     autoFold();
     const page = $("#page");
     let body = $("#pagebody", page);
-    if (!body) { page.innerHTML = `<div class="office" id="officebox"></div><div id="pagebody"></div>`; body = $("#pagebody", page); officeMounted = false; }
+    if (!body) { page.innerHTML = `<div class="office" id="officebox"></div><div id="pagebody"></div>`; body = $("#pagebody", page); }
     const ob = $("#officebox", page);
     if (UI.page === "review" && !widgetHome()) {
       ob.hidden = false;
-      if ((MOBQ.matches || appHome()) && window.HomeD && HomeD.enabled()) {   // t-home-applike: the desktop app-style home uses the same strip   // t-office-d1-s12: phones get the D1 character strip; the pixel office folds out behind its pill
-        officeMounted = false; HomeD.render(ob, { agents: agents(), stats: officeStats(), counts: homeCounts() });
-      } else if (!MOBQ.matches && document.documentElement.dataset.stage) {   // t-visual-stage: desktop 舞台 theme shows the terrace office with avatar pins
-        officeMounted = false; stageHero(ob);
-      } else {
-        if (ob.dataset.hv) { ob.dataset.hv = ""; ob.innerHTML = ""; officeMounted = false; }
-        if (!officeMounted) { Office.mount(ob, pixelOpen); officeMounted = true; }
-        Office.update(agents(), a => aname(a), officeStats());
-      }
-    } else { ob.hidden = true; officeMounted = false; ob.innerHTML = ""; }
+      if ((MOBQ.matches || appHome()) && window.HomeD) {   /* t-home-applike: the desktop app-style home uses the same strip. t-office-d1-s12: phones get the D1 character strip */
+        HomeD.render(ob, { agents: agents(), counts: homeCounts() });
+      } else if (!MOBQ.matches && document.documentElement.dataset.stage) {   /* t-visual-stage: desktop 舞台 theme shows the terrace picture with avatar pins */
+        stageHero(ob);
+      } else { ob.hidden = true; ob.dataset.hv = ""; ob.innerHTML = ""; }   /* t-rm-pixel-office: the classic desktop home had the pixel office here; now nothing */
+    } else { ob.hidden = true; ob.innerHTML = ""; }
     const html = (PAGES[UI.page] || (() => catPage(UI.page)))();
     if (html != null) {   // t-imp29-p4: a page may return null to keep its DOM (the asset library keeps scroll, focus and loaded thumbs across polls)
       // t-home-flicker (11-03): every state rev (any chat message) re-renders; on the phone / app-style home an unchanged page keeps its DOM, so the
@@ -3364,16 +3348,6 @@
   // t-mobile-crash B: a thread renders only from chatFrom on (the newest CHAT_N when it opens; 「加载更早的消息」 moves it back by CHAT_N).
   // chatFrom stays put while new messages arrive (so the phone still sees the count grow and plays m-new); it re-anchors on a chat switch or past CHAT_N + 60.
   const CHAT_N = 20; let chatFrom = 0, chatHold = false, chatBottom = false, chatMore = false;   // chatBottom: you just sent, so the next render lands on the newest message (t-perf C)   // chatHold: a ↩ quote jumped far back (t-option-quote); keep that range until the thread changes
-  // ui10 (t-pixel-click): a click on a pixel character opens the detail of the item they are on now.
-  // Before: it opened that character's DM chat (setChat). The DM is still one tap away via the chat-head avatar row, the Team page 私信 button, and Shift/Alt-click on the sprite.
-  function pixelOpen(id, e) {
-    if (e && (e.shiftKey || e.altKey)) return setChat(id);
-    const a = agent(id), its = items();
-    let it = a.item && its.find(i => i.id === a.item && i.stage !== "done");
-    if (!it) it = its.filter(i => i.owner === id && (i.stage === "doing" || i.stage === "review")).sort((x, y) => (y.updated || "").localeCompare(x.updated || ""))[0];
-    if (it) return openItem(it.id);
-    toast(UI.lang === "en" ? `${aname(a)} has nothing in progress` : `${aname(a)} 现在没有在办的单子`);
-  }
   function setChat(id) { UI.chat = id; LS.set("chat", id); chatRenderedFor = null; CHN.for = null; renderLeft(); renderChat(); chatDraftLoad(); $("#right textarea") && $("#right textarea").focus(); }
   function chatDraftLoad() {   // t-draft-keep: the DM box shows this partner's own draft (never the previous partner's text)
     const ta = $("#right .ch-comp textarea"); if (!ta) return; const d = DRAFT.get("dm:" + UI.chat), v = d ? d.t : "";
@@ -3474,7 +3448,7 @@
     if (UI.autoFold) { UI.autoFold = false; if (!on) LS.set("wideChat", true); }   // opened it again on the board: remember, stop folding there
     else if (on && wide) LS.set("wideChat", false);
     UI.chatFold = on; LS.set("chatFold", on); applyChatW();
-    setTimeout(() => dispatchEvent(new Event("resize")), 520);  // let the office canvas refit after the slide
+    setTimeout(() => dispatchEvent(new Event("resize")), 520);  // let the layout refit after the slide
   }
   // t-perf C (was t-send-lag): the bubble goes up the moment you send, gray while the POST is out (st "sending"), normal once the server said ok ("ok"),
   // red with 重试 / 删除 if it failed ("fail"). It stays a local bubble until a poll brings the server's copy (matched by text after the last
@@ -4013,7 +3987,7 @@
     rvApprove: id => rvApprove(id, null), rvCanApprove: it => rvCanApprove(it), awaitsUser: it => awaitsUser(it), busy: it => busy(it), onYou: it => onYou(it), onYouCard: it => onYouCard(it), grpOf: it => grpOf(it), newReplies: () => newReplies(), decisions: () => decisions(),   // t-imp-p5 (palette)
     /* t-chrome-badge (home.js .hd-tool) */
     toolLine: w => toolLine(w), toolBadge: a => toolBadge(a), toolWhat: a => toolWhat(a),
-    UI, get ST() { return ST; }, roll, modalStatus: () => modalStatus(), ghOpen: () => ghOpen(), ghLabel: () => ghLabel(), statusSummary: () => statusSummary(statusRows()), loadHealth: a => loadHealth(a), refreshPage: () => renderPage(), phaseFree, pixelOpen, avatarUrl, t, items, agent, aname, atitle, av, when, whenH, agoH, ago, byAct, PLAT, stageLabel,
+    UI, get ST() { return ST; }, roll, modalStatus: () => modalStatus(), ghOpen: () => ghOpen(), ghLabel: () => ghLabel(), statusSummary: () => statusSummary(statusRows()), loadHealth: a => loadHealth(a), refreshPage: () => renderPage(), phaseFree, avatarUrl, t, items, agent, aname, atitle, av, when, whenH, agoH, ago, byAct, PLAT, stageLabel,
     refresh: async () => { await poll(true); return !UI.down; },   // t-m2-c ④ pull-to-refresh: a forced full fetch; false = the server did not answer
     tablePv: s => tablePv(s),   // t-chat-table (mobile.js chat list preview)
     verCheck: () => verCheck(true), attachPick: p => attachPick(p),   // t-lib-attach (viewer.js)   // t-new-ver (tests)

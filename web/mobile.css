@@ -38,12 +38,8 @@ body[data-mtab] #layout > * { animation: m-in .45s var(--ease) backwards; }  /* 
 /* ---------- pages ---------- */
 .ph { margin: 10px 0 14px; } .ph h1 { font-size: 25px; letter-spacing: .45em; } .ph .en { font-size: 9.5px; }
 .ph-bar { flex-wrap: wrap; gap: 14px; justify-content: space-between; } .ph-bar .count b { font-size: var(--fs-24); }
-/* office-fit: the pixel office is a rounded card on the same 16px gutter as the cards below; JS sizes the canvas to the card exactly */
+/* #officebox (.office) holds the D1 strip on phones (t-rm-pixel-office: the pixel office card is gone) */
 .office { margin: -4px 0 16px; }
-.office-frame { border: 1px solid var(--line2); border-radius: 20px; overflow: hidden; box-sizing: border-box; background: #0b0c14;
-  box-shadow: 0 1px 0 var(--line), 0 12px 28px -14px rgba(0,0,0,.55); }
-[data-theme="light"] .office-frame { box-shadow: 0 1px 0 var(--line), 0 12px 26px -14px rgba(70,50,20,.38); }
-.office-frame::before, .office-frame::after { display: none; }
 .grp-h { margin: 22px 0 10px; }
 .card { grid-template-columns: 1fr; gap: 6px; padding: 16px 14px 16px 16px; margin-bottom: 12px; }
 .card:hover { transform: none; }
@@ -203,7 +199,6 @@ body.kb #page, body.kb #left { padding-bottom: 24px; }
 
 /* review page */
 .office { margin: -4px 0 16px; }
-.room-label { display: none; }
 .seat-name { font-size: 8px; padding: .05em .4em; }
 .ov-neon { white-space: nowrap; font-size: 6.5px; letter-spacing: 0; } .ov-screen b { font-size: 7px; letter-spacing: 0; white-space: nowrap; } .ov-screen span { font-size: 6px; text-align: center; text-wrap: balance; }
 .bubble { font-size: 7.5px; }
@@ -1121,26 +1116,6 @@ html[data-ut][data-skin="ink"] .office .hd .hd-h { margin-bottom: 10px; padding:
 .hd-sum b { color: var(--ink); font-family: var(--f-display); font-size: var(--fs-15); margin-right: 2px; }
 .hd-rd { display: inline-flex; align-items: center; gap: 5px; color: var(--ink2); }
 .hd-rd i, .hd-red, .hd-rdot { width: 7px; height: 7px; border-radius: 50%; background: var(--dot); box-shadow: 0 0 0 1.5px var(--bg); flex: none; }
-/* t-office-d1-s3: the 「像素办公室」 pill. Quiet: neutral glass, constant label (no width jump), pixel glyph + a chevron that turns over when open.
-   Visual 30pt, hit area 44pt via ::after. */
-.hd-pill { position: relative; display: inline-flex; align-items: center; gap: 7px; height: 30px; padding: 0 11px 0 11px; border-radius: 15px; border: 1px solid var(--glass-line); background: var(--glass-lite);
-  color: var(--ink2); font-family: var(--f-cjk); font-size: var(--fs-12); letter-spacing: .04em; white-space: nowrap; flex: none;
-  transition: transform var(--m-quick) var(--m-ease-std), background var(--m-base) var(--m-ease-std), color var(--m-base) var(--m-ease-std), border-color var(--m-base) var(--m-ease-std); }
-.hd-pill::after { content: ""; position: absolute; inset: -7px -4px; }
-html[lang="en"] .hd-pill { font-family: var(--f-body); letter-spacing: .01em; }
-.hd-pill:active { transform: scale(var(--m-press-pill)); }
-.hd-pill .hd-px { opacity: .8; } .hd-pill .hd-pc { opacity: .6; margin-left: -1px; transition: transform var(--m-slow) var(--m-ease-ios), opacity var(--m-base) var(--m-ease-std); }
-.hd.open .hd-pill { color: var(--ink); background: var(--accent-soft); border-color: var(--accent-line); }
-.hd.open .hd-pill .hd-pc { transform: rotate(180deg); opacity: .9; }
-/* the unfold: the row opens (grid rows, one small layout per frame), the scene grows out of the pill's corner (transform + opacity only, compositor) */
-.hd-exp { display: grid; grid-template-rows: 0fr; transition: grid-template-rows var(--m-release) var(--m-ease-in); }
-.hd.open .hd-exp { grid-template-rows: 1fr; transition: grid-template-rows var(--m-slow) var(--m-ease-ios); }
-.hd-exp-in { min-height: 0; overflow: hidden; }
-.hd-office { padding: 4px 0 10px; opacity: 0; transform: translate3d(0, calc(var(--m-rise) * -1), 0) scale(.96); transform-origin: 100% 0;
-  transition: opacity var(--m-quick) var(--m-ease-std), transform var(--m-release) var(--m-ease-in); }
-.hd.open .hd-office { opacity: 1; transform: none; transition: opacity var(--m-base) var(--m-ease-std) 60ms, transform var(--m-slow) var(--m-ease-emph) 20ms; }
-.hd-office .office-frame { border-radius: 14px; box-shadow: none; border: 1px solid var(--line2); }
-.hd.hd-still .hd-exp, .hd.hd-still .hd-office, .hd.hd-still .hd-pill, .hd.hd-still .hd-pill .hd-pc { transition: none !important; }
 .hd-mini { display: block; width: 36px; height: 36px; border-radius: 50%; flex: none; background-size: cover; background-position: center; background-color: var(--panel2); box-shadow: inset 0 0 0 1px var(--line2); }
 .hd-chev { color: var(--faint); flex: none; }
 /* the strip: the strip is 16px wider than the card's content so the slanted panels use the full card width */
@@ -1227,7 +1202,7 @@ html[lang="en"] .dp-vn { font-family: var(--f-display); font-size: var(--fs-10);
 .hd-stat.on { background: var(--accent-soft); } .hd-stat.on b { color: var(--ink); }
 .hd-rdot { position: absolute; top: 7px; left: calc(50% + 14px); transform: scale(0); transition: transform var(--m-base) var(--m-spring); }
 .hd-stat.alert .hd-rdot { transform: scale(1); }
-.hd-stat:focus-visible, .hd-pill:focus-visible, .hd-chip:focus-visible, .dp-b:focus-visible { outline: 2px solid var(--ink); outline-offset: 1px; }
+.hd-stat:focus-visible, .hd-chip:focus-visible, .dp-b:focus-visible { outline: 2px solid var(--ink); outline-offset: 1px; }
 /* long-press quick sheet: the only blurred layer, and only while open */
 .dp-sheet-w { position: fixed; inset: 0; z-index: 80; display: flex; align-items: flex-end; padding: 0 12px calc(env(safe-area-inset-bottom, 0px) + 12px); opacity: 0; transition: opacity var(--m-base) var(--m-ease-std); }
 .dp-sheet-w.in { opacity: 1; }
@@ -1241,8 +1216,8 @@ html[lang="en"] .dp-vn { font-family: var(--f-display); font-size: var(--fs-10);
 .sh-i.cancel { justify-content: center; background: transparent; color: var(--dim); }
 @media (max-width: 340px) { .hd { --sk: 20px; } .dp.act { flex-grow: 2.7; } .dp-strip { height: 168px; } .dp-info .n b { font-size: var(--fs-15); } .dp-info .n .hd-st { display: none; } }
 @media (prefers-reduced-motion: reduce) {
-  .dp, .dp-art, .dp-info, .dp-btns, .hd-exp, .hd.open .hd-exp, .hd-alert, .hd-pill .hd-pc { transition: none; }
-  .hd-office, .hd.open .hd-office { transform: none; transition: opacity var(--m-quick) linear; } .dp-rg i, .dp:not(.w) .dp-img, .dp.lit::before, .dp-un.on, .hd-st i, .hd-stat.alert .hd-rdot, .dp.w .dp-edge { animation: none; } .dp-un.on::after, .hd-stat.alert .hd-rdot::after { display: none; }
+  .dp, .dp-art, .dp-info, .dp-btns, .hd-alert { transition: none; }
+  .dp-rg i, .dp:not(.w) .dp-img, .dp.lit::before, .dp-un.on, .hd-st i, .hd-stat.alert .hd-rdot, .dp.w .dp-edge { animation: none; } .dp-un.on::after, .hd-stat.alert .hd-rdot::after { display: none; }
   .dp.mc .dp-fx .s1, .dp.mc .dp-fx .s2 { display: none; } .hd-enter, .hd-enter .dp { animation: none; }
 }
 
@@ -1487,7 +1462,7 @@ body[data-ret="main"][data-mtab="chat"][data-cv="thread"] #main, body[data-ret="
 .hd-srch svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; }
 .hd-srch:active { transform: scale(.94); }
 .ms-ic { display: grid; place-items: center; width: 34px; height: 34px; border-radius: 10px; background: var(--chip); box-shadow: inset 0 0 0 1px var(--line); color: var(--ink2); font: 600 var(--fs-15) var(--f-sys); }
-@media (max-width: 360px) { .hd-srch { display: none; } }   /* too narrow next to the summary + 像素办公室 pill; the 委托 page search field stays */
+@media (max-width: 360px) { .hd-srch { display: none; } }   /* the 委托 page search field stays */
 
 /* ===== t-imp-p3: 制作线 on phones = week strip (swipe) + stage sections stacked; empty stages fold to one line */
 .pl-week { grid-template-columns: repeat(7, 38vw); margin: 4px 0 14px; padding: 0 0 6px; scroll-snap-type: x proximity; }

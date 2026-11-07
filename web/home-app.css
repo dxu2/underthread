@@ -1,5 +1,5 @@
 /* t-home-applike (2026-11-02): the desktop 首页 (审核 page) in the phone app's shape — date + 今天 + 在忙/等你, the D1 character strip,
-   the four stats (also the list filter), then the phone review cards — in one centred column, no stage hero, no pixel office.
+   the four stats (also the list filter), then the phone review cards — in one centred column, no stage hero.
    Only while html[data-home="app"] (app.js sets it on the desktop review page; 设置 / ⌘K「首页样式」or #home=classic switches back).
    Generated from mobile.css (the phone rules for .hd / .dp / .rv- / .act- / .dc- plus the glass tokens they read), every selector scoped
    to html[data-home="app"] and wrapped in min-width:761px, so the phone and the classic desktop home are untouched. Keyframes renamed ha-*. */
@@ -72,24 +72,6 @@ html[data-home="app"] .hd-sum { font-family: var(--f-cjk); font-size: var(--fs-1
 html[data-home="app"] .hd-sum b { color: var(--ink); font-family: var(--f-display); font-size: var(--fs-15); margin-right: 2px; }
 html[data-home="app"] .hd-rd { display: inline-flex; align-items: center; gap: 5px; color: var(--ink2); }
 html[data-home="app"] .hd-rd i, html[data-home="app"] .hd-red, html[data-home="app"] .hd-rdot { width: 7px; height: 7px; border-radius: 50%; background: var(--dot); box-shadow: 0 0 0 1.5px var(--bg); flex: none; }
-html[data-home="app"] .hd-pill { position: relative; display: inline-flex; align-items: center; gap: 7px; height: 30px; padding: 0 11px 0 11px; border-radius: 15px; border: 1px solid var(--glass-line); background: var(--glass-lite);
-  color: var(--ink2); font-family: var(--f-cjk); font-size: var(--fs-12); letter-spacing: .04em; white-space: nowrap; flex: none;
-  transition: transform var(--m-quick) var(--m-ease-std), background var(--m-base) var(--m-ease-std), color var(--m-base) var(--m-ease-std), border-color var(--m-base) var(--m-ease-std); }
-html[data-home="app"] .hd-pill::after { content: ""; position: absolute; inset: -7px -4px; }
-html[data-home="app"][lang="en"] .hd-pill { font-family: var(--f-body); letter-spacing: .01em; }
-html[data-home="app"] .hd-pill:active { transform: scale(var(--m-press-pill)); }
-html[data-home="app"] .hd-pill .hd-px { opacity: .8; }
-html[data-home="app"] .hd-pill .hd-pc { opacity: .6; margin-left: -1px; transition: transform var(--m-slow) var(--m-ease-ios), opacity var(--m-base) var(--m-ease-std); }
-html[data-home="app"] .hd.open .hd-pill { color: var(--ink); background: var(--accent-soft); border-color: var(--accent-line); }
-html[data-home="app"] .hd.open .hd-pill .hd-pc { transform: rotate(180deg); opacity: .9; }
-html[data-home="app"] .hd-exp { display: grid; grid-template-rows: 0fr; transition: grid-template-rows var(--m-release) var(--m-ease-in); }
-html[data-home="app"] .hd.open .hd-exp { grid-template-rows: 1fr; transition: grid-template-rows var(--m-slow) var(--m-ease-ios); }
-html[data-home="app"] .hd-exp-in { min-height: 0; overflow: hidden; }
-html[data-home="app"] .hd-office { padding: 4px 0 10px; opacity: 0; transform: translate3d(0, calc(var(--m-rise) * -1), 0) scale(.96); transform-origin: 100% 0;
-  transition: opacity var(--m-quick) var(--m-ease-std), transform var(--m-release) var(--m-ease-in); }
-html[data-home="app"] .hd.open .hd-office { opacity: 1; transform: none; transition: opacity var(--m-base) var(--m-ease-std) 60ms, transform var(--m-slow) var(--m-ease-emph) 20ms; }
-html[data-home="app"] .hd-office .office-frame { border-radius: 14px; box-shadow: none; border: 1px solid var(--line2); }
-html[data-home="app"] .hd.hd-still .hd-exp, html[data-home="app"] .hd.hd-still .hd-office, html[data-home="app"] .hd.hd-still .hd-pill, html[data-home="app"] .hd.hd-still .hd-pill .hd-pc { transition: none !important; }
 html[data-home="app"] .hd-mini { display: block; width: 36px; height: 36px; border-radius: 50%; flex: none; background-size: cover; background-position: center; background-color: var(--panel2); box-shadow: inset 0 0 0 1px var(--line2); }
 html[data-home="app"] .hd-chev { color: var(--faint); flex: none; }
 html[data-home="app"] .dp-strip { display: flex; height: 176px; margin: 2px -8px; touch-action: pan-y; }
@@ -177,7 +159,7 @@ html[data-home="app"] .hd-stat.on { background: var(--accent-soft); }
 html[data-home="app"] .hd-stat.on b { color: var(--ink); }
 html[data-home="app"] .hd-rdot { position: absolute; top: 7px; left: calc(50% + 14px); transform: scale(0); transition: transform var(--m-base) var(--m-spring); }
 html[data-home="app"] .hd-stat.alert .hd-rdot { transform: scale(1); }
-html[data-home="app"] .hd-stat:focus-visible, html[data-home="app"] .hd-pill:focus-visible, html[data-home="app"] .hd-chip:focus-visible, html[data-home="app"] .dp-b:focus-visible { outline: 2px solid var(--ink); outline-offset: 1px; }
+html[data-home="app"] .hd-stat:focus-visible, html[data-home="app"] .hd-chip:focus-visible, html[data-home="app"] .dp-b:focus-visible { outline: 2px solid var(--ink); outline-offset: 1px; }
 html[data-home="app"] .dp-sheet-w { position: fixed; inset: 0; z-index: 80; display: flex; align-items: flex-end; padding: 0 12px calc(env(safe-area-inset-bottom, 0px) + 12px); opacity: 0; transition: opacity var(--m-base) var(--m-ease-std); }
 html[data-home="app"] .dp-sheet-w.in { opacity: 1; }
 html[data-home="app"] .dp-scrim { position: absolute; inset: 0; background: rgba(0,0,0,.4); }
@@ -187,8 +169,7 @@ html[data-home="app"] .dp-sheet { position: relative; width: 100%; padding: 8px;
 html[data-home="app"] .dp-sheet-w.in .dp-sheet { transform: none; }
 html[data-home="app"] .sh-h span:not(.hd-mini) { font-family: var(--f-cjk); font-size: var(--fs-12); color: var(--dim); }
 @media (prefers-reduced-motion: reduce) {
-  html[data-home="app"] .dp, html[data-home="app"] .dp-art, html[data-home="app"] .dp-info, html[data-home="app"] .dp-btns, html[data-home="app"] .hd-exp, html[data-home="app"] .hd.open .hd-exp, html[data-home="app"] .hd-alert, html[data-home="app"] .hd-pill .hd-pc { transition: none; }
-  html[data-home="app"] .hd-office, html[data-home="app"] .hd.open .hd-office { transform: none; transition: opacity var(--m-quick) linear; }
+  html[data-home="app"] .dp, html[data-home="app"] .dp-art, html[data-home="app"] .dp-info, html[data-home="app"] .dp-btns, html[data-home="app"] .hd-alert { transition: none; }
   html[data-home="app"] .dp-rg i, html[data-home="app"] .dp:not(.w) .dp-img, html[data-home="app"] .dp.lit::before, html[data-home="app"] .dp-un.on, html[data-home="app"] .hd-st i, html[data-home="app"] .hd-stat.alert .hd-rdot, html[data-home="app"] .dp.w .dp-edge { animation: none; }
   html[data-home="app"] .dp-un.on::after, html[data-home="app"] .hd-stat.alert .hd-rdot::after { display: none; }
   html[data-home="app"] .dp.mc .dp-fx .s1, html[data-home="app"] .dp.mc .dp-fx .s2 { display: none; }
@@ -255,10 +236,9 @@ html[data-home="app"] .rv-card .ask-row .ask-opts.sm { display: flex; }
 html[data-home="app"] .rv-ok b { font-weight: inherit; }
 html[data-home="app"] .rv-ok.has-ask { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; line-height: 1.15; }
 
-/* desktop layout for the app-style home: one centred column, the D1 strip full width of it; the pixel office pill / fold is gone */
+/* desktop layout for the app-style home: one centred column, the D1 strip full width of it */
 html[data-home="app"] #officebox, html[data-home="app"] #pagebody { max-width: 760px; margin-left: auto; margin-right: auto; }
 html[data-home="app"] #officebox.office { display: block; margin: 6px auto 14px; }
-html[data-home="app"] .hd-pill, html[data-home="app"] .hd-office, html[data-home="app"] .hd-exp { display: none !important; }
 html[data-home="app"] #pagebody > .ph { display: none; }
 html[data-home="app"][data-skin="ink"] #officebox.office { border: 0; border-radius: 0; box-shadow: none; margin-bottom: 14px; }
 html[data-home="app"][data-skin="ink"] #officebox.office::before, html[data-home="app"][data-skin="ink"] #officebox.office::after { display: none; }

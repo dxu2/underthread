@@ -279,18 +279,9 @@ body.resizing { cursor: col-resize; user-select: none; }
 @media (prefers-reduced-motion: reduce) { .av.working, .hd-mini.working, .av.working::before, .hd-mini.working::before, .av.working::after, .hd-mini.working::after, .av .aw { animation: none !important; } .av.working::after, .hd-mini.working::after { display: none; } }
 .av.sm { width: 22px; height: 22px; box-shadow: none; } .av.lg { width: 50px; height: 50px; }
 
-/* ---------- office ---------- */
+/* ---------- #officebox (D1 strip / stage hero holder; t-rm-pixel-office removed the pixel office) ---------- */
 .office { margin: 8px auto 30px; display: flex; justify-content: center; }
-.office-frame { position: relative; line-height: 0; display: block; container-type: inline-size; max-width: 100%; border-radius: 12px;
-  box-shadow: 0 0 0 1px var(--line2), 0 0 0 6px var(--bg), 0 0 0 7px var(--line), 0 30px 80px rgba(0,0,0,.6); }
-.office-frame::before, .office-frame::after { content: none; position: absolute; width: 26px; height: 26px; z-index: 2; background: var(--ink2);
-  -webkit-mask: var(--hook) center/contain no-repeat; mask: var(--hook) center/contain no-repeat; }
-.office-frame > canvas { border-radius: 12px; }   /* D1: rounded frame instead of hook corners */
-.office-frame::before { left: -11px; top: -11px; } .office-frame::after { right: -11px; bottom: -11px; transform: rotate(180deg); }
-.office canvas { image-rendering: pixelated; display: block; }
-.office canvas:focus-visible { outline: 2px solid #fff; outline-offset: -4px; }
-.office-ov { position: absolute; inset: 0; pointer-events: none; line-height: 1.15; font-family: var(--f-display); overflow: hidden; }
-.room-label { position: absolute; font-size: max(8px, 1.05cqw); letter-spacing: .18em; color: #d8d3c4; border-left: 2px solid #d8d3c4; padding-left: .5em; text-shadow: 0 1px 0 #000; }
+#officebox[hidden] { display: none !important; }   /* .office's display:flex beat [hidden]: an empty bordered strip was left on top of the page */
 .seat-name { position: absolute; transform: translateX(-50%); font-size: max(8px, 1.05cqw); font-family: var(--f-cjk); font-weight: 600; color: #f3efe5; background: rgba(6,7,13,.84);
   padding: .1em .5em; border: 1px solid #3a3f4b; border-bottom-color: #6b7394; white-space: nowrap; letter-spacing: .06em; transition: background .2s, color .2s; }
 .seat-name.on { border-bottom-color: var(--accent); }
@@ -1266,7 +1257,6 @@ html[data-theme="light"] .mc-flash { background: rgba(0,0,0,.28); }
 /* decoration layers off: vignette, fog, light shafts, grain, ambience gradient */
 [data-theme="white"] body::after, [data-theme="white"] .fog, [data-theme="white"] .shafts, [data-theme="white"] .grain, [data-theme="white"] #ambience { display: none; }
 [data-theme="white"] body, [data-theme="white"] #layout { background: #fff; }
-[data-theme="white"] .office-frame { border-color: rgba(0,0,0,.14); box-shadow: 0 1px 2px rgba(0,0,0,.06), 0 12px 26px -14px rgba(20,24,40,.35); }
 [data-theme="white"] #right { background: #fff; }
 [data-theme="white"] #drawer { background: #fff; box-shadow: -10px 0 28px rgba(0,0,0,.14); }
 [data-theme="white"] .md pre.code { background: #f5f5f5; }

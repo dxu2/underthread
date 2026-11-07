@@ -370,8 +370,6 @@
 
   // ---------- routing glue ----------
   // anything that navigates to a page or a chat switches to that screen
-  let chatBefore = null;
-  document.addEventListener("click", () => { chatBefore = window.App && App.UI.chat; }, true);
   document.addEventListener("click", e => {
     if (!mq.matches) return;
     if (e.target.closest("[data-go]") && !e.target.closest("#tabbar")) setTab("page");
@@ -380,7 +378,6 @@
       const ml = e.target.closest("[data-mail]"), m = (App.mailAll ? App.mailAll() : (App.ST.mail || [])).find(x => x.id === ml.dataset.mail);
       if (m && !m.item && m.agent) { const from = retFrom(); setTab("chat"); openConv(m.agent, from); }
     }
-    else if (e.target.closest(".office canvas") && App.UI.chat !== chatBefore) { const from = retFrom(); setTab("chat"); if (oofOK()) openConv(App.UI.chat, from); }
     // ui1-C: the mailbox is a drop-down over whatever screen you are on, so no tab switch for it
   });
 

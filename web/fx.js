@@ -92,7 +92,7 @@
   const tokN = (n, d) => { const v = parseFloat(getComputedStyle(document.documentElement).getPropertyValue(n)); return isNaN(v) ? d : v; };
   const tokS = (n, d) => getComputedStyle(document.documentElement).getPropertyValue(n).trim() || d;
   let rowsKey = "", rowsAt = 0;
-  // mo1: phone list entrance (.act-row rows + category .card lists + the office card). WAAPI, transform/opacity only, runs on the elements that exist at call time,
+  // mo1: phone list entrance (.act-row rows + category .card lists). WAAPI, transform/opacity only, runs on the elements that exist at call time,
   // so a state poll that re-renders the list later never replays it. Only rows already inside the viewport are animated (<= 8, 30ms apart): a synchronous
   // check, because an IntersectionObserver callback would arrive a frame late and let the rows flash in unanimated first. Guarded against double calls
   // (App.go -> enter, then the tab bar's own call) by page+tab key within 400 ms.
@@ -104,9 +104,7 @@
     const rm = rmMQ.matches, rise = tokN("--m-rise", 10), dur = rm ? 120 : tokN("--m-base", 280), step = rm ? 0 : tokN("--m-stagger", 30), ease = rm ? "linear" : tokS("--m-ease-emph", "cubic-bezier(.2,.8,.2,1)");
     const spring = tokS("--m-spring", ease), vh = innerHeight;
     const from = rm ? { opacity: 0 } : { opacity: 0, transform: `translateY(${rise}px)` }, to = rm ? { opacity: 1 } : { opacity: 1, transform: "none" };
-    const of = document.querySelector("#officebox:not([hidden]) .office-frame");
-    let base = 0;
-    if (of && of.offsetParent) { base = rm ? 0 : 90; of.animate([rm ? { opacity: 0 } : { opacity: 0, transform: "scale(.97)" }, rm ? { opacity: 1 } : { opacity: 1, transform: "none" }], { duration: rm ? 120 : 360, easing: ease, fill: "backwards" }); }
+    const base = 0;
     let n = 0;
     for (const r of body.querySelectorAll(".act-row, .card")) {
       if (n >= 8) break;
