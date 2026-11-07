@@ -2686,7 +2686,7 @@ html[lang="en"] .nav-i { font-weight: 500; } html[lang="en"] .nav-i.on, html[lan
 .dw-askbar .ask-rt b { flex: none; }
 .dw-askbar .ask-rt span { min-width: 0; padding-left: .3em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .dw-askbar .ask-cv { flex: none; margin-left: auto; padding-left: 8px; box-sizing: content-box; color: var(--dim); transition: rotate var(--m-base, .28s) var(--m-ease-emph, ease); }
-.dw-askbar:not(.fold) .ask-cv { rotate: 180deg; }
+.dw-askbar.fold .ask-cv { rotate: 180deg; }   /* t-q-arrow: the bar sits on the dock and grows upward, so folded points up (▴) and open points down (▾) */
 .dw-askbar:not(.fold) .ask-rt { align-items: flex-start; }
 .dw-askbar:not(.fold) .ask-rt i { margin-top: .55em; }
 .dw-askbar:not(.fold) .ask-rt span { white-space: normal; }

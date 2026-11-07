@@ -302,3 +302,12 @@ html[data-theme]:not([data-glass="0"]) #modal .mdl:not(.sys) .foot .btn.primary.
 html[data-theme]:not([data-glass="0"]) #modal .mdl:not(.sys) .foot .btn.primary::before, html[data-theme]:not([data-glass="0"]) #modal .mdl:not(.sys) .foot .btn.primary::after { display: none; }
 @media (prefers-reduced-motion: reduce) { html[data-theme]:not([data-glass="0"]) #modal .mdl:not(.sys) .foot .btn, html[data-theme]:not([data-glass="0"]) #modal .mdl:not(.sys) textarea { transition: none; } }
 @media (max-width: 760px) { html[data-theme]:not([data-glass="0"]) #modal .mdl.ask-guard { max-width: none; } }
+
+/* ===== t-side-pad (2026-11-06): desktop rail a little looser (user: 「padding 稍微大一点点，有点太 dense」). Same prefix, so data-glass="0" rolls it back. Backup .bak-qarrow1.
+   Nav rows 30 -> 34; Today rows +2px each side; TEAM rows 1 -> 4px top/bottom, 2px apart, avatar-text gap 10 -> 13.
+   TEAM right padding 8 -> 5 so the text column keeps its old width (nothing truncates more). The TEAM list scrolls on its own if it no longer fits. ===== */
+@media (min-width: 761px) {
+  html[data-theme]:not([data-glass="0"]) #nav .nav-i, html[data-theme]:not([data-glass="0"]) #nav > .nav-sep ~ .nav-i { min-height: 34px; }
+  html[data-theme]:not([data-glass="0"]) .cal-i.cal-rt { padding-top: 4px; padding-bottom: 4px; }
+  html[data-theme]:not([data-glass="0"]) #team .team-i { padding: 4px 5px 4px 12px; column-gap: 13px; margin-bottom: 2px; }
+}
