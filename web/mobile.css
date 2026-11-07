@@ -1106,6 +1106,9 @@ body:not(.kb)[data-mtab="chat"][data-cv="thread"] #right .ch-msgs { padding-bott
    Blur budget: no blur here except the long-press sheet while it is open. White-theme rules live here on purpose (the white variables exist only in this file). ===== */
 :root { --c-manager: #8f3a3a; --c-scout: #8c6fb0; --c-writer: #6a4e9a; --c-director: #243a66; --c-artist: #d58f98; --c-ops: #44444a; --c-smith: #7fa8d8; }
 .office > .hd { width: 100%; }
+/* t-m-team-panel (11-05, user: 「有点挤，加点 padding」): the ink skin flattens the 首页 board (skin-ink.css: .office .hd { padding: 0 } on a transparent page), but 特典 paints it as a --panel card again (theme-ut.css .hd), so the header, the slanted strip and the stats touched the card edge. Give the card its inset back under 特典 only. */
+html[data-ut][data-skin="ink"] .office .hd { padding: 12px 12px 4px; }
+html[data-ut][data-skin="ink"] .office .hd .hd-h { margin-bottom: 10px; padding: 0 2px 0 4px; }
 .hd { --sk: 24px; --pg: 3px; --edge: rgba(255,255,255,.30); position: relative; border: 1px solid var(--line2); border-radius: 20px; background: var(--panel); padding: 10px 12px 12px; box-sizing: border-box;
   box-shadow: 0 1px 0 var(--line), 0 12px 28px -14px rgba(0,0,0,.55); overflow: hidden; -webkit-user-select: none; user-select: none; }
 [data-theme="light"] .hd { --edge: rgba(40,36,30,.30); box-shadow: 0 1px 0 var(--line), 0 12px 26px -14px rgba(70,50,20,.38); }
