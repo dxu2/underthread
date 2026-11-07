@@ -936,6 +936,11 @@ body.resizing #layout { transition: none; }
 #lb:not(.is-img) .lb-zm { display: none; }
 #lb .lb-stage { position: relative; flex: 1; min-height: 0; display: grid; grid-template: minmax(0, 1fr) / minmax(0, 1fr); place-items: center; overflow: hidden; padding: 0 18px 20px; }
 #lb .lb-media { max-width: 100%; max-height: 100%; object-fit: contain; will-change: transform; border-radius: 12px; }
+/* t-img-save B: the viewer image is the original file, so iOS long-press 存储图像 saves full size (gesture code no longer treats it as a tap) */
+#lb img.lb-media { -webkit-touch-callout: default; }
+#lb .lb-dl.wait { opacity: .6; transition: opacity .2s var(--ease), background-color .16s var(--ease), transform .12s var(--ease); }
+/* t-img-save C: thumbnails are 360 px /api/thumb images; no long-press save menu on touch, tap opens the viewer to save the original */
+@media (hover: none) and (pointer: coarse) { [data-lb], [data-lb] img { -webkit-touch-callout: none; } }
 #lb img.lb-media { cursor: zoom-in; } #lb.zoomed img.lb-media { cursor: grab; }
 #lb.panning img.lb-media { cursor: grabbing; }   /* t-img-zoom: click = fit <-> 2x, drag pans while zoomed */
 #lb .lb-x, #lb .lb-zm button, #lb .lb-new, #lb .lb-dl, #lb .lb-go, #lb .lb-att, #lb .lb-nav { transition: background-color .16s var(--ease), transform .12s var(--ease); }

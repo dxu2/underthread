@@ -18,6 +18,15 @@
   const thumbOf = (url, w) => `/api/thumb?p=${encodeURIComponent(url.slice(1).split("/").map(decodeURIComponent).join("/"))}&w=${w}`;
 
   let items = [], idx = 0, root = null, scrollY0 = 0, pushed = false, chromeOn = true, zoom = null, setZoom = null;
+  // t-img-save A: phone 「保存原图」 = system share sheet (存储图像 -> Photos, full size). Safari wants share() called right in the tap,
+  // so the original is fetched into a File as soon as an image / video opens. Only the current file is kept; switching or closing drops it.
+  /* above BIG: no prefetch, fetch on tap (the share may then be refused -> download fallback) */
+  const BIG = 40 * 1024 * 1024;
+  /* pre = { url, ctl, file, size, state: "loading" | "ready" | "big" | "fail" } */
+  let pre = null;
+  const toast = (m, bad) => { if (window.App && App.toast) App.toast(m, bad); };
+  const canShareFiles = () => { try { return !!(navigator.share && navigator.canShare && navigator.canShare({ files: [new File([""], "x.png", { type: "image/png" })] })); } catch (_) { return false; } };
+  const fmtMB = n => n >= 1048576 ? (n / 1048576).toFixed(1) + " MB" : Math.max(1, Math.round(n / 1024)) + " KB";
 
   function entry(el) {
     const url = el.dataset.lb || el.getAttribute("href") || "";
@@ -56,6 +65,7 @@
       e.stopPropagation(); const p = items[idx] && items[idx].path; close();
       if (p && window.App && App.attachPick) setTimeout(() => App.attachPick(p), 260);
     };
+    $(".lb-dl", root).addEventListener("click", saveClick);
     $(".lb-zo", root).onclick = e => { e.stopPropagation(); setZoom && setZoom(zoom.s / 1.25); };
     $(".lb-zi", root).onclick = e => { e.stopPropagation(); setZoom && setZoom(zoom.s * 1.25); };
     $(".lb-pct", root).onclick = e => { e.stopPropagation(); setZoom && setZoom(1); };
@@ -81,11 +91,11 @@
     stopVideo(); zoom = { s: 1, x: 0, y: 0 }; pct();
     root.classList.toggle("is-video", it.kind === "video"); root.classList.toggle("is-pdf", it.kind === "pdf");
     root.classList.toggle("is-img", it.kind !== "video" && it.kind !== "pdf"); root.classList.toggle("ph", phone);
-    $(".lb-cnt", root).textContent = `${items.length > 1 ? `${idx + 1} / ${items.length} · ` : ""}${it.name}`;
-    $(".lb-cnt", root).title = it.name;
+    cnt();
     const gb = $(".lb-go", root); gb.hidden = !it.item; gb.title = it.title || "";
     $(".lb-att", root).hidden = !(it.path && matchMedia("(max-width: 760px)").matches);   // t-lib-attach: phone only (desktop drags the tile)
     const dl = $(".lb-dl", root); dl.href = it.url; dl.setAttribute("download", it.name || "");
+    prefetch(it, phone);
     $(".lb-new", root).href = it.url;
     $(".lb-prev", root).hidden = idx <= 0; $(".lb-next", root).hidden = idx >= items.length - 1;
     $(".lb-dots", root).innerHTML = items.length > 1 && items.length <= 12 ? items.map((_, k) => `<i class="${k === idx ? "on" : ""}"></i>`).join("") : "";
@@ -102,13 +112,77 @@
     } else {
       const alpha = /\.(png|webp|gif|avif|svg)(\?|$)/i.test(it.url) ? " lb-alpha" : "";   // transparent images sit on a light checkerboard
       st.innerHTML = `<img class="lb-media${alpha}" src="${esc(it.url)}" alt="${esc(it.name)}" draggable="false">`;
+      const im0 = $("img", st); im0.addEventListener("load", () => { if (items[idx] === it) { it.wh = im0.naturalWidth + "×" + im0.naturalHeight; cnt(); } });
       if (!reduce) { const im = $("img", st); im.style.opacity = 0; im.style.transform = "scale(.96)"; requestAnimationFrame(() => { im.style.transition = "opacity .24s var(--ease), transform .24s var(--ease)"; im.style.opacity = 1; im.style.transform = ""; }); }
     }
+  }
+  // title line: "2 / 5 · name · 1456×816 · 2.1 MB" (real pixels + bytes, so a screenshot is never mistaken for the original)
+  function cnt() {
+    const it = items[idx]; if (!it || !root) return;
+    const meta = [it.wh, it.size ? fmtMB(it.size) : ""].filter(Boolean).join(" · ");
+    const el = $(".lb-cnt", root);
+    el.textContent = `${items.length > 1 ? `${idx + 1} / ${items.length} · ` : ""}${it.name}${meta ? " · " + meta : ""}`;
+    el.title = it.name + (meta ? " · " + meta : "");
+  }
+  function dropPre() { if (pre && pre.ctl) { try { pre.ctl.abort(); } catch (_) { } } pre = null; }
+  function dlLabel() {
+    const dl = root && $(".lb-dl", root), it = items[idx]; if (!dl || !it) return;
+    const share = phoneQ.matches && it.kind !== "pdf" && canShareFiles();
+    dl.textContent = !share ? (phoneQ.matches ? "⤓ 保存原图" : "⤓ 保存") : pre && pre.state === "loading" ? "准备中…" : "⤓ 保存原图";
+    dl.classList.toggle("wait", !!(share && pre && pre.state === "loading"));
+  }
+  /* fetch the original into a File; resolves to pre (state ready / big / fail) */
+  function grab(it, big) {
+    const ctl = typeof AbortController === "function" ? new AbortController() : null;
+    const p = pre = { url: it.url, ctl, file: null, size: 0, state: "loading" };
+    return fetch(it.url, ctl ? { signal: ctl.signal } : {}).then(r => {
+      if (!r.ok) throw new Error("HTTP " + r.status);
+      const n = +r.headers.get("content-length") || 0; if (n) { p.size = it.size = n; if (items[idx] === it) cnt(); }
+      if (n > BIG && !big) { p.state = "big"; if (ctl) ctl.abort(); return null; }
+      return r.blob();
+    }).then(b => {
+      if (!b || pre !== p) return p;
+      const type = b.type || (/\.png$/i.test(it.url) ? "image/png" : /\.(jpe?g)$/i.test(it.url) ? "image/jpeg" : /\.mp4$/i.test(it.url) ? "video/mp4" : "application/octet-stream");
+      const nm = (it.name && /\.[a-z0-9]{2,5}$/i.test(it.name) ? it.name : decodeURIComponent(it.url.split("?")[0].split("/").pop() || "image")).replace(/[\\/:*?"<>|]/g, "_");
+      p.file = new File([b], nm, { type }); p.size = it.size = b.size; p.state = "ready";
+      if (items[idx] === it) cnt();
+      return p;
+    }).catch(e => { if (pre === p && p.state === "loading") p.state = "fail"; return p; }).then(r => { if (pre === p) dlLabel(); return r; });
+  }
+  function prefetch(it, phone) {
+    dropPre();
+    if (!phone || it.kind === "pdf" || !canShareFiles()) { dlLabel(); return; }
+    grab(it, false); dlLabel();
+  }
+  function fallbackDL(dl) { dl.dataset.nosh = "1"; dl.click(); delete dl.dataset.nosh; toast("已存到 文件 → 下载"); }
+  function doShare(dl, file) {
+    let pr; try { pr = navigator.share({ files: [file] }); } catch (e) { pr = Promise.reject(e); }
+    return Promise.resolve(pr).catch(e => { if (e && e.name === "AbortError") return; /* user cancelled */ fallbackDL(dl); });
+  }
+  // the 「保存原图」 tap. Desktop and no-share browsers keep the plain <a download>.
+  function saveClick(e) {
+    const dl = e.currentTarget, it = items[idx];
+    if (dl.dataset.nosh || !it || !phoneQ.matches || it.kind === "pdf" || !canShareFiles()) {
+      if (phoneQ.matches && !dl.dataset.nosh && it && it.kind !== "pdf") toast("已存到 文件 → 下载");
+      return;
+    }
+    e.preventDefault(); e.stopPropagation();
+    const p = pre && pre.url === it.url ? pre : null;
+    if (p && p.state === "ready" && p.file) {
+      /* synchronous: still inside the tap */
+      if (navigator.canShare({ files: [p.file] })) return void doShare(dl, p.file);
+      return fallbackDL(dl);
+    }
+    if (p && p.state === "loading") { toast("原图还在准备，稍等一下再点"); return; }
+    if (p && p.state === "fail") return fallbackDL(dl);
+    // big file (or no prefetch): fetch now, then try the share; Safari may refuse it without the tap -> download
+    toast("文件较大，取完会再弹分享");
+    grab(it, true).then(q => { if (items[idx] !== it || !root.classList.contains("on")) return; if (q.state === "ready" && q.file && navigator.canShare({ files: [q.file] })) doShare(dl, q.file); else fallbackDL(dl); });
   }
   function go(n) { if (n < 0 || n >= items.length || n === idx) return; idx = n; show(); }
   function close(fromPop) {
     if (!root || !root.classList.contains("on")) return;
-    stopVideo();
+    stopVideo(); dropPre();
     const fin = () => { root.classList.remove("on", "out"); $(".lb-stage", root).innerHTML = ""; $(".lb-frame", root).style.transform = ""; $(".lb-bg", root).style.opacity = ""; document.body.classList.remove("lb-open"); window.scrollTo(0, scrollY0); };
     if (reduce) fin(); else { root.classList.add("out"); setTimeout(fin, 180); }
     if (pushed && !fromPop) { pushed = false; ignorePop = true; history.back(); }
@@ -208,6 +282,15 @@
         return;
       }
       const dx = e.clientX - g.x0, dy = e.clientY - g.y0, fast = Date.now() - g.t0 < 300, m = body(), f = frame();
+      // t-img-save B: a cancelled pointer (iOS long-press menu / system gesture) or a still touch held >= 450 ms is not a tap:
+      // no zoom, no close, so the 存储图像 menu can show over an unmoved image
+      const held = g.touch && !g.moved && Date.now() - g.t0 >= 450;
+      if (e.type === "pointercancel" || held) {
+        if (g.dir === "v") snapBack();
+        if (g.moved && zoom.s > 1.02) { clamp(); apply(true, .22); }
+        else if (g.moved && m) { if (isImg()) apply(true); else { m.style.transition = "transform .22s var(--ease)"; m.style.transform = ""; } }
+        g = null; return;
+      }
       const snapBack = () => { $(".lb-bg", root).style.opacity = ""; f.style.transition = "transform .22s var(--ease)"; f.style.transform = ""; };
       if (zoom.s <= 1.02 && g.dir === "h" && (Math.abs(dx) > 70 || (fast && Math.abs(dx) > 30))) { g = null; const n0 = idx; go(idx + (dx < 0 ? 1 : -1)); if (idx === n0 && m) { m.style.transition = "transform .22s var(--ease)"; m.style.transform = ""; } return; }
       if (zoom.s <= 1.02 && g.dir === "v" && (Math.abs(dy) > 120 || (fast && Math.abs(dy) > 50))) { g = null; return close(); }
