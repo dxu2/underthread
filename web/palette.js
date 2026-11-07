@@ -8,7 +8,7 @@
   const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
   const en = () => App.UI.lang === "en";
   const phone = () => matchMedia("(max-width: 760px)").matches;
-  const convMsgs = id => id === "manager" ? (App.ST.chat || []) : ((App.ST.dms || {})[id] || []);
+  const convMsgs = id => App.chatList ? App.chatList(id) : id === "manager" ? (App.ST.chat || []) : ((App.ST.dms || {})[id] || []);   /* ri1105-P4: + older chat once fetched */
   const clean = s => String(s || "").replace(/```[\s\S]*?```/g, " ").replace(/!\[[^\]]*\]\([^)]*\)/g, " ").replace(/\[([^\]]+)\]\([^)]*\)/g, "$1").replace(/[*_`>#]+/g, "").replace(/\s+/g, " ").trim();
   // a window of text around the hit, so you see why it matched
   function around(text, q) {
@@ -120,6 +120,7 @@
     let items = App.items().slice().sort(App.byAct).filter(it => !q || hit(it)).slice(0, q ? (opt.items || 30) : (opt.recent || 8));
     if (q && App.archIx) {   // t-perf A: archived cards after the live ones (full cards once loaded, else the id / title index)
       if (App.archAll) App.archAll();
+      if (App.histAll) App.histAll();   /* ri1105-P4: chat before the poll window, loaded once on the first search ("rt-hist" re-runs it) */
       const lim = opt.items || 30, seen = new Set(items.map(i => i.id));
       const arch = App.archList() ? archExtra() : App.archIx().map(([id, title, owner, d]) => ({ id, title, owner, stage: "done", kind: "task", archived: true, updated: d }));
       if (items.length < lim) items = items.concat(arch.filter(it => !seen.has(it.id) && hit(it)).sort((a, b) => String(b.updated || "").localeCompare(String(a.updated || ""))).slice(0, lim - items.length));
@@ -187,6 +188,7 @@
     P.el.querySelectorAll("[data-pl]").forEach(r => { const on = +r.dataset.pl === P.sel; r.classList.toggle("on", on); r.setAttribute("aria-selected", on); if (on && scroll) r.scrollIntoView({ block: "nearest" }); });
   }
   document.addEventListener("rt-arch", () => { if (P.el && !P.el.hidden && P.q) render(); });   // t-perf A
+  document.addEventListener("rt-hist", () => { IX.chats = null; if (P.el && !P.el.hidden && P.q) render(); });   /* ri1105-P4 */
   function render() {
     const zh = !en(), R = find(P.q, { items: 8, recent: 6 }), q = P.q, tab = q ? P.tab : "all", all = tab === "all";
     P.rows = []; let html = "";

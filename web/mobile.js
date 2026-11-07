@@ -69,7 +69,7 @@
     const ST = App.ST; if (!ST) return {};
     const review = App.items().filter(i => App.onYouCard ? App.onYouCard(i) : i.stage === "review" && !(App.busy && App.busy(i))).length;   // t-doing-first
     const chat = convRows().reduce((n, x) => n + x.n, 0);   // unread across every conversation
-    const mail = (App.ST.mail || []).filter(m => !m.read).length;
+    const mail = App.mailUnread ? App.mailUnread() : (App.ST.mail || []).filter(m => !m.read).length;   /* ri1105-P4: server count */
     return { home: review, dms: chat, activity: mail };   // ui15: dots, not numbers
   }
   // ---------- tabbar motion (t-tabbar-motion) ----------
@@ -381,7 +381,7 @@
     if (e.target.closest("[data-go]") && !e.target.closest("#tabbar")) setTab("page");
     else if (e.target.closest("[data-chat]")) { const c = e.target.closest("[data-chat]").dataset.chat; const from = retFrom(); setTab("chat"); if (oofOK() && c) openConv(c, from); }   // oof v2: 私信 / avatar taps now open that thread (with the push) instead of stopping on the list; #hc=cur keeps the old landing
     else if (e.target.closest("[data-mail]") && oofOK()) {   // t-dm-back-nav: an activity / mailbox row with no item only did setChat (app.js) on phones, so nothing visible happened; open that thread and come back here
-      const ml = e.target.closest("[data-mail]"), m = (App.ST.mail || []).find(x => x.id === ml.dataset.mail);
+      const ml = e.target.closest("[data-mail]"), m = (App.mailAll ? App.mailAll() : (App.ST.mail || [])).find(x => x.id === ml.dataset.mail);
       if (m && !m.item && m.agent) { const from = retFrom(); setTab("chat"); openConv(m.agent, from); }
     }
     else if (e.target.closest(".office canvas") && App.UI.chat !== chatBefore) { const from = retFrom(); setTab("chat"); if (oofOK()) openConv(App.UI.chat, from); }
@@ -507,7 +507,7 @@
   const CLEAR = '<svg viewBox="0 0 24 24"><path d="M6 6 L18 18 M18 6 L6 18"/></svg>';
   const SEARCH = '<svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="6"/><path d="M16 16 L20 20"/></svg>';
   let convQ = "";
-  const convMsgs = id => id === "manager" ? (App.ST.chat || []) : ((App.ST.dms || {})[id] || []);
+  const convMsgs = id => App.chatList ? App.chatList(id) : id === "manager" ? (App.ST.chat || []) : ((App.ST.dms || {})[id] || []);   /* ri1105-P4 */
   const convUnread = id => App.unreadOf ? App.unreadOf(id) : (() => { const s = App.seenOf ? App.seenOf(id) : ((App.UI.seen || {})["chat." + id] || ""); return convMsgs(id).filter(m => m.who !== "me" && m.t > s).length; })();   /* r-improve-1102 P3; t-ri1104-p2: App.unreadOf is the shared rule */
   const pad2 = n => String(n).padStart(2, "0");
   function wtime(iso) {   // 今天 10:40 · 昨天 · 星期二 · 10/19
@@ -864,6 +864,8 @@
     searchRender(); renderBar();
   }
   document.addEventListener("rt-arch", () => searchRender());   // t-perf A: archived cards finished loading (App.archAll)
+  document.addEventListener("rt-hist", () => searchRender());   /* ri1105-P4: older chat landed */
+  const msNone = () => `<div class="empty">${App.t("empty")}</div>`;
   function searchRender() {
     const el = sEl(); if (!el || el.hidden && !document.body.classList.contains("msearch")) return;
     const q = sq, kindOf = it => it.kind === "task" ? "deliverable" : it.kind;

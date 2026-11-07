@@ -681,34 +681,119 @@
     if (ST || !v || !v.txt || Date.now() - v.t > SNAP.max) return;
     await Promise.race([AVS.ready, new Promise(ok => setTimeout(ok, 300))]);
     if (ST) return;
-    try { const j = JSON.parse(v.txt); UI.snap = v.t; poll.entered = 1; ST = j; rehydrate(); archMerge(); render(); bootDone(); syncPaint(); window.FX && FX.enter($("#pagebody")); }
+    try { const j = JSON.parse(v.txt); UI.snap = v.t; poll.entered = 1; histSet(j); ST = j; rehydrate(); archMerge(); render(); bootDone(); syncPaint(); window.FX && FX.enter($("#pagebody")); }
     catch (e) { console.error("snapshot render failed", e); UI.snap = 0; ST = null; }
   }
+  /* ri1105-P4: a poll carries the newest 200 manager-chat messages, the newest 300 letters + every unread one, and no logs (server trim_state;
+     meta.trim says what was left out). HIST holds the rest once fetched from /api/history: chat = a contiguous run ending where the poll's window
+     starts (messages that slide out of the window are kept here too, so the list only grows during a session and chat indices stay put),
+     mail = older read letters (only fetched when a filter runs short), logs = the 日志 tab (fetched per rev while it is open). */
+  const HIST = { chat: { start: null, list: [] }, mail: null, mailP: null, logs: null, logsP: null, allP: null, allFail: false };
+  const trimOf = (s, k) => s && s.meta && s.meta.trim ? s.meta.trim[k] : null;
+  const chatBase = s => (trimOf(s, "chat") || [0])[0];
+  function histSet(nw) {
+    const nb = chatBase(nw), H0 = HIST.chat;
+    if (!ST || H0.start == null) { HIST.chat = { start: nb, list: [] }; HIST.allP = null; }
+    else {
+      const ob = H0.start + H0.list.length, oc = ST.chat || [];
+      if (nb > ob && nb - ob <= oc.length) H0.list = H0.list.concat(oc.slice(0, nb - ob));
+      else if (nb !== ob) { HIST.chat = { start: nb, list: [] }; HIST.allP = null; }
+    }
+    if (HIST.mail && ST) {   // letters that left the poll were read (unread ones are always sent)
+      const keep = new Set((nw.mail || []).map(m => m.id)), have = new Set(HIST.mail.map(m => m.id));
+      (ST.mail || []).forEach(m => { if (!keep.has(m.id) && !have.has(m.id)) HIST.mail.push(Object.assign({}, m, { read: true })); });
+    }
+  }
+  const olderN = id => id === "manager" ? (HIST.chat.start || 0) : 0;
+  function chatOlder(n) {   // the n messages before what this page holds
+    const end = HIST.chat.start; if (!end) return Promise.resolve(0);
+    return fetch(`/api/history?k=chat&end=${end}&n=${n}`).then(r => r.json()).then(j => {
+      if (HIST.chat.start !== end || !Array.isArray(j.list) || j.start + j.list.length !== end) return 0;
+      HIST.chat = { start: j.start, list: j.list.concat(HIST.chat.list) };
+      if (UI.chat === "manager") chatFrom += j.list.length;
+      IXdirty(); return j.list.length;
+    });
+  }
+  function histAll() {   // every older chat message (⌘K over old chat, a ↩ jump to a message before the window)
+    if (!HIST.chat.start) return Promise.resolve(0);
+    return HIST.allP || (HIST.allP = chatOlder(HIST.chat.start).catch(() => { HIST.allFail = true; return 0; }).finally(() => { HIST.allP = null; }));
+  }
+  const IXdirty = () => document.dispatchEvent(new Event("rt-hist"));
+  const mailUnread = () => { const M = ST && ST.meta; return M && M.mail_unread != null ? M.mail_unread : ((ST && ST.mail) || []).filter(m => !m.read).length; };
+  function mailAll() {
+    if (!HIST.mail || !HIST.mail.length) return ST.mail || [];
+    const seen = new Set((ST.mail || []).map(m => m.id));
+    return HIST.mail.filter(m => !seen.has(m.id)).concat(ST.mail || []).sort((a, b) => String(a.t).localeCompare(String(b.t)));
+  }
+  function mailOlder() {
+    const tm = trimOf(ST, "mail"); if (HIST.mail || HIST.mailP || !tm || tm[0] <= tm[1]) return;
+    HIST.mailP = fetch("/api/history?k=mail").then(r => r.json()).then(j => { HIST.mail = j.list || []; if (UI.page === "mail") renderPage(); renderMailbox(); })
+      .catch(() => { }).finally(() => { HIST.mailP = null; });
+  }
+  function logsFor(ag) {
+    ag = ag || ""; const L = HIST.logs;
+    if (ST && ST.logs && !trimOf(ST, "logs")) return ST.logs.filter(l => !ag || l.agent === ag);   // an old snapshot / server still sends logs
+    if ((!L || L.rev !== REV || L.ag !== ag) && !HIST.logsP) {
+      const rev = REV;
+      HIST.logsP = fetch("/api/history?k=logs" + (ag ? "&agent=" + encodeURIComponent(ag) : "")).then(r => r.json()).then(j => {
+        HIST.logs = { rev, ag, list: j.list || [] }; if (UI.page === "settings" && UI.setTab === "logs") renderPage();
+      }).catch(() => { }).finally(() => { HIST.logsP = null; });
+    }
+    return L && L.ag === ag ? L.list : null;
+  }
   // ---------- polling ----------
-  async function poll(force) {
+  /* ri1105-P5: long polling. A visible page asks /api/state?rev=N&wait=25; the server answers the moment rev (or the inbox count) moves, else
+     "same" after 25 s, and the page asks again at once (300 ms after a full answer, so a burst of writes comes as one). Errors, a hidden tab or an
+     older server (a "same" back in under 1 s) fall back to the 2.5 s / 30 s timer below. A normal poll (after your own action, pull to refresh)
+     cancels the waiting one and restarts it when done. */
+  const LP = { ctl: null, run: false, hold: 0, t: 0 };
+  function lpAbort() { if (LP.ctl) { LP.ctl.byUs = true; LP.ctl.abort(); } }
+  function lpLoop() {
+    clearTimeout(LP.t);
+    if (LP.run || LP.hold || document.hidden || REV == null || UI.fail) return;
+    LP.run = true; const t0 = Date.now();
+    poll(false, true).then(res => {
+      LP.run = false;
+      if (res === "abort" || UI.fail || document.hidden) return;
+      const dt = Date.now() - t0;
+      LP.t = setTimeout(lpLoop, res === "same" && dt < 1000 ? 2500 : res === "full" ? 300 : 0);
+    });
+  }
+  async function poll(force, lp) {
+    const wait = !!lp && REV != null && !force;
+    let ctl = null, tmo = 0;
+    if (!lp) { LP.hold++; lpAbort(); }
+    if (wait) { ctl = LP.ctl = new AbortController(); tmo = setTimeout(() => ctl.abort(), 32000); }
+    try { return await pollOnce(force, wait, ctl); }
+    finally { clearTimeout(tmo); if (ctl && LP.ctl === ctl) LP.ctl = null; if (!lp) { LP.hold--; if (!LP.hold) setTimeout(lpLoop, 0); } }
+  }
+  async function pollOnce(force, wait, ctl) {
     try {
-      const qs = [REV != null && !force ? `rev=${REV}` : "", MOBQ.matches ? "slim=1" : ""].filter(Boolean).join("&");   // t-mobile-crash-state
-      const r = await fetch("/api/state" + (qs ? "?" + qs : ""));
+      const qs = [REV != null && !force ? `rev=${REV}` : "", MOBQ.matches ? "slim=1" : "", wait ? "wait=25" : ""].filter(Boolean).join("&");   // t-mobile-crash-state
+      const r = await fetch("/api/state" + (qs ? "?" + qs : ""), ctl ? { signal: ctl.signal } : undefined);
       var txt = await r.text(), j = JSON.parse(txt);
       if (!ST || UI.snap) await Promise.race([AVS.ready, new Promise(ok => setTimeout(ok, 400))]);   // ri1105-P1: first paint picks the small avatars
     } catch (e) {
+      if (ctl && ctl.byUs) return "abort";   // ri1105-P5: cancelled by a normal poll / the page coming back, not a miss
       bootDone();
       UI.down = true; UI.fail = (UI.fail || 0) + 1;   // t-sync-pill: one miss can be a blip; syncPaint turns the pill red after 2 misses + 10 s
       syncPaint();
-      return;
+      return "fail";
     }
     // a rendering bug must not masquerade as the server being down
     try {
       const back = UI.down; UI.down = false;  // clear the "unreachable" banner as soon as the server answers again
       UI.fail = 0; UI.lastOk = Date.now(); if (j.same && ST && ST.meta) { ST.meta.comfy = j.meta.comfy; ST.meta.inbox_unacked = j.meta.inbox_unacked; syncPaint(); }   // a full state repaints via renderHeader
-      if (j.same) { ST.meta.comfy = j.meta.comfy; ST.meta.inbox_unacked = j.meta.inbox_unacked; if (back || ++UI.tick % 12 === 0) renderChrome(); return; }
+      if (j.same) { ST.meta.comfy = j.meta.comfy; ST.meta.inbox_unacked = j.meta.inbox_unacked; if (back || wait || ++UI.tick % 12 === 0) renderChrome(); return "same"; }   // ri1105-P5: a long-poll "same" is ~25 s apart, so the chrome refreshes on each
       const wasSnap = UI.snap; UI.snap = 0;
-      ST = j; REV = j.meta.rev; rehydrate(); archMerge(); try { doneMailRead(); } catch (_) { } render(); bootDone(); avsCheck();
+      histSet(j); ST = j; REV = j.meta.rev; rehydrate(); archMerge(); try { doneMailRead(); } catch (_) { } render(); bootDone(); avsCheck();
       if (wasSnap) syncPaint();
       snapSave(txt);
+      return "full";
     } catch (e) {
       console.error("render failed", e);
       if (!poll.warned) { poll.warned = true; toast((UI.lang === "en" ? "Display error: " : "界面出错：") + e.message, true); }
+      return "full";
     }
   }
 
@@ -996,7 +1081,7 @@
     sta.querySelector(".pct > small").textContent = MOBQ.matches ? U.subPh : U.sub;
     sta.querySelector(".focus").hidden = U.week == null;
     sta.querySelector(".focus i").style.width = (U.week ?? 0) + "%";
-    const unread = (ST.mail || []).filter(m => !m.read).length;
+    const unread = mailUnread();   /* ri1105-P4: the server's count (a poll no longer carries every letter) */
     /* t-hdr-trim ①: the top bar keeps only 聊天 (narrow desktop). 舞台 / 主题 and 刷新用量 live in 设置, 报告 is a nav row.
        t-mailbox-top: 信箱 is back as a pill at the right end (desktop only; the rail row is hidden by CSS, the phone keeps it in 更多).
        The SVG is written in its serialized form (explicit closing tags) so the innerHTML compare below stays equal and the pill is not rebuilt every poll. */
@@ -1056,7 +1141,7 @@
   function counts() {
     const c = { review: 0 }; for (const k of CATS) c[k] = 0;
     c.pipe = items().filter(i => i.stage !== "done" && isContent(i)).length;   // t-imp-p3
-    c.mail = (ST.mail || []).filter(m => !m.read).length;   /* t-hdr-trim ①: 信箱 row in the rail */
+    c.mail = mailUnread();   /* t-hdr-trim ①: 信箱 row in the rail; ri1105-P4: server count */
     for (const it of items()) { if (onYou(it)) c.review++; if (it.stage !== "done") c[it.category] = (c[it.category] || 0) + 1; }
     return c;
   }
@@ -1579,10 +1664,10 @@
     },
     logs() {
       const ids = ["", ...agents().map(a => a.id), "me"];
-      const list = (ST.logs || []).filter(l => !UI.logAgent || l.agent === UI.logAgent).slice(-400).reverse();
+      const got = logsFor(UI.logAgent), list = (got || []).slice(-400).reverse();   /* ri1105-P4: logs come from /api/history while this tab is open */
       return pageHead("logs") + `<div class="filters"><div class="seg" data-seg="logs">${ids.map(id => `<button class="seg-i ${UI.logAgent === id ? "on" : ""}" data-logf="${id}">${id ? esc(whoName(id)) : t("all")}</button>`).join("")}</div></div>` +
         (list.length ? logRows(list).map(({ l, hb, n }) => hb ? `<div class="log-i hb"><span class="tm">${whenH(l.t)}</span>${av(agent(l.agent), "sm")}<span>${esc(whoName(l.agent))}</span><span>${UI.lang === "en" ? "Heartbeat" : "在线心跳"}${n > 1 ? ` × ${n}` : ""}</span></div>` : `<div class="log-i"><span class="tm">${whenH(l.t)}</span>${l.agent === "me" ? av("me", "sm") : av(agent(l.agent), "sm")}<span>${esc(whoName(l.agent))}</span>
-          <span>${l.item ? `<span class="it" data-item="${l.item}">${esc(l.item)}</span> ` : ""}${esc(l.text)}</span></div>`).join("") : `<div class="empty">${t("empty")}</div>`);
+          <span>${l.item ? `<span class="it" data-item="${l.item}">${esc(l.item)}</span> ` : ""}${esc(l.text)}</span></div>`).join("") : got ? `<div class="empty">${t("empty")}</div>` : `<div class="empty">${UI.lang === "en" ? "Loading…" : "载入中…"}</div>`);
     },
     reports() {
       const list = (ST.reports || []).slice().reverse();
@@ -1892,7 +1977,9 @@
   // ---------- ui1-C: mailbox = drop-down panel under the header (the full page stays reachable via "view all") ----------
   function mailFiltered(n) {
     const f = UI.mailFilter;
-    return (ST.mail || []).filter(m => f === "all" || (f === "unread" ? !m.read : f === "urgent" ? (m.item && (ST.items.find(i => i.id === m.item) || {}).category === "urgent") : m.kind === f)).slice(-n).reverse();
+    const L = mailAll().filter(m => f === "all" || (f === "unread" ? !m.read : f === "urgent" ? (m.item && (ST.items.find(i => i.id === m.item) || {}).category === "urgent") : m.kind === f));
+    if (L.length < n && f !== "unread") mailOlder();   /* ri1105-P4: a filter that runs short fetches the older read letters once */
+    return L.slice(-n).reverse();
   }
   const MB = { ct: null, open: false };
   function mailboxEls() {
@@ -1907,7 +1994,7 @@
   function renderMailbox(enter) {
     if (!MB.open) return;
     const { box } = mailboxEls(), f = UI.mailFilter;
-    const unread = (ST.mail || []).filter(m => !m.read).length;
+    const unread = mailUnread();
     const fs = [["all", t("all")], ["unread", t("unread")], ["reply", t("replies")], ["update", t("updates")], ["urgent", t("urgent")]];
     const kindName = { reply: t("replies"), update: t("updates") };
     const list = mailFiltered(40);
@@ -2342,7 +2429,7 @@
     const done = new Set((ST.items || []).filter(i => i.stage === "done" || i.archived).map(i => i.id)); archIx().forEach(x => done.add(x[0]));   // t-perf A
     const ids = (ST.mail || []).filter(m => !m.read && m.item && done.has(m.item)).map(m => m.id); if (ids.length) nrRead(ids);
   }
-  function nrRead(ids) { if (!ids.length) return; (ST.mail || []).forEach(m => { if (ids.includes(m.id)) m.read = true; }); api("mail_read", { ids }).catch(() => { }); }
+  function nrRead(ids) { if (!ids.length) return; let k = 0; (ST.mail || []).forEach(m => { if (ids.includes(m.id)) { if (!m.read) k++; m.read = true; } }); if (k && ST.meta && ST.meta.mail_unread != null) ST.meta.mail_unread = Math.max(0, ST.meta.mail_unread - k); api("mail_read", { ids }).catch(() => { }); }   /* ri1105-P4: the pill count drops at once too */
 
   // t-home-applike: the desktop 首页 (review page) in the phone app's shape, switchable back to the classic stage home (stored per device).
   const appHome = () => !MOBQ.matches && UI.home === "app" && UI.page === "review";
@@ -2400,7 +2487,7 @@
     if (e.target.closest("[data-mailunread]")) { UI.mailUnread = !UI.mailUnread; lsSet("rt.mailUnread", UI.mailUnread); renderPage(); }
     const ml = e.target.closest("[data-mail]");
     if (ml) {
-      const m = ST.mail.find(x => x.id === ml.dataset.mail);
+      const m = mailAll().find(x => x.id === ml.dataset.mail); if (!m) return;
       api("mail_read", { ids: ml.dataset.mailids ? ml.dataset.mailids.split(",") : [m.id] });
       if (m.item) openItem(m.item); else if (m.agent) setChat(m.agent);
     }
@@ -3295,7 +3382,7 @@
     const ta = $("#right .ch-comp textarea"); if (!ta) return; const d = DRAFT.get("dm:" + UI.chat), v = d ? d.t : "";
     if (ta.value === v) return; ta.value = v; ta.style.height = ""; ta._dmLoad = true; ta.dispatchEvent(new Event("input", { bubbles: true })); ta._dmLoad = false;
   }
-  function chatList(id) { return id === "manager" ? (ST.chat || []) : ((ST.dms || {})[id] || []); }
+  function chatList(id) { return id === "manager" ? (HIST.chat.list.length ? HIST.chat.list.concat(ST.chat || []) : (ST.chat || [])) : ((ST.dms || {})[id] || []); }   /* ri1105-P4: + what slid out of / was fetched before the poll window */
   function buildChat() {
     const r = $("#right");
     r.innerHTML = `<div class="ch-grip" title="${UI.lang === "en" ? "Drag to resize" : "拖动调整宽度"}"></div>
@@ -3455,6 +3542,7 @@
       return;
     }
     const list = chatList(UI.chat), at = list.findIndex(x => x.id === mid);
+    if (at < 0 && olderN(UI.chat) && !HIST.allFail) { histAll().then(() => rqSeek(mid, n)); return; }   /* ri1105-P4: before the poll window: fetch the older chat once */
     if (at < 0 || n >= 2 || at >= chatFrom) { toast(UI.lang === "en" ? "That message is too old; it is no longer in the record" : "原消息太早，已不在记录里"); return; }
     chatHold = true; chatFrom = Math.max(0, at - 3); box._n = 1e9; chatCount = -1; renderChat(); hooks.forEach(f => f("all"));   // render from just above the original
     setTimeout(() => rqSeek(mid, n + 1), 120);
@@ -3506,7 +3594,12 @@
   // t-mobile-crash B: 「加载更早的消息」. Keeps the message that was on top where it was: re-aligned after the render, the phone's stamps (hooks)
   // and every frame for ~1.5 s while thumbnails above it load. The browser's own scroll anchoring is off meanwhile (Chromium's picks another node and fights us;
   // iOS Safari may have none). Stops at the user's first touch / wheel. _n huge = no m-new pop for the older messages.
-  function moreChat(box) {
+  function moreChat(box, fetched) {
+    if (!fetched && chatFrom < CHAT_N && olderN(UI.chat)) {   /* ri1105-P4: the page holds no more: fetch the 200 before it first */
+      if (moreChat.busy) return; moreChat.busy = true;
+      chatOlder(200).catch(() => 0).finally(() => { moreChat.busy = false; moreChat(box, true); });
+      return;
+    }
     const top = box.querySelector(".msg[data-t]"); if (!top) return;
     const key = top.dataset.t, off = top.getBoundingClientRect().top - box.getBoundingClientRect().top;
     box.style.overflowAnchor = "none";
@@ -3535,7 +3628,7 @@
     $("textarea", r).placeholder = MOBQ.matches ? t("chat_ph", { n: aname(a) }) : (UI.lang === "en" ? `Message ${aname(a)}…` : `对${aname(a)}说……`);   // t-web-dm: desktop moves the shortcut hint below the field
     pendSync();
     const real = chatList(UI.chat), pl = pendOf(UI.chat), list = pl.length ? real.concat(pl) : real;   // t-perf C: local bubbles ride at the end
-    const sig = list.length + (pl.length ? "|" + pl.map(p => p.pend + p.st).join(",") : "");
+    const sig = olderN(UI.chat) + "/" + list.length + (pl.length ? "|" + pl.map(p => p.pend + p.st).join(",") : "");
     const box = $(".ch-msgs", r);
     if (chatRenderedFor === UI.chat && chatCount === sig) { decorateDesk(box, list); return; }
     if (chatRenderedFor !== UI.chat) chatHold = false;
@@ -3549,7 +3642,8 @@
     // One ring per thread: only the newest message from someone else keeps it, older avatars are drawn idle.
     let ringAt = -1; for (let i = view.length - 1; i >= 0; i--) if (view[i].who !== "me") { ringAt = i; break; }
     const mav = (m, i) => { const x = agent(m.who); return av(i === ringAt ? x : Object.assign({}, x, { status: "idle" }), "sm"); };
-    const more = chatFrom > 0 ? `<button class="ch-more" data-more>${UI.lang === "en" ? `Load earlier messages (${chatFrom})` : `加载更早的消息（还有 ${chatFrom} 条）`}</button>` : "";
+    const moreN = chatFrom + olderN(UI.chat);   /* ri1105-P4: + messages still on the server */
+    const more = moreN > 0 ? `<button class="ch-more" data-more>${UI.lang === "en" ? `Load earlier messages (${moreN})` : `加载更早的消息（还有 ${moreN} 条）`}</button>` : "";
     // r-improve-1102 P1: quick options on a message you have already answered (you wrote anything after it) fold to one quiet line
     const nextMe = []; { let nx = null; for (let k = list.length - 1; k >= 0; k--) { nextMe[k] = nx; if (list[k].who === "me") nx = list[k]; } }
     if (list.length && CHN.for !== UI.chat) { CHN.for = UI.chat; CHN.t = seenOf(UI.chat); CHN.on = !!CHN.t; CHN.fresh = true; }   // P4: captured on the first render with messages, before it marks the thread read
@@ -3934,6 +4028,7 @@
     usage: () => usage(), roleUsage: () => roleUsage(), ruHTML: (n, o) => ruHTML(n, o), fmtTok,   /* t-home-usage */
     themeMode: () => themeMode(), setTab: k => setTab(k),   /* t-settings-tab */
     archAll: () => archAll(), archList: () => ARCH.all, archIx: () => archIx(),   /* t-perf A (palette.js search) */
+    chatList: id => chatList(id), histAll: () => histAll(), mailUnread: () => mailUnread(), mailAll: () => mailAll(),   /* ri1105-P4 (palette.js, mobile.js) */
   };
 
   // ---------- t-push-deeplink: one router for "go to this target" (cold-start hash, or a tapped notification while the app is open) ----------
@@ -3981,8 +4076,8 @@
   });
   /* t-power-save: a hidden tab polls every 30 s instead of 2.5 s, and refreshes once the moment it is visible again */
   let pollAt = Date.now();
-  setInterval(() => { if (document.hidden && Date.now() - pollAt < 30000) return; pollAt = Date.now(); poll(); }, 2500);
-  document.addEventListener("visibilitychange", () => { if (!document.hidden) { pollAt = Date.now(); poll(); } });
+  setInterval(() => { if (LP.run || LP.hold) return; if (!document.hidden && REV != null && !UI.fail) { lpLoop(); return; } if (document.hidden && Date.now() - pollAt < 30000) return; pollAt = Date.now(); poll(); }, 2500);   // ri1105-P5: the timer only runs while long polling is off
+  document.addEventListener("visibilitychange", () => { if (!document.hidden) { pollAt = Date.now(); poll(); } else lpAbort(); });   // poll() cancels a stale wait and restarts the long poll after it
   setInterval(() => { if (ST) { renderLeft(); renderTool(); } document.querySelectorAll(".m-typing[data-until]").forEach(b => { if (b.dataset.until && Date.now() > +b.dataset.until) b.remove(); }); }, 60000);   // t-typing-fix: stale typing dots go even without a poll change
 })();
 

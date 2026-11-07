@@ -1151,6 +1151,8 @@ def slim_state(st):
             it.pop("versions", None)
             it.pop("draft", None)
             it["slim"] = 1
+    if "logs" not in st:   # ri1105-P4: trim_state already took the logs out
+        return st
     logs = st.get("logs") or []
     keep, per = set(range(max(0, len(logs) - SLIM_LOGS), len(logs))), {}
     for i, l in enumerate(logs):
@@ -1244,7 +1246,45 @@ def public_state(slim=False):
     st["meta"]["routines"] = routines_view(st["meta"], items=st.get("items"))
     st["meta"]["report_time"] = str(CONFIG.get("report_time", "18:00"))   # ri1103-P1: the 日报 row of 今日日程
     st["meta"]["media_v"] = 1   # t-voice-memo: this server transcribes (the page hides 转写/重试 on older servers)
+    trim_state(st)
     return slim_state(st) if slim else st
+
+
+# ri1105-P4: a poll carries the newest CHAT_KEEP manager-chat messages, the newest MAIL_KEEP letters plus every unread one, and no logs.
+# meta.trim says what was left out: chat = [index of the first message sent, total], mail = [total, sent]. The page asks /api/history
+# for the rest (加载更早 past the window, the log tab, older letters under a filter, ⌘K over old chat). meta.mail_unread = the true count.
+CHAT_KEEP, MAIL_KEEP = 200, 300
+
+
+def trim_state(st):
+    chat, mail = st.get("chat") or [], st.get("mail") or []
+    base = max(0, len(chat) - CHAT_KEEP)
+    st["chat"] = chat[base:]
+    cut = max(0, len(mail) - MAIL_KEEP)
+    st["mail"] = [m for i, m in enumerate(mail) if i >= cut or not m.get("read")]
+    st["meta"]["mail_unread"] = sum(1 for m in mail if not m.get("read"))
+    st["meta"]["trim"] = {"chat": [base, len(chat)], "mail": [len(mail), len(st["mail"])], "logs": len(st.get("logs") or [])}
+    st.pop("logs", None)
+    return st
+
+
+def history(q):
+    """ri1105-P4 /api/history?k=chat&end=<index>&n=<count> | k=mail (letters a poll leaves out) | k=logs[&agent=<id>]"""
+    st, k = S.read(), q.get("k", [""])[0]
+    if k == "chat":
+        chat = st.get("chat") or []
+        end = min(len(chat), max(0, int(q.get("end", [len(chat)])[0] or 0)))
+        n = max(1, min(int(q.get("n", ["200"])[0] or 200), len(chat) or 1))
+        start = max(0, end - n)
+        return {"k": "chat", "start": start, "list": chat[start:end], "total": len(chat)}
+    if k == "mail":
+        mail = st.get("mail") or []
+        cut = max(0, len(mail) - MAIL_KEEP)
+        return {"k": "mail", "list": [m for m in mail[:cut] if m.get("read")], "total": len(mail)}
+    if k == "logs":
+        logs, ag = st.get("logs") or [], q.get("agent", [""])[0]
+        return {"k": "logs", "list": [l for l in logs if not ag or l.get("agent") == ag][-400:], "total": len(logs), "rev": st["meta"].get("rev")}
+    raise ValueError("k must be chat, mail or logs")
 
 
 def _unacked_count():
@@ -1253,6 +1293,8 @@ def _unacked_count():
 
 
 GZ_MIN = 2048
+KEEPALIVE_IDLE = 15   # ri1105-P2: idle seconds a kept-alive connection may wait for its next request
+_GZC, _GZL, _SV = {}, threading.Lock(), {}   # ri1105-P2: static gzip cache (path -> etag, raw, gz); (path, ?v=) -> file version seen
 
 
 def _gz_type(ctype):
@@ -1262,10 +1304,39 @@ def _gz_type(ctype):
 
 class H(BaseHTTPRequestHandler):
     server_version = "Underthread/1"
+    # ri1105-P2: HTTP/1.1 keep-alive. Every answer carries Content-Length (304 / HEAD carry no body). A connection may sit idle between
+    # requests for KEEPALIVE_IDLE s, then it is closed (a phone that holds a socket does not pin a thread forever). Reading a request body
+    # and writing an answer have no timeout, as before (big uploads / video). POSTs whose body was not read in full close the connection.
+    protocol_version = "HTTP/1.1"
 
     def log_message(self, fmt, *args):
         if os.environ.get("VERBOSE"):
             super().log_message(fmt, *args)
+
+    def handle_one_request(self):
+        self._sent = False
+        self._body_ok = False
+        try:
+            self.connection.settimeout(KEEPALIVE_IDLE)
+        except OSError:
+            pass
+        super().handle_one_request()
+
+    def parse_request(self):
+        ok = super().parse_request()
+        try:
+            self.connection.settimeout(None)
+        except OSError:
+            pass
+        self._body_ok = False
+        return ok
+
+    def _keep(self):
+        """False = close the connection after this answer (a POST body we did not read in full would be read as the next request)."""
+        if self.command == "POST" and not self._body_ok:
+            self.close_connection = True
+            return False
+        return True
 
     def _send(self, code, body, ctype="application/json; charset=utf-8", extra=None):
         if isinstance(body, (dict, list)):
@@ -1275,18 +1346,61 @@ class H(BaseHTTPRequestHandler):
         enc = None
         if (len(body) >= GZ_MIN and _gz_type(ctype) and "gzip" in (self.headers.get("Accept-Encoding") or "")
                 and not self.path.startswith("/api/voice/") and not (extra or {}).get("Content-Encoding")):
-            body, enc = gzip.compress(body, 5), "gzip"   # t-mobile-crash-state: /api/state 2.5 MB -> ~0.7 MB; JS/CSS too (they are no-store)
+            body, enc = gzip.compress(body, 5), "gzip"   # t-mobile-crash-state: /api/state 2.5 MB -> ~0.7 MB
+        self._sent = True
         self.send_response(code)
         self.send_header("Content-Type", ctype)
         self.send_header("Content-Length", str(len(body)))
-        self.send_header("Cache-Control", "no-store")
+        if not (extra or {}).get("Cache-Control"):
+            self.send_header("Cache-Control", "no-store")
         if enc:
             self.send_header("Content-Encoding", enc)
             self.send_header("Vary", "Accept-Encoding")
         for k, v in (extra or {}).items():
             self.send_header(k, v)
+        if not self._keep():
+            self.send_header("Connection", "close")
         self.end_headers()
-        self.wfile.write(body)
+        if self.command != "HEAD":   # ri1105-P2: on a kept-alive connection a HEAD body would be read as the next answer
+            self.wfile.write(body)
+
+    def _static(self, path, ctype, extra):
+        """ri1105-P2: web/ files. A ?v= js / css / font never changes under the same URL (every edit bumps ?v=): cached for a year, immutable.
+        Everything else (images, ?v= images too, files without ?v=): ETag + 304. index.html and sw.js stay no-store (their own routes).
+        Gzip is done once per file version and kept in memory."""
+        st = os.stat(path)
+        etag = '"%x-%x"' % (st.st_mtime_ns // 1000, st.st_size)
+        v = parse_qs(urlparse(self.path).query).get("v", [""])[0]
+        imm = bool(v) and path.endswith((".js", ".css", ".woff2", ".woff"))
+        if imm:
+            k, sig = (path, v), (st.st_mtime_ns, st.st_size)
+            old = _SV.setdefault(k, sig)
+            if old != sig:   # the file changed but the URL did not: browsers that cached it keep the old copy
+                print(f"[{S.now()}] static: {os.path.relpath(path, WEB)} changed under the same ?v={v} — bump ?v= in index.html", flush=True)
+                _SV[k] = sig
+        hdr = {"ETag": etag, "Cache-Control": "public, max-age=31536000, immutable" if imm else "no-cache"}
+        hdr.update(extra or {})
+        if self.headers.get("If-None-Match") == etag:
+            self._sent = True
+            self.send_response(304)
+            for k2, v2 in hdr.items():
+                self.send_header(k2, v2)
+            self.send_header("Content-Length", "0")
+            self.end_headers()
+            return
+        gz = "gzip" in (self.headers.get("Accept-Encoding") or "") and _gz_type(ctype) and st.st_size >= GZ_MIN
+        with _GZL:
+            c = _GZC.get(path)
+        if not c or c[0] != etag:
+            with open(path, "rb") as f:
+                raw = f.read()
+            c = (etag, raw, gzip.compress(raw, 6) if _gz_type(ctype) and len(raw) >= GZ_MIN else None)
+            with _GZL:
+                _GZC[path] = c
+        if gz and c[2] is not None:
+            hdr.update({"Content-Encoding": "gzip", "Vary": "Accept-Encoding"})
+            return self._send(200, c[2], ctype, hdr)
+        return self._send(200, c[1], ctype, hdr)
 
     def _file(self, path, extra=None, media=False):
         """Serve a file. media=True (uploads/work/avatars): Range/206, ETag/304, streamed in 64KB chunks."""
@@ -1295,9 +1409,12 @@ class H(BaseHTTPRequestHandler):
         ctype = "application/manifest+json" if path.endswith(".webmanifest") else (mimetypes.guess_type(path)[0] or "application/octet-stream")
         if ctype.startswith("text/") or ctype in ("application/javascript",):
             ctype += "; charset=utf-8"
+        if media == "static":
+            return self._static(path, ctype, extra)
         if not media:
             with open(path, "rb") as f:
                 return self._send(200, f.read(), ctype, extra)
+        self._sent = True
         st = os.stat(path)
         size = st.st_size
         etag = '"%x-%x"' % (int(st.st_mtime), size)
@@ -1423,6 +1540,20 @@ class H(BaseHTTPRequestHandler):
                 return self._file(os.path.join(WEB, "index.html"))
             if u.path == "/api/state":   # t-perf B: cached rev / body (see public_state_cached)
                 rev, un = rev_unacked()
+                # ri1105-P5: ?wait=N (<= 25) holds a "same" answer until rev or the inbox count moves, checked every 0.1 s (stat calls only:
+                # rev_unacked re-reads only when state.json / inbox.jsonl changed). The cached body moves every minute; rev does not.
+                try:
+                    wait = min(25.0, max(0.0, float(q.get("wait", ["0"])[0] or 0)))
+                except ValueError:
+                    wait = 0.0
+                if wait and q.get("rev", [""])[0] == str(rev):
+                    t_end = time.monotonic() + wait
+                    while time.monotonic() < t_end:
+                        time.sleep(0.1)
+                        r2, u2 = rev_unacked()
+                        if (r2, u2) != (rev, un):
+                            rev, un = r2, u2
+                            break
                 if q.get("rev", [""])[0] == str(rev):
                     return self._send(200, {"same": True, "meta": {"comfy": _comfy, "server_time": S.now(), "inbox_unacked": un}})
                 _, raw, gzb = public_state_cached(q.get("slim", [""])[0] == "1")
@@ -1433,6 +1564,8 @@ class H(BaseHTTPRequestHandler):
                 if "gzip" in (self.headers.get("Accept-Encoding") or ""):
                     return self._send(200, archive_body(True), extra={"Content-Encoding": "gzip", "Vary": "Accept-Encoding"})
                 return self._send(200, archive_body(False))
+            if u.path == "/api/history":   # ri1105-P4: what a poll leaves out (chat before the window, older letters, logs)
+                return self._send(200, history(q))
             if u.path == "/api/item":   # t-mobile-crash-state: the full card (draft + versions) for a slim one
                 it = public_item(q.get("id", [""])[0])
                 return self._send(200, it) if it else self._send(404, {"error": "no such item"})
@@ -1477,9 +1610,15 @@ class H(BaseHTTPRequestHandler):
                     p = self._safe(base, unquote(u.path[len(prefix):]))   # t-voice-memo: %-encoded names (新录音_12.m4a) 404ed before
                     if not p:
                         return self._send(403, {"error": "forbidden"})
-                    return self._file(p, media=prefix != "/static/")
+                    return self._file(p, media="static" if prefix == "/static/" else True)
             self._send(404, {"error": "not found"})
+        except (BrokenPipeError, ConnectionResetError, ConnectionAbortedError):
+            self.close_connection = True
         except Exception as e:
+            if self._sent:   # ri1105-P2: an answer is already on the wire; a second one would corrupt the kept-alive stream
+                self.close_connection = True
+                print("GET after send:", u.path, repr(e))
+                return
             self._send(400, {"error": str(e)})
 
     def _gh_post(self, n):
@@ -1547,6 +1686,7 @@ class H(BaseHTTPRequestHandler):
             if u.path == "/api/secret/github":   # t-dash-token: own body read + own error handling (the generic one echoes repr(e))
                 return self._gh_post(n)
             body = json.loads(self.rfile.read(n) or b"{}")
+            self._body_ok = True   # ri1105-P2: the whole body is read, this connection can stay open
             if u.path == "/api/action":
                 return self._send(200, act(body))
             if u.path == "/api/push/subscribe":
