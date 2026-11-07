@@ -819,7 +819,7 @@
   // "me" avatar: avatars/me.(png|jpg|webp|gif) if the user has added one (server lists it in meta.avatars), else a house-style placeholder tile
   function meAv() {
     const f = (App.ST.meta.avatars || {}).me;
-    if (f) return `<span class="av m-meav" style="background-image:url('/avatars/${encodeURIComponent(f)}')"></span>`;
+    if (f) return `<span class="av m-meav" style="background-image:url('${App.avatarUrl({ id: "me" })}')"></span>`;
     const o = App.ST.meta.owner, ch = o && !o.startsWith("<") ? [...o.trim()][0] : (en() ? "Me" : "我");
     return `<span class="av m-meav ph"><b>${esc(ch)}</b></span>`;
   }

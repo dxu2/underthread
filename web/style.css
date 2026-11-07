@@ -2595,6 +2595,7 @@ html[data-theme="light"] .brand img.wm-l, html[data-theme="white"] .brand img.wm
 .sy-pill.down { background: color-mix(in srgb, var(--urgent) 14%, transparent); }
 .sy-pill.down .sy-k { color: var(--urgent); font-weight: 600; }
 .sy-pill.down .sy-dot { background: var(--urgent); }
+.sy-pill.snap .sy-dot { background: var(--warn); }   /* ri1105-P3: showing the IndexedDB snapshot until the first poll answers */
 .sy-pill.back .sy-dot { animation: sy-back .9s ease-out 1; }
 @keyframes sy-back { 0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--ok) 70%, transparent); } 100% { box-shadow: 0 0 0 9px transparent; } }
 .sy-pop { position: absolute; top: calc(100% + 10px); left: 0; z-index: 60; min-width: 270px; padding: 12px 14px; border-radius: 14px; background: var(--bg); border: 1px solid var(--line2);

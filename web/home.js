@@ -64,7 +64,7 @@
   function panel(a, i) {
     const nm = A().aname(a);
     return `<div class="dp" role="button" tabindex="0" data-id="${a.id}" data-hd-pick="${a.id}" style="--i:${i};--tint:var(--c-${a.id}, var(--accent))">
-      <i class="dp-edge"></i><div class="dp-art"><i class="dp-img" style="background-image:url('${esc(A().avatarUrl(a))}'); --ph:${(i * 0.7).toFixed(1)}s"></i></div>
+      <i class="dp-edge"></i><div class="dp-art"><i class="dp-img" style="background-image:url('${esc(A().avatarUrl(a, 1))}'); --ph:${(i * 0.7).toFixed(1)}s"></i></div>
       <span class="dp-vn">${esc(nm)}</span><i class="dp-un"></i><span class="dp-rg"><i></i></span>
       <div class="dp-info"><div class="n"><b>${esc(nm)}</b><span class="hd-st"></span></div><div class="rl">${esc(A().atitle(a))}</div>
         <div class="dp-t"><span></span>${CHEV}</div><div class="dp-m"><em></em><i class="dp-bar"><u></u></i></div></div>

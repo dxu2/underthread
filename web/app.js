@@ -172,9 +172,27 @@
   const aname = a => (UI.lang === "en" ? a.name_en : a.name) || a.name || a.id;
   const atitle = a => (UI.lang === "en" ? a.title_en : a.title) || a.title || "";
   const aduty = a => (UI.lang === "en" ? a.duty_en : a.duty) || a.duty || "";
-  function avatarUrl(a) {
+  /* ri1105-P1: small WebP copies from tools/avatar_sizes.py (avatars/_s/, 160 px for round avatars, 512 px for big art slots). Used only while
+     avatars/_s/index.json names the same file with the same ETag as the original; one HEAD per avatar per session checks that, so a replaced
+     avatar falls back to its original until the script runs again. The manifest is kept in localStorage so a cold start picks the small files at once. */
+  const AVS = { m: (() => { try { return JSON.parse(localStorage.getItem("rt.avs") || "null"); } catch (_) { return null; } })(), bad: new Set(), chk: false };
+  AVS.ready = fetch("/avatars/_s/index.json", { cache: "no-cache" }).then(r => r.ok ? r.json() : null).catch(() => null).then(m => {
+    const was = JSON.stringify(AVS.m); AVS.m = m && typeof m === "object" ? m : null;
+    try { if (AVS.m) localStorage.setItem("rt.avs", JSON.stringify(AVS.m)); else localStorage.removeItem("rt.avs"); } catch (_) { }
+    if (ST && JSON.stringify(AVS.m) !== was) render();
+  });
+  function avsCheck() {   // once per session: does each original still match the manifest? (HEAD = headers only)
+    if (AVS.chk || !AVS.m || !ST) return; AVS.chk = true;
+    const run = () => Object.entries(ST.meta.avatars || {}).forEach(([id, f]) => { const m = AVS.m[id]; if (!m || m.src !== f) return;
+      fetch(`/avatars/${encodeURIComponent(f)}`, { method: "HEAD", cache: "no-cache" }).then(r => { if (r.ok && r.headers.get("ETag") && r.headers.get("ETag") !== m.etag) { AVS.bad.add(id); render(); } }).catch(() => { }); });
+    (window.requestIdleCallback || (f => setTimeout(f, 1500)))(run);
+  }
+  function avatarUrl(a, big) {
     const f = ST.meta.avatars && ST.meta.avatars[a.id];
-    return f ? `/avatars/${encodeURIComponent(f)}` : Office.avatar(a);
+    if (!f) return Office.avatar(a);
+    const m = AVS.m && AVS.m[a.id];
+    if (m && m.src === f && !AVS.bad.has(a.id)) return `/avatars/_s/${encodeURIComponent(a.id)}-${big ? 512 : 160}.webp?${encodeURIComponent(m.etag.replace(/"/g, ""))}`;
+    return `/avatars/${encodeURIComponent(f)}`;
   }
   // t-m2-a ⓪ (L-1029-a669): while RING1 is a Set, a working agent keeps its ring on ONE avatar only (the first av() call for it); later ones are drawn idle.
   // A list that calls av() per row renders inside ringOnce(), newest row first, so the ring lands on the newest row (DM threads do the same by index).
@@ -642,12 +660,37 @@
   }
   // t-m2-a ③: the cold-start skeleton (index.html #boot-sk, phone only) goes as soon as the first poll answers or fails
   function bootDone() { const b = document.getElementById("boot-sk"); if (b) b.remove(); }
+  /* ri1105-P3: open with content. Every full /api/state answer is kept (raw text, when the page is idle) in IndexedDB rt-snap; a cold start draws
+     the last one at once while the first poll runs, and the sync pill says 「同步中 · 上次 N 分钟前」 until it answers. Display only: clicks still go
+     to the server as usual, nothing is queued offline. Snapshots older than 24 h are not used. Phone (slim) and desktop keep separate keys. */
+  const SNAP = { key: () => "state" + (MOBQ.matches ? "-slim" : ""), max: 24 * 3600e3 };
+  function snapDb() {
+    return SNAP.db || (SNAP.db = new Promise((ok, no) => { const q = indexedDB.open("rt-snap", 1); q.onupgradeneeded = () => q.result.createObjectStore("s"); q.onsuccess = () => ok(q.result); q.onerror = () => no(q.error); }).catch(() => null));
+  }
+  function snapSave(txt) {
+    if (!window.indexedDB || !txt) return;
+    clearTimeout(SNAP.t); SNAP.t = setTimeout(() => (window.requestIdleCallback || (f => setTimeout(f, 50)))(() => snapDb().then(db => { if (!db) return;
+      try { db.transaction("s", "readwrite").objectStore("s").put({ t: Date.now(), txt }, SNAP.key()); } catch (_) { } })), 3000);
+  }
+  function snapLoad() {
+    if (!window.indexedDB) return Promise.resolve(null);
+    return snapDb().then(db => db && new Promise(ok => { try { const q = db.transaction("s").objectStore("s").get(SNAP.key()); q.onsuccess = () => ok(q.result || null); q.onerror = () => ok(null); } catch (_) { ok(null); } }));
+  }
+  async function snapBoot() {
+    const v = await Promise.race([snapLoad().catch(() => null), new Promise(ok => setTimeout(() => ok(null), 800))]);
+    if (ST || !v || !v.txt || Date.now() - v.t > SNAP.max) return;
+    await Promise.race([AVS.ready, new Promise(ok => setTimeout(ok, 300))]);
+    if (ST) return;
+    try { const j = JSON.parse(v.txt); UI.snap = v.t; poll.entered = 1; ST = j; rehydrate(); archMerge(); render(); bootDone(); syncPaint(); window.FX && FX.enter($("#pagebody")); }
+    catch (e) { console.error("snapshot render failed", e); UI.snap = 0; ST = null; }
+  }
   // ---------- polling ----------
   async function poll(force) {
     try {
       const qs = [REV != null && !force ? `rev=${REV}` : "", MOBQ.matches ? "slim=1" : ""].filter(Boolean).join("&");   // t-mobile-crash-state
       const r = await fetch("/api/state" + (qs ? "?" + qs : ""));
-      var j = await r.json();
+      var txt = await r.text(), j = JSON.parse(txt);
+      if (!ST || UI.snap) await Promise.race([AVS.ready, new Promise(ok => setTimeout(ok, 400))]);   // ri1105-P1: first paint picks the small avatars
     } catch (e) {
       bootDone();
       UI.down = true; UI.fail = (UI.fail || 0) + 1;   // t-sync-pill: one miss can be a blip; syncPaint turns the pill red after 2 misses + 10 s
@@ -659,7 +702,10 @@
       const back = UI.down; UI.down = false;  // clear the "unreachable" banner as soon as the server answers again
       UI.fail = 0; UI.lastOk = Date.now(); if (j.same && ST && ST.meta) { ST.meta.comfy = j.meta.comfy; ST.meta.inbox_unacked = j.meta.inbox_unacked; syncPaint(); }   // a full state repaints via renderHeader
       if (j.same) { ST.meta.comfy = j.meta.comfy; ST.meta.inbox_unacked = j.meta.inbox_unacked; if (back || ++UI.tick % 12 === 0) renderChrome(); return; }
-      ST = j; REV = j.meta.rev; rehydrate(); archMerge(); try { doneMailRead(); } catch (_) { } render(); bootDone();
+      const wasSnap = UI.snap; UI.snap = 0;
+      ST = j; REV = j.meta.rev; rehydrate(); archMerge(); try { doneMailRead(); } catch (_) { } render(); bootDone(); avsCheck();
+      if (wasSnap) syncPaint();
+      snapSave(txt);
     } catch (e) {
       console.error("render failed", e);
       if (!poll.warned) { poll.warned = true; toast((UI.lang === "en" ? "Display error: " : "界面出错：") + e.message, true); }
@@ -889,8 +935,11 @@
     const off = en ? `${secs ? secs + " s without an answer · " : ""}retrying` : `${secs ? secs + " 秒没连上 · " : ""}自动重试中`;
     const pill = sy.querySelector(".sy-pill"), wasDown = pill.classList.contains("down");
     pill.classList.toggle("down", down);
-    set(".sy-k", down ? (en ? "Offline" : "断线") : (en ? "Synced" : "已同步"));
-    set(".sy-s", down ? off : "");
+    const snapMin = UI.snap ? Math.max(0, Math.round((Date.now() - UI.snap) / 60000)) : -1;
+    const snapTxt = snapMin < 0 ? "" : en ? `last ${snapMin ? snapMin + " min ago" : "just now"}` : `上次 ${snapMin ? snapMin + " 分钟前" : "刚刚"}`;
+    pill.classList.toggle("snap", snapMin >= 0 && !down);
+    set(".sy-k", down ? (en ? "Offline" : "断线") : snapMin >= 0 ? (en ? "Syncing" : "同步中") : (en ? "Synced" : "已同步"));
+    set(".sy-s", down ? off + (snapTxt ? " · " + (en ? "showing " : "显示的是") + snapTxt : "") : snapTxt);
     if (wasDown && !down) { pill.classList.remove("back"); void pill.offsetWidth; pill.classList.add("back"); }
     sy.setAttribute("aria-label", down ? `${en ? "Offline" : "断线"} · ${off}` : (en ? "Synced · details" : "已同步 · 查看详情"));
     const L = en ? { c: "Connection", d: "Last change", n: "Next", t: "Team", i: "Inbox" } : { c: "连接", d: "数据最后变动", n: "下一个", t: "团队", i: "收件箱" };
@@ -908,8 +957,9 @@
     // phone: a strip under the header, only while disconnected
     let nb = document.getElementById("net-off");
     if (down && !nb) { nb = document.createElement("div"); nb.id = "net-off"; nb.setAttribute("role", "status"); nb.innerHTML = `<i aria-hidden="true"></i><span></span>`; document.body.appendChild(nb); }
-    if (nb) nb.querySelector("span").textContent = `${en ? "Offline" : "断线"} · ${off}`;
-    if (down) R.dataset.net = "off"; else delete R.dataset.net;
+    if (!down && snapMin >= 0 && !nb) { nb = document.createElement("div"); nb.id = "net-off"; nb.setAttribute("role", "status"); nb.innerHTML = `<i aria-hidden="true"></i><span></span>`; document.body.appendChild(nb); }
+    if (nb) nb.querySelector("span").textContent = down ? `${en ? "Offline" : "断线"} · ${off}${snapTxt ? " · " + snapTxt : ""}` : snapMin >= 0 ? `${en ? "Syncing" : "同步中"} · ${snapTxt}` : "";
+    if (down) R.dataset.net = "off"; else if (snapMin >= 0) R.dataset.net = "snap"; else delete R.dataset.net;
     clearTimeout(syncPaint.t); if (down || UI.fail) syncPaint.t = setTimeout(syncPaint, 1000);   // the seconds keep counting while offline
   }
   function renderHeader() {
@@ -3422,7 +3472,7 @@
   }
   function deskMeAv() {
     const f = (ST.meta.avatars || {}).me;
-    if (f) return `<span class="av m-meav" style="background-image:url('/avatars/${encodeURIComponent(f)}')"></span>`;
+    if (f) return `<span class="av m-meav" style="background-image:url('${avatarUrl({ id: "me" })}')"></span>`;
     const o = ST.meta.owner, ch = o && !o.startsWith("<") ? [...o.trim()][0] : (UI.lang === "en" ? "Me" : "我");
     return `<span class="av m-meav ph"><b>${esc(ch)}</b></span>`;
   }
@@ -3924,8 +3974,9 @@
   if (H.get("fold")) UI.chatFold = H.get("fold") === "1";
   document.documentElement.dataset.theme = UI.theme;
   // t-visual-ink: empty-state line art slot (--es-<key> + html.es-art). The open-source build ships no art, so the empty states stay typographic.
+  snapBoot();
   poll(true).then(() => {
-    window.FX && FX.enter($("#pagebody"));
+    if (!poll.entered) window.FX && FX.enter($("#pagebody"));
     if (H.get("item") || H.get("dm") || H.get("rep") || H.get("push")) { const r = route(H, "cold"); document.dispatchEvent(new CustomEvent("rt:routed", { detail: { via: "cold", result: r, push: H.get("push") } })); }
   });
   /* t-power-save: a hidden tab polls every 30 s instead of 2.5 s, and refreshes once the moment it is visible again */

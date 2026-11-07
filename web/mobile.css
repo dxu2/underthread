@@ -1731,3 +1731,10 @@ html[data-net="off"] #net-off { display: flex; position: fixed; z-index: 70; lef
 html[data-net="off"] #net-off i { flex: none; width: 7px; height: 7px; border-radius: 50%; background: var(--urgent); }
 @keyframes net-in { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: none; } }
 @media (prefers-reduced-motion: reduce) { html[data-net="off"] #net-off { animation: none; } }
+/* ri1105-P3: the same pill says 「同步中 · 上次 N 分钟前」 while the page shows its IndexedDB snapshot (amber, not red) */
+html[data-net="snap"] #net-off { display: flex; position: fixed; z-index: 70; left: 50%; top: calc(env(safe-area-inset-top, 0px) + 58px); translate: -50% 0;
+  align-items: center; gap: 7px; height: 30px; padding: 0 14px 0 11px; border-radius: 999px; max-width: calc(100vw - 32px); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  background: var(--bg); color: var(--ink); font-size: var(--fs-12); border: 1px solid color-mix(in srgb, var(--warn) 45%, transparent); box-shadow: 0 6px 18px rgba(0, 0, 0, .25);
+  animation: net-in .28s cubic-bezier(.22, .8, .24, 1) both; pointer-events: none; }
+html[data-net="snap"] #net-off i { flex: none; width: 7px; height: 7px; border-radius: 50%; background: var(--warn); }
+@media (prefers-reduced-motion: reduce) { html[data-net="snap"] #net-off { animation: none; } }
