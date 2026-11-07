@@ -82,10 +82,14 @@
   // t-ri1103-p5: drafts (current + every older version) and card talk (thread messages / logs, no system events) are searched too.
   // Lower-cased copies are built once per state object (a poll that changes anything swaps App.ST), so a key press only runs indexOf.
   // Phone polls slim: a done card's drafts are not in the state until it is opened, so the phone only searches drafts of open cards.
-  const IX = { st: null, n: -1, drafts: [], talk: [], chats: null };
+  // t-perf A: archived cards (App.archList(), loaded once on the first search) are searched too; "rt-arch" re-runs an open search when they land.
+  const IX = { st: null, n: -1, drafts: [], talk: [], chats: null, ar: null };
+  // real = cards the server sent; archived = the loaded archive, else the archived cards already opened (_arch copies in ST.items)
+  const realItems = () => (App.ST.items || []).filter(i => !i._arch);
+  const archExtra = () => { const L = App.archList && App.archList(); if (!L) return (App.ST.items || []).filter(i => i._arch); const live = new Set(realItems().map(i => i.id)); return L.filter(i => !live.has(i.id)); };
   function index() {
-    const ST = App.ST, its = ST.items || [], n = its.reduce((k, it) => k + (it.draft ? 1 : 0) + (it.versions || []).length + (it.thread || []).length, 0);
-    if (IX.st === ST && IX.n === n) return IX;
+    const ST = App.ST, ar = App.archList ? App.archList() : null, its = realItems().concat(archExtra()), n = its.reduce((k, it) => k + (it.draft ? 1 : 0) + (it.versions || []).length + (it.thread || []).length, 0);
+    if (IX.st === ST && IX.n === n && IX.ar === ar) return IX;
     const ms = x => Date.parse(x) || 0, drafts = [], talk = [];
     for (const it of its) {
       (it.versions || []).forEach((v, i) => v.draft && drafts.push({ it, vkey: "v" + i, vn: i + 1, label: v.label, text: v.draft, lc: v.draft.toLowerCase(), t: v.t, who: it.owner }));
@@ -93,7 +97,7 @@
       (it.thread || []).forEach((m, i) => { if (m.kind !== "event" && m.text) talk.push({ it, ti: i, m, text: String(m.text), lc: String(m.text).toLowerCase(), t: m.t }); });
     }
     drafts.sort((a, b) => ms(b.t) - ms(a.t)); talk.sort((a, b) => ms(b.t) - ms(a.t));
-    Object.assign(IX, { st: ST, n, drafts, talk, chats: null });
+    Object.assign(IX, { st: ST, n, drafts, talk, chats: null, ar });
     return IX;
   }
   function chatIx() {   // every chat message, newest first (built lazily, same lifetime as the index)
@@ -112,9 +116,14 @@
     return { list: out, total };
   }
   function find(q, opt = {}) {
-    const items = App.items().slice().sort(App.byAct)
-      .filter(it => !q || [it.title, it.summary, it.id, (it.tags || []).join(" "), App.aname(App.agent(it.owner))].join(" ").toLowerCase().includes(q))
-      .slice(0, q ? (opt.items || 30) : (opt.recent || 8));
+    const hit = it => [it.title, it.summary, it.id, (it.tags || []).join(" "), App.aname(App.agent(it.owner))].join(" ").toLowerCase().includes(q);
+    let items = App.items().slice().sort(App.byAct).filter(it => !q || hit(it)).slice(0, q ? (opt.items || 30) : (opt.recent || 8));
+    if (q && App.archIx) {   // t-perf A: archived cards after the live ones (full cards once loaded, else the id / title index)
+      if (App.archAll) App.archAll();
+      const lim = opt.items || 30, seen = new Set(items.map(i => i.id));
+      const arch = App.archList() ? archExtra() : App.archIx().map(([id, title, owner, d]) => ({ id, title, owner, stage: "done", kind: "task", archived: true, updated: d }));
+      if (items.length < lim) items = items.concat(arch.filter(it => !seen.has(it.id) && hit(it)).sort((a, b) => String(b.updated || "").localeCompare(String(a.updated || ""))).slice(0, lim - items.length));
+    }
     const cap = opt.cap || 30;
     let convs = [], drafts = { list: [], total: 0 }, talk = { list: [], total: 0 }, chatN = 0;
     if (q) {
@@ -177,6 +186,7 @@
   function mark(scroll) {
     P.el.querySelectorAll("[data-pl]").forEach(r => { const on = +r.dataset.pl === P.sel; r.classList.toggle("on", on); r.setAttribute("aria-selected", on); if (on && scroll) r.scrollIntoView({ block: "nearest" }); });
   }
+  document.addEventListener("rt-arch", () => { if (P.el && !P.el.hidden && P.q) render(); });   // t-perf A
   function render() {
     const zh = !en(), R = find(P.q, { items: 8, recent: 6 }), q = P.q, tab = q ? P.tab : "all", all = tab === "all";
     P.rows = []; let html = "";

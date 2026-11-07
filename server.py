@@ -939,7 +939,7 @@ def act(body):
             if not r and it is not None and not body.get("routine"):
                 # t-routine-detect: a standing card with no server timer (按需常驻, e.g. t-oss-sync): paused by item. Same test as app.js routineOf:
                 # ongoing, in doing, not a child card (no tag naming another card). The manager skips a card with it["paused"].
-                child = any(t != it["id"] and S.find_item(st, t) for t in it.get("tags") or [])
+                child = any(t != it["id"] and S.find_item(st, t, restore=False) for t in it.get("tags") or [])
                 if it.get("category") != "ongoing" or it.get("stage") != "doing" or child:
                     raise ValueError(f"not a standing card {it['id']}")
                 if k == "routine_pause":
@@ -1165,7 +1165,68 @@ def public_item(iid):
     for it in S.read().get("items", []):
         if it.get("id") == iid:
             return it
-    return None
+    # t-perf A: an archived card comes with its archived parent / sub-cards, so the detail can draw the family
+    arch = archive_cached()["items"]
+    it = next((i for i in arch if i.get("id") == iid), None)
+    if not it:
+        return None
+    return dict(it, archived_store=1, family=[i for i in S.archive_family(arch, iid) if i.get("id") != iid])
+
+
+# ---------- t-perf B: nothing is re-read or re-encoded unless a file it comes from changed ----------
+# A poll used to read state.json twice (public_state + _unacked_count, ~43 ms for a "same") and json-encode + gzip the whole state for
+# every client (~75 ms). Now: rev + unacked count are cached by the (inode, mtime_ns, size) of state.json and inbox.jsonl; the encoded
+# body (raw + gzip) by those plus avatars/, archive.json, the 5090 probe and the minute (routines' next run moves with the clock).
+# state.json is only ever replaced with os.replace (stateutil._save), so a new inode / mtime always marks a new version.
+def _fsig(p):
+    try:
+        x = os.stat(p)
+        return (x.st_ino, x.st_mtime_ns, x.st_size)
+    except OSError:
+        return None
+
+
+_RV = {"sig": None, "rev": None, "un": 0}
+_PSC, _PSL = {}, threading.Lock()
+_AR = {"sig": None, "items": [], "body": None}
+
+
+def rev_unacked():
+    k = (_fsig(S.STATE), _fsig(S.INBOX))
+    if k != _RV["sig"]:
+        st = S.read()
+        acked = set(st["meta"].get("inbox_acked") or [])
+        un = sum(1 for e in S.inbox_all() if e["id"] not in acked)
+        _RV.update(sig=k, rev=st["meta"]["rev"], un=un)
+    return _RV["rev"], _RV["un"]
+
+
+def archive_cached():
+    sig = _fsig(S.ARCHIVE)
+    if sig != _AR["sig"]:
+        _AR.update(sig=sig, items=S.archive_load(), body=None)
+    return _AR
+
+
+def archive_body(gz):
+    """/api/archive: every archived card in full (search + 素材库 load it on demand), cached until archive.json or state.json changes."""
+    a, ssig = archive_cached(), _fsig(S.STATE)
+    if not a["body"] or a["body"][0] != ssig:
+        live = {i.get("id") for i in S.read().get("items", [])}
+        raw = json.dumps({"v": (a["sig"] or [0, 0])[1], "items": [i for i in a["items"] if i.get("id") not in live]}, ensure_ascii=False).encode()
+        a["body"] = (ssig, raw, gzip.compress(raw, 5))
+    return a["body"][2] if gz else a["body"][1]
+
+
+def public_state_cached(slim):
+    k = (_fsig(S.STATE), _fsig(S.INBOX), _fsig(AVATARS), _fsig(S.ARCHIVE), json.dumps(_comfy, sort_keys=True), dt.datetime.now().strftime("%Y-%m-%d %H:%M"))
+    with _PSL:
+        c = _PSC.get(slim)
+        if c and c[0] == k:
+            return c
+        raw = json.dumps(public_state(slim), ensure_ascii=False).encode()
+        c = _PSC[slim] = (k, raw, gzip.compress(raw, 5))
+        return c
 
 
 def public_state(slim=False):
@@ -1175,7 +1236,10 @@ def public_state(slim=False):
     st["meta"]["owner"] = (CONFIG.get("owner") or {}).get("display_name", "")
     st["meta"]["avatars"] = {f.rsplit(".", 1)[0]: f for f in sorted(os.listdir(AVATARS))
                              if f.lower().endswith((".png", ".jpg", ".jpeg", ".webp", ".gif"))}
-    st["meta"]["inbox_unacked"] = _unacked_count()
+    st["meta"]["inbox_unacked"] = rev_unacked()[1]
+    a, live = archive_cached(), {i.get("id") for i in st.get("items", [])}
+    ix = [[i.get("id"), i.get("title", ""), i.get("owner", ""), str(i.get("closed") or i.get("updated") or "")[:10]] for i in a["items"] if i.get("id") not in live]
+    st["meta"]["archive"] = {"n": len(ix), "v": (a["sig"] or [0, 0])[1], "ix": ix}   # t-perf A: id chips, title search, deep links know archived cards
     st["meta"]["server_time"] = S.now()
     st["meta"]["routines"] = routines_view(st["meta"], items=st.get("items"))
     st["meta"]["report_time"] = str(CONFIG.get("report_time", "18:00"))   # ri1103-P1: the 日报 row of 今日日程
@@ -1357,12 +1421,18 @@ class H(BaseHTTPRequestHandler):
                 return self._send(200, push_history(q.get("endpoint", [""])[0]))
             if u.path in ("/", "/index.html"):
                 return self._file(os.path.join(WEB, "index.html"))
-            if u.path == "/api/state":
-                st = public_state(q.get("slim", [""])[0] == "1")
-                if q.get("rev", [""])[0] == str(st["meta"]["rev"]):
-                    return self._send(200, {"same": True, "meta": {"comfy": _comfy, "server_time": S.now(),
-                                                                      "inbox_unacked": st["meta"]["inbox_unacked"]}})
-                return self._send(200, st)
+            if u.path == "/api/state":   # t-perf B: cached rev / body (see public_state_cached)
+                rev, un = rev_unacked()
+                if q.get("rev", [""])[0] == str(rev):
+                    return self._send(200, {"same": True, "meta": {"comfy": _comfy, "server_time": S.now(), "inbox_unacked": un}})
+                _, raw, gzb = public_state_cached(q.get("slim", [""])[0] == "1")
+                if "gzip" in (self.headers.get("Accept-Encoding") or ""):
+                    return self._send(200, gzb, extra={"Content-Encoding": "gzip", "Vary": "Accept-Encoding"})
+                return self._send(200, raw)
+            if u.path == "/api/archive":   # t-perf A
+                if "gzip" in (self.headers.get("Accept-Encoding") or ""):
+                    return self._send(200, archive_body(True), extra={"Content-Encoding": "gzip", "Vary": "Accept-Encoding"})
+                return self._send(200, archive_body(False))
             if u.path == "/api/item":   # t-mobile-crash-state: the full card (draft + versions) for a slim one
                 it = public_item(q.get("id", [""])[0])
                 return self._send(200, it) if it else self._send(404, {"error": "no such item"})

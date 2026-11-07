@@ -609,6 +609,37 @@
       .then(f => { if (f) { FULL[id] = { updated: f.updated, draft: f.draft || "", versions: f.versions || [] }; rehydrate(); } return !!f; }, () => false)
       .finally(() => { delete FULLP[id]; }));
   }
+  // ---------- t-perf A: archived cards (done for 3+ days) are not in the poll. ST.meta.archive.ix = [[id, title, owner, date]] names them
+  // (id chips, title search, deep links). Opening one fetches it (+ its archived family) from /api/item; ARCH.got keeps those and every
+  // poll puts them back into ST.items, flagged archived (so no list shows them). Search and 素材库 load the whole archive once
+  // (/api/archive, refetched only when meta.archive.v changes) and fire "rt-arch" when it lands. A card you act on moves back on the server.
+  const ARCH = { got: {}, pend: {}, miss: {}, all: null, v: null, p: null };
+  const archIx = () => (ST && ST.meta && ST.meta.archive && ST.meta.archive.ix) || [];
+  const archKnown = id => archIx().some(x => x[0] === id);
+  const archTitle = id => { const x = archIx().find(x => x[0] === id); return x ? x[1] : ""; };
+  const archFlag = x => Object.assign(x, { archived: true, _arch: 1 });
+  function archMerge() {
+    const real = new Set(), mine = new Set();
+    for (const i of ST.items || []) (i._arch ? mine : real).add(i.id);
+    for (const id of Object.keys(ARCH.got)) { if (real.has(id)) { delete ARCH.got[id]; continue; } if (!mine.has(id)) ST.items.push(ARCH.got[id]); }   // back on the server = the server's copy wins
+  }
+  function archItem(id) {
+    if (ARCH.pend[id]) return ARCH.pend[id];
+    const keep = list => { list.forEach(x => { ARCH.got[x.id] = archFlag(x); }); archMerge(); return true; };
+    if (ARCH.all) { const f = ARCH.all.find(i => i.id === id); if (f) return Promise.resolve(keep([f, ...ARCH.all.filter(i => i.id !== id && ((f.tags || []).includes(i.id) || (i.tags || []).includes(id)))])); }
+    return (ARCH.pend[id] = fetch("/api/item?id=" + encodeURIComponent(id)).then(r => r.ok ? r.json() : null)
+      .then(f => { if (!f || !f.archived_store) return false; const fam = f.family || []; delete f.family; delete f.archived_store; return keep([f, ...fam]); }, () => false)
+      .finally(() => { delete ARCH.pend[id]; }));
+  }
+  function archAll() {
+    const v = ST && ST.meta && ST.meta.archive && ST.meta.archive.n ? ST.meta.archive.v : null;
+    if (!v) return Promise.resolve([]);
+    if (ARCH.all && ARCH.v === v) return Promise.resolve(ARCH.all);
+    return ARCH.p || (ARCH.p = fetch("/api/archive").then(r => r.json()).then(j => {
+      const have = new Set((ST.items || []).filter(i => !i._arch).map(i => i.id));
+      ARCH.all = (j.items || []).filter(i => !have.has(i.id)).map(archFlag); ARCH.v = v; document.dispatchEvent(new Event("rt-arch")); return ARCH.all;
+    }).catch(() => []).finally(() => { ARCH.p = null; }));
+  }
   // t-m2-a ③: the cold-start skeleton (index.html #boot-sk, phone only) goes as soon as the first poll answers or fails
   function bootDone() { const b = document.getElementById("boot-sk"); if (b) b.remove(); }
   // ---------- polling ----------
@@ -628,7 +659,7 @@
       const back = UI.down; UI.down = false;  // clear the "unreachable" banner as soon as the server answers again
       UI.fail = 0; UI.lastOk = Date.now(); if (j.same && ST && ST.meta) { ST.meta.comfy = j.meta.comfy; ST.meta.inbox_unacked = j.meta.inbox_unacked; syncPaint(); }   // a full state repaints via renderHeader
       if (j.same) { ST.meta.comfy = j.meta.comfy; ST.meta.inbox_unacked = j.meta.inbox_unacked; if (back || ++UI.tick % 12 === 0) renderChrome(); return; }
-      ST = j; REV = j.meta.rev; rehydrate(); try { doneMailRead(); } catch (_) { } render(); bootDone();
+      ST = j; REV = j.meta.rev; rehydrate(); archMerge(); try { doneMailRead(); } catch (_) { } render(); bootDone();
     } catch (e) {
       console.error("render failed", e);
       if (!poll.warned) { poll.warned = true; toast((UI.lang === "en" ? "Display error: " : "界面出错：") + e.message, true); }
@@ -1420,7 +1451,7 @@
     const m = g.last, it = m.item ? ST.items.find(i => i.id === m.item) : null, a = m.agent ? agent(m.agent) : null;
     const unread = g.ms.some(x => !x.read);
     return actRow({ attr: `data-mail="${m.id}" data-mailids="${g.ms.map(x => x.id).join(",")}"`, av: a ? av(a, "", m.item) : av("me"), ws: it ? workersOf(it.id) : [], unread,
-      name: a ? aname(a) : whoName("me"), title: it ? it.title : "", time: agoH(m.t), preview: REV_MAIL.test(m.text || "") && it ? cardLine(it) : mailPv(m.text, a),
+      name: a ? aname(a) : whoName("me"), title: it ? it.title : archTitle(m.item), time: agoH(m.t), preview: REV_MAIL.test(m.text || "") && it ? cardLine(it) : mailPv(m.text, a),
       chip: it ? rowLabel(it) : (m.kind === "reply" ? t("replies") : t("updates")), n: g.ms.length });
   }
   document.addEventListener("click", e => {
@@ -1937,7 +1968,8 @@
   const libUrl = p => "/" + p.split("/").map(encodeURIComponent).join("/");
   const libName = p => p.split("/").pop().replace(/^\d{8}-\d{6}-[0-9a-f]{4}-/, "");
   function libCollect() {
-    if (LIB.list && LIB.rev === REV) return LIB.list;
+    if (!ARCH.all || ARCH.v !== (ST.meta.archive || {}).v) archAll();   // t-perf A: archived cards' files arrive a moment later ("rt-arch")
+    if (LIB.list && LIB.rev === REV && LIB.av === ARCH.v) return LIB.list;
     const m = new Map();
     const add = (p, it, who, ms) => {
       if (typeof p !== "string" || !/^(uploads|work)\//.test(p) || /(^|\/)\.\.(\/|$)/.test(p)) return;
@@ -1947,16 +1979,18 @@
       if (!a) m.set(p, { p, kind: libKind(p), priv: libPriv(p), item: it, who, ms: ms || 0, n: 1 });
       else { a.n++; if (ms > a.ms) { a.ms = ms; a.item = it; a.who = who; } }   // shown under the card that used it last
     };
-    for (const it of ST.items || []) {
+    const live = new Set((ST.items || []).map(i => i.id));
+    for (const it of (ST.items || []).concat((ARCH.all || []).filter(i => !live.has(i.id)))) {
       const subs = (it.thread || []).filter(x => x.kind === "event" && /^提交审核/.test(x.text || "")).map(x => Date.parse(x.t)).filter(isFinite);
       const t0 = subs.length ? subs[0] : Date.parse(it.created) || 0, t1 = subs.length ? subs[subs.length - 1] : Date.parse(it.updated) || t0;
       for (const p of it.attachments || []) add(p, it, it.owner, t0);
       for (const p of it.draft_attachments || []) add(p, it, it.owner, t1);
       for (const x of it.thread || []) for (const p of x.attachments || []) add(p, it, x.who || it.owner, Date.parse(x.t) || t0);
     }
-    LIB.list = [...m.values()].sort((a, b) => b.ms - a.ms || a.p.localeCompare(b.p)); LIB.rev = REV;
+    LIB.list = [...m.values()].sort((a, b) => b.ms - a.ms || a.p.localeCompare(b.p)); LIB.rev = REV; LIB.av = ARCH.v;
     return LIB.list;
   }
+  document.addEventListener("rt-arch", () => { if (UI.page === "assets") renderPage(); });
   const libSig = L => L.length + "|" + L.map(a => a.p + ">" + a.item.id).join(",");
   function libFilter(L, skip) {
     const q = LIB.q.trim().toLowerCase();
@@ -2093,7 +2127,9 @@
 
   // ===== t-imp29-p5: card ids in messages / drafts render as chips (md.js calls md.ref), and a # card picker in the chat and detail composers.
   // Chips are deterministic HTML (no time-based styles), so a poll re-render of the chat produces the same markup. What gets sent is still the plain id.
-  const idcMap = () => { if (!idcMap.m || idcMap.rev !== REV) { idcMap.m = new Map(((ST && ST.items) || []).map(i => [i.id, i])); idcMap.rev = REV; } return idcMap.m; };
+  const idcMap = () => { if (!idcMap.m || idcMap.rev !== REV) { idcMap.m = new Map(((ST && ST.items) || []).map(i => [i.id, i]));
+    for (const [id, title, owner] of archIx()) if (!idcMap.m.has(id)) idcMap.m.set(id, { id, title, owner, stage: "done", archived: true });   // t-perf A
+    idcMap.rev = REV; } return idcMap.m; };
   md.ref = id => {
     if (!ST) return null; const it = idcMap().get(id); if (!it) return null;
     const a = it.owner && agent(it.owner), st = it.archived ? (UI.lang === "en" ? "archived" : "已归档") : rowLabel(it);
@@ -2222,7 +2258,7 @@
   function chatMailRead(id, upto) { const ids = chatMail(id).filter(m => !m.read && m.t <= upto).map(m => m.id); if (ids.length) nrRead(ids); }
   function itemMailRead(id) { const ids = (ST.mail || []).filter(m => !m.read && m.item === id).map(m => m.id); if (ids.length) nrRead(ids); }
   function doneMailRead() {
-    const done = new Set((ST.items || []).filter(i => i.stage === "done" || i.archived).map(i => i.id));
+    const done = new Set((ST.items || []).filter(i => i.stage === "done" || i.archived).map(i => i.id)); archIx().forEach(x => done.add(x[0]));   // t-perf A
     const ids = (ST.mail || []).filter(m => !m.read && m.item && done.has(m.item)).map(m => m.id); if (ids.length) nrRead(ids);
   }
   function nrRead(ids) { if (!ids.length) return; (ST.mail || []).forEach(m => { if (ids.includes(m.id)) m.read = true; }); api("mail_read", { ids }).catch(() => { }); }
@@ -2863,6 +2899,11 @@
     if (!first && annSelInDraft()) { ANN.deferred = true; return; }   // t-imp29-p2: a poll must not wipe the text you are selecting
     const it = (ST.items || []).find(i => i.id === UI.item);
     const dw = $("#drawer");
+    if (!it && UI.item && archKnown(UI.item) && !ARCH.miss[UI.item]) {   // t-perf A: an archived card, fetched on open
+      const id = UI.item, sc0 = $(".dw-scroll", dw); if (sc0 && !sc0.querySelector("[data-sk]")) sc0.innerHTML = skDraft();
+      archItem(id).then(ok => { if (UI.item !== id) return; if (ok) renderDrawer(true); else { ARCH.miss[id] = 1; closeItem(true); toast(UI.lang === "en" ? "Could not load this archived card" : "这张归档卡没加载出来", true); } });
+      return;
+    }
     if (!it) { closeItem(true); return; }
     if (it.slim) { fullItem(it.id).then(ok => { const n = (ST.items || []).find(i => i.id === it.id); if (ok && UI.item === it.id && n && !n.slim) renderDrawer(first);
       else if (!ok && UI.item === it.id) { const s = $("#drawer .dw-scroll [data-sk]"); if (s) s.outerHTML = `<div class="sk-fail">${UI.lang === "en" ? "Drafts did not load · close and reopen the card to retry" : "草稿没加载出来 · 关掉再打开这张卡重试"}</div>`; } }); if (!first) return; }   // t-mobile-crash-state: draft + versions arrive a moment later
@@ -3811,6 +3852,7 @@
     snoozed: it => snoozed(it), snzMenu: (id, anchor, done) => snzMenu(id, anchor, done), snzLine: () => snzLine(), snzText: it => snzText(it),   /* ri1103-P2 */
     usage: () => usage(), roleUsage: () => roleUsage(), ruHTML: (n, o) => ruHTML(n, o), fmtTok,   /* t-home-usage */
     themeMode: () => themeMode(), setTab: k => setTab(k),   /* t-settings-tab */
+    archAll: () => archAll(), archList: () => ARCH.all, archIx: () => archIx(),   /* t-perf A (palette.js search) */
   };
 
   // ---------- t-push-deeplink: one router for "go to this target" (cold-start hash, or a tapped notification while the app is open) ----------
@@ -3829,7 +3871,7 @@
     const kind = item ? "item" : dm ? "dm" : rep ? "rep" : page ? "page" : "";
     if (!kind) return "none";
     if (dm && !(ST && ST.agents && ST.agents[dm])) return "no-agent";
-    if (item && !(ST.items || []).some(i => i.id === item)) return "no-item";
+    if (item && !(ST.items || []).some(i => i.id === item) && !archKnown(item)) return "no-item";   // t-perf A: an archived card opens via /api/item
     if (MB.open) closeMailbox();
     if (rep) UI.openRep = rep;
     if (PHONE.matches && window.MRoute) { MRoute({ item, dm, page: rep ? "reports" : pid ? page : null }); return kind; }

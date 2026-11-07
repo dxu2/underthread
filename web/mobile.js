@@ -863,6 +863,7 @@
     $("input", el).placeholder = en() ? "Search items and chats" : "搜索条目和对话";
     searchRender(); renderBar();
   }
+  document.addEventListener("rt-arch", () => searchRender());   // t-perf A: archived cards finished loading (App.archAll)
   function searchRender() {
     const el = sEl(); if (!el || el.hidden && !document.body.classList.contains("msearch")) return;
     const q = sq, kindOf = it => it.kind === "task" ? "deliverable" : it.kind;

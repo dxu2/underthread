@@ -23,6 +23,7 @@ ROOT = os.path.dirname(os.path.abspath(__file__))
 STATE = os.path.join(ROOT, "state.json")
 STATE_LOCK = os.path.join(ROOT, ".state.lock")
 INBOX = os.path.join(ROOT, "inbox.jsonl")
+ARCHIVE = os.path.join(ROOT, "archive.json")   # t-perf A: done cards older than ARCHIVE_DAYS live here, out of every poll
 INBOX_LOCK = os.path.join(ROOT, ".inbox.lock")
 ROLES_DIR = os.path.join(ROOT, "roles")
 
@@ -80,17 +81,148 @@ def _save(st):
 
 @contextlib.contextmanager
 def mutate():
-    """Locked read-modify-write. Bumps meta.rev on exit."""
+    """Locked read-modify-write. Bumps meta.rev on exit.
+    t-perf A: find_item() inside a mutate may pull an archived card (and its family) back into st["items"]; the archive file
+    drops them only after state.json is saved. Once an hour the sweep moves done families older than ARCHIVE_DAYS out:
+    archive.json is written first, then state.json (a crash in between leaves a card in both; state wins, never lost)."""
     with open(STATE_LOCK, "a+") as lf:
         fcntl.flock(lf, fcntl.LOCK_EX)
         try:
             st = _load()
+            st["_mut"] = []   # ids restored from the archive during this mutate
             yield st
+            restored = st.pop("_mut", None) or []
+            archive_sweep(st)
             st["meta"]["rev"] = int(st["meta"].get("rev", 0)) + 1
             st["meta"]["updated"] = now()
             _save(st)
+            if restored:   # only now that state.json holds them
+                gone = set(restored)
+                archive_write([i for i in archive_load() if i.get("id") not in gone])
         finally:
             fcntl.flock(lf, fcntl.LOCK_UN)
+
+
+# ---------- t-perf A: archive of old done cards ----------
+# A card is archived when it is done and nothing on it (updated / activity / closed) moved for ARCHIVE_DAYS days, and only together with
+# its whole family (parent card via tags, sub-cards): a family with any live member stays in state.json. Nothing is deleted.
+# ARCHIVE_OFF=1 stops new archiving (restoring still works). `stateutil.py unarchive-all` puts everything back.
+ARCHIVE_DAYS = float(os.environ.get("ARCHIVE_DAYS", "3"))
+ARCHIVE_EVERY = 3600   # seconds between sweeps (meta.archive_at)
+
+
+def archive_load():
+    try:
+        with open(ARCHIVE, encoding="utf-8") as f:
+            return json.load(f).get("items") or []
+    except FileNotFoundError:
+        return []
+
+
+def archive_write(items):
+    tmp = ARCHIVE + ".tmp"
+    with open(tmp, "w", encoding="utf-8") as f:
+        json.dump({"items": items}, f, ensure_ascii=False, separators=(",", ":"))
+    os.replace(tmp, ARCHIVE)
+
+
+def _ts(v):
+    try:
+        t = dt.datetime.fromisoformat(str(v))
+        return t if t.tzinfo else t.astimezone()
+    except (TypeError, ValueError):
+        return None
+
+
+def _parent_id(it, ids):
+    for t in it.get("tags") or []:
+        if t != it.get("id") and t in ids:
+            return t
+    return None
+
+
+def archive_candidates(items, nowt=None, days=None):
+    """ids of the cards that may leave state.json now (whole families only)."""
+    nowt = nowt or dt.datetime.now().astimezone()
+    days = ARCHIVE_DAYS if days is None else days
+    ids = {i.get("id") for i in items}
+    def old(i):
+        if i.get("stage") != "done":
+            return False
+        ts = [t for t in (_ts(i.get("updated")), _ts(i.get("activity")), _ts(i.get("closed"))) if t]
+        return bool(ts) and (nowt - max(ts)).total_seconds() >= days * 86400
+    ok = {i["id"] for i in items if old(i)}
+    par = {i["id"]: _parent_id(i, ids) for i in items}
+    kids = {}
+    for c, p in par.items():
+        if p:
+            kids.setdefault(p, []).append(c)
+    changed = True
+    while changed:   # a member whose parent or any sub-card stays makes it stay too
+        changed = False
+        for i in list(ok):
+            if (par.get(i) and par[i] not in ok) or any(k not in ok for k in kids.get(i, [])):
+                ok.discard(i); changed = True
+    return ok
+
+
+def archive_sweep(st, force=False):
+    if os.environ.get("ARCHIVE_OFF"):
+        return []
+    nowt = dt.datetime.now().astimezone()
+    last = _ts(st["meta"].get("archive_at"))
+    if not force and last and (nowt - last).total_seconds() < ARCHIVE_EVERY:
+        return []
+    st["meta"]["archive_at"] = now()
+    ids = archive_candidates(st["items"], nowt)
+    if not ids:
+        return []
+    moved = [i for i in st["items"] if i["id"] in ids]
+    archive_write([i for i in archive_load() if i.get("id") not in ids] + moved)   # archive first, then the caller saves state
+    st["items"] = [i for i in st["items"] if i["id"] not in ids]
+    return moved
+
+
+def archive_find(item_id):
+    for it in archive_load():
+        if it.get("id") == item_id:
+            return it
+    return None
+
+
+def archive_family(arch, item_id):
+    """The archived cards connected to item_id through parent / sub-card links (the whole family, it included)."""
+    by = {i.get("id"): i for i in arch}
+    if item_id not in by:
+        return []
+    fam, grow = {item_id}, True
+    while grow:
+        grow = False
+        for i in arch:
+            iid = i.get("id")
+            if iid in fam:
+                ups = {t for t in i.get("tags") or [] if t != iid and t in by}
+            else:
+                ups = set()
+                if any(t in fam for t in i.get("tags") or [] if t != iid):
+                    fam.add(iid); grow = True
+            if ups - fam:
+                fam |= ups; grow = True
+    return [i for i in arch if i.get("id") in fam]
+
+
+def _restore(st, item_id):
+    """Inside mutate(): bring an archived card plus its whole archived family back into st["items"]."""
+    back = archive_family(archive_load(), item_id)
+    if not back:
+        return None
+    have = {i["id"] for i in st["items"]}
+    for i in back:
+        if i["id"] not in have:
+            i["activity"] = now()   # fresh again: it will not be swept back out for ARCHIVE_DAYS
+            st["items"].append(i)
+            st["_mut"].append(i["id"])
+    return next(i for i in st["items"] if i["id"] == item_id)
 
 
 def read():
@@ -205,11 +337,17 @@ def memo_followup(st, path):
     return None   # not sent yet: the send path (claim_transcripts) picks it up
 
 
-def find_item(st, item_id):
+def find_item(st, item_id, restore=True):
+    """t-perf A: a card that is not in state.json is looked up in archive.json. Inside mutate() (restore=True) it is moved back;
+    in a plain read() a copy is returned and nothing moves. restore=False never looks in the archive."""
     for it in st["items"]:
         if it["id"] == item_id:
             return it
-    return None
+    if not item_id or not restore:
+        return None
+    if isinstance(st.get("_mut"), list):
+        return _restore(st, item_id)
+    return archive_find(item_id)
 
 
 def upsert_item(st, fields, who="manager"):
@@ -491,6 +629,27 @@ def cmd_show(a):
     print(json.dumps(it, ensure_ascii=False, indent=1))
 
 
+def cmd_archive(a):   # t-perf A: sweep now / list / put everything back
+    if a.op == "list":
+        for it in archive_load():
+            print(f"{it['id']:<26} {str(it.get('closed') or it.get('updated'))[:16]}  {it.get('title', '')}")
+        return
+    with mutate() as st:
+        if a.op == "sweep":
+            st["meta"].pop("archive_at", None)
+            n0 = len(st["items"])
+            archive_sweep(st, force=True)
+            print(f"archived {n0 - len(st['items'])}, archive now {len(archive_load())}")
+        elif a.op == "unarchive-all":
+            have = {i["id"] for i in st["items"]}
+            back = [i for i in archive_load() if i.get("id") not in have]
+            st["items"].extend(back)
+            st["meta"]["archive_at"] = now()   # no sweep in this same write
+            print(f"restored {len(back)}")
+    if a.op == "unarchive-all":
+        archive_write([])
+
+
 def cmd_items(a):
     st = read()
     for it in st["items"]:
@@ -722,6 +881,7 @@ def main():
     s = sub.add_parser("show", help="print one item"); s.add_argument("id")
     s.add_argument("--full", action="store_true"); s.set_defaults(fn=cmd_show)
 
+    s = sub.add_parser("archive", help="t-perf A: sweep | list | unarchive-all"); s.add_argument("op", choices=["sweep", "list", "unarchive-all"]); s.set_defaults(fn=cmd_archive)
     s = sub.add_parser("items", help="list open items"); s.add_argument("--stage"); s.add_argument("--owner")
     s.add_argument("--all", action="store_true"); s.set_defaults(fn=cmd_items)
 
