@@ -2459,3 +2459,11 @@ html.th-vt::view-transition-old(root), html.th-vt::view-transition-new(root) { a
 /* t-power-save: idle pause (fx.js). After 20 s without input or when the window loses focus, fx.js marks every element running an infinite animation
    (data-ip: s = itself, b = ::before, a = ::after) and sets html[data-idle]; this pauses only those. Removing data-idle resumes them where they stopped. */
 html[data-idle] [data-ip~="s"], html[data-idle] [data-ip~="b"]::before, html[data-idle] [data-ip~="a"]::after { animation-play-state: paused !important; }
+
+/* t-power-toggle: 设置 › 省电模式 off (html[data-power="off"], fx.js stops going idle). The working-avatar breathe comes back with the exact pre-t-power-save values;
+   --wp keeps poll re-renders mid-cycle, and the reduced-motion rule near .av.working (animation: none !important) still wins. */
+@keyframes wk-breathe { 0%, 100% { scale: 1; } 50% { scale: 1.02; } }
+html[data-power="off"] .av.working, html[data-power="off"] .hd-mini.working { animation: wk-breathe var(--wk-breath) var(--wk-ease) var(--wp, 0s) infinite; }
+@keyframes st-swap { from { opacity: 0; transform: translateY(2px); } }
+[data-power-tog] .st-tx small.st-swap { animation: st-swap .26s var(--ease, ease-out); }
+@media (prefers-reduced-motion: reduce) { [data-power-tog] .st-tx small.st-swap { animation: none; } }

@@ -253,6 +253,6 @@ html[data-theme]:not([data-glass="0"]) .dw-toc .toc-bar i { background: linear-g
   html[data-theme]:not([data-glass="0"]) #team .team-i .st::before { content: none; }
   html[data-theme]:not([data-glass="0"]) #team .team-i .du, html[data-theme]:not([data-glass="0"]) #team .team-i:not(.busy) .du { display: block; margin-top: 1px; font-size: var(--fs-12); color: var(--dim); }
   html[data-theme]:not([data-glass="0"]) #team .team-i.busy .du { color: var(--ink2); }
-  html[data-theme]:not([data-glass="0"]) #team .av.working::before, html[data-theme]:not([data-glass="0"]) #team .av .aw { animation: none; }
+  html[data-theme]:not([data-glass="0"]):not([data-power="off"]) #team .av.working::before, html[data-theme]:not([data-glass="0"]):not([data-power="off"]) #team .av .aw { animation: none; }   /* t-power-toggle: with 省电模式 off the rail ring spins and the dot breathes again (the status-word blink stays gone, L-1104-0593) */
   html[data-theme]:not([data-glass="0"]) #team .av.working::after { animation: none; display: none; }
 }

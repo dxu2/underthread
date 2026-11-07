@@ -220,6 +220,8 @@
      Polls that re-render while idle bring fresh nodes; a MutationObserver marks those too. Any input removes data-idle and everything resumes in place.
      Voice-call rings (vc-*) are never paused. */
   const IDLE_MS = 20000;
+  /* t-power-toggle: 设置 › 省电模式 (rt.powerSave, default on). Off = never go idle and never pause; index.html sets html[data-power="off"] before first paint. */
+  const psOn = () => { try { return JSON.parse(localStorage.getItem("rt.powerSave")) !== false; } catch (_) { return true; } };
   const idle = { on: false, last: Date.now(), t: 0, q: 0, mo: null, held: new Set(), subs: [] };
   const isVc = (a, el) => (a.animationName || "").startsWith("vc-") || !!(el && el.closest && el.closest(".vc-pill, .vc-full, [data-noidle]"));
   function markAll() {
@@ -234,7 +236,7 @@
     }
   }
   function sleep() {
-    if (idle.on) return;
+    if (idle.on || !psOn()) return;
     idle.on = true; document.documentElement.dataset.idle = "1"; markAll();
     idle.subs.forEach(f => f(true));
     if (!window.MutationObserver) return;
@@ -251,6 +253,7 @@
   }
   function arm() {
     clearTimeout(idle.t);
+    if (!psOn()) return;
     idle.t = setTimeout(function chk() { const left = IDLE_MS - (Date.now() - idle.last); if (left > 50) idle.t = setTimeout(chk, left); else sleep(); }, IDLE_MS);
   }
   ["pointerdown", "pointermove", "keydown", "wheel", "touchstart"].forEach(t => addEventListener(t, wake, { passive: true, capture: true }));
@@ -258,8 +261,21 @@
   addEventListener("focus", wake);
   addEventListener("blur", () => setTimeout(() => { if (!document.hasFocus() && !(document.activeElement && document.activeElement.tagName === "IFRAME")) sleep(); }, 0));
   arm();
+  function power(on) {
+    on = on !== false;
+    try { localStorage.setItem("rt.powerSave", JSON.stringify(on)); } catch (_) { }
+    applyPower(on);
+  }
+  function applyPower(on) {
+    const R = document.documentElement;
+    if (on) { delete R.dataset.power; arm(); }
+    else { R.dataset.power = "off"; clearTimeout(idle.t); wake(); }
+    document.dispatchEvent(new Event("power:change"));
+  }
+  /* another tab on this device flipped the switch */
+  addEventListener("storage", e => { if (e.key === "rt.powerSave") applyPower(psOn()); });
 
   ambience(); pointerGlow();
   if (document.readyState === "loading") addEventListener("DOMContentLoaded", splash); else splash();
-  window.FX = { enter, rows, burst, titleCard, countUp, reduce, missionComplete, idle: { isOn: () => idle.on, sleep, wake } };
+  window.FX = { enter, rows, burst, titleCard, countUp, reduce, missionComplete, idle: { isOn: () => idle.on, sleep, wake }, power: { isOn: psOn, set: power } };
 })();

@@ -1538,6 +1538,7 @@
     const look = stRow(en ? "Theme" : "主题", (mode === "auto" ? (en ? "Auto follows your system light / dark setting." : "自动：跟着系统的深浅色走（Mac 和 iPhone 选「自动」外观时，会按日出日落切换）") : (en ? "Fixed on this device." : "手动：固定用选好的这一套，只在这台设备生效")) + now,
         stSeg("tmode", [["auto", "自动", "Auto"], ["dark", "夜", "Night"], ["white", "昼", "Day"]], mode === "auto" ? "auto" : cur, "data-tmode"), "", "div")
       + stRow(en ? "Stage background" : "舞台背景", en ? "Your terrace office behind everything; night / day follow the theme" : "你画的露台办公室做背景，夜 / 昼跟着上面的主题", stSw(!!R.dataset.stage), `data-stage-tog aria-pressed="${!!R.dataset.stage}"`)
+      + stRow(en ? "Power saving" : "省电模式", psSub(psNow()), stSw(psNow()), `data-power-tog aria-pressed="${psNow()}"`)
       + (MOBQ.matches ? "" : stRow(en ? "Home style" : "首页样式", en ? "This computer only" : "只在这台电脑生效", stSeg("homestyle", [["dense", "紧凑", "Dense"], ["widgets", "小组件", "Widgets"], ["app", "app 式", "App"], ["classic", "原来的", "Classic"]], UI.home, "data-home-set"), "", "div"))
       + stRow(en ? "Language" : "界面语言", "", stSeg("lang", [["zh", "中文", "中文"], ["en", "English", "English"]], UI.lang, "data-lang-set"), "", "div");
     const P = window.Push ? Push.status() : null;
@@ -1556,6 +1557,19 @@
       + stRow(en ? "Wake the manager" : "唤醒管家", en ? "Drops a ping in the inbox; use it when the manager is asleep or offline" : "往收件箱发一条 ping，管家休眠或离线时用", `<em class="st-go">›</em>`, `data-h="wake"`);
     return stSec(en ? "System" : "系统", rows) + `<section class="st-sec st-ru"><h4>${en ? "Usage by role · today" : "各角色用量 · 今天"}</h4>${ruHTML(99, { tot: true, quota: true })}</section>`;
   }
+  /* t-power-toggle: 省电模式 (rt.powerSave, kept by fx.js). The click flips the switch in place (no re-render) so the knob slide and the caption fade are seen. */
+  const psNow = () => !(window.FX && FX.power) || FX.power.isOn();
+  const psSub = on => UI.lang === "en"
+    ? (on ? "After 20 s without input, or when you switch away, looping animations pause; working avatars do not breathe" : "Looping animations always play, even when idle; working avatars breathe. Uses more power")
+    : (on ? "20 秒不操作或切到别的窗口，循环动画就暂停；工作中的头像不做呼吸缩放" : "循环动画一直播，闲置也不停，头像恢复呼吸缩放；更耗电");
+  document.addEventListener("click", e => {
+    const p = e.target.closest && e.target.closest("[data-power-tog]"); if (!p || !window.FX || !FX.power) return;
+    const on = !FX.power.isOn(); FX.power.set(on);
+    p.setAttribute("aria-pressed", String(on));
+    const sw = p.querySelector(".sw"); if (sw) sw.classList.toggle("on", on);
+    const sm = p.querySelector(".st-tx small");
+    if (sm) { sm.classList.remove("st-swap"); void sm.offsetWidth; sm.textContent = psSub(on); sm.classList.add("st-swap"); }
+  });
   PAGES.settings = function () {
     const k = SET_TABS.includes(UI.setTab) ? UI.setTab : "general", en = UI.lang === "en";
     const tabs = `<div class="st-tabs"><div class="seg" data-seg="settab" role="tablist">${SET_TABS.map(x => `<button type="button" class="seg-i ${x === k ? "on" : ""}" role="tab" aria-selected="${x === k}" data-settab="${x}">${ST_L[x][en ? 1 : 0]}</button>`).join("")}</div></div>`;
