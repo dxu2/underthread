@@ -344,3 +344,18 @@ html[data-dense] #hd2 .d-mini .tx { font-size: var(--fs-11); line-height: 1.3; }
 @container (max-width: 639px) {
   html[data-dense] #hd2 .d-sb button:nth-of-type(n+6) { display: none; } html[data-dense] #hd2 .d-sbn { display: inline; }
 }
+
+/* ===== t-sync-pill batch 2: the usage widget. Wider name column, no bottom divider / 「+N more」 (the header's 「全部 N 位 ›」 opens the list),
+   rows that do not fit fold away (app.js ruFit), the quota strip is one line and a stale reading is a warn dot before the age. ===== */
+html[data-home="widgets"] .wg-usage .ru-row { grid-template-columns: 22px minmax(0, 96px) 1fr auto; }
+html[data-home="widgets"] .wg-usage .ru-row.fit-hide { display: none; }
+html[data-home="widgets"] .wg-usage .ru-list { overflow: hidden; }
+html[data-home="widgets"] .wg-usage .ru-q { border-top: 0; padding-top: 4px; margin-top: auto; gap: 4px 12px; flex-wrap: nowrap; overflow: hidden; white-space: nowrap; font-size: var(--fs-12); }
+html[data-home="widgets"] .wg-usage .ru-q > span { flex: none; }
+html[data-home="widgets"] .wg-usage .ru-q .ru-age { margin-left: auto; color: var(--dim); display: inline-flex; align-items: center; gap: 5px; }
+html[data-home="widgets"] .wg-usage .ru-q .ru-age.old { color: var(--warn); }
+html[data-home="widgets"] .wg-usage .ru-q .ru-age.old::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--warn); }
+html[data-home="widgets"] .wg-usage .wg-eb .ru-all { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; margin-right: -8px; border-radius: 999px; color: var(--dim);
+  transition: background-color .16s ease, color .16s ease; }
+html[data-home="widgets"] .wg-usage .wg-eb:hover .ru-all { background: color-mix(in srgb, var(--ink) 8%, transparent); color: var(--ink); }
+@media (prefers-reduced-motion: reduce) { html[data-home="widgets"] .wg-usage .wg-eb .ru-all { transition: none; } }

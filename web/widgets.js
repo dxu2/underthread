@@ -57,7 +57,9 @@
   const fitM = (s, len, big) => s === "l" ? { n: big, foot: true } : len <= 2 ? { n: 2, foot: false } : { n: 1, foot: true };
   const W = {
     usage(s) {   // t-home-usage: tokens per role today + the quota strip; markup shared with the phone card / 系统状态 (App.ruHTML)
-      return `<div class="wg-eb" data-ru-open><b>${nm("usage")}</b><span>${en() ? "today" : "今天"}</span><span class="n">token</span></div>` + A().ruHTML(s === "l" ? 7 : 3, { tot: s === "l", quota: true, more: true });
+      const R = A().roleUsage && A().roleUsage(), all = R && R.rows && R.rows.length;   // t-sync-pill batch 2: 「全部 N 位 ›」 replaces the bottom 「+N more」 line
+      return `<div class="wg-eb" data-ru-open><b>${nm("usage")}</b><span>${en() ? "today" : "今天"}</span>${all ? `<span class="n ru-all">${en() ? `all ${all} ›` : `全部 ${all} 位 ›`}</span>` : `<span class="n">token</span>`}</div>`
+        + A().ruHTML(s === "l" ? 7 : 4, { tot: s === "l", quota: true, fit: true });
     },
     review(s, D) {
       const L = D.waiting, { n, foot } = fitM(s, L.length, 5);

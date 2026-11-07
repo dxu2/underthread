@@ -1713,3 +1713,21 @@ html[data-theme] #tabbar::before { top: -28px; background: linear-gradient(to to
 .rs-t { font-size: var(--fs-20); }
 .rs-dots, .rs-last { grid-column: 1 / 4; }
 .rs-dots { gap: 4px; }
+
+/* ===== t-attach-btn (batch 2, direction A), phone: same paperclip, 40px. The DM one still opens the 拍照 / 上传媒体 panel; while it is open the clip
+   turns accent instead of the old + -> x rotation (a rotated paperclip reads as nothing). ===== */
+html[data-theme] body #right .ch-comp > button.att, #drawer .composer .dw-file.att { width: 40px; height: 40px; border: 0; background: color-mix(in srgb, var(--ink) 8%, transparent); color: var(--ink); font-size: 0; }
+#drawer .composer .dw-file.att::before { content: none; }
+html[data-theme] body #right .ch-comp > button.att svg, #drawer .composer .dw-file.att svg { width: 19px; height: 19px; }
+html[data-theme] body #right .ch-comp.panel-on > button.att { transform: none; background: var(--accent-soft); color: var(--accent); }
+html[data-theme] body #right .ch-comp.panel-on > button.att .ic-clip { transform: rotate(-18deg); }
+
+#sync.sy1 { display: none; }   /* style.css #sync.sy1 is display:flex; the phone keeps the top bar clean */
+/* ===== t-sync-pill (batch 2), phone: #sync stays hidden; while disconnected (html[data-net="off"], app.js syncPaint) a pill slides down under the header. ===== */
+html[data-net="off"] #net-off { display: flex; position: fixed; z-index: 70; left: 50%; top: calc(env(safe-area-inset-top, 0px) + 58px); translate: -50% 0;
+  align-items: center; gap: 7px; height: 30px; padding: 0 14px 0 11px; border-radius: 999px; max-width: calc(100vw - 32px); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  background: var(--bg); color: var(--ink); font-size: var(--fs-12); border: 1px solid color-mix(in srgb, var(--urgent) 45%, transparent); box-shadow: 0 6px 18px rgba(0, 0, 0, .25);
+  animation: net-in .28s cubic-bezier(.22, .8, .24, 1) both; pointer-events: none; }
+html[data-net="off"] #net-off i { flex: none; width: 7px; height: 7px; border-radius: 50%; background: var(--urgent); }
+@keyframes net-in { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { html[data-net="off"] #net-off { animation: none; } }

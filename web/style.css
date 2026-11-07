@@ -2555,3 +2555,54 @@ html[data-theme="light"] .brand img.wm-l, html[data-theme="white"] .brand img.wm
 .st-swb { flex: none; display: inline-flex; padding: 4px; margin: -4px; border: 0; background: none; cursor: pointer; border-radius: 999px; }
 .st-swb:focus-visible, .st-prev:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 @media (prefers-reduced-motion: reduce) { .st-prev, .st-prev i { transition: background-color .2s, color .2s, border-color .2s !important; transform: none !important; } }
+
+/* ===== t-attach-btn (detail polish batch 2, direction A): one attach button everywhere, a solid round paperclip (app.js ATT_IC).
+   Files dragged over a composer (.drop-on, set by wireUploads on the whole .composer / .ch-comp) outline it and turn the button into an accent ↑. ===== */
+#drawer .composer .att, #right .ch-comp > .att { flex: none; width: 34px; height: 34px; padding: 0; margin: 0; display: grid; place-items: center; border: 0; border-radius: 50%;
+  background: color-mix(in srgb, var(--ink) 8%, transparent); color: var(--ink2); font-size: 0; line-height: 0; cursor: pointer; -webkit-tap-highlight-color: transparent;
+  transition: background-color .16s ease, color .16s ease, transform .12s ease; }
+.att svg { grid-area: 1 / 1; width: 17px; height: 17px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;
+  transition: transform .22s cubic-bezier(.3, 1.4, .5, 1), opacity .16s ease; }
+.att .ic-up { opacity: 0; transform: translateY(4px); }
+#drawer .composer .att:hover, #right .ch-comp > .att:hover { background: color-mix(in srgb, var(--ink) 14%, transparent); color: var(--ink); transform: none; }
+.att:hover .ic-clip { transform: rotate(-18deg); }
+#drawer .composer .att:active, #right .ch-comp > .att:active { transform: scale(.94); }
+#drawer .composer .att:focus-visible, #right .ch-comp > .att:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+#drawer .composer.drop-on, #right .ch-comp.drop-on { outline: 1.5px dashed var(--accent); outline-offset: 3px; border-radius: 18px; transition: outline-color .12s ease; }
+#drawer .composer.drop-on .att, #right .ch-comp.drop-on > .att { background: var(--accent); color: var(--accent-ink); }
+.drop-on .att .ic-clip { opacity: 0; transform: translateY(-4px); }
+.drop-on .att .ic-up { opacity: 1; transform: none; }
+.drop-on textarea.lib-drop { outline: 0; }
+@media (prefers-reduced-motion: reduce) { .att, .att svg { transition: background-color .16s, color .16s, opacity .16s !important; transform: none !important; } }
+
+/* ===== t-sync-pill (batch 2, V1): the top bar's sync pill + hover details (app.js syncPaint). #net-off is the phone's offline strip (mobile.css). ===== */
+#sync.sy1 { display: flex; align-items: center; position: relative; min-width: 0; font-size: var(--fs-13); color: var(--ink2); outline: none; }
+.sy-pill { display: inline-flex; align-items: center; gap: 7px; height: 28px; padding: 0 12px 0 10px; border-radius: 999px; white-space: nowrap;
+  background: color-mix(in srgb, var(--ink) 6%, transparent); transition: background-color .16s ease, color .16s ease; }
+#sync.sy1:hover .sy-pill, #sync.sy1:focus-visible .sy-pill { background: color-mix(in srgb, var(--ink) 11%, transparent); }
+#sync.sy1:focus-visible .sy-pill { box-shadow: 0 0 0 2px var(--accent); }
+#sync.sy1:active .sy-pill { transform: scale(.97); }
+.sy-pill .sy-k { font: inherit; font-weight: 500; color: var(--ink); letter-spacing: 0; }
+.sy-pill .sy-s { color: var(--dim); font-size: var(--fs-12); }
+.sy-pill .sy-s:empty { display: none; }
+.sy-dot { flex: none; width: 7px; height: 7px; border-radius: 50%; background: var(--ok); transition: background-color .2s ease; }
+.sy-pill.down { background: color-mix(in srgb, var(--urgent) 14%, transparent); }
+.sy-pill.down .sy-k { color: var(--urgent); font-weight: 600; }
+.sy-pill.down .sy-dot { background: var(--urgent); }
+.sy-pill.back .sy-dot { animation: sy-back .9s ease-out 1; }
+@keyframes sy-back { 0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--ok) 70%, transparent); } 100% { box-shadow: 0 0 0 9px transparent; } }
+.sy-pop { position: absolute; top: calc(100% + 10px); left: 0; z-index: 60; min-width: 270px; padding: 12px 14px; border-radius: 14px; background: var(--bg); border: 1px solid var(--line2);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, .35); font-size: var(--fs-13); color: var(--ink2); display: grid; grid-template-columns: auto 1fr; gap: 7px 14px; white-space: nowrap;
+  opacity: 0; visibility: hidden; transform: translateY(-4px); pointer-events: none; transition: opacity .16s ease, transform .16s ease, visibility 0s linear .16s; }
+#sync.sy1:hover .sy-pop, #sync.sy1:focus-visible .sy-pop { opacity: 1; visibility: visible; transform: none; transition-delay: .12s, .12s, 0s; }
+.sy-pop > span { color: var(--dim); }
+.sy-pop > b { color: var(--ink); font-weight: 500; font-family: inherit; letter-spacing: 0; }
+.sy-pop > b b { font-weight: 500; font-family: inherit; letter-spacing: 0; }
+.sy-pop > b.ok { color: var(--ok); } .sy-pop > b.bad { color: var(--urgent); }
+.sy-pop .ft { grid-column: 1 / -1; border-top: 1px solid var(--line); padding-top: 8px; color: var(--dim); font-size: var(--fs-12); }
+#net-off { display: none; }
+@media (prefers-reduced-motion: reduce) { .sy-pill, .sy-pop { transition: opacity .16s ease !important; transform: none !important; } .sy-pill.back .sy-dot { animation: none; } }
+
+/* ===== t-sync-pill batch 2: usage rows. The name is its own span so the ellipsis works (.ru-n is a flex box; text-overflow does nothing on a bare text node). ===== */
+.ru-n .t { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ru-n .ru-on { flex: none; }

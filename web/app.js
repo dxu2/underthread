@@ -553,6 +553,9 @@
   const attachPath = (pending, p) => { if (p && !pending.includes(p)) pending.push(p); if (pending._show) pending._show(); };
   document.addEventListener("dragstart", e => { const a = e.target && e.target.closest && e.target.closest("[data-lib-path]"); if (a) { e.dataTransfer.setData(LIB_MIME, a.dataset.libPath); e.dataTransfer.effectAllowed = "copy"; } });
   document.addEventListener("dragend", () => document.querySelectorAll("textarea.lib-drop").forEach(t => t.dispatchEvent(new Event("dragleave"))));
+  /* t-attach-btn (batch 2, direction A): one attach button everywhere = solid round paperclip; while files are dragged over the composer it turns into an accent ↑. */
+  const ATT_IC = '<svg class="ic-clip" viewBox="0 0 24 24" aria-hidden="true"><path d="M20.5 11.2l-8.3 8.3a5.3 5.3 0 0 1-7.5-7.5l8.4-8.4a3.6 3.6 0 0 1 5.1 5.1l-8.4 8.4a1.8 1.8 0 0 1-2.5-2.5l7.7-7.7"/></svg><svg class="ic-up" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 19V6M6.5 11.5L12 6l5.5 5.5"/></svg>';
+  const attTitle = () => UI.lang === "en" ? "Attach files · or drop / paste them here" : "添加附件 · 也可以拖进来或直接粘贴";
   function wireUploads(ta, pending, onChange) {
     pending._up = pending._up || {};
     const add = files => Promise.all(Array.from(files).map(async f => {
@@ -568,10 +571,19 @@
     ta.addEventListener("paste", e => { const fs = Array.from(e.clipboardData.files || []); if (fs.length) { e.preventDefault(); add(fs); } });
     pending._show = onChange;   // t-lib-attach: attachTo() refreshes the tiles after adding a library path
     const libDrag = e => Array.from((e.dataTransfer && e.dataTransfer.types) || []).includes(LIB_MIME);
-    const hint = on => { ta.classList.toggle("lib-drop", on); if (on && ta.dataset.ph == null) { ta.dataset.ph = ta.placeholder; ta.placeholder = UI.lang === "en" ? "Drop to attach (no re-upload)" : "松手 = 附到这条消息（不用重新上传）"; } else if (!on && ta.dataset.ph != null) { ta.placeholder = ta.dataset.ph; delete ta.dataset.ph; } };
-    ta.addEventListener("dragover", e => { e.preventDefault(); if (libDrag(e)) { e.dataTransfer.dropEffect = "copy"; hint(true); } });
-    ta.addEventListener("dragleave", () => hint(false));
-    ta.addEventListener("drop", e => { e.preventDefault(); hint(false); const lp = e.dataTransfer.getData(LIB_MIME); if (lp) { attachPath(pending, lp); return; } add(Array.from(e.dataTransfer.files || [])); });
+    /* t-attach-btn: the whole composer is the drop zone (was the textarea only). A counter absorbs the dragenter/dragleave pairs between child elements. */
+    const zone = ta.closest(".composer, .ch-comp") || ta;
+    const dragOk = e => { const ty = Array.from((e.dataTransfer && e.dataTransfer.types) || []); return ty.includes("Files") || ty.includes(LIB_MIME); };
+    let depth = 0;
+    const hint = on => {
+      zone.classList.toggle("drop-on", on); ta.classList.toggle("lib-drop", on);
+      if (on && ta.dataset.ph == null) { ta.dataset.ph = ta.placeholder; ta.placeholder = UI.lang === "en" ? "Drop to attach to this reply" : "松手 = 附到这条回复"; }
+      else if (!on && ta.dataset.ph != null) { ta.placeholder = ta.dataset.ph; delete ta.dataset.ph; }
+    };
+    zone.addEventListener("dragenter", e => { if (!dragOk(e)) return; e.preventDefault(); depth++; hint(true); });
+    zone.addEventListener("dragover", e => { if (!dragOk(e)) return; e.preventDefault(); e.dataTransfer.dropEffect = "copy"; hint(true); });
+    zone.addEventListener("dragleave", () => { depth = Math.max(0, depth - 1); if (!depth) hint(false); });
+    zone.addEventListener("drop", e => { if (!dragOk(e)) return; e.preventDefault(); depth = 0; hint(false); const lp = e.dataTransfer.getData(LIB_MIME); if (lp) { attachPath(pending, lp); return; } add(Array.from(e.dataTransfer.files || [])); });
     return add;
   }
 
@@ -603,13 +615,14 @@
       var j = await r.json();
     } catch (e) {
       bootDone();
-      UI.down = true;
-      $("#sync").innerHTML = `<div class="row"><span class="off">● ${UI.lang === "en" ? "dashboard unreachable · retrying" : "看板暂时连不上 · 自动重试中"}</span></div>`;
+      UI.down = true; UI.fail = (UI.fail || 0) + 1;   // t-sync-pill: one miss can be a blip; syncPaint turns the pill red after 2 misses + 10 s
+      syncPaint();
       return;
     }
     // a rendering bug must not masquerade as the server being down
     try {
       const back = UI.down; UI.down = false;  // clear the "unreachable" banner as soon as the server answers again
+      UI.fail = 0; UI.lastOk = Date.now(); if (j.same && ST && ST.meta) { ST.meta.comfy = j.meta.comfy; ST.meta.inbox_unacked = j.meta.inbox_unacked; syncPaint(); }   // a full state repaints via renderHeader
       if (j.same) { ST.meta.comfy = j.meta.comfy; ST.meta.inbox_unacked = j.meta.inbox_unacked; if (back || ++UI.tick % 12 === 0) renderChrome(); return; }
       ST = j; REV = j.meta.rev; rehydrate(); try { doneMailRead(); } catch (_) { } render(); bootDone();
     } catch (e) {
@@ -759,13 +772,14 @@
     return en ? `input ${f(r.in)} · output ${f(r.out)} · cache write ${f(r.cw)} · cache read ${f(r.cr)} · ${r.msgs} replies · ${r.sessions} sessions`
       : `输入 ${f(r.in)} · 输出 ${f(r.out)} · 写缓存 ${f(r.cw)} · 读缓存 ${f(r.cr)} · ${r.msgs} 次回复 · ${r.sessions} 个会话`; }
   // quota strip: 5 小时 / 本周 / 管家上下文 (what is LEFT), greyed + 「X 分钟前 · 可能已过期」 past USAGE_STALE (same usage() as the orb)
-  function ruQuota() {
+  function ruQuota(compact) {   // compact (home widget, t-sync-pill batch 2): one line, no manager context, a stale reading = warn dot + age
     const U = usage(), en = UI.lang === "en"; if (U.none) return "";
     const v = (x, est) => x == null ? "—" : `${est ? "≈" : ""}${x}%`;
     const age = U.at ? relH("ago", U.at, ago(U.at)) : "";
     return `<div class="ru-q${U.stale ? " old" : ""}" data-ru-open><span>${en ? "5-hour" : "5 小时"} <b>${v(U.left, U.approx)}</b></span><span>${en ? "Week" : "本周"} <b>${v(U.week, U.approxW)}</b></span>`
-      + (U.context != null ? `<span>${en ? "Manager context" : "管家上下文"} <b>${v(100 - U.context, U.stale)}</b></span>` : "")
-      + `<span class="ru-age">${U.stale ? `<em>${age} · ${en ? "may be out of date" : "可能已过期"}</em>` : age}</span></div>`;
+      + (U.context != null && !compact ? `<span>${en ? "Manager context" : "管家上下文"} <b>${v(100 - U.context, U.stale)}</b></span>` : "")
+      + (compact ? `<span class="ru-age${U.stale ? " old" : ""}" title="${U.stale ? (en ? "may be out of date" : "可能已过期") : ""}">${age}</span></div>`
+        : `<span class="ru-age">${U.stale ? `<em>${age} · ${en ? "may be out of date" : "可能已过期"}</em>` : age}</span></div>`);
   }
   // n: rows to list; o.tot: the big total line; o.quota: the strip
   function ruHTML(n, o = {}) {
@@ -774,15 +788,23 @@
     const rows = R.rows, max = rows.length ? rows[0].new : 1, more = rows.length - n;
     const list = rows.length ? rows.slice(0, n).map((r, i) => `<div class="ru-row${r.a ? "" : " nd"}"${r.a ? ` data-chat="${esc(r.id)}"` : ""} title="${esc(ruTip(r))}" style="--ru-i:${i}">`
         + (r.a ? `<img class="ru-av" src="${avatarUrl(r.a)}" alt="">` : `<span class="ru-av"></span>`)
-        + `<span class="ru-n">${esc(ruName(r))}${r.a && r.a.status === "working" ? `<i class="ru-on" title="${en ? "working" : "工作中"}"></i>` : ""}</span>`
+        + `<span class="ru-n"><span class="t">${esc(ruName(r))}</span>${r.a && r.a.status === "working" ? `<i class="ru-on" title="${en ? "working" : "工作中"}"></i>` : ""}</span>`
         + `<i class="ru-bar"><em data-ru="${esc(r.id)}" style="--ru-w:${Math.max(0.02, r.new / max).toFixed(3)}"></em></i><b data-ru-v="${r.new}">${fmtTok(r.new)}</b></div>`).join("")
       : `<div class="ru-wait">${R.error ? (en ? `Could not read the transcripts (${esc(R.error)})` : `读不到会话记录（${esc(R.error)}）`) : (en ? "No tokens used yet today" : "今天还没用过")}</div>`;
     const tot = o.tot ? `<div class="ru-tot" data-ru-open><b data-ru-v="${R.total}" data-ru-k="tot">${fmtTok(R.total)}</b><span>${en ? `new tokens · plus ${fmtTok(R.cache_read)} cache reads` : `新 token · 另读缓存 ${fmtTok(R.cache_read)}`}</span></div>` : "";
     requestAnimationFrame(ruSettle);
-    return tot + `<div class="ru-list">${list}${more > 0 && o.more ? `<div class="ru-more" data-ru-open>${en ? `+${more} more ›` : `还有 ${more} 个 ›`}</div>` : ""}</div>` + (o.quota ? ruQuota() : "");
+    if (o.fit) requestAnimationFrame(ruFit);
+    return tot + `<div class="ru-list">${list}${more > 0 && o.more ? `<div class="ru-more" data-ru-open>${en ? `+${more} more ›` : `还有 ${more} 个 ›`}</div>` : ""}</div>` + (o.quota ? ruQuota(o.fit) : "");
   }
   // Motion (11-04 rule): a bar grows from 0 the first time it is shown and glides from its previous length when the data changes;
   // numbers count up. Rebuilt DOM with the same data does nothing. prefers-reduced-motion: no transition (CSS) and no count.
+  // t-sync-pill (batch 2): the home widget has a fixed height; rows that do not fit fold away from the bottom (the header's 「全部 N 位 ›」 opens the full list)
+  function ruFit() {
+    document.querySelectorAll("[data-wg=usage] .ru-list").forEach(list => {
+      const rows = [...list.querySelectorAll(".ru-row")]; rows.forEach(r => r.classList.remove("fit-hide"));
+      for (let i = rows.length - 1; i > 0 && list.scrollHeight > list.clientHeight + 1; i--) rows[i].classList.add("fit-hide");
+    });
+  }
   function ruSettle() {
     document.querySelectorAll(".ru-bar em:not([data-s])").forEach(em => {
       em.dataset.s = "1"; const k = em.closest(".ru-list") && em.closest(".ru-list").parentElement ? em.dataset.ru + "|" + (em.closest("[data-wg],.ru-card,.sy-ru") || {}).className : em.dataset.ru;
@@ -812,17 +834,54 @@
     if (document.querySelector("#wg.edit")) return;
     modalStatus();
   });
+  /* t-sync-pill (detail polish batch 2, V1): the top bar shows one pill, 「● 已同步」 = the last poll answered. Two misses in a row (~30 s) turn it red with a
+     running 「断线 · N 秒没连上 · 自动重试中」. Hover / focus opens the details (connection, last data change, next event, 5090, team, inbox); a click still opens
+     系统状态. The manager's online state lives in the left rail only. Built once and then only text nodes change, so a poll never rebuilds the popover under the mouse.
+     Phones hide #sync; there html[data-net="off"] shows #net-off under the header, only while disconnected. */
+  function syncPaint() {
+    const sy = $("#sync"); if (!sy) return;
+    const en = UI.lang === "en", R = document.documentElement;
+    // polls run every 2.5 s: red only after 2+ misses in a row AND 10 s without an answer (a blip or one slow reply stays green)
+    const down = (UI.fail || 0) >= 2 && (!UI.lastOk || Date.now() - UI.lastOk >= 10000);
+    if (!sy.querySelector(".sy-pill")) {
+      sy.classList.add("sy1"); sy.tabIndex = 0; sy.setAttribute("role", "button");
+      sy.innerHTML = `<span class="sy-pill"><i class="sy-dot" aria-hidden="true"></i><b class="sy-k"></b><small class="sy-s"></small></span>`
+        + `<div class="sy-pop" role="tooltip"><span data-l="c"></span><b data-v="c"></b><span data-l="d"></span><b data-v="d"></b><span data-l="n"></span><b data-v="n"></b>`
+        + `<span data-l="t"></span><b data-v="t"></b><span>5090</span><b data-v="g"></b><span data-l="i"></span><b data-v="i"></b><div class="ft"></div></div>`;
+    }
+    const set = (sel, v, html) => { const e = sy.querySelector(sel); if (!e) return; if (html) { if (e._h !== v) { e._h = v; e.innerHTML = v; } } else if (e.textContent !== v) e.textContent = v; };
+    const secs = UI.lastOk ? Math.max(0, Math.round((Date.now() - UI.lastOk) / 1000)) : 0;
+    const off = en ? `${secs ? secs + " s without an answer · " : ""}retrying` : `${secs ? secs + " 秒没连上 · " : ""}自动重试中`;
+    const pill = sy.querySelector(".sy-pill"), wasDown = pill.classList.contains("down");
+    pill.classList.toggle("down", down);
+    set(".sy-k", down ? (en ? "Offline" : "断线") : (en ? "Synced" : "已同步"));
+    set(".sy-s", down ? off : "");
+    if (wasDown && !down) { pill.classList.remove("back"); void pill.offsetWidth; pill.classList.add("back"); }
+    sy.setAttribute("aria-label", down ? `${en ? "Offline" : "断线"} · ${off}` : (en ? "Synced · details" : "已同步 · 查看详情"));
+    const L = en ? { c: "Connection", d: "Last change", n: "Next", t: "Team", i: "Inbox" } : { c: "连接", d: "数据最后变动", n: "下一个", t: "团队", i: "收件箱" };
+    for (const k in L) set(`[data-l="${k}"]`, L[k]);
+    const okAt = UI.lastOk ? new Date(UI.lastOk).toTimeString().slice(0, 8) : "—";
+    set('[data-v="c"]', down ? (en ? `offline · last answer ${okAt}` : `断线 · 最后一次连上 ${okAt}`) : (en ? `live · last checked ${okAt}` : `正常 · 最后确认 ${okAt}`));
+    sy.querySelector('[data-v="c"]').className = down ? "bad" : "ok";
+    const M = (ST && ST.meta) || {}, c = M.comfy || {}, ag = ST ? agents().filter(a => a.enabled !== false && a.id !== "manager") : [];
+    set('[data-v="d"]', M.updated ? `${hm(M.updated)} · ${ago(M.updated)}` : "—");
+    set('[data-v="n"]', (ST && nextEvent()) || "—", true);
+    set('[data-v="t"]', en ? `${ag.length} · ${ag.filter(a => a.status === "working").length} working` : `${ag.length} 位 · ${ag.filter(a => a.status === "working").length} 位在忙`);
+    set('[data-v="g"]', c.online ? (en ? "online" : "在线") : (en ? "not linked" : "未连"));
+    set('[data-v="i"]', en ? `${M.inbox_unacked || 0} unhandled` : `${M.inbox_unacked || 0} 条没处理`);
+    set(".sy-pop .ft", en ? "Click for System status · the manager's state is in the left rail" : "点一下打开系统状态 · 管家在线看左栏");
+    // phone: a strip under the header, only while disconnected
+    let nb = document.getElementById("net-off");
+    if (down && !nb) { nb = document.createElement("div"); nb.id = "net-off"; nb.setAttribute("role", "status"); nb.innerHTML = `<i aria-hidden="true"></i><span></span>`; document.body.appendChild(nb); }
+    if (nb) nb.querySelector("span").textContent = `${en ? "Offline" : "断线"} · ${off}`;
+    if (down) R.dataset.net = "off"; else delete R.dataset.net;
+    clearTimeout(syncPaint.t); if (down || UI.fail) syncPaint.t = setTimeout(syncPaint, 1000);   // the seconds keep counting while offline
+  }
   function renderHeader() {
     const m = mgrState(), ag = agents().filter(a => a.enabled !== false && a.id !== "manager");
     const working = ag.filter(a => a.status === "working").length;
     const c = ST.meta.comfy || {};
-    $("#sync").innerHTML = `
-      <div class="row"><span class="k">${t("sync")}<span class="gl" aria-hidden="true"> ◇</span></span> ${t("updated")} <b>${hm(ST.meta.updated)}</b>
-        <span class="dot">◆</span> ${esc(aname(agent("manager")))} <span class="${m.on ? "on" : m.sleep ? "zz" : "off"}">${m.txt}</span> ${m.since ? `<span class="dim">${agoH(m.since)}</span>` : ""}
-        ${(nx => nx ? `<span class="dot">|</span> <span class="k">${t("next")}</span> ${nx}` : "")(nextEvent())}</div>
-      <div class="row"><span class="k">TEAM<span class="gl" aria-hidden="true"> ◇</span></span> ${ag.length} · <b>${working}</b> ${t("working")}
-        <span class="dot">◆</span> <span class="k">COMFY</span> <span class="${c.online ? "on" : "dim"}">● ${c.online ? t("comfy_on") : t("comfy_off")}</span>
-        <span class="dot">◆</span> <span class="k">${t("inbox")}</span> <b>${ST.meta.inbox_unacked || 0}</b> ${t("unacked")}</div>`;
+    syncPaint();
     const U = usage();
     const sta = $("#stamina");
     sta.className = "stamina" + (U.stale ? " stale" : "") + (U.lost5 ? " lost" : "") + (U.approx ? " est" : "");
@@ -2307,7 +2366,7 @@
     const dw = $("#drawer"); clearTimeout(DW.ct); const wasOpen = !dw.hidden && dw.classList.contains("open"); dw.hidden = false;
     dw.innerHTML = `<div class="dw-top"></div><div class="dw-scroll"></div><nav class="dw-toc" hidden></nav>
       <div class="dw-dock"><div class="dw-askbar" hidden></div><div class="composer"><div class="at-pop" hidden></div><textarea placeholder="${esc(t("composer_ph"))}"></textarea><div class="pending-att"></div>
-        <div class="cm-row"><button class="dw-file" aria-label="${UI.lang === "en" ? "Attach" : "添加附件"}">+ ${t("file")}</button><input type="file" multiple hidden>
+        <div class="cm-row"><button type="button" class="dw-file att" title="${attTitle()}" aria-label="${UI.lang === "en" ? "Attach" : "添加附件"}">${ATT_IC}</button><input type="file" multiple hidden>
         <span class="cm-to"></span><span class="dim dw-def">${t("default_owner")}</span><span style="flex:1"></span><span class="dim">${t("send_hint")}</span></div></div>
       <div class="dw-acts"></div></div>`;
     const ta = $(".composer textarea", dw), fi = $("input[type=file]", dw), pop = $(".at-pop", dw);
@@ -3099,7 +3158,7 @@
       <button class="ch-fold" title="${UI.lang === "en" ? "Collapse" : "收起 / 展开"}"><span></span></button>
       <div class="ch-head"><div class="ch-who"></div>${orn(160)}<div class="ch-roster"></div></div><div class="ch-msgs"></div>
       <div class="pending-att" style="padding:0 16px"></div>
-      <div class="ch-comp"><button title="${t("file")}">+</button><input type="file" multiple hidden><textarea></textarea><span class="ch-kb" aria-hidden="true">${UI.lang === "en" ? "⌘/Ctrl ↵ send · ↵ new line" : "⌘/Ctrl ↵ 发送 · ↵ 换行"}</span></div>`;
+      <div class="ch-comp"><button type="button" class="att" title="${attTitle()}" aria-label="${UI.lang === "en" ? "Attach" : "添加附件"}">${ATT_IC}</button><input type="file" multiple hidden><textarea></textarea><span class="ch-kb" aria-hidden="true">${UI.lang === "en" ? "⌘/Ctrl ↵ send · ↵ new line" : "⌘/Ctrl ↵ 发送 · ↵ 换行"}</span></div>`;
     const ta = $("textarea", r), fi = $("input[type=file]", r);
     const showAtt = () => attTiles($(".pending-att", r), chatAtt, showAtt);   // ui19
     const add = wireUploads(ta, chatAtt, showAtt);
