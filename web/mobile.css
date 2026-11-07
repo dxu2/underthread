@@ -1711,3 +1711,26 @@ html[data-net="snap"] #net-off { display: flex; position: fixed; z-index: 70; le
   animation: net-in .28s cubic-bezier(.22, .8, .24, 1) both; pointer-events: none; }
 html[data-net="snap"] #net-off i { flex: none; width: 7px; height: 7px; border-radius: 50%; background: var(--warn); }
 @media (prefers-reduced-motion: reduce) { html[data-net="snap"] #net-off { animation: none; } }
+
+/* ===== t-m-accept-btn / t-m-ask-sheet (2026-11-05) =====
+   main dock button: short label on one line + open-question badge (was: full label wrapped to 2 lines, subtitle cut, button past the dock edge at 390 px).
+   composer: the hidden 收件人 row really collapses (0fr could not shrink below the chip's fixed 26 px + 6 px margin: a 32 px hole above the reply box).
+   question bar: no extra bottom padding, smaller chips, at most ~2 rows of chips (scrolls inside). */
+#drawer .dw-acts .ab { min-width: 0; }
+#drawer .dw-acts .ab.has-ask { flex-direction: row; gap: 6px; line-height: inherit; }
+#drawer .dw-acts .ab.ok b { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#drawer .dw-acts .ab.ok .ok-x, #drawer .dw-acts .ab .ok-ask { display: none; }
+#drawer .dw-acts .ab .ok-n { flex: none; display: inline-grid; place-items: center; min-width: 20px; height: 20px; padding: 0 6px; box-sizing: border-box; border-radius: 10px;
+  background: var(--accent-ink); color: var(--accent); font: 600 var(--fs-12)/1 var(--f-sys); font-style: normal; font-variant-numeric: tabular-nums; }
+#drawer .composer { grid-template-rows: minmax(0, var(--r-to)) minmax(0, var(--r-att)) auto; }
+.dw-askbar { padding: 0; }
+#drawer .dw-askbar .ask-row { padding: 9px 14px; border-radius: 16px; }
+#drawer .dw-askbar:not(.fold) .ask-row { padding-bottom: 10px; }
+#drawer .dw-askbar .ask-opts.sm { margin-top: 8px; gap: 6px; max-height: 66px; overflow-y: auto; overscroll-behavior: contain; }
+#drawer .dw-askbar .ask-opts.sm .ask-o { padding: 4px 11px; font-size: var(--fs-13); line-height: 18px; }
+/* four buttons in a row (关单 · 驳回 · 稍后 · 验收): tighter side padding so the main label never truncates at 360 px */
+#drawer .dw-acts:is([data-st="deliverable"], [data-st="plan"]) { gap: 6px; }
+#drawer .dw-acts:is([data-st="deliverable"], [data-st="plan"]) .ab { padding: 0 10px; }
+#drawer .dw-acts:is([data-st="deliverable"], [data-st="plan"]) .ab.no { flex: 0 1 auto; }
+#drawer .dw-acts:is([data-st="deliverable"], [data-st="plan"]) .ab.ok { flex: 1 0 auto; padding: 0 14px; }   /* the main button never gives way first (flex: 2 had a 0 basis) */
+@media (max-width: 370px) { #drawer .dw-acts:is([data-st="deliverable"], [data-st="plan"]) .ab.sz .snz-ic { display: none; } }

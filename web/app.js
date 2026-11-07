@@ -1365,6 +1365,12 @@
     clearTimeout(AR.timer); AR.timer = setTimeout(() => arCommit(), RV_HOLD);
   }
   function arUndo() { const P = AR.pending; if (!P) return; clearTimeout(AR.timer); AR.pending = null; arHide(); if (UI.item === P.id) renderDrawer(); }
+  // t-m-accept-btn: the detail dock's main button. Phones show the short label (the tail after it is hidden) and the open-question count as a badge;
+  // desktop keeps the full label and the line under it. Before, "Accept & close" + "1 question unanswered" wrapped and pushed out of a 390 px dock.
+  const okShort = (it, en = UI.lang === "en") => it && it.kind === "plan" ? (en ? "Approve" : "批准") : it && it.kind === "question" ? (en ? "Answer" : "回答") : (en ? "Accept" : "验收");
+  const okDockIn = (it, full, short) => { const l = askLeft(it), n = openAsks(it).length, tail = short && full.startsWith(short) ? full.slice(short.length) : "";
+    return `<b><span class="ok-s">${esc(tail ? short : full)}</span>${tail ? `<span class="ok-x">${esc(tail)}</span>` : ""}</b>${n ? `<i class="ok-n" aria-hidden="true">${n}</i><small class="ok-ask">${l}</small>` : ""}`; };
+  const okAria = (it, full) => { const l = askLeft(it); return ` aria-label="${esc(full + (l ? (UI.lang === "en" ? ", " : "，") + l : ""))}"`; };
   const okBtnIn = it => { const l = askLeft(it); return `<b>${okLabel(it)}</b>${l ? `<small class="ok-ask">${l}</small>` : ""}`; };   // label + the open-question line under it
   function askChips(it, a, cls = "") {
     const done = it.stage === "done", zh = UI.lang !== "en";
@@ -1391,6 +1397,22 @@
     const oa = openAsks(it); if (!oa.length) return "";
     const zh = UI.lang !== "en", a = oa[0];
     return `<div class="ask-row"><div class="ask-rt"><i></i><b>${zh ? `${oa.length} 个问题要你选` : `${oa.length} question${oa.length > 1 ? "s" : ""} for you`}</b><span> · ${esc(a.q)}</span></div>${askChips(it, a, " sm")}${oa.length > 1 ? `<span class="ask-more">+${oa.length - 1}</span>` : ""}</div>`;
+  }
+  // t-m-ask-sheet: the dock's question bar is one line (● n 个问题 · question ⌄) until tapped. A question shown here for the first time opens it;
+  // after that it stays as the user left it while the card is open (ab._open lives on the bar, which is rebuilt each time a card opens).
+  const ASK_CV = `<svg class="ask-cv" viewBox="0 0 12 8" width="12" height="8" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1.5 1.75 6 6.25l4.5-4.5"/></svg>`;
+  function askFold(ab, it) {
+    const a = openAsks(it)[0]; if (!a) return;
+    const seen = LS.get("askSeen", []);
+    if (!seen.includes(a.id)) { seen.push(a.id); LS.set("askSeen", seen.slice(-200)); ab._open = true; }
+    const open = !!ab._open, rt = $(".ask-rt", ab);
+    ab.classList.toggle("fold", !open);
+    if (rt) { rt.setAttribute("role", "button"); rt.tabIndex = 0; rt.setAttribute("aria-expanded", String(open)); rt.insertAdjacentHTML("beforeend", ASK_CV); }
+  }
+  function askFoldWire(ab) {
+    const tg = e => { const rt = e.target.closest(".ask-rt"); if (!rt || (e.type === "keydown" && e.key !== "Enter" && e.key !== " ")) return;
+      e.preventDefault(); ab._open = ab.classList.contains("fold"); ab.classList.toggle("fold", !ab._open); rt.setAttribute("aria-expanded", String(ab._open)); };
+    ab.addEventListener("click", tg); ab.addEventListener("keydown", tg);
   }
   const AG = { draw: null };
   // approve / done while questions are open: a sheet lists them (answerable in place); 跳过 sends skip_asks so the server lets it through and logs what was skipped
@@ -1477,7 +1499,7 @@
       const a = agent(it.owner);
       if (img) return ship.push(`<div class="dc-sh" data-item="${it.id}"><div class="im" style="background-image:url('/api/thumb?p=${encodeURIComponent(img)}&w=320')"></div><b>${esc(it.title)}</b><span>${esc(aname(a))} · ${hm(it.closed)}</span></div>`);
       const k = DC_KIND[it.kind] ? it.kind : "task";
-      const card = `<div class="dc-sh c" data-item="${it.id}"><div class="k"><svg viewBox="0 0 24 24" aria-hidden="true">${DC_KIND[k]}</svg>${esc(t("k_" + k))} · ${hm(it.closed)}${a ? `<i class="mav" style="background-image:url('${avatarUrl(a)}')" title="${esc(aname(a))}"></i>` : ""}</div><b>${esc(it.title)}</b></div>`;
+      const card = `<div class="dc-sh c" data-item="${it.id}"><div class="k" title="${esc(t("k_" + k))} · ${hm(it.closed)}"><svg viewBox="0 0 24 24" aria-hidden="true">${DC_KIND[k]}</svg><span class="kl">${esc(t("k_" + k))}</span><span class="kt">· ${hm(it.closed)}</span>${a ? `<i class="mav" style="background-image:url('${avatarUrl(a)}')" title="${esc(aname(a))}"></i>` : ""}</div><b>${esc(it.title)}</b></div>`;
       const last = ship[ship.length - 1];
       if (last && last.open) { last.push(card); last.open = false; } else { const col = [card]; col.open = true; ship.push(col); }
     });
@@ -2562,6 +2584,7 @@
         <div class="cm-row"><button type="button" class="dw-file att" title="${attTitle()}" aria-label="${UI.lang === "en" ? "Attach" : "添加附件"}">${ATT_IC}</button><input type="file" multiple hidden>
         <span class="cm-to"></span><span class="dim dw-def">${t("default_owner")}</span><span style="flex:1"></span><span class="dim">${t("send_hint")}</span></div></div>
       <div class="dw-acts"></div></div>`;
+    askFoldWire($(".dw-askbar", dw));   // t-m-ask-sheet
     const ta = $(".composer textarea", dw), fi = $("input[type=file]", dw), pop = $(".at-pop", dw);
     const dk = "item:" + id, dSaved = DRAFT.get(dk);   // t-draft-keep
     const dTag = () => { const old = $(".dr-tag", dw); if (old) old.remove(); };
@@ -3071,7 +3094,7 @@
     const wasEnd = !first && nearEnd(sc), grew = !first && stream.length > DW.n; DW.n = stream.length;
     { // t-ask-bottom: the first unanswered question sits right above the reply box (same chips as the list cards: recommended one marked, a tap answers;
       // with more than one, they come one after another and the bar says how many are left). The full list stays in the card above as before.
-      const ab = $(".dw-askbar", dw); if (ab) { const h = it.stage === "done" ? "" : askRow(it); if (ab._h !== h) { ab.innerHTML = ab._h = h; ab.hidden = !h; } } }
+      const ab = $(".dw-askbar", dw); if (ab) { const h = it.stage === "done" ? "" : askRow(it); if (ab._h !== h) { ab.innerHTML = ab._h = h; ab.hidden = !h; if (h) askFold(ab, it); } } }
     const wsD = workersOf(it.id);   // t-working-item-highlight: phone shows this row under the glass header (desktop keeps the tag in .dw-top)
     const par = parentOf(it), kids = childrenOf(it), en = UI.lang === "en";
     const parHTML = par ? `<button class="dw-parent" data-dw-nav="${esc(par.id)}"><span class="k">${en ? "Part of" : "属于"}</span><b>${esc(par.title)}</b><span class="st">${esc(rowLabel(par))}</span><svg viewBox="0 0 8 14" width="7" height="12" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1.5 1.5 6.5 7l-5 5.5"/></svg></button>` : "";
@@ -3118,8 +3141,8 @@
         ? `<span class="rt-off"><i class="rt-dot"></i>${zh ? "暂停" : "Paused"}</span><button class="ab ok rt-sw" data-rt="resume" role="switch" aria-checked="false"><b>${zh ? "开启" : "Turn on"}</b></button>`
         : `<span class="rt-on"><i class="rt-dot"></i>${rt.unknown || rt.ondemand ? (zh ? "开启中" : "On") : `${zh ? "开启中 · 下次 " : "On · next "}${esc(nx || "—")}`}</span><button class="ab no rt-sw" data-rt="pause" role="switch" aria-checked="true">${zh ? "暂停" : "Pause"}</button>`; }
       else acts.innerHTML = st === "done" ? `<button class="ab re" data-act="reopen"><span aria-hidden="true">↺</span>${t("reopen")}</button>${stampHTML(it)}`
-        : closeBtn() + (st === "solo" ? snzBtn(it) + `<button class="ab ok solo${openAsks(it).length ? " has-ask" : ""}" data-act="done"><b>${zh ? "完成委托" : "Mark done"}</b>${askLeft(it) ? `<small class="ok-ask">${askLeft(it)}</small>` : ""}</button>`
-        : `<button class="ab no" data-act="reject">${t("reject")}</button>${snzBtn(it)}<button class="ab ok${openAsks(it).length ? " has-ask" : ""}" data-act="approve">${okBtnIn(it)}</button>`);   // ri1103-P2: 稍后 between 驳回 and 验收
+        : closeBtn() + (st === "solo" ? snzBtn(it) + `<button class="ab ok solo${openAsks(it).length ? " has-ask" : ""}" data-act="done"${okAria(it, zh ? "完成委托" : "Mark done")}>${okDockIn(it, zh ? "完成委托" : "Mark done", "")}</button>`
+        : `<button class="ab no" data-act="reject">${t("reject")}</button>${snzBtn(it)}<button class="ab ok${openAsks(it).length ? " has-ask" : ""}" data-act="approve"${okAria(it, okLabel(it))}>${okDockIn(it, okLabel(it), okShort(it))}</button>`);   // ri1103-P2: 稍后 between 驳回 and 验收
       // t-btn-names: open questions show as a line under the button label (desktop and phone); before it was a .dock-note to the left, desktop only
     }
     annPaint();   // t-imp29-p2

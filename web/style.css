@@ -2675,3 +2675,27 @@ html[lang="en"] .nav-i { font-weight: 500; } html[lang="en"] .nav-i.on, html[lan
 #pagebody.stu-in-l > :not(.ph):not(.stu-tabs) { animation: st-in-l .2s var(--ease) both; }
 @media (max-width: 760px) { .ph-studio + .stu-tabs { margin: 0 0 14px; } .stu-tabs .seg { max-width: 100%; } .stu-tabs .seg-i { padding: 8px 12px; } }
 @media (prefers-reduced-motion: reduce) { #pagebody.stu-in-r > *, #pagebody.stu-in-l > * { animation: none; } #pagebody.stu-out > * { transition: none; } }
+
+/* ===== t-m-accept-btn / t-m-ask-sheet / t-m-shipped-avatar (2026-11-05) =====
+   dock button: the count badge is phone-only (mobile.css); desktop keeps the full label and the line under it.
+   question bar: folds to one line (app.js askFold); the chevron turns, the chips fade in when it opens.
+   shipped card: the kind label shrinks (ellipsis) so the time and the avatar stay inside the card. */
+#drawer .dw-acts .ok-n { display: none; }
+.dw-askbar .ask-rt { display: flex; align-items: center; min-width: 0; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.dw-askbar .ask-rt i { flex: none; }
+.dw-askbar .ask-rt b { flex: none; }
+.dw-askbar .ask-rt span { min-width: 0; padding-left: .3em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dw-askbar .ask-cv { flex: none; margin-left: auto; padding-left: 8px; box-sizing: content-box; color: var(--dim); transition: rotate var(--m-base, .28s) var(--m-ease-emph, ease); }
+.dw-askbar:not(.fold) .ask-cv { rotate: 180deg; }
+.dw-askbar:not(.fold) .ask-rt { align-items: flex-start; }
+.dw-askbar:not(.fold) .ask-rt i { margin-top: .55em; }
+.dw-askbar:not(.fold) .ask-rt span { white-space: normal; }
+.dw-askbar:not(.fold) .ask-cv { margin-top: .5em; }
+.dw-askbar.fold .ask-opts, .dw-askbar.fold .ask-more { display: none; }
+.dw-askbar.fold .ask-rt { margin-bottom: 0; }
+.dw-askbar:not(.fold) .ask-opts { animation: askOptsIn var(--m-base, .28s) var(--m-ease-emph, ease) both; }
+@keyframes askOptsIn { from { opacity: 0; transform: translateY(4px); } }
+@media (prefers-reduced-motion: reduce) { .dw-askbar .ask-cv { transition: none; } .dw-askbar:not(.fold) .ask-opts { animation: none; } }
+.dc-sh.c .k .kl, .dc-sh.c .k .kt { padding: 0; font-size: inherit; color: inherit; }   /* not the cover card's "name · time" span (.dc-sh span) */
+.dc-sh.c .k .kl { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.dc-sh.c .k .kt { flex: none; }
