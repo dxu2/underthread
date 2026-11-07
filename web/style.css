@@ -635,7 +635,7 @@ textarea { font-family: var(--f-body); }
 }
 
 /* ---------- English: Latin text wants tighter tracking and the display face ---------- */
-html[lang="en"] .nav-i { font-family: var(--f-display); font-size: var(--fs-15); letter-spacing: .14em; }
+html[lang="en"] .nav-i { font-family: "Nunito", var(--f-sys); font-size: var(--fs-15); letter-spacing: .01em; }   /* t-nav-shoot: was Cinzel + .14em */
 html[lang="en"] .ph h1 { font-family: var(--f-display); letter-spacing: .3em; padding-left: .3em; font-size: var(--fs-28); }
 html[lang="en"] .btn, html[lang="en"] .hdr-ctrl, html[lang="en"] .grp-h, html[lang="en"] .col-h { letter-spacing: .1em; }
 html[lang="en"] .ch-who .nm, html[lang="en"] .rc-h .nm { font-family: var(--f-display); letter-spacing: 0; }
@@ -2666,3 +2666,20 @@ div.rq { cursor: default; } div.rq:hover { background: color-mix(in srgb, var(--
 @media (min-width: 761px) { #nav .nav-i[data-go="mail"] { display: none; } }
 @media (max-width: 760px) { .hdr-ctrl .hc-mail { display: none !important; } }
 @media (prefers-reduced-motion: reduce) { .hdr-ctrl .hc-mail { transition: none; } }
+
+
+/* ===== t-nav-shoot (11-05): left rail font + 制作 / Studio sub tabs.
+   Nunito (SIL OFL 1.1, web/fonts/Nunito-OFL.txt), latin subset, variable weight, self-hosted. CJK falls through to the system font, so Chinese rows look the same. */
+@font-face { font-family: "Nunito"; font-style: normal; font-weight: 200 1000; font-display: swap; src: url("/static/fonts/nunito-latin.woff2") format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
+.nav-i { font-family: "Nunito", var(--f-sys); }
+html[lang="en"] .nav-i { font-weight: 500; } html[lang="en"] .nav-i.on, html[lang="en"] #nav .nav-i.on { font-weight: 700; }
+.nv-t { position: relative; }
+.nv-ic, .nv-ul, .nv-knot { display: none; }   /* t-thread-motif: rail icons + the selected-row thread show only under 特典 (theme-ut.css) */
+/* 制作 sub tabs: same control as 设置; switching fades the page out, then slides it in from the side you moved to (app.js data-stutab) */
+.ph-studio + .stu-tabs { margin-top: -4px; }
+#pagebody.stu-out > :not(.ph):not(.stu-tabs) { opacity: 0; transition: opacity .09s ease-out; }
+#pagebody.stu-in-r > :not(.ph):not(.stu-tabs) { animation: st-in-r .2s var(--ease) both; }
+#pagebody.stu-in-l > :not(.ph):not(.stu-tabs) { animation: st-in-l .2s var(--ease) both; }
+@media (max-width: 760px) { .ph-studio + .stu-tabs { margin: 0 0 14px; } .stu-tabs .seg { max-width: 100%; } .stu-tabs .seg-i { padding: 8px 12px; } }
+@media (prefers-reduced-motion: reduce) { #pagebody.stu-in-r > *, #pagebody.stu-in-l > * { animation: none; } #pagebody.stu-out > * { transition: none; } }

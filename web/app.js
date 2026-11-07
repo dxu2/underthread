@@ -27,7 +27,7 @@
     zh: { quests: "委托", all_quests: "全部", search_ph: "搜索条目和对话",
       review: "首页", main: "主线",   // t-nav-home: display name only (the page key stays "review")
       side: "支线", daily: "日常委托", urgent: "紧急活动", ongoing: "常驻活动",
-      pipe: "制作线", board: "委托板", logs: "日志", reports: "报告", channels: "频道", docs: "文档", assets: "素材", roles: "角色", mail: "信箱",
+      pipe: "制作线", board: "委托板", logs: "日志", reports: "报告", channels: "频道", studio: "制作", docs: "文档", assets: "素材", roles: "角色", mail: "信箱",
       today: "今日日程", meetings: "个", team: "TEAM", stamina: "体力", updated: "更新于",
       todo: "待办", doing: "进行中", review_s: "待你审核", waiting: "等别人", done: "完成",
       plan: "待拍板", deliverable: "待验收", question: "待回答", task: "任务",
@@ -65,7 +65,7 @@
     },
     en: { quests: "Quests", all_quests: "All", search_ph: "Search items and chats",
       review: "Home", main: "Main quest", side: "Side quest", daily: "Daily", urgent: "Urgent", ongoing: "Ongoing",
-      pipe: "Pipeline", board: "Board", logs: "Log", reports: "Reports", channels: "Channels", docs: "Docs", assets: "Assets", roles: "Roster", mail: "Mailbox",
+      pipe: "Pipeline", board: "Board", logs: "Log", reports: "Reports", channels: "Channels", studio: "Studio", docs: "Docs", assets: "Assets", roles: "Roster", mail: "Mailbox",
       today: "Today", meetings: "", team: "TEAM", stamina: "Stamina", updated: "updated",
       todo: "To do", doing: "In progress", review_s: "Your review", waiting: "Waiting", done: "Done",
       plan: "Decide", deliverable: "Accept", question: "Answer", task: "Task",
@@ -104,7 +104,7 @@
   };
   const t = (k, vars) => { let s = (T[UI.lang] && T[UI.lang][k]) ?? T.zh[k] ?? k; for (const [a, b] of Object.entries(vars || {})) s = s.replace("{" + a + "}", b); return s; };
   const EN_SUB = { settings: "SETTINGS", review: "HOME", main: "MAIN QUEST", side: "SIDE QUEST", daily: "DAILY COMMISSIONS", urgent: "URGENT EVENTS",
-    ongoing: "ONGOING EVENTS", pipe: "PRODUCTION LINE", board: "COMMISSION BOARD", logs: "JOURNAL", reports: "REPORTS", channels: "CHANNELS", docs: "ARCHIVE", assets: "ASSET LIBRARY", roles: "ROSTER", mail: "MAILBOX" };
+    ongoing: "ONGOING EVENTS", studio: "STUDIO", pipe: "PRODUCTION LINE", board: "COMMISSION BOARD", logs: "JOURNAL", reports: "REPORTS", channels: "CHANNELS", docs: "ARCHIVE", assets: "ASSET LIBRARY", roles: "ROSTER", mail: "MAILBOX" };
   const CATS = ["main", "side", "daily", "urgent", "ongoing"];
   const STAGES = ["todo", "doing", "review", "waiting", "done"];
   const PLAT_ZH = { bili: "B站", yt: "YouTube", xhs: "小红书" }, PLAT_EN = { bili: "Bilibili", yt: "YouTube", xhs: "RedNote" };
@@ -1012,9 +1012,10 @@
   }
   function renderLeft() {
     const c = counts();
-    const navs = ["review", ...CATS, "sep", "pipe", "board", "reports", "channels", "assets", "mail", "settings"];   /* t-hdr-trim ①: 信箱 moved here from the top bar (phone: same row in 更多) */   // t-settings-tab: 日志 / 文档 / 角色 moved into 设置
+    const navs = ["review", ...CATS, "sep", "studio", "reports", "mail", "settings"];   /* t-nav-shoot (11-05): 制作线 / 委托板 / 频道 / 素材 are one 制作 row; the pages keep their own ids */   /* t-hdr-trim ①: 信箱 moved here from the top bar (phone: same row in 更多) */   // t-settings-tab: 日志 / 文档 / 角色 moved into 设置
+    const selK = STU.includes(UI.page) ? "studio" : UI.page, sew = UI.navSew !== selK; UI.navSew = selK;   /* t-thread-motif ②: the thread sews in only when the selection changes, not on every poll rebuild */
     $("#nav").innerHTML = navs.map(k => k === "sep" ? `<div class="nav-sep"></div>` :
-      `<button class="nav-i ${UI.page === k ? "on" : ""} ${k === "urgent" && c.urgent ? "urgent" : ""}" data-go="${k}"><span>${t(k)}</span>${k === "mail" ? (c.mail ? `<span class="n mb">${c.mail > 99 ? "99+" : c.mail}</span>` : `<span class="n z"></span>`) : `<span class="n${c[k] === 0 ? " z" : ""}">${c[k] ?? ""}</span>`}</button>`).join("");
+      `<button class="nav-i ${selK === k ? "on" : ""} ${k === "urgent" && c.urgent ? "urgent" : ""}" data-go="${k}"><span>${NAV_IC[k] ? `<i class="nv-ic" aria-hidden="true"><svg viewBox="0 0 24 24">${NAV_IC[k]}</svg></i>` : ""}<span class="nv-t">${t(k)}${selK === k ? `<svg class="nv-ul${sew ? " sew" : ""}" viewBox="0 0 100 6" preserveAspectRatio="none" aria-hidden="true"><path pathLength="1" d="M1 3.6C20 2.2 40 4.4 60 3.2S88 2.6 96 3.4"/></svg><i class="nv-knot${sew ? " sew" : ""}" aria-hidden="true"></i>` : ""}</span></span>${k === "mail" ? (c.mail ? `<span class="n mb">${c.mail > 99 ? "99+" : c.mail}</span>` : `<span class="n z"></span>`) : `<span class="n${c[k] === 0 ? " z" : ""}">${c[k] ?? ""}</span>`}</button>`).join("");
 
     // calendar
     const today = dayKey(new Date()), tmr = dayKey(new Date(Date.now() + 864e5));
@@ -1065,11 +1066,32 @@
     const oi = e.target.closest("[data-item]"); if (oi && !e.target.closest("button")) { openItem(oi.dataset.item); return; }
   });
   const SET_TABS = ["general", "roles", "docs", "logs", "system"];
-  const pageAlias = p => { if (["roles", "docs", "logs"].includes(p)) { UI.setTab = p; LS.set("setTab", p); return "settings"; } return p === "home" ? "review" : p; };   // t-settings-tab: old pages = 设置 tabs   // r-improve-1102 P5: #page=home (the phone 首页 tab's name) = the 首页 page, key "review"
+  /* t-nav-shoot: the 制作 / Studio group. Each sub page keeps its id (#page=pipe etc. still work, wide layout unchanged); "studio" opens the last one used. */
+  const STU = ["pipe", "board", "channels", "assets"];
+  const STU_L = { pipe: ["制作线", "Pipeline"], board: ["委托板", "Board"], channels: ["频道", "Channels"], assets: ["素材", "Assets"] };
+  /* t-thread-motif: left rail icons (work/t-thread-motif/icons, 24 grid, stroke = currentColor); shown only under 特典 and only on desktop (CSS) */
+  const NAV_IC = {
+    review: '<path d="M3.5 11 12 4l8.5 7"/><path d="M5.5 9.5V20h13V9.5"/><path d="M10 20v-3.2a2 2 0 0 1 4 0V20"/>',
+    main: '<path d="M7 6.5V13a5 5 0 0 0 10 0V6"/><circle cx="17" cy="4.2" r="1.7" fill="currentColor" stroke="none"/><path d="M3.5 13h17"/>',
+    side: '<path d="M7 20.5V5.5"/><circle cx="7" cy="3.6" r="1.6" fill="currentColor" stroke="none"/><path d="M7 16c0-4.4 2.8-7 7-7h2.5"/><circle cx="18.6" cy="9" r="1.6" fill="currentColor" stroke="none"/>',
+    daily: '<rect x="4" y="5.5" width="16" height="14.5" rx="2.5"/><path d="M4 10h16M8.5 3.5v4M15.5 3.5v4"/><path d="M10.2 12.6l3.6 3.6M13.8 12.6l-3.6 3.6"/>',
+    urgent: '<circle cx="15" cy="9" r="3.6" fill="currentColor"/><path d="M12.4 11.6 4.5 19.5"/>',
+    ongoing: '<path d="M12 12c-2-3-3.8-4.5-6-4.5a4.5 4.5 0 0 0 0 9c2.2 0 4-1.5 6-4.5s3.8-4.5 6-4.5a4.5 4.5 0 0 1 0 9c-2.2 0-4-1.5-6-4.5z"/>',
+    studio: '<path d="M3 9.8A1.8 1.8 0 0 1 4.8 8h2.4l1.6-2.5h6.4L16.8 8h2.4A1.8 1.8 0 0 1 21 9.8v8.4a1.8 1.8 0 0 1-1.8 1.8H4.8A1.8 1.8 0 0 1 3 18.2z"/><circle cx="12" cy="13.6" r="3.4"/><path d="M12 13.6v.01"/>',
+    reports: '<path d="M6 3.5h8l4.5 4.5v12.5H6z"/><path d="M14 3.5V8h4.5"/><path d="M8.6 17l2.4-3 2 1.6 2-2.6"/>',
+    mail: '<rect x="3" y="5.5" width="18" height="13" rx="2.5"/><path d="M3.8 7.2l8.2 6.3 8.2-6.3"/>',
+    settings: '<path d="M3.5 8h3.2M11.3 8h9.2M3.5 16h9.2M17.3 16h3.2"/><circle cx="9" cy="8" r="2.3"/><circle cx="15" cy="16" r="2.3"/>',
+  };
+  function stuTabs(k) {   /* same segmented control as 设置 */
+    const en = UI.lang === "en";
+    return `<div class="st-tabs stu-tabs"><div class="seg" data-seg="stutab" role="tablist">${STU.map(x => `<button type="button" class="seg-i ${x === k ? "on" : ""}" role="tab" aria-selected="${x === k}" data-stutab="${x}">${STU_L[x][en ? 1 : 0]}</button>`).join("")}</div></div>`;
+  }
+  const pageAlias = p => { if (p === "studio") { const l = LS.get("stuTab", "pipe"); return STU.includes(l) ? l : "pipe"; } if (["roles", "docs", "logs"].includes(p)) { UI.setTab = p; LS.set("setTab", p); return "settings"; } return p === "home" ? "review" : p; };   // t-settings-tab: old pages = 设置 tabs   // r-improve-1102 P5: #page=home (the phone 首页 tab's name) = the 首页 page, key "review"
   function go(p) {
     p = pageAlias(p);
     // the "new" group on the review page compares against when you last left it
     if (UI.page === "review" && p !== "review") { UI.seen.review = new Date().toISOString(); LS.set("seen", UI.seen); }
+    if (STU.includes(p)) LS.set("stuTab", p);
     UI.page = p; LS.set("page", p); closeItem(true); renderLeft(); renderPage(true);
     window.FX && FX.enter($("#pagebody"));
   }
@@ -1081,6 +1103,7 @@
     return `<div class="ink-eb">${day}<i></i>${right}</div>`; }
   function pageHead(k, extra = "") {
     if (UI.noHead) return extra;   // t-settings-tab: a page drawn inside a 设置 tab keeps its bars, not its masthead
+    if (STU.includes(k)) return `<div class="ph ph-studio ph-${k}">${inkEb("Underthread")}<h1>${t("studio")}</h1>${UI.lang === "zh" ? `<div class="en">${EN_SUB.studio}</div>` : ""}${orn()}</div>${stuTabs(k)}${extra}`;   // t-nav-shoot
     return `<div class="ph ph-${k}">${inkEb("Underthread")}<h1>${t(k)}</h1>${UI.lang === "zh" ? `<div class="en">${EN_SUB[k] || ""}</div>` : ""}${orn()}</div>${extra}`;
   }
   function card(it) {
@@ -1678,6 +1701,14 @@
     if (pane && !RMQ_S.matches && was !== k) { pane.classList.add("st-out"); setTimeout(draw, 90); } else draw();   // fade out, then slide the new pane in from the side you moved to
   }
   document.addEventListener("click", e => { const b = e.target.closest("[data-settab]"); if (b) setTab(b.dataset.settab); });
+  /* t-nav-shoot: 制作 sub tabs. Fade the page out (90 ms), switch, slide the new page in from the side you moved to; reduced motion = just switch. */
+  document.addEventListener("click", e => {
+    const b = e.target.closest("[data-stutab]"); if (!b) return;
+    const k = b.dataset.stutab, was = UI.page; if (!STU.includes(k) || k === was) return;
+    const body = $("#pagebody"), dir = STU.indexOf(k) >= STU.indexOf(was) ? "r" : "l";
+    const draw = () => { go(k); if (RMQ_S.matches) return; body.classList.remove("stu-out"); body.classList.add("stu-in-" + dir); setTimeout(() => body.classList.remove("stu-in-r", "stu-in-l"), 260); };
+    if (body && !RMQ_S.matches) { body.classList.add("stu-out"); setTimeout(draw, 90); } else draw();
+  });
   const stRow = (b, sm, right, attrs = "", tag = "button") => `<${tag} ${tag === "button" ? 'type="button" ' : ""}class="st-row" ${attrs}><span class="st-tx"><b>${b}</b>${sm ? `<small>${sm}</small>` : ""}</span>${right}</${tag}>`;
   const stSeg = (key, list, on, attr) => `<div class="seg st-seg" data-seg="${key}" role="radiogroup">${list.map(([v, zh, en]) => `<button type="button" class="seg-i ${v === on ? "on" : ""}" role="radio" aria-checked="${v === on}" ${attr}="${v}">${UI.lang === "en" ? en : zh}</button>`).join("")}</div>`;
   const stSw = on => `<span class="sw ${on ? "on" : ""}" aria-hidden="true"><i></i></span>`;
