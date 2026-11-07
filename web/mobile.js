@@ -130,6 +130,46 @@
       }
     });
   }
+  /* t-m-tabbar-ig (direction B): icon-only bar. The name (plus the unread count) lives in aria-label / title; a long press shows it as a tip above the pill. */
+  function tbmName(it, n) {
+    const t = en() ? it.en : it.zh;
+    if (!n) return t;
+    return en() ? `${t}, ${n} unread` : (it.k === "home" ? `${t} · ${n} 张待你看` : `${t} · ${n} 条未读`);
+  }
+  function tbmNames(row, items, bd, act) {
+    row.querySelectorAll("button").forEach(b => {
+      const it = items.find(x => x.k === b.dataset.k); if (!it) return;
+      const name = tbmName(it, bd[it.k] || 0);
+      if (b.getAttribute("aria-label") !== name) { b.setAttribute("aria-label", name); b.title = name; }
+      const cur = b.dataset.k === act;
+      if (cur !== b.hasAttribute("aria-current")) { if (cur) b.setAttribute("aria-current", "page"); else b.removeAttribute("aria-current"); }
+    });
+  }
+  function tbmTip(bar) {
+    let timer = 0, hide = 0, shown = false, tip = null;
+    const off = () => { clearTimeout(timer); if (tip) tip.classList.remove("on"); };
+    const show = b => {
+      if (!tip) { tip = document.createElement("span"); tip.className = "tb-tip"; tip.setAttribute("aria-hidden", "true"); bar.appendChild(tip); }
+      const row = bar.querySelector(".tb-row"); if (!row) return;
+      tip.textContent = b.getAttribute("aria-label") || "";
+      const br = bar.getBoundingClientRect(), r = b.getBoundingClientRect(), rr = row.getBoundingClientRect();
+      tip.style.left = (r.left + r.width / 2 - br.left) + "px";
+      tip.style.bottom = (br.bottom - rr.top + 8) + "px";
+      tip.classList.add("on"); shown = true;
+      try { if (navigator.vibrate) navigator.vibrate(8); } catch (e) {}
+    };
+    bar.addEventListener("pointerdown", e => {
+      const b = e.target.closest(".tb-row button"); if (!b) return;
+      clearTimeout(hide); off(); shown = false;
+      timer = setTimeout(() => show(b), 450);
+    });
+    const up = () => { clearTimeout(timer); if (shown) { clearTimeout(hide); hide = setTimeout(off, 900); } };
+    bar.addEventListener("pointerup", up);
+    ["pointercancel", "pointerleave"].forEach(ev => bar.addEventListener(ev, () => { clearTimeout(timer); clearTimeout(hide); hide = setTimeout(off, shown ? 600 : 0); }));
+    bar.addEventListener("click", e => { if (shown) { shown = false; e.preventDefault(); e.stopPropagation(); } }, true);
+    bar.addEventListener("contextmenu", e => { if (e.target.closest(".tb-row button")) e.preventDefault(); });
+    window.addEventListener("blur", off);
+  }
   function tbmPageIn(it) {   // only the container the tab just switched to; one animation, no re-render
     if (it.to[0] === "page") { if (window.FX && FX.rows) FX.rows($("#pagebody")); return; }   // mo1: rows rise in one by one (replaces the whole-container fade; guarded against App.go's own entrance)
     const els = it.to[0] === "menu" ? [$("#left")] : [];
@@ -173,6 +213,7 @@
         if (was !== it.k) tbmPageIn(it);
       });
       tbmPress(bar);
+      tbmTip(bar);
       const rowEl = $(".tb-row", bar);
       if (window.ResizeObserver) new ResizeObserver(() => { const r = $(".tb-row", bar); if (r && r._built) { const i = r._idx; if (r.querySelector(".tb-sel")._anim == null) tbmSel(r, i, false); } }).observe(rowEl);
     }
@@ -182,13 +223,14 @@
     const key = (en() ? "en" : "zh");
     if (row._lang !== key || !row._built || row._html === null) {   // structural build: once per language (setVariant resets _html to force a rebuild)
       row.querySelectorAll("button").forEach(b => b.remove());
-      row.insertAdjacentHTML("beforeend", items.map(it => { const t = en() ? it.en : it.zh; return `<button data-k="${it.k}">${svg(it.i)}<span class="l" data-t="${t}">${t}</span></button>`; }).join(""));
+      row.insertAdjacentHTML("beforeend", items.map(it => { const t = en() ? it.en : it.zh; return `<button data-k="${it.k}" aria-label="${t}" title="${t}">${svg(it.i)}<span class="l" data-t="${t}" aria-hidden="true">${t}</span></button>`; }).join(""));
       row._lang = key; row._html = "built";
     }
     const first = !row._built;
     const idx = items.findIndex(it => it.k === act), prevIdx = row._idx;
     row.querySelectorAll("button").forEach(b => { const on = b.dataset.k === act; if (b.classList.contains("on") !== on) b.classList.toggle("on", on); });
     tbmDots(row, bd);
+    tbmNames(row, items, bd, act);
     tbmSel(row, idx, !first);
     if (!first && idx >= 0 && idx !== prevIdx) tbmPop(row.querySelectorAll("button")[idx]);
     row._idx = idx; row._built = true;
