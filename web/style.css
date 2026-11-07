@@ -1149,6 +1149,10 @@ html[data-theme="light"] .mc-st { --streak: rgba(0,0,0,.10); }
   -webkit-mask-composite: source-in, source-in; mask-composite: intersect;
   will-change: transform; animation: mc-art-in .7s .04s cubic-bezier(.16,1,.3,1) both, mc-art-drift 2.6s linear both; }
 .mc.noart .mc-art, .mc.noart .mc-glow { display: none; }
+/* t-mc-halo: transparent cut-outs (art/cut/<id>.webp): no edge mask, halo from a theme token instead of the jpg corner (manager/scout jpgs have black backdrops -> black halo on light themes) */
+.mc { --mc-glow: rgb(226 210 200); }
+.mc.cut { --bgc: var(--mc-glow); }
+.mc.cut .mc-art { -webkit-mask-image: none; mask-image: none; }
 @keyframes mc-art-in { from { transform: translateX(58vw) skewX(-7deg) scale(1.1); opacity: 0; } 35% { opacity: 1; } }
 @keyframes mc-art-drift { from { translate: 0 0; } to { translate: -3vw 0; } }
 .mc-flash { inset: 0; background: #fff; opacity: 0; animation: mc-flash .42s ease-out both; }

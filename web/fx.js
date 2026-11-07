@@ -165,20 +165,22 @@
     if (live) live.remove();
     const own = A.agent(o.owner || "manager"), zh = (A.UI.lang || "zh") !== "en";
     const el = document.createElement("div");
-    el.className = "mc"; if (o.key) el.dataset.key = String(o.key);
+    el.className = "mc cut"; if (o.key) el.dataset.key = String(o.key);
     if (matchMedia("(prefers-reduced-motion: reduce)").matches) el.classList.add("rm");
     el.setAttribute("role", "status");
     const esc = x => String(x == null ? "" : x).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
     el.innerHTML = `<div class="mc-dim"></div><div class="mc-glow"></div><div class="mc-st"><i></i><i></i><i></i></div>
-      <img class="mc-art" alt="" src="/static/art/${encodeURIComponent(own.id)}.jpg" decoding="async">
+      <img class="mc-art" alt="" src="/static/art/cut/${encodeURIComponent(own.id)}.webp?v=1" decoding="async">
       <div class="mc-flash"></div>
       <div class="mc-plate"><span class="mc-k">MISSION COMPLETE</span><b class="mc-main">${zh ? "委托完成" : "Mission Complete"}</b></div>
       <div class="mc-info"><div class="mc-t">${esc(o.title || "")}</div><div class="mc-by">${A.av(own, "sm")}<span>${esc(A.aname(own))}${o.time ? " · " + esc(o.time) : ""}</span></div></div>`;
     const img = el.querySelector(".mc-art");
+    /* t-mc-halo: cut-out (transparent) art first, halo colour = theme token --mc-glow. A role with no cut-out falls back to its jpg: mask + corner-sampled --bgc as before. */
     img.addEventListener("load", () => {
+      if (el.classList.contains("cut")) return;
       try { const c = document.createElement("canvas"); c.width = c.height = 1; const x = c.getContext("2d"); x.drawImage(img, 0, 0, 20, 20, 0, 0, 1, 1); const d = x.getImageData(0, 0, 1, 1).data; el.style.setProperty("--bgc", `rgb(${d[0]},${d[1]},${d[2]})`); } catch { }
     });
-    img.addEventListener("error", () => el.classList.add("noart"));
+    img.addEventListener("error", () => { if (el.classList.contains("cut")) { el.classList.remove("cut"); img.src = `/static/art/${encodeURIComponent(own.id)}.jpg`; } else el.classList.add("noart"); });
     let ended = false;
     const finish = () => { if (ended) return; ended = true; clearTimeout(guard); el.remove(); try { o.onEnd && o.onEnd(); } catch { } };
     const guard = setTimeout(finish, 3400);   // animationend can be skipped (hidden tab, display:none): never leave the overlay behind
