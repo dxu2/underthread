@@ -23,15 +23,6 @@ try{if(m!=="auto"&&m!=="manual"){m=L.getItem("rt.theme")?"manual":"auto";L.setIt
 if(m!=="auto"||/[#&]theme=/.test(location.hash))return;var q=function(s){return matchMedia("(prefers-color-scheme: "+s+")").matches;},h=new Date().getHours();
 t=q("dark")?"dark":q("light")?"white":(h>=7&&h<19?"white":"dark");try{L.setItem("rt.theme",JSON.stringify(t));}catch(e){}d.dataset.theme=t;
 var c=document.querySelector('meta[name="theme-color"]');if(c)c.content=t==="white"?"#ffffff":"#040404";})();</script>
-<!-- t-splash: opening (B 穿针) guard. Plays once per session unless rt.splash.mode="off", the tab opened in the background, or the hash has #nosplash / push= (a notification tap goes straight to the card).
-     Covers the first frame in the theme's base colour until splash.js takes over; drops itself after 4 s whatever happens. -->
-<script>(function(){var d=document.documentElement,L=localStorage,m="session",t=d.dataset.theme,h;try{m=JSON.parse(L.getItem("rt.splash.mode"))||"session";}catch(e){}
-if(m==="off"||document.visibilityState==="hidden"||/[#&](nosplash|push=)/.test(location.hash))return;try{if(sessionStorage.getItem("rt.splash")==="1")return;sessionStorage.setItem("rt.splash","1");}catch(e){return;}
-try{var r=JSON.parse(L.getItem("rt.theme"));if(r)t=r;}catch(e){}h=/[#&]theme=(\w+)/.exec(location.hash);if(h)t=h[1];
-d.dataset.splash="1";d.style.setProperty("--ut-guard",t==="white"?"#ffffff":t==="light"?"#e8e0cc":"#040404");setTimeout(function(){d.removeAttribute("data-splash");},4000);})();</script>
-<style>html[data-splash="1"] body::before{content:"";position:fixed;inset:0;z-index:2147483000;background:var(--ut-guard,#040404)}</style>
-<link rel="stylesheet" href="/static/splash.css?v=1">
-<script src="/static/splash.js?v=1" defer></script>
 <!-- ri1106-P1: no Google Fonts request any more; Cinzel (latin) is self-hosted in web/fonts, see style.css @font-face -->
 <link rel="stylesheet" href="/static/style.css?v=154">
 <link rel="stylesheet" href="/static/mobile.css?v=120" media="(max-width: 760px)">
@@ -39,7 +30,7 @@ d.dataset.splash="1";d.style.setProperty("--ut-guard",t==="white"?"#ffffff":t===
 <link rel="stylesheet" href="/static/widgets.css?v=9">   <!-- t-home-widgets: desktop widget 首页 (scoped to html[data-home=widgets]) -->
 <link rel="stylesheet" href="/static/skin-ink.css?v=8">   <!-- t-visual-ink: 墨刊 skin, every rule scoped to html[data-skin="ink"] -->
 <link rel="stylesheet" href="/static/glass.css?v=9">   <!-- t-glass-system: shared glass + motion tokens; card / rail / TOC glass. <html data-glass="0"> turns it off -->
-<link rel="stylesheet" href="/static/oss.css?v=3">   <!-- open-source build: text wordmark, hides switches for parts not shipped (stage art, voice) -->
+<link rel="stylesheet" href="/static/oss.css?v=4">   <!-- open-source build: text wordmark, hides switches for parts not shipped (stage art, voice) -->
 </head>
 <body>
 <header id="top">

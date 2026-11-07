@@ -8,3 +8,5 @@
 .hc-stage, [data-stage-set] { display: none !important; }
 /* t-settings-tab: the 设置 page rows for the stage background and the voice-call mic test (neither ships here) */
 .st-row[data-stage-tog], .st-row[data-set="mictest"] { display: none !important; }
+/* the 开屏动画 opening (splash.js) is not in the open-source build: its title is a wordmark image */
+.st-row.st-sp { display: none !important; }
