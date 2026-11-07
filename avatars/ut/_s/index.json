@@ -1,0 +1,30 @@
+{
+ "artist": {
+  "src": "artist.png",
+  "etag": "\"6aee3054-8e39d\""
+ },
+ "director": {
+  "src": "director.png",
+  "etag": "\"6aee3054-6bc21\""
+ },
+ "manager": {
+  "src": "manager.png",
+  "etag": "\"6aee3054-8176b\""
+ },
+ "ops": {
+  "src": "ops.png",
+  "etag": "\"6aee3054-80831\""
+ },
+ "scout": {
+  "src": "scout.png",
+  "etag": "\"6aee3054-7347d\""
+ },
+ "smith": {
+  "src": "smith.png",
+  "etag": "\"6aee3054-86b62\""
+ },
+ "writer": {
+  "src": "writer.png",
+  "etag": "\"6aee3054-82f9e\""
+ }
+}

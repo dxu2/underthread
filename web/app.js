@@ -182,11 +182,44 @@
     if (ST && JSON.stringify(AVS.m) !== was) render();
   });
   function avsCheck() {   // once per session: does each original still match the manifest? (HEAD = headers only)
+    avuCheck();
     if (AVS.chk || !AVS.m || !ST) return; AVS.chk = true;
     const run = () => Object.entries(ST.meta.avatars || {}).forEach(([id, f]) => { const m = AVS.m[id]; if (!m || m.src !== f) return;
       fetch(`/avatars/${encodeURIComponent(f)}`, { method: "HEAD", cache: "no-cache" }).then(r => { if (r.ok && r.headers.get("ETag") && r.headers.get("ETag") !== m.etag) { AVS.bad.add(id); render(); } }).catch(() => { }); });
     (window.requestIdleCallback || (f => setTimeout(f, 1500)))(run);
   }
+  /* t-avatar-style: the Underthread set (avatars/ut/<id>.png -> avatars/ut/_s/, same script, same manifest format). Shown only while html[data-ut] is set
+     (index.html sets it before first paint, so the first render already picks it). A role with no ut file (the user's own "me" has none on purpose) keeps
+     its normal avatar. Same ETag check as AVS, one HEAD per file per session. Switching 配色 re-renders and rewrites the /avatars/ URLs left in the DOM. */
+  const AVU = { m: (() => { try { return JSON.parse(localStorage.getItem("rt.avs.ut") || "null"); } catch (_) { return null; } })(), bad: new Set(), chk: false };
+  AVU.cold = !AVU.m;
+  AVU.ready = fetch("/avatars/ut/_s/index.json", { cache: "no-cache" }).then(r => r.ok ? r.json() : null).catch(() => null).then(m => {
+    const was = JSON.stringify(AVU.m); AVU.m = m && typeof m === "object" ? m : null;
+    try { if (AVU.m) localStorage.setItem("rt.avs.ut", JSON.stringify(AVU.m)); else localStorage.removeItem("rt.avs.ut"); } catch (_) { }
+    if (ST && JSON.stringify(AVU.m) !== was && document.documentElement.dataset.ut) { chatCount = -1; render(); avSweep(); }   /* chatCount: the chat skips an unchanged list, and avSweep cannot rewrite the drawn (data:) fallback avatars */
+  });
+  /* open-source build: the shipped set's index.json was written on another machine and a git checkout resets mtimes, so compare only the size half
+     of the ETag ("<mtime hex>-<size hex>"); a replaced file almost always changes size. Run tools/avatar_sizes.py after editing avatars/ut/. */
+  const utSz = e => String(e || "").replace(/"/g, "").split("-").pop();
+  function avuCheck() {
+    if (AVU.chk || !AVU.m) return; AVU.chk = true;
+    const run = () => Object.entries(AVU.m).forEach(([id, m]) => { if (!m || !m.src) return;
+      fetch(`/avatars/ut/${encodeURIComponent(m.src)}`, { method: "HEAD", cache: "no-cache" }).then(r => { if (!r.ok || (r.headers.get("ETag") && utSz(r.headers.get("ETag")) !== utSz(m.etag))) { AVU.bad.add(id); if (document.documentElement.dataset.ut) { render(); avSweep(); } } }).catch(() => { }); });
+    (window.requestIdleCallback || (f => setTimeout(f, 1500)))(run);
+  }
+  const AV_RE = /\/avatars\/(?:ut\/)?(?:_s\/)?([^/?'")]+?)(?:-(160|512)\.webp|\.(?:png|jpe?g|webp|gif))(?:\?[^'")]*)?/g;
+  function avSweep() {   // nodes that do not come back with render() (voice pill / big face cache their src by dataset.id) get the current set's URL
+    if (!ST) return;
+    const fix = u => u.replace(AV_RE, (all, id, sz) => { try { id = decodeURIComponent(id); } catch (_) { } return ST.agents && ST.agents[id] || id === "me" ? avatarUrl(agent(id), sz === "512") : all; });
+    document.querySelectorAll('img[src*="/avatars/"]').forEach(i => { const n = fix(i.getAttribute("src")); if (n !== i.getAttribute("src")) i.setAttribute("src", n); });
+    document.querySelectorAll('[style*="/avatars/"]').forEach(e => { const b = e.style.backgroundImage, n = fix(b); if (n !== b) e.style.backgroundImage = n; });
+    /* open-source build: with no avatars/<id>.png the Ink avatar is a drawn data: SVG that fix() cannot map back to a role, so the phone strip
+       (home.js keeps its panels between renders) is set from its data-id instead */
+    document.querySelectorAll(".dp[data-id]").forEach(d => { const a = agent(d.dataset.id); if (!a) return; const n = `url("${avatarUrl(a, true)}")`;
+      d.querySelectorAll(".dp-uti, .dp-img").forEach(e => { if (e.style.backgroundImage !== n) e.style.backgroundImage = n; }); });
+  }
+  let AVU_ON = !!document.documentElement.dataset.ut;
+  document.addEventListener("theme:change", () => { const on = !!document.documentElement.dataset.ut; if (on === AVU_ON) return; AVU_ON = on; if (ST) { chatCount = -1; render(); avSweep(); } });
   /* t-rm-pixel-office: a role with no avatars/<id> file gets a colour disc with the first character of its name (was office.js's pixel head) */
   const AVSVG = {};
   function avatarSvg(a) {
@@ -194,6 +227,7 @@
     return AVSVG[k] || (AVSVG[k] = "data:image/svg+xml," + encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" fill="${c}"/><text x="32" y="34" text-anchor="middle" dominant-baseline="central" font-family="-apple-system,PingFang SC,Hiragino Sans GB,sans-serif" font-size="30" font-weight="600" fill="#fff">${esc(ch)}</text></svg>`));
   }
   function avatarUrl(a, big) {
+    if (document.documentElement.dataset.ut && AVU.m && !AVU.bad.has(a.id)) { const u = AVU.m[a.id]; if (u && u.etag) return `/avatars/ut/_s/${encodeURIComponent(a.id)}-${big ? 512 : 160}.webp?${encodeURIComponent(u.etag.replace(/"/g, ""))}`; }
     const f = ST.meta.avatars && ST.meta.avatars[a.id];
     if (!f) return avatarSvg(a);
     const m = AVS.m && AVS.m[a.id];
@@ -330,6 +364,13 @@
   const byCreated = (a, b) => (b.created || "").localeCompare(a.created || "");
   // Ornaments live in fx.js; pathLength=1 lets CSS draw them in.
   function orn(w = 200) { return window.ORN.divider(w); }
+  /* t-thread-motif ④: empty state with a spool drawing. The art and the headline are hidden by CSS unless html[data-ut] (特典), so other themes render exactly the old text.
+     cls = the old class list (kept), h = headline override (search uses its own). */
+  const UE_ART = '<svg class="ue-art" viewBox="0 0 96 72" aria-hidden="true"><path class="ue-sp" d="M16 13h28M16 59h28M20 13v46M40 13v46"/><path class="ue-wd" d="M20 22l20-6M20 30l20-6M20 38l20-6M20 46l20-6"/><path class="ue-th" d="M40 46c8 2 16 8 26 6s12-12 12-22"/><path class="ue-nd" d="M78 30l3-22"/><ellipse class="ue-nd" cx="81.6" cy="6.4" rx="1.6" ry="2.6" transform="rotate(8 81.6 6.4)"/></svg>';
+  function utEmpty(text, cls = "empty", h) {
+    const zh = UI.lang !== "en";
+    return `<div class="${cls} ue">${UE_ART}<b class="ue-h">${h || (zh ? "线头都收好了" : "All threads tied off")}</b><span class="ue-t">${text}</span></div>`;
+  }
   function toast(msg, err) {
     const el = $("#toast"); el.textContent = msg; el.className = err ? "err" : ""; el.hidden = false;
     clearTimeout(toast._t); toast._t = setTimeout(() => el.hidden = true, 2600);
@@ -685,7 +726,7 @@
   async function snapBoot() {
     const v = await Promise.race([snapLoad().catch(() => null), new Promise(ok => setTimeout(() => ok(null), 800))]);
     if (ST || !v || !v.txt || Date.now() - v.t > SNAP.max) return;
-    await Promise.race([AVS.ready, new Promise(ok => setTimeout(ok, 300))]);
+    await Promise.race([Promise.all([AVS.ready, AVU.ready]), new Promise(ok => setTimeout(ok, document.documentElement.dataset.ut && AVU.cold ? 400 : 300))]);   /* t-avatar-style: UT with no cached ut manifest waits a little longer */
     if (ST) return;
     try { const j = JSON.parse(v.txt); UI.snap = v.t; poll.entered = 1; histSet(j); ST = j; rehydrate(); archMerge(); render(); bootDone(); syncPaint(); window.FX && FX.enter($("#pagebody")); }
     catch (e) { console.error("snapshot render failed", e); UI.snap = 0; ST = null; }
@@ -1662,8 +1703,8 @@
       const sz = hf === "review" ? snzLine() : "";   // ri1103-P2
       /* t-ri1104-p5: phone (and app-style desktop) home with nothing to approve: one quiet line instead of the big empty block,
          and no sort row (nothing to sort), so 此刻 / 今天交付 move up into the first screen. The sort row comes back with the first card. */
-      if (!list.length && phoneLike && hf === "review" && !dec.length) return pageHead("review", nrBlock()) + sz + `<div class="dc-none dc-ok" role="status"><i aria-hidden="true">✓</i><span>${t("empty_ok")}</span></div>` + today;
-      if (!list.length) return pageHead("review", bar) + sz + (dec.length ? decH + decR : hf === "review" ? `<div class="dc-none top">${t("empty_review")}</div>` : `<div class="empty">${t("empty_review")}</div>`) + today;
+      if (!list.length && phoneLike && hf === "review" && !dec.length) return pageHead("review", nrBlock()) + sz + `<div class="dc-none dc-ok ue" role="status">${UE_ART}<b class="ue-h">${UI.lang !== "en" ? "线头都收好了" : "All threads tied off"}</b><i aria-hidden="true">✓</i><span class="ue-t">${t("empty_ok")}</span></div>` + today;
+      if (!list.length) return pageHead("review", bar) + sz + (dec.length ? decH + decR : hf === "review" ? utEmpty(t("empty_review"), "dc-none top") : utEmpty(t("empty_review"))) + today;
       const seen = UI.seen.review || "";
       const fresh = list.filter(i => (i.activity || "") > seen);
       let html = pageHead("review", bar) + sz;
@@ -1747,9 +1788,9 @@
       const head = mob   // t-mailbox-polish: phone = one row, filters + a small 全部已读 pill (masthead is hidden there)
         ? pageHead("mail") + `<div class="filters mb-row">${segs}<button class="btn-s mb-readall" data-mailall>${t("mark_all")}</button></div>`
         : pageHead("mail", `<div class="ph-bar"><button class="btn-s" data-mailall>${t("mark_all")}</button></div>`) + `<div class="filters">${segs}</div>`;
-      if (mob) return head + (list.length ? `<div class="act-list">${ringOnce(() => mailGroups(list).map(mailRow).join(""))}</div>` : `<div class="empty calm">${t("empty_mail")}</div>`);
+      if (mob) return head + (list.length ? `<div class="act-list">${ringOnce(() => mailGroups(list).map(mailRow).join(""))}</div>` : utEmpty(t("empty_mail"), "empty calm"));
       return head +
-        (list.length ? ringOnce(() => list.map(m => `<div class="mail-i ${m.read ? "" : "unread"}" data-mail="${m.id}"><span class="u"></span><span class="tm">${whenH(m.t)}</span>${m.agent ? av(agent(m.agent), "sm") : "<span></span>"}<span class="tx">${esc(mailPv(m.text, m.agent && agent(m.agent)))}</span></div>`).join("")) : `<div class="empty">${t("empty")}</div>`);
+        (list.length ? ringOnce(() => list.map(m => `<div class="mail-i ${m.read ? "" : "unread"}" data-mail="${m.id}"><span class="u"></span><span class="tm">${whenH(m.t)}</span>${m.agent ? av(agent(m.agent), "sm") : "<span></span>"}<span class="tx">${esc(mailPv(m.text, m.agent && agent(m.agent)))}</span></div>`).join("")) : utEmpty(t("empty")));
     },
   };
   // ===== t-agent-memory v2: 记忆 / 灵魂 pills on the role card (viewer lives in rolefiles.js; read-only) =====
@@ -1881,7 +1922,8 @@
     const now = `<span class="st-now">${en ? "Now" : "现在"} <b>${cur === "white" ? (en ? "Day" : "昼") : (en ? "Night" : "夜")}</b>${mode === "auto" ? ` · ${sys}` : ""}</span>`;
     const look = stRow(en ? "Theme" : "主题", (mode === "auto" ? (en ? "Auto follows your system light / dark setting." : "自动：跟着系统的深浅色走（Mac 和 iPhone 选「自动」外观时，会按日出日落切换）") : (en ? "Fixed on this device." : "手动：固定用选好的这一套，只在这台设备生效")) + now,
         stSeg("tmode", [["auto", "自动", "Auto"], ["dark", "夜", "Night"], ["white", "昼", "Day"]], mode === "auto" ? "auto" : cur, "data-tmode"), "", "div")
-      + stRow(en ? "Stage background" : "舞台背景", en ? "Your terrace office behind everything; night / day follow the theme" : "你画的露台办公室做背景，夜 / 昼跟着上面的主题", stSw(!!R.dataset.stage), `data-stage-tog aria-pressed="${!!R.dataset.stage}"`)
+      + utRow(en) + texRow(en)
+      + (ut => { const st = ut ? stageSaved() : !!R.dataset.stage; return stRow(en ? "Stage background" : "舞台背景", stageSub(en, ut), stSw(st), `data-stage-tog aria-pressed="${st}"` + (ut ? ' aria-disabled="true"' : ""), "button").replace('class="st-row"', `class="st-row${ut ? " st-dis" : ""}"`); })(!!R.dataset.ut)
       + stRow(en ? "Power saving" : "省电模式", psSub(psNow()), stSw(psNow()), `data-power-tog aria-pressed="${psNow()}"`)
       + spRow(en)
       + (MOBQ.matches ? "" : stRow(en ? "Home style" : "首页样式", en ? "This computer only" : "只在这台电脑生效", stSeg("homestyle", [["dense", "紧凑", "Dense"], ["widgets", "小组件", "Widgets"], ["app", "app 式", "App"], ["classic", "原来的", "Classic"]], UI.home, "data-home-set"), "", "div"))
@@ -1920,6 +1962,24 @@
   const spOn = () => { try { return JSON.parse(localStorage.getItem("rt.splash.mode")) !== "off"; } catch { return true; } };
   const spSub = on => UI.lang === "en" ? (on ? "Plays once each time you open the dashboard; tap or press any key to skip" : "Off: the dashboard opens straight away")
     : (on ? "每次打开看板播一次，点一下或按任意键跳过" : "已关：打开看板直接进");
+  // t-theme-ut: 配色 row (墨刊 / Underthread 特典), right under 主题. Flipped in place by mobile.js ui13 (utSet / utPaint).
+  const utNow = () => { try { return JSON.parse(localStorage.getItem("rt.ut")) === "ink" ? "ink" : "ut"; } catch (err) { return "ut"; } };   /* open-source build: 特典 is the default */
+  const stageSaved = () => { try { return JSON.parse(localStorage.getItem("rt.stage")) === true; } catch (err) { return false; } };
+  function stageSub(en, ut) {
+    return ut ? (en ? "Not shown with the Underthread palette; comes back when you switch to Ink" : "特典主题下不显示，切回墨刊后恢复")
+      : (en ? "Your terrace office behind everything; night / day follow the theme" : "你画的露台办公室做背景，夜 / 昼跟着上面的主题");
+  }
+  function utRow(en) {
+    return stRow(en ? "Palette" : "配色", en ? "Underthread (the default) is solid coffee / cream with the needle-thread avatars. Ink is black glass. Night / Day still follow the theme above." : "特典（默认）是纯色咖啡 / 奶油，配针线头像；墨刊是黑色毛玻璃。夜 / 昼仍按上面的「主题」走",
+      stSeg("ut", [["ink", "墨刊", "Ink"], ["ut", "Underthread 特典", "Underthread"]], utNow(), "data-ut-set"), "", "div");
+  }
+  // t-theme-knit: 质感 row, generic (rt.texture = off | knit1 | knit2; leather later = one more entry here + its css). Flipped in place by mobile.js ui13 (texSet / texPaint).
+  const TEXTURES = [["off", "关", "Off"], ["knit1", "针脚", "Stitch"], ["knit2", "毛衣", "Sweater"], ["leather1", "软皮", "Leather"], ["leather2", "马鞍", "Saddle"]];   /* t-theme-leather: leather1/2 → texture-leather.css */
+  const texNow = () => { let v = null; try { v = JSON.parse(localStorage.getItem("rt.texture")); } catch (err) { } return TEXTURES.some(x => x[0] === v) ? v : "off"; };
+  function texRow(en) {
+    return stRow(en ? "Texture" : "质感", en ? "Adds a material look on top of the palette; colours stay the same. Sweater and Saddle are the stronger ones." : "在配色上叠一层材质，颜色不变；毛衣比针脚、马鞍比软皮更明显",
+      stSeg("texture", TEXTURES, texNow(), "data-tex-set"), "", "div");
+  }
   function spRow(en) {
     const on = spOn();
     return `<div class="st-row st-sp"><span class="st-tx"><b>${en ? "Opening animation" : "开屏动画"}</b><small>${spSub(on)}</small></span>`
@@ -2029,7 +2089,7 @@
     box.innerHTML = `<div class="mb-h"><div class="mb-t"><b>${t("mail")}</b><span>${UI.lang === "en" ? `${unread} unread` : `${unread} 条未读`}</span></div><button class="btn-s" data-mailall>${t("mark_all")}</button></div>
       <div class="mb-f"><div class="seg" data-seg="mailbox">${fs.map(([k, n]) => `<button class="seg-i ${f === k ? "on" : ""}" data-mailf="${k}">${n}</button>`).join("")}</div></div>
       <div class="mb-list ${enter ? "mb-enter" : ""}">${list.length ? list.map((m, i) => `<div class="mb-i ${m.read ? "" : "unread"}" data-mail="${m.id}" style="--i:${Math.min(i, 8)}">
-        ${m.agent ? av(agent(m.agent), "sm") : "<span class=\"av sm\"></span>"}<div class="mb-b"><div class="mb-m"><b>${m.agent ? esc(aname(agent(m.agent))) : ""}</b>${kindName[m.kind] ? `<i>${esc(kindName[m.kind])}</i>` : ""}<span>${whenH(m.t)}</span></div><div class="mb-x">${esc(mailPv(m.text, m.agent && agent(m.agent)))}</div></div><span class="u"></span></div>`).join("") : `<div class="empty">${t("empty")}</div>`}</div>
+        ${m.agent ? av(agent(m.agent), "sm") : "<span class=\"av sm\"></span>"}<div class="mb-b"><div class="mb-m"><b>${m.agent ? esc(aname(agent(m.agent))) : ""}</b>${kindName[m.kind] ? `<i>${esc(kindName[m.kind])}</i>` : ""}<span>${whenH(m.t)}</span></div><div class="mb-x">${esc(mailPv(m.text, m.agent && agent(m.agent)))}</div></div><span class="u"></span></div>`).join("") : utEmpty(t("empty"))}</div>
       <button class="mb-all" data-mbfull>${UI.lang === "en" ? "View all" : "查看全部"} →</button>`;
     $(".mb-list", box).scrollTop = keep;
     if (enter) setTimeout(() => { const l = $(".mb-list", box); l && l.classList.remove("mb-enter"); }, 700);
@@ -4013,6 +4073,7 @@
   // ---------- API for the mobile layer (mobile.js) ----------
   window.App = {
     okLabel, okDone, askLeft, openAsks: it => openAsks(it),   // t-btn-names
+    utEmpty: (text, cls, h) => utEmpty(text, cls, h),   /* t-thread-motif ④ (widgets.js, palette.js, mobile.js) */
     rvApprove: id => rvApprove(id, null), rvCanApprove: it => rvCanApprove(it), awaitsUser: it => awaitsUser(it), busy: it => busy(it), onYou: it => onYou(it), onYouCard: it => onYouCard(it), grpOf: it => grpOf(it), newReplies: () => newReplies(), nrDot: id => nrDot(id), decisions: () => decisions(),   // t-imp-p5 (palette)
     /* t-chrome-badge (home.js .hd-tool) */
     toolLine: w => toolLine(w), toolBadge: a => toolBadge(a), toolWhat: a => toolWhat(a),
@@ -4027,6 +4088,8 @@
     snoozed: it => snoozed(it), snzMenu: (id, anchor, done) => snzMenu(id, anchor, done), snzLine: () => snzLine(), snzText: it => snzText(it),   /* ri1103-P2 */
     usage: () => usage(), roleUsage: () => roleUsage(), ruHTML: (n, o) => ruHTML(n, o), fmtTok,   /* t-home-usage */
     themeMode: () => themeMode(), setTab: k => setTab(k),   /* t-settings-tab */
+    stageSub: (en, ut) => stageSub(en, ut),   /* t-theme-ut */
+    textures: () => TEXTURES.map(x => x[0]),   /* t-theme-knit (mobile.js texSet) */
     archAll: () => archAll(), archList: () => ARCH.all, archIx: () => archIx(),   /* t-perf A (palette.js search) */
     chatList: id => chatList(id), histAll: () => histAll(), mailUnread: () => mailUnread(), mailAll: () => mailAll(),   /* ri1105-P4 (palette.js, mobile.js) */
   };
@@ -4088,6 +4151,7 @@
   function sync(seg, force) {
     const on = seg.querySelector(".seg-i.on"), key = seg.dataset.seg || "";
     let ind = seg.querySelector(".seg-ind");
+    if (RO && !seg._ro) { seg._ro = 1; RO.observe(seg); }   /* t-m-ut-white: see RO below */
     if (!ind) { ind = document.createElement("i"); ind.className = "seg-ind"; ind.setAttribute("aria-hidden", "true"); seg.prepend(ind); }
     if (!on || !on.offsetWidth) { ind.style.opacity = 0; return false; }
     const x = on.offsetLeft, w = on.offsetWidth, prev = POS[key];
@@ -4107,6 +4171,9 @@
   let q = 0;
   function run(force) { cancelAnimationFrame(q); q = requestAnimationFrame(() => document.querySelectorAll(".seg").forEach(s => { if (force || !s._ui4 || s._ui4 !== s.querySelector(".seg-i.on")) { if (sync(s, force)) s._ui4 = s.querySelector(".seg-i.on"); } })); }
   new MutationObserver(() => run(false)).observe(document.body, { childList: true, subtree: true });
+  /* t-m-ut-white: a .seg re-rendered while its tab is hidden (offsetWidth 0) left the indicator at opacity 0, and showing the tab is not a DOM mutation,
+     so the selected item stayed light text on a light track. Watch each track's size: hidden -> shown fires and re-syncs it. */
+  const RO = typeof ResizeObserver === "function" ? new ResizeObserver(() => run(false)) : null;
   addEventListener("resize", () => run(true));
   document.fonts && document.fonts.ready.then(() => run(true));
   run(false);

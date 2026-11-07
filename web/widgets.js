@@ -290,6 +290,7 @@
     // 2 等你拍板
     const W = X.waiting, tag = i => i.category === "urgent" ? `<em class="u">${zh ? "紧急" : "Urgent"}</em>` : `<em>${kindL(i)}</em>`;
     const needs = `<section class="d-needs${W.length ? "" : " d-needs0"}" data-sec="needs"><div class="d-h"><b>${nm("review")}</b>${W.length ? `<span class="n hot">${W.length}</span>` : ""}${W.length ? "" : `<span class="d-ok">✓ ${calmText("review")}</span>`}<span class="sp"></span>${W.length > 2 ? `<button type="button" class="d-link" data-go="board">${zh ? "全部" : "All"} ${W.length} ›</button>` : ""}</div>
+      ${W.length || !A().utEmpty ? "" : A().utEmpty(calmText("review"), "d-ue")}
       ${W.length ? `<div class="d-nr">${W.slice(0, 3).map(i => { const a = A().agent(i.owner); return `<button type="button" class="d-n${i.category === "urgent" ? " urgent" : ""}" data-item="${esc(i.id)}"><span class="top"><img src="${A().avatarUrl(a)}" alt="">${tag(i)}</span><span class="t">${esc(i.title)}</span><small>${esc(A().aname(a))} · ${zh ? "等了" : "waiting"} <time class="rel" data-t="${esc(i.activity || i.updated)}" data-rel="ago">${ago(i.activity || i.updated)}</time></small></button>`; }).join("")}</div>` : ""}</section>`;
     // 3 今日目标
     const N = X.gOpen.length + X.gDone.length, K = X.gDone.length, R = 46, C = 2 * Math.PI * R;

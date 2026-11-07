@@ -898,9 +898,10 @@
     $("input", el).placeholder = en() ? "Search items and chats" : "搜索条目和对话";
     searchRender(); renderBar();
   }
-  document.addEventListener("rt-arch", () => searchRender());   // t-perf A: archived cards finished loading (App.archAll)
-  document.addEventListener("rt-hist", () => searchRender());   /* ri1105-P4: older chat landed */
-  const msNone = () => `<div class="empty">${App.t("empty")}</div>`;
+  document.addEventListener("rt-arch", () => searchRender());
+  document.addEventListener("rt-hist", () => searchRender());   /* ri1105-P4: older chat landed */   // t-perf A: archived cards finished loading (App.archAll)
+  /* t-thread-motif ④: no-result state; the spool drawing only shows under 特典 */
+  const msNone = () => App.utEmpty ? App.utEmpty(App.t("empty"), "empty", en() ? "No loose thread here" : "没找到这根线头") : `<div class="empty">${App.t("empty")}</div>`;
   function searchRender() {
     const el = sEl(); if (!el || el.hidden && !document.body.classList.contains("msearch")) return;
     const q = sq, kindOf = it => it.kind === "task" ? "deliverable" : it.kind;
@@ -919,9 +920,9 @@
       return `<button class="ms-row ms-hit" data-shit="${i}"><span class="ms-av">${App.av(x.a)}</span><span class="ms-m"><b>「${window.Pal.hlAll(window.Pal.around(x.m.text, q), q)}」</b><span>${esc(App.aname(x.a))} · ${x.m.who === "me" ? (en() ? "you" : "你说") : esc(App.aname(App.agent(x.m.who) || x.a))} · ${App.whenH(x.m.t)}</span></span></button>`; };
     const html = tabs + acts + hitsHTML + ((all || tab === "convs") && convs.length ? h(en() ? "Chats" : "对话", "convs", R.n.convs) + convs.map(convRow).join("") : "")
       + (all && items.length ? h(q ? (en() ? "Items" : "条目") : (en() ? "Recent" : "最近")) + items.map(it => `<button class="ms-row" data-sitem="${esc(it.id)}"><span class="ms-av">${App.av(App.agent(it.owner))}</span><span class="ms-m"><b>${esc(it.title)}</b><span><i class="tag ${it.stage === "review" ? kindOf(it) : ""}">${it.stage === "review" ? App.t(kindOf(it)) : esc(App.stageLabel(it.stage))}</i> ${esc(App.aname(App.agent(it.owner)))} · ${App.whenH(it.activity)}</span></span></button>`).join("") : "")
-      || `<div class="empty">${App.t("empty")}</div>`;
+      || msNone();
     const box = $(".ms-res", el);
-    if (q && html === tabs) { const e2 = `<div class="empty">${App.t("empty")}</div>`; if (box._html !== tabs + e2) { box.innerHTML = box._html = tabs + e2; } return; } if (box._html !== html) { box.innerHTML = html; box._html = html; }
+    if (q && html === tabs) { const e2 = msNone(); if (box._html !== tabs + e2) { box.innerHTML = box._html = tabs + e2; } return; } if (box._html !== html) { box.innerHTML = html; box._html = html; }
   }
   App.openSearch = () => openSearch();   // t-imp-p5: ⌘K on a phone-width window, and the home search button
   document.addEventListener("click", e => { if (mq.matches && e.target.closest("[data-msearch]")) openSearch(); });
@@ -1082,8 +1083,15 @@
   const COLORS = { dark: "#040404", light: "#e8e0cc", white: "#ffffff" };
   const meta = () => document.querySelector('meta[name="theme-color"]');
   const R = document.documentElement, inkPaper = () => R.dataset.skin === "ink" && R.dataset.inkLight !== "0";   // t-visual-ink: neutral paper replaces the warm light background
-  const sync = () => { const m = meta(), t = R.dataset.theme, c = R.dataset.stage && (t === "dark" || t === "white") ? (t === "dark" ? "#15110f" : "#f3eee9") : t === "light" && inkPaper() ? "#f4f3f0" : COLORS[t]; if (m && c && m.content !== c) m.content = c; };
-  new MutationObserver(sync).observe(R, { attributes: true, attributeFilter: ["data-skin", "data-ink-light", "data-stage"] });
+  // t-theme-ut: 配色 (rt.ut "ink" | "ut"). On ut, data-ut follows the theme (dark -> dark-warm, white -> light-warm) and the stage is paused (attribute only, rt.stage kept).
+  const utOn = () => { try { return JSON.parse(localStorage.getItem("rt.ut")) !== "ink"; } catch (err) { return true; } };   /* open-source build: 特典 is the default */
+  const UTC = { "dark-warm": "#1F110D", "light-warm": "#F7ECDA" };
+  const utSync = () => {
+    const t = R.dataset.theme, w = utOn() ? (t === "white" || t === "light" ? "light-warm" : "dark-warm") : null;
+    if (w) { if (R.dataset.ut !== w) R.dataset.ut = w; if (R.dataset.stage) delete R.dataset.stage; } else if (R.dataset.ut) delete R.dataset.ut;
+  };
+  const sync = () => { utSync(); const m = meta(), t = R.dataset.theme, c = R.dataset.ut ? UTC[R.dataset.ut] : R.dataset.stage && (t === "dark" || t === "white") ? (t === "dark" ? "#15110f" : "#f3eee9") : t === "light" && inkPaper() ? "#f4f3f0" : COLORS[t]; if (m && c && m.content !== c) m.content = c; };
+  new MutationObserver(sync).observe(R, { attributes: true, attributeFilter: ["data-skin", "data-ink-light", "data-stage", "data-theme"] });
   // t-visual-stage: 舞台 switches. night = dark theme + stage, day = white theme + stage, off = stage removed (theme kept). Remembered in rt.stage / rt.theme.
   function stageMarks() {
     const on = k => k === "off" ? !R.dataset.stage : !!R.dataset.stage && R.dataset.theme === (k === "night" ? "dark" : "white");
@@ -1127,6 +1135,45 @@
       document.dispatchEvent(new Event("theme:change"));
     });
   }
+  // t-theme-ut: the 配色 row flips in place (no page re-render); leaving 特典 brings the stage back if rt.stage is on.
+  function utPaint() {
+    const on = utOn() ? "ut" : "ink", en = App.UI && App.UI.lang === "en";
+    document.querySelectorAll("[data-ut-set]").forEach(x => { const o = x.dataset.utSet === on; x.classList.toggle("on", o); x.setAttribute("aria-checked", o); });
+    document.querySelectorAll(".seg[data-seg=ut]").forEach(s => s.append(document.createTextNode("")));
+    document.querySelectorAll("[data-stage-tog]").forEach(x => {
+      const dis = on === "ut"; x.classList.toggle("st-dis", dis); x.setAttribute("aria-disabled", dis);
+      const sm = x.querySelector("small"); if (sm && App.stageSub) sm.textContent = App.stageSub(en, dis);
+      const sw = x.querySelector(".sw"), st = !!R.dataset.stage || (dis && (() => { try { return JSON.parse(localStorage.getItem("rt.stage")) === true; } catch (err) { return false; } })());
+      if (sw) sw.classList.toggle("on", st); x.setAttribute("aria-pressed", st);
+    });
+  }
+  function utSet(v, quiet) {
+    const go = () => {
+      if (!quiet) { try { localStorage.setItem("rt.ut", JSON.stringify(v === "ut" ? "ut" : "ink")); } catch (err) { } }
+      if (!utOn()) { let st = false; try { st = JSON.parse(localStorage.getItem("rt.stage")) === true; } catch (err) { } if (st && !R.dataset.stage) R.dataset.stage = "1"; }
+      sync(); utPaint();
+      document.dispatchEvent(new Event("theme:change"));
+    };
+    if (quiet) go(); else fadeSwap(go);
+  }
+  window.addEventListener("storage", e => { if (e.key === "rt.ut" && window.App) utSet(null, true); });
+  // t-theme-knit: 质感 (rt.texture). Sets html[data-texture] (off = no attribute) and flips the segmented row in place, no page re-render.
+  function texPaint() {
+    const on = R.dataset.texture || "off";
+    document.querySelectorAll("[data-tex-set]").forEach(x => { const o = x.dataset.texSet === on; x.classList.toggle("on", o); x.setAttribute("aria-checked", o); });
+    document.querySelectorAll(".seg[data-seg=texture]").forEach(s => s.append(document.createTextNode("")));
+  }
+  function texSet(v, quiet) {
+    const ok = (App.textures ? App.textures() : ["off"]).includes(v) ? v : "off";
+    const go = () => {
+      if (!quiet) { try { localStorage.setItem("rt.texture", JSON.stringify(ok)); } catch (err) { } }
+      if (ok === "off") delete R.dataset.texture; else R.dataset.texture = ok;
+      texPaint();
+    };
+    if (quiet) go(); else fadeSwap(go);
+  }
+  window.addEventListener("storage", e => { if (e.key === "rt.texture" && window.App) { let v = null; try { v = JSON.parse(e.newValue); } catch (err) { } texSet(v, true); } });
+  sync();
   const autoTick = () => { if (tmode() === "auto") applyTheme(autoTheme()); };
   DKQ.addEventListener("change", autoTick); LTQ.addEventListener("change", autoTick);
   setInterval(autoTick, 60000);   // only matters for the clock fallback
@@ -1139,7 +1186,12 @@
       else { setMode("manual"); if (v === R.dataset.theme) App.refreshPage(); else applyTheme(v); }
       return;
     }
+    const u = e.target.closest && e.target.closest("[data-ut-set]");
+    if (u && window.App) { utSet(u.dataset.utSet); return; }
+    const tx = e.target.closest && e.target.closest("[data-tex-set]");
+    if (tx && window.App) { texSet(tx.dataset.texSet); return; }
     const s = e.target.closest && e.target.closest("[data-stage-tog]");
+    if (s && R.dataset.ut) return;   // t-theme-ut: the stage is paused under 特典
     if (s && window.App) {
       const on = !R.dataset.stage;
       fadeSwap(() => {

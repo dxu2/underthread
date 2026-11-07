@@ -1,0 +1,292 @@
+/* t-theme-ut: Underthread 特典配色（设置 → 外观 → 配色）。<html data-ut="dark-warm|light-warm">，跟着 data-theme dark / white。
+   只在 html[data-ut] 下生效；不开特典时一条都不命中。回滚：删 index.html 里这一行 link，或设置切回墨刊。
+   第 1、2 段是artist 角色的 tokens（work/t-theme-ut/tokens-*-warm.css 原样），第 3 段是接入时扫出来的漏网（纯色化）。 */
+
+/* Underthread 特典主题 · 深 · 暖棕（咖啡底，跟 app 图标一个颜色）
+   接在 data-theme="dark" 之上，<html data-theme="dark" data-ut="dark-warm">。只用实色，不用毛玻璃和渐变。
+   生成：work/t-theme-ut/build/gen.py（改 palette.py 后重跑）。 */
+html[data-theme="dark"][data-ut][data-ut="dark-warm"] {
+  --void: #170C09;
+  --bg: #1F110D;
+  --bg2: #24150F;
+  --panel: #2B1A13;
+  --panel2: #352219;
+  --solid: #26160F;
+  --line: #3B271D;
+  --line2: #4F3628;
+  --line3: #8C6D55;
+  --ink: #F4E1C2;
+  --ink2: #DCC5A2;
+  --dim: #AF9273;
+  --faint: #8A6E5A;
+  --soul: #F4E1C2;
+  --glow: #EFAF40;
+  --glow-a: rgba(239,175,64,0.24);
+  --glow-b: rgba(239,175,64,0.07);
+  --dot: #FF5A45;
+  --urgent: #F07A66;
+  --ok: #A6CC8A;
+  --warn: #F39A62;
+  --warn-rgb: 243,154,98;
+  --chip: rgba(244,225,194,0.04);
+  --chip2: #3B271D;
+  --accent: #EFAF40;
+  --accent-ink: #1F110D;
+  --accent-soft: rgba(239,175,64,0.15);
+  --accent-line: rgba(239,175,64,0.55);
+  --focus: #F6CC80;
+  --shadow: 0 14px 36px rgba(0,0,0,.45);
+  --bub: #2E1C14;
+  --bub-me: #4A3016;
+  --bub-line: #4F3628;
+  --gl: #2B1A13;
+  --glb: #4F3628;
+  --gsh: 0 4px 12px rgba(0,0,0,.30);
+  --sel: var(--accent-soft);
+  --selc: #EFAF40;
+  --dotc: #EFAF40;
+  --glass-fx: #2B1A13;
+  --glass-solid: #2B1A13;
+  --glass-panel: #2B1A13;
+  --glass-panel-fx: #2B1A13;
+  --glass-bg: #2B1A13;
+  --glass-bf: none;
+  --glass-blur: 0px;
+  --glass-line: #3B271D;
+  --glass-lite: #3B271D;
+  --glass-rim: inset 0 0 0 1px #3B271D;
+  --glass-shadow: 0 4px 12px rgba(0,0,0,.30);
+  --g-tint: #2B1A13;
+  --g-tint-2: #352219;
+  --g-tint-3: rgba(244,225,194,0.05);
+  --g-edge: #3B271D;
+  --g-hi: transparent;
+  --g-hi-2: transparent;
+  --g-face: #2B1A13;
+  --g-ring: inset 0 0 0 1px #3B271D;
+  --g-sh: 0 14px 36px rgba(0,0,0,.45);
+  --g-sh-s: 0 4px 12px rgba(0,0,0,.30);
+  --sk-hi: rgba(244,225,194,0.06);
+  --card-bg: #2B1A13;
+  --rc-bg: #2B1A13;
+  color-scheme: dark;
+}
+
+/* ---- 纯色：关掉毛玻璃、氛围层、暗角、颗粒 ---- */
+html[data-theme="dark"][data-ut][data-ut="dark-warm"] *, html[data-theme="dark"][data-ut][data-ut="dark-warm"] *::before, html[data-theme="dark"][data-ut][data-ut="dark-warm"] *::after { -webkit-backdrop-filter: none !important; backdrop-filter: none !important; }
+html[data-theme="dark"][data-ut][data-ut="dark-warm"] #ambience { background: var(--bg) !important; }
+html[data-theme="dark"][data-ut][data-ut="dark-warm"] #ambience > *, html[data-theme="dark"][data-ut][data-ut="dark-warm"] .fog, html[data-theme="dark"][data-ut][data-ut="dark-warm"] .shafts, html[data-theme="dark"][data-ut][data-ut="dark-warm"] .grain { display: none !important; }
+html[data-theme="dark"][data-ut][data-ut="dark-warm"] body::after { background: none !important; }
+html[data-theme="dark"][data-ut][data-ut="dark-warm"] :focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+html[data-theme="dark"][data-ut][data-ut="dark-warm"] ::selection { background: rgba(239,175,64,0.3); color: var(--ink); }
+/* ---- 白主题里写死成 #fff 的地方、卡片和气泡 ---- */
+html[data-theme="dark"][data-ut][data-ut="dark-warm"] .card { --card-bg: var(--panel); }
+html[data-theme="dark"][data-ut][data-ut="dark-warm"] .roster > .rc, html[data-theme="dark"][data-ut][data-ut="dark-warm"] .roster > .rc:hover { --rc-bg: var(--panel); }
+html[data-theme="dark"][data-ut][data-ut="dark-warm"] .hd { background: var(--panel); border-color: var(--line2); }
+/* t-m-tabbar-ig: the full-width #tabbar panel band is gone (the pill floats); the pill itself is solid, see the end of this file */
+html[data-theme="dark"][data-ut][data-ut="dark-warm"] #right .msg .mb, html[data-theme="dark"][data-ut][data-ut="dark-warm"] .m-typing .mb { background: var(--bub); color: var(--ink); }
+html[data-theme="dark"][data-ut][data-ut="dark-warm"] #right .msg:not(.me) > .mb::before, html[data-theme="dark"][data-ut][data-ut="dark-warm"] .m-typing .mb::before { background: var(--bub); }
+html[data-theme="dark"][data-ut][data-ut="dark-warm"] #right .msg.me .mb { background: var(--bub-me); color: var(--ink); }
+
+/* Underthread 特典主题 · 浅 · 奶油（奶油纸底，深棕字）
+   接在 data-theme="white" 之上，<html data-theme="white" data-ut="light-warm">。只用实色，不用毛玻璃和渐变。
+   生成：work/t-theme-ut/build/gen.py（改 palette.py 后重跑）。 */
+html[data-theme="white"][data-ut][data-ut="light-warm"] {
+  --void: #EFDFC6;
+  --bg: #F7ECDA;
+  --bg2: #F2E4CD;
+  --panel: #FFF9EF;
+  --panel2: #EFE0C7;
+  --solid: #FCF4E6;
+  --line: #E6D3B5;
+  --line2: #D9C29F;
+  --line3: #9C7F5F;
+  --ink: #2B1913;
+  --ink2: #553A2B;
+  --dim: #7E604A;
+  --faint: #9A7C60;
+  --soul: #2B1913;
+  --glow: #9A5A0E;
+  --glow-a: rgba(154,90,14,0.24);
+  --glow-b: rgba(154,90,14,0.07);
+  --dot: #D92D20;
+  --urgent: #B0321E;
+  --ok: #3B7034;
+  --warn: #A0490A;
+  --warn-rgb: 160,73,10;
+  --chip: rgba(43,25,19,0.035);
+  --chip2: #E6D3B5;
+  --accent: #9A5A0E;
+  --accent-ink: #FFF9EF;
+  --accent-soft: rgba(154,90,14,0.12);
+  --accent-line: rgba(154,90,14,0.55);
+  --focus: #B06D16;
+  --shadow: 0 10px 28px rgba(43,25,19,0.1);
+  --bub: #FFF9EF;
+  --bub-me: #F1DDB8;
+  --bub-line: #D9C29F;
+  --gl: #FFF9EF;
+  --glb: #D9C29F;
+  --gsh: 0 2px 8px rgba(43,25,19,0.07);
+  --sel: var(--accent-soft);
+  --selc: #9A5A0E;
+  --dotc: #9A5A0E;
+  --glass-fx: #FFF9EF;
+  --glass-solid: #FFF9EF;
+  --glass-panel: #FFF9EF;
+  --glass-panel-fx: #FFF9EF;
+  --glass-bg: #FFF9EF;
+  --glass-bf: none;
+  --glass-blur: 0px;
+  --glass-line: #E6D3B5;
+  --glass-lite: #E6D3B5;
+  --glass-rim: inset 0 0 0 1px #E6D3B5;
+  --glass-shadow: 0 2px 8px rgba(43,25,19,0.07);
+  --g-tint: #FFF9EF;
+  --g-tint-2: #EFE0C7;
+  --g-tint-3: rgba(43,25,19,0.05);
+  --g-edge: #E6D3B5;
+  --g-hi: transparent;
+  --g-hi-2: transparent;
+  --g-face: #FFF9EF;
+  --g-ring: inset 0 0 0 1px #E6D3B5;
+  --g-sh: 0 10px 28px rgba(43,25,19,0.1);
+  --g-sh-s: 0 2px 8px rgba(43,25,19,0.07);
+  --sk-hi: rgba(43,25,19,0.06);
+  --card-bg: #FFF9EF;
+  --rc-bg: #FFF9EF;
+  color-scheme: light;
+}
+
+/* ---- 纯色：关掉毛玻璃、氛围层、暗角、颗粒 ---- */
+html[data-theme="white"][data-ut][data-ut="light-warm"] *, html[data-theme="white"][data-ut][data-ut="light-warm"] *::before, html[data-theme="white"][data-ut][data-ut="light-warm"] *::after { -webkit-backdrop-filter: none !important; backdrop-filter: none !important; }
+html[data-theme="white"][data-ut][data-ut="light-warm"] #ambience { background: var(--bg) !important; }
+html[data-theme="white"][data-ut][data-ut="light-warm"] #ambience > *, html[data-theme="white"][data-ut][data-ut="light-warm"] .fog, html[data-theme="white"][data-ut][data-ut="light-warm"] .shafts, html[data-theme="white"][data-ut][data-ut="light-warm"] .grain { display: none !important; }
+html[data-theme="white"][data-ut][data-ut="light-warm"] body::after { background: none !important; }
+html[data-theme="white"][data-ut][data-ut="light-warm"] :focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+html[data-theme="white"][data-ut][data-ut="light-warm"] ::selection { background: rgba(154,90,14,0.3); color: var(--ink); }
+/* ---- 白主题里写死成 #fff 的地方、卡片和气泡 ---- */
+html[data-theme="white"][data-ut][data-ut="light-warm"] .card { --card-bg: var(--panel); }
+html[data-theme="white"][data-ut][data-ut="light-warm"] .roster > .rc, html[data-theme="white"][data-ut][data-ut="light-warm"] .roster > .rc:hover { --rc-bg: var(--panel); }
+html[data-theme="white"][data-ut][data-ut="light-warm"] .hd { background: var(--panel); border-color: var(--line2); }
+/* t-m-tabbar-ig: full-width #tabbar band removed, see the end of this file */
+html[data-theme="white"][data-ut][data-ut="light-warm"] #right .msg .mb, html[data-theme="white"][data-ut][data-ut="light-warm"] .m-typing .mb { background: var(--bub); color: var(--ink); }
+html[data-theme="white"][data-ut][data-ut="light-warm"] #right .msg:not(.me) > .mb::before, html[data-theme="white"][data-ut][data-ut="light-warm"] .m-typing .mb::before { background: var(--bub); }
+html[data-theme="white"][data-ut][data-ut="light-warm"] #right .msg.me .mb { background: var(--bub-me); color: var(--ink); }
+
+
+/* ---- 3. 接入修正：写死的白 / 灰底、渐变、分段指示块 ---- */
+html[data-ut] body, html[data-ut] #layout, html[data-ut] body #right, html[data-ut] #right { background: var(--bg) !important; }
+html[data-ut] body #right .ch-comp textarea, html[data-ut] #right .ch-comp textarea, html[data-ut] .ui2-panel button b { background: var(--panel2); color: var(--ink); }
+html[data-ut] .pl-col { background: var(--panel); }
+html[data-ut] .md h1, html[data-ut] .md h2 { background: none; border-bottom: 1px solid var(--line2); }
+html[data-ut] .cs-card.draftc .md h1, html[data-ut] .cs-card.draftc .md h2 { border-bottom: 0; }
+html[data-ut] .wk-bg { background: var(--accent-soft); }
+html[data-ut] .seg-ind { background: var(--accent); }
+html[data-ut] .seg .seg-i.on, html[data-ut] .seg button.on { color: var(--accent-ink); }
+html[data-ut] .btn.big small, html[data-ut] .btn.big:hover small { background: none; color: var(--ink2); }
+/* 舞台背景开关：特典下暂停（变灰、不可点，rt.stage 原值保留） */
+html[data-ut] button.st-row.st-dis { cursor: default; }
+html[data-ut] button.st-row.st-dis:hover { background: none; }
+html[data-ut] button.st-row.st-dis:active { transform: none; }
+html[data-ut] .st-row.st-dis b, html[data-ut] .st-row.st-dis .sw { opacity: .45; }
+
+/* ---- 4. t-thread-motif 针线（11-05）：只把本来就是「线」的地方换成针线。左栏部分（分组线 / TEAM 线 / 选中穿线 / icon）跟 t-nav-shoot 一起另上。
+   颜色只用 tokens；针 = 一张 mask 图，颜色走 background（--ink）。 ---- */
+.ue-art, .ue-h, .d-ue { display: none; }   /* App.utEmpty 的线轴图和标题：不开特典时不出现，文字照旧 */
+html[data-ut] {
+  --stitch: repeating-linear-gradient(90deg, var(--line3) 0 5px, transparent 5px 9px);
+  --needle-v: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 6 22'%3E%3Cpath fill-rule='evenodd' d='M3 .4c1.3 0 2.1 1 2.1 2.5v3.6L3.5 21.6h-1L.9 6.5V2.9C.9 1.4 1.7.4 3 .4zm0 1.4c-.4 0-.7.5-.7 1.1v2.2c0 .6.3 1 .7 1s.7-.4.7-1V2.9c0-.6-.3-1.1-.7-1.1z'/%3E%3C/svg%3E");
+  --needle-h: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 6'%3E%3Cpath fill-rule='evenodd' d='M1.4.9h4.4l9.9 1.7v.8L5.8 5.1H1.4C.6 5.1 0 4.2 0 3S.6.9 1.4.9zm.4 1.3c-.4 0-.7.4-.7.8s.3.8.7.8h2.1c.4 0 .7-.4.7-.8s-.3-.8-.7-.8z'/%3E%3C/svg%3E");
+}
+/* ① 分隔线 → 缝线针脚（首页区块标题后的横线、详情 / 文档的分节线、详情底部操作区上沿） */
+html[data-ut] .ink-eb i { height: 1px; background: var(--stitch); }
+html[data-ut] .md h1, html[data-ut] .md h2 { border-bottom: 0; padding-bottom: 6px; background: var(--stitch) left bottom / 100% 1px no-repeat; }
+html[data-ut] .cs-card.draftc .md h1, html[data-ut] .cs-card.draftc .md h2 { background: none; }
+html[data-ut] .md hr { border: 0; height: 1px; background: var(--stitch); }
+html[data-ut] .dw-acts::before { background: var(--stitch); }
+html[data-ut][data-skin="ink"] .dc-h, html[data-ut][data-skin="ink"] .sec-h { border-top: 0; background: var(--stitch) left top / 100% 1px no-repeat; }
+/* ③ 首页时间轴：已过 = 缝好的针脚，「现在」= 一根针，往后 = 还没缝的细线 */
+html[data-ut][data-dense] #hd2 .d-tl-bar { border-radius: 0; background: linear-gradient(var(--line2), var(--line2)) 0 50% / 100% 1px no-repeat; }
+html[data-ut][data-dense] #hd2 .d-tl-bar .past { inset: 2px auto auto 0; height: 2px; border-radius: 0; background: repeating-linear-gradient(90deg, var(--accent) 0 6px, transparent 6px 10px); }
+html[data-ut][data-dense] #hd2 .d-tl-bar .now { top: -12px; width: 6px; height: 22px; margin-left: -3px; background: none; }
+html[data-ut][data-dense] #hd2 .d-tl-bar .now::before { content: ""; position: absolute; inset: 0; background: var(--ink); -webkit-mask: var(--needle-v) center / 6px 22px no-repeat; mask: var(--needle-v) center / 6px 22px no-repeat; }
+html[data-ut][data-dense] #hd2 .d-tl-bar .now u { top: -21px; left: 3px; }
+/* ④ 空状态：线轴 + 收好的线（等你拍板 / 信箱 / 搜索无结果） */
+html[data-ut] .ue::before { display: none; }
+html[data-ut] .ue { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 4px; }
+html[data-ut] .ue .ue-art { display: block; width: 96px; height: 72px; margin-bottom: 8px; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+html[data-ut] .ue-art .ue-sp, html[data-ut] .ue-art .ue-nd { stroke: var(--line3); stroke-width: 2.2; }
+html[data-ut] .ue-art .ue-wd { stroke: var(--accent); stroke-width: 2.2; }
+html[data-ut] .ue-art .ue-th { stroke: var(--accent); stroke-width: 2; stroke-dasharray: 4 3.5; }
+html[data-ut] .ue .ue-h { display: block; font-size: var(--fs-15); font-weight: 600; color: var(--ink); letter-spacing: 0; }
+html[data-ut] .ue .ue-t { font-size: var(--fs-13); color: var(--dim); }
+html[data-ut] .dc-none.ue { padding: 28px 0 22px; }
+html[data-ut] #pagebody .dc-none.dc-ok.ue { flex-direction: column; gap: 4px; padding: 20px 14px 18px; color: var(--dim); background: var(--panel); box-shadow: inset 0 0 0 1px var(--line); }
+html[data-ut] .dc-ok.ue > i { display: none; }
+html[data-ut] .pl-none.ue { padding: 22px 14px 26px; }
+html[data-ut][data-dense] #hd2 .d-needs0 .d-ok { display: none; }
+html[data-ut][data-dense] #hd2 .d-ue { display: grid; grid-template-columns: auto 1fr; grid-template-rows: auto auto; column-gap: 14px; row-gap: 2px; align-items: center; justify-items: start; text-align: left;
+  margin-top: 6px; padding: 8px 16px; border-radius: var(--r-m); background: var(--panel); border: 1px solid var(--line); }
+html[data-ut][data-dense] #hd2 .d-ue .ue-art { grid-row: 1 / 3; width: 64px; height: 48px; margin: 0; }
+html[data-ut][data-dense] #hd2 .d-ue .ue-h { align-self: end; }
+html[data-ut][data-dense] #hd2 .d-ue .ue-t { align-self: start; }
+/* ⑤ 体力 / 用量条：用掉的是线，头上是一根针；「此刻」在做的那条细条：一针一针缝过去再重来 */
+html[data-ut] .stamina .focus { height: 6px; bottom: -5px; overflow: visible; border-radius: 0; background: linear-gradient(var(--line2), var(--line2)) 0 50% / 100% 1px no-repeat; }
+html[data-ut] .stamina .focus i { position: relative; height: 2px; margin-top: 2px; background: var(--accent); }
+html[data-ut] .sy-bar { height: 6px; overflow: visible; border-radius: 0; background: linear-gradient(var(--line2), var(--line2)) 0 50% / 100% 1px no-repeat; }
+html[data-ut] .sy-bar i { position: relative; height: 2px; margin-top: 2px; border-radius: 0; }
+html[data-ut] .stamina .focus i::after, html[data-ut] .sy-bar i::after { content: ""; position: absolute; right: -13px; top: -2px; width: 16px; height: 6px; background: var(--ink);
+  -webkit-mask: var(--needle-h) center / 16px 6px no-repeat; mask: var(--needle-h) center / 16px 6px no-repeat; }
+html[data-ut] .sy-use.old .sy-bar i::after { background: var(--line3); }
+html[data-ut] .dc-bar { height: 2px; border-radius: 0; background: repeating-linear-gradient(90deg, var(--line2) 0 6px, transparent 6px 10px); }
+html[data-ut] .dc-bar u { inset: 0; width: auto; border-radius: 0; transform: none; will-change: auto; background: repeating-linear-gradient(90deg, var(--accent) 0 6px, transparent 6px 10px);
+  animation-name: ut-sew; animation-timing-function: steps(5, start); }
+@keyframes ut-sew { from { clip-path: inset(0 calc(100% - 0px) 0 0); } to { clip-path: inset(0 calc(100% - 50px) 0 0); } }
+@media (prefers-reduced-motion: reduce) { html[data-ut] .dc-bar u { animation: none; clip-path: none; } }
+
+/* ---- 5. t-thread-motif 左栏（和 t-nav-shoot 一起上）：① 分组线 / TEAM 标题线改缝线、② 选中项文字下面一道穿线 + 线结、左栏线稿 icon。只在电脑宽度（手机「更多」有自己的图标）。 ---- */
+@media (min-width: 761px) {
+  html[data-ut][data-theme] #nav .nav-sep { height: 1px; background: var(--stitch); }
+  html[data-ut][data-theme] #team .side-h { display: flex; align-items: center; gap: 10px; }
+  html[data-ut][data-theme] #team .side-h::after { content: ""; position: static; flex: 1; height: 1px; margin-right: 12px; background: var(--stitch); }
+  html[data-ut] #nav .nv-ic { display: inline-flex; flex: none; width: 17px; height: 17px; margin-right: 10px; color: var(--dim); transition: color .2s var(--ease, ease); }
+  html[data-ut] #nav .nv-ic svg { width: 17px; height: 17px; fill: none; stroke: currentColor; stroke-width: 2.1; stroke-linecap: round; stroke-linejoin: round; }
+  html[data-ut] #nav .nav-i:hover .nv-ic { color: var(--ink2); }
+  html[data-ut] #nav .nav-i.on .nv-ic { color: var(--accent); }
+  html[data-ut][data-theme] #nav > .nav-sep ~ .nav-i { justify-content: space-between; }
+  html[data-ut] #nav .nv-ul { display: block; position: absolute; left: -1px; right: 3px; bottom: -5px; width: calc(100% - 2px); height: 6px; overflow: visible; pointer-events: none; }
+  html[data-ut] #nav .nv-ul path { fill: none; stroke: var(--accent); stroke-width: 1.6; stroke-linecap: round; vector-effect: non-scaling-stroke; }
+  html[data-ut] #nav .nv-knot { display: block; position: absolute; right: -3px; bottom: -4.5px; width: 4.5px; height: 4.5px; border-radius: 50%; background: var(--accent); pointer-events: none; }
+  html[data-ut] #nav .nv-ul.sew path { stroke-dasharray: 1; animation: nv-sew .35s cubic-bezier(.3, .6, .3, 1) both; }
+  html[data-ut] #nav .nv-knot.sew { animation: nv-knot .18s ease-out .3s both; }
+}
+@keyframes nv-sew { from { stroke-dashoffset: 1; } to { stroke-dashoffset: 0; } }
+@keyframes nv-knot { from { opacity: 0; transform: scale(.3); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { html[data-ut] #nav .nv-ul.sew path, html[data-ut] #nav .nv-knot.sew { animation: none; } }
+
+/* t-m-input: §3 paints the chat box var(--panel2), which ties mobile.css's phone pill rule (transparent textarea inside the round
+   .ch-comp pill) on specificity and wins by load order, so the phone showed a square box inside the pill. Phone only; desktop keeps §3. */
+@media (max-width: 760px) {
+  html[data-ut] body #right .ch-comp textarea, html[data-ut] body #right .ch-comp textarea:focus { background: transparent; }
+}
+
+/* ---- t-m-tabbar-ig (direction B): floating pill in 特典 = solid panel + 1px ring + soft lift. No blur, no translucency (特典 rule). ---- */
+html[data-theme][data-ut] #tabbar .tb-row { background: var(--panel); border: 1px solid var(--glass-line); --tb-ring: var(--panel); }
+html[data-theme="white"][data-ut][data-ut="light-warm"] #tabbar .tb-row { box-shadow: 0 6px 18px rgba(43,25,19,.12); }
+html[data-theme="dark"][data-ut][data-ut="dark-warm"] #tabbar .tb-row { box-shadow: 0 6px 18px rgba(0,0,0,.40); }
+html[data-theme][data-ut] #tabbar .tb-sel { background: var(--accent-soft); box-shadow: none; }
+html[data-theme][data-ut] #tabbar .tb-tip { background: var(--panel); }
+/* t-avatar-style: the needle-thread avatars are smooth art, not pixel art; .av's pixelated (old pixel heads) turns the stitches into jaggies at 22-50 px */
+html[data-ut] .av { image-rendering: auto; }
+/* ri1106-P4: home D1 strip (home.js panel(), phone home + desktop app home) shows the needle-thread avatar instead of the panel art under 特典.
+   .dp-uti = avatarUrl(a, 1), i.e. avatars/ut/_s/<id>-512.webp (falls back to the normal avatar if the UT set has no file); avSweep() swaps its URL on theme change.
+   .dp-img (the art) is display:none here, so the art is not downloaded and its breathing animation does not run. Outside 特典 .dp-uti is hidden and nothing changes. */
+html:not([data-ut]) .dp-uti { display: none; }
+html[data-ut] .dp-strip .dp-img { display: none; }
+html[data-ut] .dp-strip .dp-uti { position: absolute; inset: 0; background-repeat: no-repeat; background-size: 112px; background-position: 50% 40%;
+  transition: background-size var(--m-slow) var(--m-ease-ios), background-position var(--m-slow) var(--m-ease-ios); }
+html[data-ut] .dp-strip .dp.act .dp-uti { background-size: 84px; background-position: 50% 4px; }
+html[data-ut] .dp-strip .dp-art { background: var(--chip2); filter: saturate(.85) brightness(.9); }
+html[data-ut] .dp-strip .dp.act .dp-art, html[data-ut] .dp-strip .dp.w .dp-art { filter: none; }
+@media (prefers-reduced-motion: reduce) { html[data-ut] .dp-strip .dp-uti { transition: none; } }

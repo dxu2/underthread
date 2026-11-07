@@ -7,6 +7,8 @@
   const $ = (s, r = document) => r.querySelector(s);
   const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
   const en = () => App.UI.lang === "en";
+  /* t-thread-motif ④: no-result line gets the spool drawing under 特典 (App.utEmpty hides it elsewhere) */
+  const plNone = tx => App.utEmpty ? App.utEmpty(tx, "pl-none", en() ? "No loose thread here" : "没找到这根线头") : `<div class="pl-none">${tx}</div>`;
   const phone = () => matchMedia("(max-width: 760px)").matches;
   const convMsgs = id => App.chatList ? App.chatList(id) : id === "manager" ? (App.ST.chat || []) : ((App.ST.dms || {})[id] || []);   /* ri1105-P4: + older chat once fetched */
   const clean = s => String(s || "").replace(/```[\s\S]*?```/g, " ").replace(/!\[[^\]]*\]\([^)]*\)/g, " ").replace(/\[([^\]]+)\]\([^)]*\)/g, "$1").replace(/[*_`>#]+/g, "").replace(/\s+/g, " ").trim();
@@ -223,8 +225,8 @@
         () => { fire("data-chat", x.a.id); if (x.hit && App.seekChat) App.seekChat(x.m.t, q); })).join("");
     if (all && R.actions.length) html += `<div class="pl-h">${zh ? "操作" : "Actions"}</div>` + R.actions.slice(0, P.q ? 12 : 4).map(a =>
       row(`<span class="pl-ic">${a.id.startsWith("approve:") ? "✓" : a.id.startsWith("dm:") ? "@" : a.id.startsWith("theme:") ? "◐" : a.id.startsWith("go:") || a.id === "mail" ? "→" : a.id === "status" ? "♥" : "·"}</span>`, esc(a.label), esc(a.sub), a.run)).join("");
-    if (!P.rows.length && !all) html = `<div class="pl-none">${zh ? `「${esc(tabName(tab))}」里没有找到。按 Tab 换一类。` : "Nothing here. Press Tab for another category."}</div>`;
-    if (!P.rows.length && all) html = `<div class="pl-none">${zh ? "没有找到。换个词试试，或者输入角色名、页面名。" : "Nothing found. Try a name or a page."}</div>`;
+    if (!P.rows.length && !all) html = plNone(zh ? `「${esc(tabName(tab))}」里没有找到。按 Tab 换一类。` : "Nothing here. Press Tab for another category.");
+    if (!P.rows.length && all) html = plNone(zh ? "没有找到。换个词试试，或者输入角色名、页面名。" : "Nothing found. Try a name or a page.");
     const box = $(".pl-res", P.el); if (box._h !== html) { box.innerHTML = box._h = html; }
     $(".pl-ft", P.el).innerHTML = `<span><kbd>↑</kbd><kbd>↓</kbd> ${zh ? "选择" : "move"}</span><span><kbd>↵</kbd> ${zh ? "打开 / 执行" : "open / run"}</span><span><kbd>⌘K</kbd> ${zh ? "随时呼出" : "anywhere"}</span><span class="r">${zh ? "手机：首页右上角的搜索" : "Phone: search on home"}</span>`;
     P.sel = Math.min(P.sel, Math.max(0, P.rows.length - 1)); mark();

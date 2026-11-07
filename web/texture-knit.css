@@ -1,0 +1,135 @@
+/* t-theme-knit · 质感层「针织」（web/texture-knit.css）。设置 → 外观 →「质感」：rt.texture = off | knit1 | knit2，首帧脚本设 <html data-texture>。
+   由artist 角色的 work/t-theme-knit/v2/knit-layer.css 接入：选择器 data-knit → data-texture^="knit"（1、2 档共用）/ data-texture="knit2"（只 2 档）。
+   以后的皮革质感另写 texture-leather.css，挂 data-texture="leather…"，互不命中。
+   没有任何动画或过渡，只有静态底纹和虚线，所以不需要 prefers-reduced-motion / 省电分支。 */
+
+html[data-texture^="knit"] {
+  --kn-thread: color-mix(in srgb, var(--dim) 50%, transparent);       /* 缝线：取主题自己的次级文字色，半透明 */
+  --kn-thread-acc: color-mix(in srgb, var(--accent, var(--glow)) 62%, transparent);
+  --kn-sw: 1.5px;                                                      /* 线粗 */
+  --kn-in: -6px;                                                       /* 缝线离边多远 */
+  --kn-tex: url("/static/knit/knit-stock-1.webp");
+  --kn-tex-size: 96px 80px;
+  --kn-felt: url("/static/knit/knit-felt.webp");
+  --kn-felt-size: 64px 56px;
+  --kn-rib: url("/static/knit/knit-rib.webp");
+  --kn-dash: repeating-linear-gradient(90deg, var(--kn-thread) 0 5px, transparent 5px 9px);
+}
+html[data-texture^="knit"][data-theme="white"] {
+  --kn-puff: inset 0 1px 0 rgba(255,255,255,.75), inset 0 -2px 3px rgba(70,45,25,.09), 0 1px 2px rgba(70,45,25,.10);
+  --kn-puff-card: inset 0 1px 0 rgba(255,255,255,.6), inset 0 -3px 6px rgba(70,45,25,.05);
+}
+html[data-texture^="knit"][data-theme="dark"] {
+  --kn-puff: inset 0 1px 0 rgba(255,255,255,.07), inset 0 -2px 4px rgba(0,0,0,.32), 0 1px 2px rgba(0,0,0,.35);
+  --kn-puff-card: inset 0 1px 0 rgba(255,255,255,.04), inset 0 -3px 8px rgba(0,0,0,.22);
+}
+html[data-texture="knit2"] {
+  --kn-sw: 2px;
+  --kn-in: -7px;
+  --kn-thread: color-mix(in srgb, var(--dim) 66%, transparent);
+  --kn-tex: url("/static/knit/knit-stock-2.webp");
+  --kn-dash: repeating-linear-gradient(90deg, var(--kn-thread) 0 6px, transparent 6px 10px);
+}
+
+/* ---- 面板 / 卡片：平针纹叠在原底色上 + 内侧一圈缝线 ---- */
+html[data-texture^="knit"] :is(.d-card, .d-mini, .d-ue, .toc-box, .hd, .ru-card, .dc-none, .dw-dock, .sy-pop, .sy-use) {
+  background-image: var(--kn-tex) !important;
+  background-size: var(--kn-tex-size) !important;
+  background-repeat: repeat !important;
+  outline: var(--kn-sw) dashed var(--kn-thread) !important;
+  outline-offset: var(--kn-in) !important;
+}
+html[data-texture^="knit"] :is(.toc-box, .dw-dock) { outline-offset: -4px !important; }
+/* 大面只缝边不压纹：详情抽屉（电脑端是浮起来的一张纸） */
+@media (min-width: 761px) {
+  html[data-texture^="knit"] #drawer.open { outline: var(--kn-sw) dashed var(--kn-thread) !important; outline-offset: -9px !important; }
+}
+/* 2：卡片底边一条罗纹收边，面板微微鼓起 */
+html[data-texture="knit2"] :is(.d-card, .d-mini, .d-ue, .hd, .ru-card, .dc-none) {
+  background-image: var(--kn-rib), var(--kn-tex) !important;
+  background-size: 48px 6px, var(--kn-tex-size) !important;
+  background-repeat: repeat-x, repeat !important;
+  background-position: left bottom, 0 0 !important;
+  box-shadow: var(--kn-puff-card), var(--g-sh-s, 0 0 0 transparent) !important;
+}
+
+/* ---- 按钮：毛毡底 + 内侧缝线 + 一点鼓 ---- */
+html[data-texture^="knit"] :is(.ab, .d-w, .hc-mail, .dw-stamp, .tb-row, .hd-chip, .dw-back, .dw-file, #drawer select, .cm-to, .rq) {
+  background-image: var(--kn-felt) !important;
+  background-size: var(--kn-felt-size) !important;
+  background-repeat: repeat !important;
+  box-shadow: var(--kn-puff) !important;
+  outline: 1px dashed var(--kn-thread) !important;
+  outline-offset: -3px !important;
+}
+html[data-texture^="knit"] :is(.dw-back, .dw-file, .cm-to, .rq) { outline: none !important; }   /* 太小的圆钮只要毛毡，不缝 */
+html[data-texture^="knit"] :is(.ab, .dw-stamp, .hd-chip) { outline-color: var(--kn-thread-acc) !important; }
+html[data-texture="knit2"] :is(.ab, .d-w, .hc-mail, .dw-stamp, .tb-row, .hd-chip, #drawer select) { outline-width: 1.5px !important; outline-offset: -4px !important; }
+/* 首页右侧那列小卡本身就是按钮：同面板处理，但也给鼓起 */
+html[data-texture^="knit"] .d-mini { box-shadow: var(--kn-puff) !important; }
+
+/* ---- 分隔线：实线换成针脚 ---- */
+html[data-texture^="knit"] :is(.d-g, .ft, .sy-row) { border-top-style: dashed !important; border-top-color: var(--kn-thread) !important; }
+html[data-texture^="knit"] .ru-q { border-top-style: dashed !important; border-bottom-style: dashed !important; border-top-color: var(--kn-thread) !important; border-bottom-color: var(--kn-thread) !important; }
+html[data-texture^="knit"] .hd-stats { border-top-style: dashed !important; }   /* 这条原本是正文色的粗分隔，只换针脚不换色 */
+html[data-texture^="knit"] #drawer :is(td, th) { border-bottom-style: dashed !important; }
+html[data-texture^="knit"] #top::after { background: var(--kn-dash) !important; }
+html[data-texture="knit2"] #top::after { height: 2px !important; }
+
+/* ---- 焦点环：虚线针脚（换主题自己的焦点色） ---- */
+html[data-texture^="knit"][data-texture^="knit"] :focus-visible { outline: 2px dashed var(--focus, var(--accent-line, var(--glow))) !important; outline-offset: 3px !important; }
+
+/* ---- 2：时间轴 / 用量条变成纱线，气泡和输入框也缝一圈 ---- */
+html[data-texture="knit2"] #hd2 .d-tl-bar { background: var(--chip) var(--kn-dash) center / 100% 2px no-repeat !important; }
+html[data-texture="knit2"] #hd2 .d-tl-bar .past {
+  background: repeating-linear-gradient(115deg, color-mix(in srgb, var(--ink) 30%, transparent) 0 3px, color-mix(in srgb, var(--ink) 12%, transparent) 3px 6px) !important;
+}
+html[data-texture="knit2"] .sy-bar i { background: repeating-linear-gradient(115deg, var(--accent, var(--glow)) 0 3px, color-mix(in srgb, var(--accent, var(--glow)) 70%, var(--panel)) 3px 6px) !important; }
+html[data-texture="knit2"] .nav-pill { outline: 1px dashed var(--kn-thread) !important; outline-offset: -3px !important; }
+html[data-texture="knit2"] .mb { outline: 1px dashed color-mix(in srgb, var(--dim) 40%, transparent) !important; outline-offset: -4px !important; }
+html[data-texture="knit2"] textarea { outline: 1px dashed var(--kn-thread) !important; outline-offset: -5px !important; }
+html[data-texture="knit2"] textarea:focus-visible { outline: 2px dashed var(--focus, var(--accent-line, var(--glow))) !important; outline-offset: -5px !important; }
+
+/* 系统开了「增强对比度」：去掉所有纹理，只留缝线 */
+@media (prefers-contrast: more) {
+  html[data-texture^="knit"] :is(.d-card, .d-mini, .d-ue, .toc-box, .hd, .ru-card, .dc-none, .dw-dock, .sy-pop, .sy-use, .ab, .d-w, .hc-mail, .dw-stamp, .tb-row, .hd-chip, .dw-back, .dw-file, #drawer select, .cm-to, .rq) { background-image: none !important; }
+}
+
+
+/* ---- t-theme-knit 接入：扩到首页和详情以外的卡片 / 面板（同一套：淡平针纹 + 内侧一圈缝线） ---- */
+/* 审核卡（手机首页 / 电脑 app 式首页）、经典首页 + 委托板 / 分类页的卡、小组件首页的各个小组件、设置分组 */
+html[data-texture^="knit"] :is(.rv-card, .card, .wg, .st-sec) {
+  background-image: var(--kn-tex) !important;
+  background-size: var(--kn-tex-size) !important;
+  background-repeat: repeat !important;
+  outline: var(--kn-sw) dashed var(--kn-thread) !important;
+  outline-offset: var(--kn-in) !important;
+}
+html[data-texture^="knit"] .st-sec { outline-offset: -4px !important; }
+html[data-texture="knit2"] :is(.rv-card, .card, .wg) {
+  background-image: var(--kn-rib), var(--kn-tex) !important;
+  background-size: 48px 6px, var(--kn-tex-size) !important;
+  background-repeat: repeat-x, repeat !important;
+  background-position: left bottom, 0 0 !important;
+}
+/* 信箱 / 新回复这类平铺的行列表没有面板，不压纹；行与行之间的分隔改成针脚 */
+html[data-texture^="knit"] :is(.act-row + .act-row, .mail-i + .mail-i, .nr-r + .nr-r) { border-top: 1px dashed var(--kn-thread); }
+@media (prefers-contrast: more) {
+  html[data-texture^="knit"] :is(.rv-card, .card, .wg, .st-sec) { background-image: none !important; }
+}
+
+/* ---- 2 档的辅助小字：叠了更浓的平针纹后 --dim 最坏掉到 3.4–4.9:1。只在 2 档、按四种配色把 --dim 往正文色靠一点；
+   缝线改成取原来的 --dim，线的样子不变。数值用 artist 角色的 contrast.js 同一套算法（叠纹后最暗 / 最亮 2% 像素）实测。 ---- */
+html[data-texture="knit2"][data-theme="dark"]:not([data-ut]) { --kn-dim0: #7a766d; --dim: color-mix(in srgb, #7a766d 66%, #ece8dd); }
+html[data-texture="knit2"][data-theme="white"]:not([data-ut]) { --kn-dim0: #6b6b6b; --dim: color-mix(in srgb, #6b6b6b 66%, #111111); }
+html[data-texture="knit2"][data-theme][data-ut="dark-warm"] { --kn-dim0: #AF9273; --dim: color-mix(in srgb, #AF9273 66%, #F4E1C2); }
+html[data-texture="knit2"][data-theme][data-ut="light-warm"] { --kn-dim0: #7E604A; --dim: color-mix(in srgb, #7E604A 66%, #2B1913); }
+html[data-texture="knit2"][data-theme] { --kn-thread: color-mix(in srgb, var(--kn-dim0, var(--dim)) 66%, transparent); }
+
+/* ---- 1 档同样处理（用户 11-05 23:38「也调」）：按四种配色把 --dim 往正文色靠到刚好够 4.5:1（同一套 contrast.js 实测，最坏点是按钮/小签的毛毡底），
+   比 2 档靠得少；缝线仍取原来的 --dim，1 档 50% 透明度不变。 ---- */
+html[data-texture="knit1"][data-theme="dark"]:not([data-ut]) { --kn-dim0: #7a766d; --dim: color-mix(in srgb, #7a766d 73%, #ece8dd); }
+html[data-texture="knit1"][data-theme="white"]:not([data-ut]) { --kn-dim0: #6b6b6b; --dim: color-mix(in srgb, #6b6b6b 89%, #111111); }
+html[data-texture="knit1"][data-theme][data-ut="dark-warm"] { --kn-dim0: #AF9273; --dim: color-mix(in srgb, #AF9273 74%, #F4E1C2); }
+html[data-texture="knit1"][data-theme][data-ut="light-warm"] { --kn-dim0: #7E604A; --dim: color-mix(in srgb, #7E604A 83%, #2B1913); }
+html[data-texture="knit1"][data-theme] { --kn-thread: color-mix(in srgb, var(--kn-dim0, var(--dim)) 50%, transparent); }

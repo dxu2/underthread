@@ -1,5 +1,5 @@
 /* Open-source build.
-   - The original header wordmark was an image; this build ships a text wordmark instead.
+   - .brand-txt is the old text wordmark, kept for forks that drop web/brand/ (the header now uses the Underthread wordmark images).
    - The 舞台 (stage) theme and the terrace office need artwork that is not part of this repository,
      so their switches are hidden. Add your own art + CSS to bring them back. */
 .brand-txt { display: inline-flex; flex-direction: column; line-height: 1; font-weight: 700; letter-spacing: .08em;
@@ -8,5 +8,4 @@
 .hc-stage, [data-stage-set] { display: none !important; }
 /* t-settings-tab: the 设置 page rows for the stage background and the voice-call mic test (neither ships here) */
 .st-row[data-stage-tog], .st-row[data-set="mictest"] { display: none !important; }
-/* the 开屏动画 opening (splash.js) is not in the open-source build: its title is a wordmark image */
-.st-row.st-sp { display: none !important; }
+
