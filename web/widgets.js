@@ -110,7 +110,8 @@
   // t-home-flicker (11-03): the HTML carries wall-clock phases (--wg-fd) so a rebuilt node does not restart the sweep; they are not data,
   // so every compare strips them. Same data: keep the DOM. Changed data (C): replace only the tiles / header / tail / tray whose HTML changed,
   // the rest keep their nodes (thumbs, hover highlight, running animations). mvPage is told via MV.dirty so new rows / moved tiles still animate.
-  const norm = h => h.replace(/--wg-fd:-\d+ms/g, "").replace(/(<time class="rel"[^>]*>)[^<]*/g, "$1")
+  const norm = h => h.replace(/--wg-fd:-\d+ms|animation-delay:-\d+ms| tl-(?:in|out)/g, "")   /* t-chrome-badge: the badge motion state is not a change */
+    .replace(/(<time class="rel"[^>]*>)[^<]*/g, "$1")
     .replace(/--now:[\d.]+%/g, "").replace(/(<span class="(?:wk-el|d-tk)"[^>]*>)[^<]*/g, "$1");   /* t-home-usage: 「X 分钟前」 ticks on its own (app.js 20 s interval). t-home-dense: elapsed time, the now marker and 「N 小时后」 tick on their own */
   let last = "", PREV = null;
   const frag = h => { const t = document.createElement("template"); t.innerHTML = h.trim(); return t.content.firstElementChild; };
@@ -300,7 +301,7 @@
     // 4 此刻在忙 + 待机
     const B = D.busy, busyIds = new Set(B.map(x => x.a.id)), stand = X.agents.filter(a => !busyIds.has(a.id));
     const wRow = ({ a, it, since }) => { const m = X.etaMin(a.id), end = m && since ? ms(since) + m * 6e4 : 0;
-      return `<button type="button" class="d-w" data-item="${esc(it.id)}"><img src="${A().avatarUrl(a)}" alt=""><span class="who"><b>${esc(A().aname(a))}</b><small>${esc(A().atitle(a) || "")}</small></span>
+      return `<button type="button" class="d-w" data-item="${esc(it.id)}"><img src="${A().avatarUrl(a)}" alt="">${A().toolBadge ? A().toolBadge(a) : ""}<span class="who"><b>${esc(A().aname(a))}</b><small>${esc(A().atitle(a) || "")}</small></span>
         <span class="job">${esc(it.title)}<small>${esc(a.activity || "")}</small></span>
         <span class="tm"><b><span class="wk-el" data-fmt="dc" data-since="${esc(since || "")}">${since ? ago(since) : ""}</span></b><small>${since ? `${hm(since)} ${zh ? "开始" : "start"}` : ""}${end > now ? ` · ${zh ? "预计" : "ETA"} ~${hm(end)}` : ""}</small></span></button>`; };
     const work = `<section class="d-card d-work" data-sec="work"><div class="d-h">${B.length ? '<span class="live"></span>' : ""}<b>${nm("busy")}</b>${B.length ? `<span class="n">${B.length}</span>` : ""}</div>

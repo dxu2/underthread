@@ -187,8 +187,62 @@
     // t-working-item-highlight: inside a row about item X (forItem), the ring stays off when we KNOW the agent is on another item (agents[].item set and different).
     let w = a.status === "working" && !(forItem && a.item && a.item !== forItem);
     if (w && RING1) { if (RING1.has(a.id)) w = false; else RING1.add(a.id); }
-    return `<span class="av ${cls} ${w ? "working" : ""}" style="background-image:url('${avatarUrl(a)}')${w ? `;--wp:${(-(Date.now() % 4000) / 1000).toFixed(3)}s` : ""}" title="${esc(aname(a))}"${w ? ` data-working="1"` : ""}>${w ? `<i class="aw" title="${t("working")}"></i>` : ""}</span>`;
+    const tb = toolBadge(a);
+    return `<span class="av ${cls} ${w ? "working" : ""}" style="background-image:url('${avatarUrl(a)}')${w ? `;--wp:${(-(Date.now() % 4000) / 1000).toFixed(3)}s` : ""}" title="${esc(aname(a))}"${w ? ` data-working="1"` : ""}>${w && !tb ? `<i class="aw" title="${t("working")}"></i>` : ""}${tb}</span>`;
   }
+  /* ===== t-chrome-badge: agents[id].tool = the outside tool an agent is driving right now (stateutil set-agent --tool chrome; "" or idle/offline clears it).
+     One badge on every avatar (toolBadge, called by av) + one line 「Chrome 使用中 · 谁 · 在做什么」 (toolLine: desktop header #toolbar, phone home .hd-tool).
+     Enter/exit motion plays once: TOOL_T keeps when each agent's tool last changed (client clock); only inside that window does the markup carry tl-in / tl-out
+     plus a negative animation-delay, so a poll re-render continues the motion instead of replaying it. First sight after page load = no motion.
+     No infinite animation here (fx.js would mark one with data-ip anyway), no blinking dot; prefers-reduced-motion turns the motion off in CSS. ===== */
+  const TOOL_IC = {
+    chrome: `<svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.2"/><ellipse cx="8" cy="8" rx="2.6" ry="6.2"/><path d="M1.8 8h12.4"/></svg>`,
+    computer: `<svg viewBox="0 0 16 16" aria-hidden="true"><rect x="1.8" y="2.5" width="12.4" height="8.6" rx="1.6"/><path d="M5.5 13.8h5M8 11.1v2.7"/></svg>`,
+    _: `<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M10.4 2.2a3.4 3.4 0 0 0-3.9 4.5L2.2 11a1.3 1.3 0 0 0 1.8 1.8l4.3-4.3a3.4 3.4 0 0 0 4.5-3.9l-2 2-1.7-.5-.5-1.7z"/></svg>`
+  };
+  const toolName = k => k === "chrome" ? "Chrome" : k === "computer" ? (UI.lang === "en" ? "Computer" : "电脑") : String(k);
+  const toolIc = k => TOOL_IC[k] || TOOL_IC._;
+  const TOOL_IN = 400, TOOL_OUT = 220, TOOL_STALE = 60 * 60e3, TOOL_T = {};
+  function toolFx(a) {   /* -> { k: tool now ("" = none), was: tool just cleared, ph: "in" | "out" | "", ms: elapsed } */
+    const k = (a && a.tool) || "", r = TOOL_T[a.id], now = Date.now();
+    if (!r) TOOL_T[a.id] = { k, was: "", t: 0 };
+    else if (r.k !== k) { TOOL_T[a.id] = { k, was: r.k, t: now }; }
+    const x = TOOL_T[a.id], ms = now - x.t;
+    return { k, was: x.was, ms, ph: k && ms < TOOL_IN ? "in" : !k && x.was && ms < TOOL_OUT ? "out" : "" };
+  }
+  const fxStyle = f => f.ph ? ` style="animation-delay:-${Math.round(f.ms)}ms"` : "";
+  function toolBadge(a) {
+    if (!a || !a.id || a.id === "me") return "";
+    const f = toolFx(a), k = f.k || (f.ph === "out" ? f.was : "");
+    if (!k) return "";
+    return `<i class="tl${f.ph ? " tl-" + f.ph : ""}"${fxStyle(f)} title="${esc(toolName(k))} ${UI.lang === "en" ? "in use" : "使用中"}">${toolIc(k)}</i>`;
+  }
+  const toolWhat = a => String(a.activity || "").replace(new RegExp("^\\s*" + toolName(a.tool || "").replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + "\\s*[·:：-]\\s*", "i"), "");
+  let TOOL_LAST = "";
+  function toolLine(where) {   /* where: "d" = desktop header, "m" = phone home */
+    const en = UI.lang === "en", list = agents().filter(a => a.enabled !== false);
+    const fx = list.map(a => [a, toolFx(a)]), on = fx.filter(([, f]) => f.k);
+    if (!on.length) {
+      const out = fx.find(([, f]) => f.ph === "out");
+      return out && TOOL_LAST ? TOOL_LAST.replace('class="tool-pill', `style="animation-delay:-${Math.round(out[1].ms)}ms" class="tool-pill tp-out`) : (TOOL_LAST = "", "");
+    }
+    const byK = {}; on.forEach(([a, f]) => (byK[f.k] = byK[f.k] || []).push([a, f]));
+    const html = Object.keys(byK).map(k => {
+      const g = byK[k], [a, f] = g[0], nm = toolName(k), ent = g.find(([, x]) => x.ph === "in");
+      const cls = "tool-pill" + (ent ? " tp-in" : "") + (g.length > 1 ? " warn" : ""), dl = ent ? ` style="animation-delay:-${Math.round(ent[1].ms)}ms"` : "";
+      if (g.length > 1) return `<div class="${cls}"${dl} role="status"><span class="ic">${toolIc(k)}</span><b>${esc(nm)} ${en ? "conflict" : "冲突"}</b><i class="d">·</i><span class="what">${g.map(([x]) => esc(aname(x))).join(en ? ", " : "、")} ${en ? "are all using it" : "同时在用"}</span></div>`;
+      const it = liveItem(a), since = a.tool_since, old = since && Date.now() - Date.parse(since) > TOOL_STALE, what = toolWhat(a);
+      return `<div class="${cls}${old ? " stale" : ""}"${dl} role="button" tabindex="0" ${it ? `data-item="${esc(it.id)}"` : `data-chat="${esc(a.id)}"`} title="${esc(nm)} ${en ? "in use" : "使用中"} · ${esc(aname(a))}${what ? " · " + esc(what) : ""}">`
+        + `<span class="ic">${toolIc(k)}</span><b>${esc(nm)} ${en ? "in use" : "使用中"}</b><i class="d">·</i>`
+        + `<span class="who"><i style="background-image:url('${avatarUrl(a)}')"></i>${esc(aname(a))}</span>`
+        + (what ? `<i class="d">·</i><span class="what">${esc(what)}</span>` : `<span class="what"></span>`)
+        + (since ? `<time class="wk-el" data-since="${esc(since)}">${wkDur(since)}</time>${old ? `<em>${en ? "maybe left on" : "可能忘了清"}</em>` : ""}` : "") + `</div>`;
+    }).join("");
+    TOOL_LAST = html.replace(/ tp-in| style="animation-delay:-\d+ms"/g, "");
+    return html;
+  }
+  let toolHTML = null;
+  function renderTool() { const el = $("#toolbar"); if (!el || !ST) return; const h = toolLine("d"); if (h !== toolHTML) { toolHTML = h; el.innerHTML = h; } }
   // ===== t-m2-a ②: number roll. Runs only when the value really changes: the last value shown is kept in memory per key (NV), not read back from the DOM,
   // so a poll or a rebuilt node with the same value does nothing. Each changed digit gets a one-glyph window: the old one slides out, the new one slides in
   // (up when the number grows, down when it shrinks), transform + opacity only, WAAPI ~420 ms; the spans are replaced by plain text when it ends.
@@ -581,7 +635,7 @@
     (n > 0 ? navigator.setAppBadge(n) : navigator.clearAppBadge()).catch(() => { appBadge.last = undefined; });
   }
   const hooks = [];
-  function renderChrome() { renderHeader(); renderTicker(); }
+  function renderChrome() { renderHeader(); renderTool(); renderTicker(); }
 
   // ---------- header ----------
   function nextEvent() {
@@ -902,7 +956,7 @@
     $("#team").innerHTML = `<div class="side-h"><span class="sc">TEAM</span></div>` + agents().map((a, i) => {
       const ms = a.id === "manager" && mgrState();
       const st = ms ? (ms.on ? "working" : ms.sleep ? "sleeping" : "offline") : a.status || "idle";
-      const sub = mgrOnline(a) ? MGR_ON() : a.status === "working" && a.activity ? `▶ ${esc(a.activity)}` : esc(aduty(a));   // t-now-closed
+      const sub = mgrOnline(a) ? MGR_ON() : a.status === "working" && a.activity ? `▶ ${esc(a.tool ? toolWhat(a) || a.activity : a.activity)}` : esc(aduty(a));   // t-now-closed
       return `<div class="team-i ${a.status === "working" && a.activity && !mgrOnline(a) ? "busy" : ""} ${a.enabled === false ? "disabled" : ""} ${UI.chat === a.id ? "on" : ""} ${unreadOf(a.id) && UI.chat !== a.id ? "unread" : ""}" style="--i:${Math.min(i, 12)}" data-chat="${a.id}">${av(a)}<div><div class="nm">${esc(aname(a))}<span class="st ${st}"${ms && ms.sleep ? ` title="${esc(ms.txt)}"` : ""}>${ms ? (ms.on ? t("online") : ms.sleep ? (ms.back ? `☾ ${ms.back}` : ms.txt) : t("offline")) : t(st)}</span>${qBadge(a.id)}${unreadOf(a.id) && UI.chat !== a.id ? `<i class="tn">${unreadTag(unreadOf(a.id))}</i>` : ""}</div><div class="du">${sub}</div></div></div>`;
     }).join("");
   }
@@ -2086,7 +2140,7 @@
   const widgetHome = () => !MOBQ.matches && (UI.home === "widgets" || UI.home === "dense") && UI.page === "review";   // t-home-widgets (web/widgets.js + widgets.css)
   const homeSwitch = () => MOBQ.matches ? "" : `<button class="home-sw" data-home-set="${UI.home === "classic" ? "app" : "classic"}">${UI.lang === "en" ? (UI.home === "classic" ? "App-style home" : "Classic home") : (UI.home === "classic" ? "换成 app 式首页" : "切回原来的首页")}</button>`;
   function setHome(v) { UI.home = ["classic", "app", "widgets"].includes(v) ? v : "dense"; LS.set("home3", UI.home); UI.hf = "review"; renderPage(true); }
-  const phaseFree = h => h.replace(/--wp:-?[\d.]+s|animation-delay:-\d+ms|--wg-fd:-\d+ms/g, "").replace(/(<time class="(?:wk-el|rel)"[^>]*>)[^<]*/g, "$1");   // t-home-flicker
+  const phaseFree = h => h.replace(/--wp:-?[\d.]+s|animation-delay:-\d+ms|--wg-fd:-\d+ms| tl-(?:in|out)/g, "").replace(/(<time class="(?:wk-el|rel)"[^>]*>)[^<]*/g, "$1");   // t-home-flicker
   function renderPage(scrollTop) {
     document.documentElement.dataset.home = appHome() ? "app" : widgetHome() ? "widgets" : "classic"; if (widgetHome() && UI.home === "dense") document.documentElement.dataset.dense = "1"; else delete document.documentElement.dataset.dense;   // t-home-applike: scopes home-app.css
     autoFold();
@@ -3537,6 +3591,8 @@
   window.App = {
     okLabel, okDone, askLeft, openAsks: it => openAsks(it),   // t-btn-names
     rvApprove: id => rvApprove(id, null), rvCanApprove: it => rvCanApprove(it), awaitsUser: it => awaitsUser(it), busy: it => busy(it), onYou: it => onYou(it), onYouCard: it => onYouCard(it), grpOf: it => grpOf(it), newReplies: () => newReplies(), decisions: () => decisions(),   // t-imp-p5 (palette)
+    /* t-chrome-badge (home.js .hd-tool) */
+    toolLine: w => toolLine(w), toolBadge: a => toolBadge(a), toolWhat: a => toolWhat(a),
     UI, get ST() { return ST; }, roll, modalStatus: () => modalStatus(), ghOpen: () => ghOpen(), ghLabel: () => ghLabel(), statusSummary: () => statusSummary(statusRows()), loadHealth: a => loadHealth(a), refreshPage: () => renderPage(), phaseFree, pixelOpen, avatarUrl, t, items, agent, aname, atitle, av, when, whenH, agoH, ago, byAct, PLAT, stageLabel,
     refresh: async () => { await poll(true); return !UI.down; },   // t-m2-c ④ pull-to-refresh: a forced full fetch; false = the server did not answer
     tablePv: s => tablePv(s),   // t-chat-table (mobile.js chat list preview)
@@ -3596,7 +3652,7 @@
   let pollAt = Date.now();
   setInterval(() => { if (document.hidden && Date.now() - pollAt < 30000) return; pollAt = Date.now(); poll(); }, 2500);
   document.addEventListener("visibilitychange", () => { if (!document.hidden) { pollAt = Date.now(); poll(); } });
-  setInterval(() => { if (ST) renderLeft(); document.querySelectorAll(".m-typing[data-until]").forEach(b => { if (b.dataset.until && Date.now() > +b.dataset.until) b.remove(); }); }, 60000);   // t-typing-fix: stale typing dots go even without a poll change
+  setInterval(() => { if (ST) { renderLeft(); renderTool(); } document.querySelectorAll(".m-typing[data-until]").forEach(b => { if (b.dataset.until && Date.now() > +b.dataset.until) b.remove(); }); }, 60000);   // t-typing-fix: stale typing dots go even without a poll change
 })();
 
 /* ===== ui4: segmented switch (.seg) — sliding indicator for filters. Pure presentation: finds .seg containers after any render,

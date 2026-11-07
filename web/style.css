@@ -2467,3 +2467,60 @@ html[data-power="off"] .av.working, html[data-power="off"] .hd-mini.working { an
 @keyframes st-swap { from { opacity: 0; transform: translateY(2px); } }
 [data-power-tog] .st-tx small.st-swap { animation: st-swap .26s var(--ease, ease-out); }
 @media (prefers-reduced-motion: reduce) { [data-power-tog] .st-tx small.st-swap { animation: none; } }
+
+/* ===== t-chrome-badge: who is driving an outside tool (agents[id].tool, set-agent --tool chrome). App.toolBadge -> .tl on every avatar; App.toolLine -> .tool-pill
+   in the desktop header (#toolbar, after SYNC) and on the phone home (.hd-tool). Colours only via --accent* / --ink* / --warn-rgb. Motion: enter / exit once
+   (tl-in / tl-out / tp-in / tp-out carry a negative delay from app.js), no infinite animation, no blinking dot; off under prefers-reduced-motion. ===== */
+.av > .tl { position: absolute; right: -4px; bottom: -4px; width: 17px; height: 17px; border-radius: 50%; display: grid; place-items: center; z-index: 2; pointer-events: auto;
+  background: var(--accent); color: var(--accent-ink, var(--bg)); box-shadow: 0 0 0 2px var(--bg); font-style: normal; }
+.av > .tl svg, .tool-pill .ic svg { width: 11px; height: 11px; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
+.av.sm > .tl, .av.xs > .tl { width: 12px; height: 12px; right: -3px; bottom: -3px; box-shadow: 0 0 0 1.5px var(--bg); }
+.av.sm > .tl svg, .av.xs > .tl svg { width: 8px; height: 8px; stroke-width: 1.7; }
+.av.lg > .tl { width: 20px; height: 20px; } .av.lg > .tl svg { width: 13px; height: 13px; }
+.tl.tl-in { animation: tl-in .4s cubic-bezier(.3, 1.6, .5, 1) backwards; }
+.tl.tl-out { animation: tl-out .22s ease-in forwards; }
+@keyframes tl-in { from { transform: scale(.3) rotate(-30deg); opacity: 0; } }
+@keyframes tl-out { to { transform: scale(.3); opacity: 0; } }
+#top { grid-template-columns: auto auto minmax(0, 1fr) auto auto; }
+#toolbar { min-width: 0; display: flex; gap: 8px; justify-self: start; max-width: 100%; }
+#toolbar:empty { display: none; }
+.tool-pill { display: inline-flex; align-items: center; gap: 7px; height: 34px; padding: 0 14px 0 5px; border-radius: 17px; min-width: 0; max-width: 100%; cursor: pointer;
+  font-size: var(--fs-13); color: var(--ink2); white-space: nowrap; user-select: none;
+  background: color-mix(in srgb, var(--accent) 9%, transparent); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 34%, transparent);
+  transition: background-color .2s var(--ease, ease), box-shadow .2s, transform .15s var(--ease, ease), opacity .2s; }
+.tool-pill:hover { background: color-mix(in srgb, var(--accent) 16%, transparent); }
+.tool-pill:active { transform: scale(.97); }
+.tool-pill:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.tool-pill .ic { flex: none; width: 24px; height: 24px; border-radius: 50%; display: grid; place-items: center; background: var(--accent); color: var(--accent-ink, var(--bg)); }
+.tool-pill .ic svg { width: 14px; height: 14px; }
+.tool-pill b { color: var(--ink); font-weight: 600; flex: none; }
+.tool-pill .d { font-style: normal; color: var(--dim); flex: none; }
+.tool-pill .who { display: inline-flex; align-items: center; gap: 5px; color: var(--ink); flex: none; }
+.tool-pill .who i { width: 18px; height: 18px; border-radius: 50%; background: var(--chip) center/cover no-repeat; }
+.tool-pill .what { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.tool-pill time { flex: none; color: var(--dim); font-size: var(--fs-12); }
+.tool-pill em { flex: none; font-style: normal; color: var(--dim); font-size: var(--fs-12); }
+.tool-pill.stale { opacity: .62; }
+.tool-pill.warn { cursor: default; background: rgba(var(--warn-rgb), .12); box-shadow: inset 0 0 0 1px rgba(var(--warn-rgb), .5); }
+.tool-pill.warn .ic { background: rgba(var(--warn-rgb), .9); }
+.tool-pill.tp-in { animation: tp-in .32s cubic-bezier(.2, .8, .2, 1) backwards; }
+.tool-pill.tp-out { animation: tp-out .22s ease-in forwards; pointer-events: none; }
+@keyframes tp-in { from { opacity: 0; transform: translateY(-6px) scale(.96); } }
+@keyframes tp-out { to { opacity: 0; transform: translateY(-4px) scale(.96); } }
+.hd-tool { display: none; }
+.hd-tool.on { display: flex; margin: 0 0 10px; }
+.hd-tool .tool-pill { width: 100%; height: 42px; border-radius: 21px; padding-right: 14px; }
+.hd-tool .tool-pill .ic { width: 30px; height: 30px; } .hd-tool .tool-pill .ic svg { width: 16px; height: 16px; }
+.hd-tool .tool-pill .what { flex: 1; }
+/* narrower desktops: the line shrinks to icon + who, then to the icon alone (the title attribute keeps the full text) */
+@media (max-width: 1320px) { #toolbar .tool-pill .what, #toolbar .tool-pill time, #toolbar .tool-pill em, #toolbar .tool-pill .d, #toolbar .tool-pill b { display: none; } #toolbar .tool-pill { padding-right: 12px; } }
+@media (max-width: 1120px) { #toolbar .tool-pill .who { display: none; } #toolbar .tool-pill { width: 34px; padding: 0; justify-content: center; } #toolbar { min-width: 34px; } #top:has(#toolbar .tool-pill) { gap: 18px; } #top:has(#toolbar .tool-pill) #sync .row:first-child > .dim { display: none; } }
+@media (max-width: 760px) { #toolbar { display: none !important; } }
+@media (min-width: 761px) { .hd-tool { display: none !important; } }
+@media (prefers-reduced-motion: reduce) { .tl.tl-in, .tl.tl-out, .tool-pill.tp-in, .tool-pill.tp-out { animation: none; } .tl.tl-out, .tool-pill.tp-out { opacity: 0; } }
+/* t-chrome-badge: the dense home 「此刻在忙」 rows use a bare <img>; the badge sits on it as an absolute (non-grid) child */
+#hd2 .d-w { position: relative; }
+#hd2 .d-w > .tl { position: absolute; left: 37px; top: calc(50% + 7px); width: 17px; height: 17px; border-radius: 50%; display: grid; place-items: center;
+  background: var(--accent); color: var(--accent-ink, var(--bg)); box-shadow: 0 0 0 2px var(--panel, var(--bg)); font-style: normal; }
+#hd2 .d-w > .tl svg { width: 11px; height: 11px; fill: none; stroke: currentColor; stroke-width: 1.5; }
+html[data-dense] #hd2 .d-w > .tl { left: 29px; top: calc(50% + 5px); width: 14px; height: 14px; } html[data-dense] #hd2 .d-w > .tl svg { width: 9px; height: 9px; }

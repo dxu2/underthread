@@ -338,6 +338,7 @@ def add_log(st, agent, text, item=None):
 def set_agent(st, agent_id, **fields):
     a = st["agents"].setdefault(agent_id, {"id": agent_id, "status": "idle"})
     was = a.get("status")
+    tool = fields.pop("tool", None)
     for k, v in fields.items():
         if v is not None:
             a[k] = v
@@ -350,6 +351,16 @@ def set_agent(st, agent_id, **fields):
         a["item"] = None
     if fields.get("status") and fields["status"] != "sleeping":
         a.pop("wake_at", None)
+    # t-chrome-badge: agents[id].tool = the outside tool this agent is driving right now ("chrome", "computer", ...); "" / idle / offline / sleeping clears it
+    if tool is not None:
+        if tool.strip():
+            if a.get("tool") != tool.strip():
+                a["tool_since"] = now()
+            a["tool"] = tool.strip()
+        else:
+            a.pop("tool", None); a.pop("tool_since", None)
+    if new in ("idle", "offline", "sleeping") and not (tool and tool.strip()):
+        a.pop("tool", None); a.pop("tool_since", None)
     a["last_seen"] = now()
     return a
 
@@ -493,7 +504,7 @@ def cmd_items(a):
 
 def cmd_set_agent(a):
     with mutate() as st:
-        set_agent(st, a.id, status=a.status, item=a.item, activity=a.activity)
+        set_agent(st, a.id, status=a.status, item=a.item, activity=a.activity, tool=a.tool)
         if a.activity:
             add_log(st, a.id, a.activity, a.item)
     print("ok")
@@ -681,7 +692,9 @@ def main():
 
     s = sub.add_parser("set-agent", help="set agent status"); s.add_argument("id")
     s.add_argument("--status", choices=["idle", "working", "offline", "sleeping"]); s.add_argument("--item")
-    s.add_argument("--activity"); s.set_defaults(fn=cmd_set_agent)
+    s.add_argument("--activity")
+    s.add_argument("--tool", help='outside tool in use, e.g. chrome / computer; "" = done (idle/offline also clears it)')
+    s.set_defaults(fn=cmd_set_agent)
 
     s = sub.add_parser("sleep", help="manager sleeps until the usage window resets")
     s.add_argument("--until", required=True, help="ISO reset time (resetsAt from the usage tool)")

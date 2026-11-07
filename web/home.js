@@ -76,6 +76,7 @@
     const stats = ["review", "doing", "todo", "week"].map((k, i) => [k, L().st[i]]).map(([k, l], i) => `<div class="hd-stat" role="button" tabindex="0" data-hd-f="${k}" style="--i:${i}"><b data-k="${k}">0</b><i class="hd-rdot"></i><span>${l}</span></div>`).join("");
     ob.innerHTML = `<div class="hd hd-enter">
       <div class="hd-h"><span class="hd-sum"></span><button type="button" class="hd-srch" data-msearch aria-label="${A().UI.lang === "en" ? "Search" : "搜索"}"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="M16 16 L20.5 20.5"/></svg></button><button class="hd-pill" data-hd-exp aria-expanded="false" aria-controls="hd-office">${ICON_EXP}<span>${L().pill}</span>${ICON_DN}</button></div>
+      <div class="hd-tool"></div>
       <div class="hd-exp"><div class="hd-exp-in"><div class="hd-office" id="hd-office"></div></div></div>
       <div class="dp-strip" role="group" aria-label="${L().team}">${as.map(panel).join("")}</div>
       <div class="hd-alert"><div class="hd-alert-in"><div class="hd-chip" role="button" data-hd-f="review"><i class="hd-red"></i><b></b><span class="t"></span>${CHEV}</div></div></div>
@@ -143,6 +144,8 @@
   // ---------- patch ----------
   function apply(ob, d, events) {
     const root = $(".hd", ob); if (!root || !d) return;
+    /* t-chrome-badge: 「Chrome 使用中 · 谁 · 在做什么」 under the summary line; guarded write, the motion state lives in App.toolLine */
+    const tl = $(".hd-tool", root); if (tl && A().toolLine) { const h = A().toolLine("m"); setH(tl, h); tl.classList.toggle("on", !!h); }
     const as = ordered(d.agents), waiting = new Set(A().items().filter(i => A().onYouCard ? A().onYouCard(i) : i.stage === "review" && !(A().busy && A().busy(i))).map(i => i.owner));   // t-doing-first
     /* t-office-d1-s3 + t-ri1104-p2: the dot also means "unread messages from TA", same rule as the TEAM list and the chat roster */
     as.forEach(a => { if (A().unreadOf && A().unreadOf(a.id)) waiting.add(a.id); });
