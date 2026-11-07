@@ -615,7 +615,7 @@
     return add;
   }
 
-  // ---------- t-mobile-crash-state: slim polling on the phone ----------
+  // ---------- t-mobile-crash-state: slim polling (phone; desktop too since ri1107-P2) ----------
   // A slim done/archived card has no draft / versions (it.slim = 1). The drawer asks /api/item for the full card once; FULL keeps those
   // fields and every poll puts them back while the card's `updated` is unchanged (a changed card is fetched again on the next open).
   // An older server ignores ?slim=1 and sends full cards (no it.slim), so nothing here ever runs against it.
@@ -668,15 +668,15 @@
   function bootDone() { const b = document.getElementById("boot-sk"); if (b) b.remove(); }
   /* ri1105-P3: open with content. Every full /api/state answer is kept (raw text, when the page is idle) in IndexedDB rt-snap; a cold start draws
      the last one at once while the first poll runs, and the sync pill says 「同步中 · 上次 N 分钟前」 until it answers. Display only: clicks still go
-     to the server as usual, nothing is queued offline. Snapshots older than 24 h are not used. Phone (slim) and desktop keep separate keys. */
-  const SNAP = { key: () => "state" + (MOBQ.matches ? "-slim" : ""), max: 24 * 3600e3 };
+     to the server as usual, nothing is queued offline. Snapshots older than 24 h are not used. ri1107-P2: every poll is slim, one key (the old desktop "state" key is dropped once). */
+  const SNAP = { key: () => "state-slim", max: 24 * 3600e3 };   /* ri1107-P2: desktop polls slim too, so one key */
   function snapDb() {
     return SNAP.db || (SNAP.db = new Promise((ok, no) => { const q = indexedDB.open("rt-snap", 1); q.onupgradeneeded = () => q.result.createObjectStore("s"); q.onsuccess = () => ok(q.result); q.onerror = () => no(q.error); }).catch(() => null));
   }
   function snapSave(txt) {
     if (!window.indexedDB || !txt) return;
     clearTimeout(SNAP.t); SNAP.t = setTimeout(() => (window.requestIdleCallback || (f => setTimeout(f, 50)))(() => snapDb().then(db => { if (!db) return;
-      try { db.transaction("s", "readwrite").objectStore("s").put({ t: Date.now(), txt }, SNAP.key()); } catch (_) { } })), 3000);
+      try { const os = db.transaction("s", "readwrite").objectStore("s"); os.put({ t: Date.now(), txt }, SNAP.key()); if (!SNAP.gc) { SNAP.gc = 1; os.delete("state"); } } catch (_) { } })), 3000);
   }
   function snapLoad() {
     if (!window.indexedDB) return Promise.resolve(null);
@@ -775,7 +775,7 @@
   }
   async function pollOnce(force, wait, ctl) {
     try {
-      const qs = [REV != null && !force ? `rev=${REV}` : "", MOBQ.matches ? "slim=1" : "", wait ? "wait=25" : ""].filter(Boolean).join("&");   // t-mobile-crash-state
+      const qs = [REV != null && !force ? `rev=${REV}` : "", "slim=1", wait ? "wait=25" : ""].filter(Boolean).join("&");   // t-mobile-crash-state
       const r = await fetch("/api/state" + (qs ? "?" + qs : ""), ctl ? { signal: ctl.signal } : undefined);
       var txt = await r.text(), j = JSON.parse(txt);
       if (!ST || UI.snap) await Promise.race([AVS.ready, new Promise(ok => setTimeout(ok, 400))]);   // ri1105-P1: first paint picks the small avatars
@@ -2343,7 +2343,7 @@
     const m = ta.value.slice(0, c).match(/(^|[\s，。、；：,;:（(“"'])#([^\s#]{0,24})$/); if (!m) return hpClose();
     const q = m[2].toLowerCase();
     HP.ta = ta; HP.at = c - m[2].length - 1; HP.q = m[2];
-    HP.rows = window.Pal ? Pal.find(q, { items: 6, recent: 6 }).items.slice(0, 6) : items().filter(i => !q || (i.title + " " + i.id).toLowerCase().includes(q)).sort(byAct).slice(0, 6);
+    HP.rows = window.Pal ? Pal.find(q, { items: 6, recent: 6, itemsOnly: 1 }).items.slice(0, 6) : items().filter(i => !q || (i.title + " " + i.id).toLowerCase().includes(q)).sort(byAct).slice(0, 6);
     HP.sel = 0; hpDraw();
   }
   function hpDraw() {

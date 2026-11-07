@@ -81,23 +81,35 @@
   // q: lower-case trimmed query. Items: title / id / summary / tags / owner (as the phone search always did).
   // t-ri1103-p5: drafts (current + every older version) and card talk (thread messages / logs, no system events) are searched too.
   // Lower-cased copies are built once per state object (a poll that changes anything swaps App.ST), so a key press only runs indexOf.
-  // Phone polls slim: a done card's drafts are not in the state until it is opened, so the phone only searches drafts of open cards.
+  // Polls are slim (phone; desktop too since ri1107-P2): a done card's drafts are not in the state until it is opened. ri1107-P1: the first
+  // search fetches the full /api/state once (kept 10 min) and searches those drafts too; "rt-hist" re-runs an open search when they land.
   // t-perf A: archived cards (App.archList(), loaded once on the first search) are searched too; "rt-arch" re-runs an open search when they land.
-  const IX = { st: null, n: -1, drafts: [], talk: [], chats: null, ar: null };
+  const IX = { st: null, n: -1, drafts: [], talk: [], chats: null, ar: null, fd: null };
+  /* ri1107-P1: drafts of slim (done) cards, id -> { draft, versions, draft_label, draft_at } from one full /api/state; a failed fetch retries after 1 min */
+  const FD = { map: null, at: 0, p: null };
+  function fullDrafts() {
+    if (FD.p || Date.now() - FD.at < 600e3 || !realItems().some(i => i.slim)) return;
+    FD.p = fetch("/api/state").then(r => r.ok ? r.json() : null).then(j => {
+      if (!j || !j.items) { FD.at = Date.now() - 540e3; return; }
+      const m = new Map(); for (const i of j.items) if (i.draft || (i.versions || []).length) m.set(i.id, { draft: i.draft || "", versions: i.versions || [], draft_label: i.draft_label, draft_at: i.draft_at });
+      FD.map = m; FD.at = Date.now(); document.dispatchEvent(new Event("rt-hist"));
+    }, () => { FD.at = Date.now() - 540e3; }).finally(() => { FD.p = null; });
+  }
   // real = cards the server sent; archived = the loaded archive, else the archived cards already opened (_arch copies in ST.items)
   const realItems = () => (App.ST.items || []).filter(i => !i._arch);
   const archExtra = () => { const L = App.archList && App.archList(); if (!L) return (App.ST.items || []).filter(i => i._arch); const live = new Set(realItems().map(i => i.id)); return L.filter(i => !live.has(i.id)); };
   function index() {
     const ST = App.ST, ar = App.archList ? App.archList() : null, its = realItems().concat(archExtra()), n = its.reduce((k, it) => k + (it.draft ? 1 : 0) + (it.versions || []).length + (it.thread || []).length, 0);
-    if (IX.st === ST && IX.n === n && IX.ar === ar) return IX;
+    if (IX.st === ST && IX.n === n && IX.ar === ar && IX.fd === FD.map) return IX;
     const ms = x => Date.parse(x) || 0, drafts = [], talk = [];
     for (const it of its) {
-      (it.versions || []).forEach((v, i) => v.draft && drafts.push({ it, vkey: "v" + i, vn: i + 1, label: v.label, text: v.draft, lc: v.draft.toLowerCase(), t: v.t, who: it.owner }));
-      if (it.draft) drafts.push({ it, vkey: "cur", vn: (it.versions || []).length + 1, label: it.draft_label, text: it.draft, lc: it.draft.toLowerCase(), t: it.draft_at || it.updated, who: it.owner, cur: true });
+      const d = (it.slim && FD.map && FD.map.get(it.id)) || it;   // ri1107-P1
+      (d.versions || []).forEach((v, i) => v.draft && drafts.push({ it, vkey: "v" + i, vn: i + 1, label: v.label, text: v.draft, lc: v.draft.toLowerCase(), t: v.t, who: it.owner }));
+      if (d.draft) drafts.push({ it, vkey: "cur", vn: (d.versions || []).length + 1, label: d.draft_label, text: d.draft, lc: d.draft.toLowerCase(), t: d.draft_at || it.updated, who: it.owner, cur: true });
       (it.thread || []).forEach((m, i) => { if (m.kind !== "event" && m.text) talk.push({ it, ti: i, m, text: String(m.text), lc: String(m.text).toLowerCase(), t: m.t }); });
     }
     drafts.sort((a, b) => ms(b.t) - ms(a.t)); talk.sort((a, b) => ms(b.t) - ms(a.t));
-    Object.assign(IX, { st: ST, n, drafts, talk, chats: null, ar });
+    Object.assign(IX, { st: ST, n, drafts, talk, chats: null, ar, fd: FD.map });
     return IX;
   }
   function chatIx() {   // every chat message, newest first (built lazily, same lifetime as the index)
@@ -116,6 +128,7 @@
     return { list: out, total };
   }
   function find(q, opt = {}) {
+    if (!opt.itemsOnly) fullDrafts();   // ri1107-P1: opening search starts it (no-op within 10 min, or when no card is slim); the # picker only needs items
     const hit = it => [it.title, it.summary, it.id, (it.tags || []).join(" "), App.aname(App.agent(it.owner))].join(" ").toLowerCase().includes(q);
     let items = App.items().slice().sort(App.byAct).filter(it => !q || hit(it)).slice(0, q ? (opt.items || 30) : (opt.recent || 8));
     if (q && App.archIx) {   // t-perf A: archived cards after the live ones (full cards once loaded, else the id / title index)
