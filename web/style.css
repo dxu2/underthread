@@ -2590,6 +2590,8 @@ html[data-theme="light"] .brand img.wm-l, html[data-theme="white"] .brand img.wm
 .sy-pill .sy-s { color: var(--dim); font-size: var(--fs-12); }
 .sy-pill .sy-s:empty { display: none; }
 .sy-dot { flex: none; width: 7px; height: 7px; border-radius: 50%; background: var(--ok); transition: background-color .2s ease; }
+.sy-pill .sy-dot { align-self: center; margin: 0; }
+@media (min-width: 761px) { #right .ch-comp textarea { height: 42px; } }   /* t-chat-input-h: empty desktop chat box = one row (42px, the same height focus gives it); typing sets an inline height (deskFit) */   /* t-chat-input-h: the status modal .sy-dot (align-self:flex-start; margin-top:6px) leaked into the pill and lifted the dot 4.5px */
 .sy-pill.down { background: color-mix(in srgb, var(--urgent) 14%, transparent); }
 .sy-pill.down .sy-k { color: var(--urgent); font-weight: 600; }
 .sy-pill.down .sy-dot { background: var(--urgent); }

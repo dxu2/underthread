@@ -3221,7 +3221,7 @@
       <button class="ch-fold" title="${UI.lang === "en" ? "Collapse" : "收起 / 展开"}"><span></span></button>
       <div class="ch-head"><div class="ch-who"></div>${orn(160)}<div class="ch-roster"></div></div><div class="ch-msgs"></div>
       <div class="pending-att" style="padding:0 16px"></div>
-      <div class="ch-comp"><button type="button" class="att" title="${attTitle()}" aria-label="${UI.lang === "en" ? "Attach" : "添加附件"}">${ATT_IC}</button><input type="file" multiple hidden><textarea></textarea><span class="ch-kb" aria-hidden="true">${UI.lang === "en" ? "⌘/Ctrl ↵ send · ↵ new line" : "⌘/Ctrl ↵ 发送 · ↵ 换行"}</span></div>`;
+      <div class="ch-comp"><button type="button" class="att" title="${attTitle()}" aria-label="${UI.lang === "en" ? "Attach" : "添加附件"}">${ATT_IC}</button><input type="file" multiple hidden><textarea rows="1"></textarea><span class="ch-kb" aria-hidden="true">${UI.lang === "en" ? "⌘/Ctrl ↵ send · ↵ new line" : "⌘/Ctrl ↵ 发送 · ↵ 换行"}</span></div>`;
     const ta = $("textarea", r), fi = $("input[type=file]", r);
     const showAtt = () => attTiles($(".pending-att", r), chatAtt, showAtt);   // ui19
     const add = wireUploads(ta, chatAtt, showAtt);
