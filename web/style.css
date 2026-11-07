@@ -2169,6 +2169,8 @@ html[data-theme] #toast::before, html[data-theme] #toast::after { display: none;
 .sy-u b .sy-est { font: 600 var(--fs-10)/1 var(--f-sys); font-style: normal; color: var(--dim); border: 1px solid color-mix(in srgb, var(--dim) 55%, transparent); border-radius: 4px; padding: 2px 3px 1px; margin-right: 5px; vertical-align: 3px; }
 /* the pill hangs below #top; #layout (z 1, later in the DOM, opaque in white) painted over it. Lift the header only while the pill shows and the chat isn't popped out. */
 @media (min-width: 761px) { body:not(.chat-pop) #top:has(.st-age:not([hidden])) { z-index: 2; } }
+/* t-ut-orb ①: the same trap for the sync pill's hover popover (.sy-pop): only its top 13 px showed, as an "arc" under the header. */
+@media (min-width: 761px) { body:not(.chat-pop) #top:has(#sync:hover), body:not(.chat-pop) #top:has(#sync:focus-visible) { z-index: 2; } }
 /* ===== t-select-color: under the ink skin my chat bubble (and the filled 待验收/待拍板 tags, the queue badge) are inverted against the theme:
    light fill on dark themes, dark fill on light ones. The global ::selection (light ink on dark themes, dark ink on light) then matched the fill
    and selected text vanished. These inverted surfaces get the opposite highlight. Shared by desktop and phone. */
@@ -2646,3 +2648,19 @@ div.rq { cursor: default; } div.rq:hover { background: color-mix(in srgb, var(--
 #right .msg.pend .pend-b:hover { color: var(--ink); border-color: var(--line3); background: var(--accent-soft); }
 #right .msg.pend .pend-b[data-pend-retry] { color: var(--urgent); border-color: var(--urgent); }
 @media (prefers-reduced-motion: reduce) { #right .msg.pend .mb, #right .msg.pend .pend-b { transition: none; } }
+
+/* ===== t-ut-orb A: the Soul block takes only its content width (the week line under it was ~1000 px), no STAMINA caption. Desktop only. */
+@media (min-width: 761px) { #top > #stamina { justify-self: start; } .stamina .lbl small { display: none; } }
+/* ===== t-mailbox-top: ✉ 信箱 N pill at the right end of the top bar, same look as the sync pill (.sy-pill). Desktop only:
+   the phone keeps 信箱 in 更多 (#nav row), so the rail row is hidden only here. Press = glass.js unified scale (no own :active). */
+.hdr-ctrl .hc-mail { gap: 7px; height: 28px; padding: 0 10px 0 11px; border-radius: 999px; background: color-mix(in srgb, var(--ink) 6%, transparent); color: var(--ink);
+  font-weight: 500; letter-spacing: 0; text-shadow: none; transition: background-color .16s ease, color .16s ease; }
+.hdr-ctrl .hc-mail::after { display: none; }
+.hdr-ctrl .hc-mail:hover { background: color-mix(in srgb, var(--ink) 11%, transparent); text-shadow: none; }
+.hdr-ctrl .hc-mail:focus-visible { outline: none; box-shadow: 0 0 0 2px var(--accent); }
+.hdr-ctrl .hc-mail svg { width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-width: 1.6; flex: none; }
+.hdr-ctrl .hc-mail .n { font: 600 var(--fs-11)/1 var(--f-display); background: var(--dot); color: #fff; border-radius: 9px; min-width: 18px; height: 18px; padding: 0 5px; box-sizing: border-box;
+  display: inline-flex; align-items: center; justify-content: center; }
+@media (min-width: 761px) { #nav .nav-i[data-go="mail"] { display: none; } }
+@media (max-width: 760px) { .hdr-ctrl .hc-mail { display: none !important; } }
+@media (prefers-reduced-motion: reduce) { .hdr-ctrl .hc-mail { transition: none; } }

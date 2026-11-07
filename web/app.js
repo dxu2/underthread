@@ -916,8 +916,12 @@
     sta.querySelector(".focus").hidden = U.week == null;
     sta.querySelector(".focus i").style.width = (U.week ?? 0) + "%";
     const unread = (ST.mail || []).filter(m => !m.read).length;
-    /* t-hdr-trim ①: the top bar keeps only 聊天 (narrow desktop). 舞台 / 主题 and 刷新用量 live in 设置, 报告 is a nav row, 信箱 moved to the rail (#nav). */
-    const hc = `<button data-h="chat" class="hc-chat" aria-expanded="${document.body.classList.contains("chat-pop")}">${UI.lang === "en" ? "Chat" : "聊天"}</button>`;
+    /* t-hdr-trim ①: the top bar keeps only 聊天 (narrow desktop). 舞台 / 主题 and 刷新用量 live in 设置, 报告 is a nav row.
+       t-mailbox-top: 信箱 is back as a pill at the right end (desktop only; the rail row is hidden by CSS, the phone keeps it in 更多).
+       The SVG is written in its serialized form (explicit closing tags) so the innerHTML compare below stays equal and the pill is not rebuilt every poll. */
+    const mlab = UI.lang === "en" ? "Mailbox" : "信箱", mn = unread > 99 ? "99+" : String(unread);
+    const hc = `<button data-h="mail" class="hc-mail" aria-label="${mlab}${unread ? " " + mn : ""}"><svg viewBox="0 0 16 16" aria-hidden="true"><rect x="1.8" y="3.2" width="12.4" height="9.6" rx="2"></rect><path d="M2.5 4.5 8 8.6l5.5-4.1"></path></svg><span>${mlab}</span>${unread ? `<span class="n">${mn}</span>` : ""}</button>`
+      + `<button data-h="chat" class="hc-chat" aria-expanded="${document.body.classList.contains("chat-pop")}">${UI.lang === "en" ? "Chat" : "聊天"}</button>`;
     if ($("#hdrctrl").innerHTML.trim() !== hc) $("#hdrctrl").innerHTML = hc;
   }
   document.addEventListener("click", e => {
