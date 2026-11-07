@@ -174,7 +174,7 @@ button, .card, .nav-i, .team-i, .m-chip, #tabbar { -webkit-touch-callout: none; 
 .brand { flex-direction: row; gap: .32em; font-size: 14px; letter-spacing: .14em; align-self: center; }
 .brand span::first-letter { font-size: 1.28em; }
 /* brand1 (t-brand-assets): image wordmark in the phone header (shrinks with the column, never touches orb / mail) */
-.brand img { height: 38px; width: auto; max-width: 100%; }
+.brand img { height: 28px; width: auto; max-width: 100%; }   /* t-logo-v2: 5.6:1 wordmark (was 38px for the 2.5:1 one) */
 .hdr-ctrl button[data-h="theme"] { display: none; } .hdr-ctrl .hc-theme { display: none; }   /* D2: desktop header theme picker; the phone keeps its 菜单 theme row */
 .hdr-ctrl button[data-h="mail"] { width: 30px; height: 30px; justify-content: center; position: relative; }
 .hdr-ctrl button[data-h="mail"]::before { content: ""; width: 19px; height: 15px; background: currentColor;
@@ -788,7 +788,7 @@ body.kb .ms-res { padding-bottom: 24px; }
   #top { grid-template-columns: minmax(0, auto) minmax(0, 1fr) auto; gap: 8px; }
   .brand { min-width: 0; font-size: 12.5px; letter-spacing: .09em; white-space: nowrap; }
   .brand > * { min-width: 0; }
-  .brand img { max-width: 100%; height: 33px; width: auto; }
+  .brand img { max-width: 100%; height: 25px; width: auto; }
   .stamina { min-width: 0; gap: 6px; padding-right: 0; }
   .stamina .pct { white-space: nowrap; }
   .hdr-ctrl button[data-h="mail"] { width: 40px; height: 40px; margin: -5px -4px -5px 0; }

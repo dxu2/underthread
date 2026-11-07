@@ -817,7 +817,7 @@ body.resizing #layout { transition: none; }
 .team-i::before { content: ""; position: absolute; left: 0; top: 14px; bottom: 14px; width: 2px; border-radius: 2px; background: var(--glow);
   box-shadow: 0 0 10px var(--glow-a); opacity: 0; transform: scaleY(.4); transition: opacity .25s, transform .32s var(--ease); }
 .team-i.on::before { opacity: 1; transform: none; }
-.team-i.unread:not(.on)::before { opacity: .55; transform: none; background: var(--dot); box-shadow: none; }
+/* t-hdr-trim ②3: unread = the count chip only (.tn); the bar marks the open chat alone (was: a red bar for unread too) */
 .team-i .du { margin-top: 2px; }
 .team-enter .team-i { animation: ui1-rise .24s var(--ease) both; animation-delay: calc(var(--i, 0) * 30ms); }
 @media (prefers-reduced-motion: reduce) { .team-enter .team-i { animation: none; } .team-i, .team-i::before { transition: none; } }
@@ -2526,3 +2526,22 @@ html[data-power="off"] .av.working, html[data-power="off"] .hd-mini.working { an
   background: var(--accent); color: var(--accent-ink, var(--bg)); box-shadow: 0 0 0 2px var(--panel, var(--bg)); font-style: normal; }
 #hd2 .d-w > .tl svg { width: 11px; height: 11px; fill: none; stroke: currentColor; stroke-width: 1.5; }
 html[data-dense] #hd2 .d-w > .tl { left: 29px; top: calc(50% + 5px); width: 14px; height: 14px; } html[data-dense] #hd2 .d-w > .tl svg { width: 9px; height: 9px; }
+
+/* t-logo-v2 (T3 Underthread, 2026-11-05): wordmark is a 5.6:1 strip (was 2.5:1); dark text on light / white themes */
+.brand img { height: 32px; }
+.brand img.wm-l { display: none; }
+html[data-theme="light"] .brand img.wm-d, html[data-theme="white"] .brand img.wm-d { display: none; }
+html[data-theme="light"] .brand img.wm-l, html[data-theme="white"] .brand img.wm-l { display: block; }
+@media (min-width: 761px) and (max-width: 1200px) { .brand img { height: 24px; } }
+
+/* ===== t-hdr-trim (2026-11-05) ===== */
+/* ⑩ long names (Shorekeeper, Xiangli Yao) ellipsize; status word, 排队 chip and unread count never leave the row */
+.team-i > div:not(.av) { min-width: 0; }
+.team-i .nm { min-width: 0; }
+.team-i .nm .nmt { flex: 0 1 auto; min-width: 2em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.team-i .nm > .st, .team-i .nm > .tn { flex: none; white-space: nowrap; }
+.team-i .du .aq { display: inline-flex; vertical-align: 1px; height: 16px; padding: 0 6px; margin: 0 6px 0 0; font-size: var(--fs-10); }
+/* ⑨ detail + DM boxes: no resize grip, no visible scrollbar; app.js deskFit / mobile.js fit grow the height, past the cap it scrolls (bar hidden) */
+#drawer .composer textarea, #right .ch-comp textarea { resize: none; scrollbar-width: none; overflow-y: auto; }
+#drawer .composer textarea::-webkit-scrollbar, #right .ch-comp textarea::-webkit-scrollbar { display: none; width: 0; height: 0; }
+@media (min-width: 761px) { #drawer .composer textarea { max-height: 200px; } }

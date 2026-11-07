@@ -45,7 +45,7 @@
       empty_review: "没有等你审核的东西。去喝杯水。", empty_ok: "没有等你拍板的 · 去喝杯水", empty: "这里是空的。", empty_mail: "没有新动态", mail_thread: "{n} 条", unread_only: "未读",
       wake: "唤醒管家", refresh_usage: "刷新用量", settings: "设置", write_report: "日报", report_req: "让管家写日报", theme: "主题",
       cancel: "取消",
-      reject_t: "驳 回", reject_reason: "原因（会被整理成规则提议）",
+      reject_t: "驳回", reject_reason: "原因（会被整理成规则提议）",
       lessons: "规则提议", adopt: "采纳", drop: "丢弃", dm: "私信",
       closed: "已完成", first_pass: "一次通过", adopted: "已采纳规则",
       all: "全部", unread: "未读", replies: "回复", updates: "更新", mark_all: "全部已读",
@@ -277,6 +277,7 @@
   const typingOn = (a, last) => !!a && a.status === "working" && !mgrOnline(a) && !!last && last.who === "me" && (!lastT(last) || Date.now() - lastT(last) < TYPING_MAX);
   const typingUntil = last => lastT(last) ? lastT(last) + TYPING_MAX : "";
   const MGR_ON = () => UI.lang === "en" ? "Online · watching the inbox" : "在线 · 看着信箱";
+  const MGR_WATCH = () => UI.lang === "en" ? "Watching the inbox" : "看着信箱";   /* t-hdr-trim ②1: the desktop rail already says 在线 after the name */
   const workersOf = id => id ? Object.values(ST.agents || {}).filter(a => a.status === "working" && a.item === id && liveItem(a)).sort((a, b) => (a.order ?? 99) - (b.order ?? 99)) : [];
   const wkP = () => `--wp:${(-(Date.now() % 4000) / 1000).toFixed(3)}s`;
   function wkDur(iso) {
@@ -852,12 +853,9 @@
     sta.querySelector(".focus").hidden = U.week == null;
     sta.querySelector(".focus i").style.width = (U.week ?? 0) + "%";
     const unread = (ST.mail || []).filter(m => !m.read).length;
-    $("#hdrctrl").innerHTML = `
-      <span class="hc-stage" role="radiogroup" aria-label="${UI.lang === "en" ? "Stage" : "舞台"}">${[["night", "舞台·夜", "Stage · night", "dark"], ["day", "舞台·昼", "Stage · day", "white"]].map(x => { const on = !!document.documentElement.dataset.stage && UI.theme === x[3]; return `<button type="button" class="${on ? "on" : ""}" role="radio" aria-checked="${on}" title="${UI.lang === "en" ? x[2] : x[1]}" aria-label="${UI.lang === "en" ? x[2] : x[1]}" data-stage-set="${x[0]}"><i></i></button>`; }).join("")}</span>
-      <button data-h="chat" class="hc-chat" aria-expanded="${document.body.classList.contains("chat-pop")}">${UI.lang === "en" ? "Chat" : "聊天"}</button>
-      <button data-h="mail">✉ ${t("mail")} ${unread ? `<span class="badge">${unread}</span>` : ""}</button>
-      <button data-h="report">${t("write_report")}</button>
-      <button data-h="ping" title="${UI.lang === "en" ? "Ask the manager to re-read the quota (wakes it if asleep)" : "让管家重新读一次额度（睡着时也会叫醒）"}">${t("refresh_usage")}</button>`;
+    /* t-hdr-trim ①: the top bar keeps only 聊天 (narrow desktop). 舞台 / 主题 and 刷新用量 live in 设置, 报告 is a nav row, 信箱 moved to the rail (#nav). */
+    const hc = `<button data-h="chat" class="hc-chat" aria-expanded="${document.body.classList.contains("chat-pop")}">${UI.lang === "en" ? "Chat" : "聊天"}</button>`;
+    if ($("#hdrctrl").innerHTML.trim() !== hc) $("#hdrctrl").innerHTML = hc;
   }
   document.addEventListener("click", e => {
     const h = e.target.closest("[data-h]"); if (!h) return;
@@ -910,14 +908,15 @@
   function counts() {
     const c = { review: 0 }; for (const k of CATS) c[k] = 0;
     c.pipe = items().filter(i => i.stage !== "done" && isContent(i)).length;   // t-imp-p3
+    c.mail = (ST.mail || []).filter(m => !m.read).length;   /* t-hdr-trim ①: 信箱 row in the rail */
     for (const it of items()) { if (onYou(it)) c.review++; if (it.stage !== "done") c[it.category] = (c[it.category] || 0) + 1; }
     return c;
   }
   function renderLeft() {
     const c = counts();
-    const navs = ["review", ...CATS, "sep", "pipe", "board", "reports", "channels", "assets", "settings"];   // t-settings-tab: 日志 / 文档 / 角色 moved into 设置
+    const navs = ["review", ...CATS, "sep", "pipe", "board", "reports", "channels", "assets", "mail", "settings"];   /* t-hdr-trim ①: 信箱 moved here from the top bar (phone: same row in 更多) */   // t-settings-tab: 日志 / 文档 / 角色 moved into 设置
     $("#nav").innerHTML = navs.map(k => k === "sep" ? `<div class="nav-sep"></div>` :
-      `<button class="nav-i ${UI.page === k ? "on" : ""} ${k === "urgent" && c.urgent ? "urgent" : ""}" data-go="${k}"><span>${t(k)}</span><span class="n${c[k] === 0 ? " z" : ""}">${c[k] ?? ""}</span></button>`).join("");
+      `<button class="nav-i ${UI.page === k ? "on" : ""} ${k === "urgent" && c.urgent ? "urgent" : ""}" data-go="${k}"><span>${t(k)}</span>${k === "mail" ? (c.mail ? `<span class="n mb">${c.mail > 99 ? "99+" : c.mail}</span>` : `<span class="n z"></span>`) : `<span class="n${c[k] === 0 ? " z" : ""}">${c[k] ?? ""}</span>`}</button>`).join("");
 
     // calendar
     const today = dayKey(new Date()), tmr = dayKey(new Date(Date.now() + 864e5));
@@ -956,8 +955,8 @@
     $("#team").innerHTML = `<div class="side-h"><span class="sc">TEAM</span></div>` + agents().map((a, i) => {
       const ms = a.id === "manager" && mgrState();
       const st = ms ? (ms.on ? "working" : ms.sleep ? "sleeping" : "offline") : a.status || "idle";
-      const sub = mgrOnline(a) ? MGR_ON() : a.status === "working" && a.activity ? `▶ ${esc(a.tool ? toolWhat(a) || a.activity : a.activity)}` : esc(aduty(a));   // t-now-closed
-      return `<div class="team-i ${a.status === "working" && a.activity && !mgrOnline(a) ? "busy" : ""} ${a.enabled === false ? "disabled" : ""} ${UI.chat === a.id ? "on" : ""} ${unreadOf(a.id) && UI.chat !== a.id ? "unread" : ""}" style="--i:${Math.min(i, 12)}" data-chat="${a.id}">${av(a)}<div><div class="nm">${esc(aname(a))}<span class="st ${st}"${ms && ms.sleep ? ` title="${esc(ms.txt)}"` : ""}>${ms ? (ms.on ? t("online") : ms.sleep ? (ms.back ? `☾ ${ms.back}` : ms.txt) : t("offline")) : t(st)}</span>${qBadge(a.id)}${unreadOf(a.id) && UI.chat !== a.id ? `<i class="tn">${unreadTag(unreadOf(a.id))}</i>` : ""}</div><div class="du">${sub}</div></div></div>`;
+      const sub = mgrOnline(a) ? (MOBQ.matches ? MGR_ON() : MGR_WATCH()) : a.status === "working" && a.activity ? `▶ ${esc(a.tool ? toolWhat(a) || a.activity : a.activity)}` : esc(aduty(a));   // t-now-closed
+      return `<div class="team-i ${a.status === "working" && a.activity && !mgrOnline(a) ? "busy" : ""} ${a.enabled === false ? "disabled" : ""} ${UI.chat === a.id ? "on" : ""} ${unreadOf(a.id) && UI.chat !== a.id ? "unread" : ""}" style="--i:${Math.min(i, 12)}" data-chat="${a.id}">${av(a)}<div><div class="nm"><span class="nmt">${esc(aname(a))}</span><span class="st ${st}"${ms && ms.sleep ? ` title="${esc(ms.txt)}"` : ""}>${ms ? (ms.on ? t("online") : ms.sleep ? (ms.back ? `☾ ${ms.back}` : ms.txt) : t("offline")) : t(st)}</span>${unreadOf(a.id) && UI.chat !== a.id ? `<i class="tn">${unreadTag(unreadOf(a.id))}</i>` : ""}</div><div class="du">${qBadge(a.id)}${sub}</div></div></div>`;   /* t-hdr-trim ⑩: 排队 chip leads the second line, so name + status + count fit one line in zh and en */
     }).join("");
   }
   document.addEventListener("click", e => {
@@ -2213,6 +2212,18 @@
   const drawerAtt = [];
   const DW = { to: null, pop: [], sel: 0, open: new Set(), n: 0, fresh: false, stampPre: null, askOpen: new Set(), sumOpen: new Set() };   // askOpen / sumOpen: item ids (t-ui-next 1, 4)
   const PHONE = matchMedia("(max-width: 760px)");
+  /* t-hdr-trim ⑨: desktop detail / DM box grows with its text up to max px, then scrolls (scrollbar hidden in style.css). Empty = CSS height.
+     Measured with transition:none at height 0 (min-height clamps), and only when the text or width changed, because the drawer polls it every 300 ms. */
+  function deskFit(ta, max) {
+    if (!ta || PHONE.matches) return;
+    const v = ta.value, w = ta.clientWidth;
+    if (v === ta._fv && w === ta._fw && ta.style.height === ta._fh) return; ta._fv = v; ta._fw = w;
+    if (!v) { ta.style.height = ""; ta._fh = ""; return; }
+    const st = ta.scrollTop, tr = ta.style.transition;
+    ta.style.transition = "none"; ta.style.height = "0px";
+    const h = Math.min(max, ta.scrollHeight + ta.offsetHeight - ta.clientHeight);
+    ta.style.height = h + "px"; ta._fh = ta.style.height; void ta.offsetHeight; ta.style.transition = tr; ta.scrollTop = st;
+  }
   const NR_HIT = 4500;   // t-detail-jump-fix: how long the 新回复 box stays (CSS nrHitFade fades it in the last part)
   const nearEnd = sc => sc.scrollHeight - sc.scrollTop - sc.clientHeight < 60;
   const dwPinned = () => DW.pin && Date.now() < DW.pinUntil;   // t-detail-jump
@@ -2286,7 +2297,7 @@
     // t-detail-bottom (phone only): the field grows with its text (max 120px; works with IME composition, only the height is touched) and
     // .composer.has mirrors "text or attachment present" for CSS (send button lit, composer expanded). Polled like the chat composer, because send/approve clear the value without an input event.
     const fit = () => {
-      const cm = $(".composer", dw); if (!cm || !PHONE.matches) return;
+      const cm = $(".composer", dw); if (!cm) return; if (!PHONE.matches) return deskFit(ta, 200);
       if (ta.value) { ta.style.height = "auto"; ta.style.height = Math.min(120, Math.max(40, ta.scrollHeight)) + "px"; } else ta.style.height = "";
       cm.classList.toggle("has", !!ta.value.trim() || drawerAtt.length > 0 || Object.keys(drawerAtt._up || {}).length > 0 || annList().length > 0);   // t-imp29-p2: notes alone can be sent
     };
@@ -3069,7 +3080,7 @@
     ta.addEventListener("input", () => { if (!ta._dmLoad) DRAFT.set("dm:" + UI.chat, ta.value); });   // t-draft-keep
     $(".ch-comp button", r).onclick = () => fi.click();
     fi.onchange = () => { add(Array.from(fi.files)); fi.value = ""; };
-    ta.addEventListener("input", () => { if (matchMedia("(max-width: 760px)").matches) return; ta.style.height = "auto"; ta.style.height = Math.min(200, ta.scrollHeight) + "px"; });   // jit: on the phone mobile.js fit() is the only owner of this height (a second measure here flushed height:auto = 62px and re-animated it on every keystroke)
+    ta.addEventListener("input", () => deskFit(ta, 200));   /* t-hdr-trim ⑨ (was height:auto, which jumped to two rows on the first letter) */   // jit: on the phone mobile.js fit() is the only owner of this height (a second measure here flushed height:auto = 62px and re-animated it on every keystroke)
     ta.addEventListener("keydown", async e => {
       if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
         e.preventDefault(); const text = ta.value.trim(); if (!text && !chatAtt.length) return;
@@ -3301,7 +3312,7 @@
   function modalClose() {
     const it = ST.items.find(i => i.id === UI.item); if (!it) return;
     const zh = UI.lang !== "en", oa = openAsks(it), id = it.id;
-    openModal(`<h2>${zh ? "关 单" : "Close card"}</h2>${orn(140)}<p class="cl-t">${esc(it.title)}</p>${oa.length ? `<p class="cl-w">${zh ? `还有 ${oa.length} 个问题没答，会随卡一起关掉。` : `${oa.length} open question${oa.length > 1 ? "s" : ""} will close with it.`}</p>` : ""}
+    openModal(`<h2>${zh ? "关单" : "Close card"}</h2><p class="cl-t">${esc(it.title)}</p>${oa.length ? `<p class="cl-w">${zh ? `还有 ${oa.length} 个问题没答，会随卡一起关掉。` : `${oa.length} open question${oa.length > 1 ? "s" : ""} will close with it.`}</p>` : ""}
       <label>${zh ? "原因（可不填，会记进卡的动态）" : "Reason (optional, goes into the card's thread)"}</label><textarea></textarea>
       <div class="foot"><button class="btn" data-x>${t("cancel")}</button><button class="btn primary" data-ok>${zh ? "关单" : "Close"}</button></div>`, m => {
       const ta = $("textarea", m);
@@ -3316,7 +3327,7 @@
   }
   function modalReject() {
     const pre = $(".composer textarea") ? $(".composer textarea").value.trim() : "";
-    openModal(`<h2>${t("reject_t")}</h2>${orn(140)}<label>${t("reject_reason")}</label><textarea>${esc(pre)}</textarea>
+    openModal(`<h2>${t("reject_t")}</h2><label>${t("reject_reason")}</label><textarea>${esc(pre)}</textarea>
       <div class="foot"><button class="btn" data-x>${t("cancel")}</button><button class="btn primary danger" data-ok>${t("reject")}</button></div>`, m => {
       const ta = $("textarea", m);
       const submit = async () => { const reason = annWrap(ta.value.trim()), aid = UI.item; if (!reason) return ta.focus(); await api("reject", { item: UI.item, reason }); annClear(aid); DRAFT.set("item:" + aid, ""); closeModal(); if ($(".composer textarea")) $(".composer textarea").value = ""; if ($(".dr-tag")) $(".dr-tag").remove(); };

@@ -246,7 +246,7 @@ html[data-theme]:not([data-glass="0"]) .dw-toc .toc-bar i { background: linear-g
   html[data-theme]:not([data-glass="0"]) #team .team-i .nm { gap: 6px; align-items: baseline; font-size: var(--fs-14); white-space: nowrap; }
   html[data-theme]:not([data-glass="0"]) #team .team-i .nm .aq, html[data-theme]:not([data-glass="0"]) #team .team-i .nm .tn { align-self: center; }
   html[data-theme]:not([data-glass="0"]) #team .team-i .nm .tn { margin-left: auto; }
-  html[data-theme]:not([data-glass="0"]) #team .team-i .st, html[data-theme]:not([data-glass="0"]) #team .team-i .st.working, html[data-theme]:not([data-glass="0"]) #team .team-i .st.idle {
+  html[data-theme]:not([data-glass="0"]) #team .team-i .st, html[data-theme]:not([data-glass="0"]) #team .team-i .st.working {
     display: inline; font-size: var(--fs-11); font-weight: 400; letter-spacing: 0; color: var(--dim); }
   html[data-theme]:not([data-glass="0"]) #team .team-i .st.working { color: var(--ok); }
   html[data-theme]:not([data-glass="0"]) #team .team-i .st.offline { color: var(--urgent); }
@@ -256,3 +256,47 @@ html[data-theme]:not([data-glass="0"]) .dw-toc .toc-bar i { background: linear-g
   html[data-theme]:not([data-glass="0"]):not([data-power="off"]) #team .av.working::before, html[data-theme]:not([data-glass="0"]):not([data-power="off"]) #team .av .aw { animation: none; }   /* t-power-toggle: with 省电模式 off the rail ring spins and the dot breathes again (the status-word blink stays gone, L-1104-0593) */
   html[data-theme]:not([data-glass="0"]) #team .av.working::after { animation: none; display: none; }
 }
+
+/* ===== t-hdr-trim (2026-11-05): rail + dialogs. Same prefix as the rest of this file, so <html data-glass="0"> rolls it back. Backup tag .bak-hdrtrim1. ===== */
+/* ②2 待机 says nothing (only 执行中 / 离线 / 休眠 show) */
+html[data-theme]:not([data-glass="0"]) #team .team-i .st.idle { display: none; }
+/* ① 信箱 row: the unread count is a red chip, like the TEAM rows (.tn) */
+html[data-theme]:not([data-glass="0"]) #nav .nav-i .n.mb, #nav .nav-i .n.mb, #nav > .nav-sep ~ .nav-i .n.mb { display: inline-block; min-width: 18px; height: 18px; padding: 0 5px; box-sizing: border-box; border-radius: 9px; flex: none;
+  background: var(--dot); color: #fff; font: 600 var(--fs-11)/18px var(--f-sys); text-align: center; font-variant-numeric: tabular-nums; opacity: 1; text-shadow: none; }
+@media (min-width: 761px) {
+  /* ②4 alignment: rows share one 12px inset with the nav text; tighter rows so 8 people fit a 900px screen */
+  html[data-theme]:not([data-glass="0"]) #left > #team { margin-right: 0; padding-right: 0; padding-bottom: 8px; }
+  html[data-theme]:not([data-glass="0"]) #nav { gap: 0; }
+  html[data-theme]:not([data-glass="0"]) #nav .nav-i, html[data-theme]:not([data-glass="0"]) #nav > .nav-sep ~ .nav-i { min-height: 28px; }
+  html[data-theme]:not([data-glass="0"]) #team .side-h { margin-top: 6px; }
+  html[data-theme]:not([data-glass="0"]) #team .team-i { padding: 1px 8px 1px 12px; }   /* left 12 = nav text inset; right 8 keeps room for name + 执行中 + 排队 */
+  html[data-theme]:not([data-glass="0"]) #team .team-i .nm { gap: 5px; }
+  html[data-theme]:not([data-glass="0"]) #team .team-i .du { line-height: 18px; height: 18px; margin-top: 0; }
+}
+/* ③ dialogs (关单 / 驳回 / 写批注 / 还有问题没回答) match the 系统状态 panel: rounded solid glass, left title, pill buttons */
+@media (min-width: 761px) {
+  html[data-theme]:not([data-glass="0"]) #modal .mdl:not(.sys) { width: min(520px, 92vw); padding: 22px 22px 18px; border-radius: var(--r-l); background: var(--solid);
+    box-shadow: 0 0 0 1px var(--line2), var(--g-sh); }
+  html[data-theme="light"]:not([data-glass="0"]) #modal .mdl:not(.sys) { background: var(--bg); }
+}
+html[data-theme]:not([data-glass="0"]) #modal .mdl:not(.sys) { font-family: var(--f-sys); }
+html[data-theme]:not([data-glass="0"]) #modal .mdl:not(.sys) h2 { text-align: left; font: 600 var(--fs-17)/1.3 var(--f-sys); letter-spacing: 0; padding: 0; margin: 0 0 8px; text-shadow: none; }
+html[data-theme]:not([data-glass="0"]) #modal .mdl .orn { display: none; }
+html[data-theme]:not([data-glass="0"]) #modal .mdl:not(.sys) label { font: var(--fs-13)/1.4 var(--f-sys); letter-spacing: 0; margin: 14px 0 6px; color: var(--ink2); }
+html[data-theme]:not([data-glass="0"]) #modal .mdl:not(.sys) textarea { border-radius: var(--r-s); background: var(--g-tint-3); border: 1px solid var(--line); padding: 10px 12px;
+  font: var(--fs-14)/1.6 var(--f-sys); min-height: 110px; resize: none; box-shadow: none; transition: border-color var(--m-base), box-shadow var(--m-base); }
+html[data-theme]:not([data-glass="0"]) #modal .mdl:not(.sys) textarea:focus { border-color: var(--line3); box-shadow: 0 0 0 3px var(--accent-soft); }
+html[data-theme]:not([data-glass="0"]) #modal .mdl:not(.sys) .cl-t { font: 600 var(--fs-15)/1.45 var(--f-sys); margin: 0 0 4px; }
+html[data-theme]:not([data-glass="0"]) #modal .mdl:not(.sys) .cl-w { font: var(--fs-13)/1.5 var(--f-sys); }
+html[data-theme]:not([data-glass="0"]) #modal .mdl:not(.sys) .an-q { font: var(--fs-13)/1.5 var(--f-sys); }
+html[data-theme]:not([data-glass="0"]) #modal .mdl:not(.sys) .foot { gap: 10px; margin-top: 18px; }
+html[data-theme]:not([data-glass="0"]) #modal .mdl:not(.sys) .foot .btn { font: 500 var(--fs-14)/1 var(--f-sys); letter-spacing: 0; padding: 10px 16px; border-radius: 999px;
+  background: var(--chip); color: var(--ink); text-shadow: none; text-decoration: none; transition: background-color var(--m-base), color var(--m-base), filter var(--m-base); }
+html[data-theme]:not([data-glass="0"]) #modal .mdl:not(.sys) .foot .btn:hover { background: color-mix(in srgb, var(--ink) 12%, transparent); text-shadow: none; }
+html[data-theme]:not([data-glass="0"]) #modal .mdl:not(.sys) .foot .btn.danger:not(.primary) { color: var(--urgent); }
+html[data-theme]:not([data-glass="0"]) #modal .mdl:not(.sys) .foot .btn.primary { background: var(--accent); color: var(--accent-ink); font-weight: 600; padding: 10px 18px; }
+html[data-theme]:not([data-glass="0"]) #modal .mdl:not(.sys) .foot .btn.primary:hover { background: var(--accent); filter: brightness(1.08); }
+html[data-theme]:not([data-glass="0"]) #modal .mdl:not(.sys) .foot .btn.primary.danger { background: var(--urgent); color: #fff; }
+html[data-theme]:not([data-glass="0"]) #modal .mdl:not(.sys) .foot .btn.primary::before, html[data-theme]:not([data-glass="0"]) #modal .mdl:not(.sys) .foot .btn.primary::after { display: none; }
+@media (prefers-reduced-motion: reduce) { html[data-theme]:not([data-glass="0"]) #modal .mdl:not(.sys) .foot .btn, html[data-theme]:not([data-glass="0"]) #modal .mdl:not(.sys) textarea { transition: none; } }
+@media (max-width: 760px) { html[data-theme]:not([data-glass="0"]) #modal .mdl.ask-guard { max-width: none; } }
