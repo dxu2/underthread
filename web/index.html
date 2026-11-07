@@ -32,12 +32,8 @@ d.dataset.splash="1";d.style.setProperty("--ut-guard",t==="white"?"#ffffff":t===
 <style>html[data-splash="1"] body::before{content:"";position:fixed;inset:0;z-index:2147483000;background:var(--ut-guard,#040404)}</style>
 <link rel="stylesheet" href="/static/splash.css?v=1">
 <script src="/static/splash.js?v=1" defer></script>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<!-- t-web-audit-2: brand serif fonts load without blocking first paint (brand serif: 委托完成 title card) -->
-<link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Cinzel+Decorative:wght@700&family=Noto+Serif+SC:wght@600&display=swap" onload="this.onload=null;this.rel='stylesheet'">
-<noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Cinzel+Decorative:wght@700&family=Noto+Serif+SC:wght@600&display=swap"></noscript>
-<link rel="stylesheet" href="/static/style.css?v=151">
+<!-- ri1106-P1: no Google Fonts request any more; Cinzel (latin) is self-hosted in web/fonts, see style.css @font-face -->
+<link rel="stylesheet" href="/static/style.css?v=152">
 <link rel="stylesheet" href="/static/mobile.css?v=119" media="(max-width: 760px)">
 <link rel="stylesheet" href="/static/home-app.css?v=8">   <!-- t-home-applike: desktop app-style 首页 (scoped to html[data-home=app]) -->
 <link rel="stylesheet" href="/static/widgets.css?v=9">   <!-- t-home-widgets: desktop widget 首页 (scoped to html[data-home=widgets]) -->
@@ -72,10 +68,10 @@ d.dataset.splash="1";d.style.setProperty("--ut-guard",t==="white"?"#ffffff":t===
 <script src="/static/md.js?v=2"></script>
 <script src="/static/fx.js?v=9"></script>
 <script src="/static/diff.js?v=1"></script>
-<script src="/static/app.js?v=172"></script>
+<script src="/static/app.js?v=173"></script>
 <script src="/static/preview.js?v=1"></script>
 <script src="/static/palette.js?v=13"></script>
-<script src="/static/home.js?v=15"></script>
+<script src="/static/home.js?v=16"></script>
 <script src="/static/widgets.js?v=13"></script>   <!-- t-home-widgets -->
 <script src="/static/rolefiles.js?v=3"></script>
 <script src="/static/viewer.js?v=6"></script>
