@@ -1,281 +1,227 @@
-# Underthread
+<div align="center">
 
-**A personal AI agent team that works 24/7.**
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="web/brand/wordmark-on-dark@2x.png">
+  <img alt="Underthread" src="web/brand/wordmark-on-light@2x.png" width="320">
+</picture>
+
+### A small crew of AI agents that works while you sleep.
+#### You just say yes, no, or "try again".
+
+<img src="docs/img/crew.gif" alt="Seven embroidered-patch teammates standing in a row, then picking up their tools one by one" width="560">
+
+[**Try it in 5 minutes**](#try-it-in-5-minutes) · [**Meet the crew**](#meet-the-crew) · [**A day with your crew**](#a-day-with-your-crew)
 
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 ![Python 3.10+, standard library only](https://img.shields.io/badge/python-3.10%2B%20%C2%B7%20stdlib%20only-informational)
 ![Runs on Claude Code](https://img.shields.io/badge/runs%20on-Claude%20Code-orange)
 
-![The desktop dashboard: today's timeline, waiting on you, today's goals, working now (example data)](docs/img/hero-home.png)
+</div>
 
-You talk to one **manager**. It turns your messages into cards, hands each card to the right **specialist agent**, and keeps you in sync on a local **dashboard** that also works as a phone app. The specialists do the work and hand back drafts, plans and files. Your part is to approve, reject with a reason, or tap an answer to a question. When you reject something, the reason becomes a rule that the agent follows next time. Everything runs and stays on your own machine.
+<p align="center"><img src="docs/img/hero.gif" alt="A needle threads the Underthread logo, then the home screen fades in" width="820"></p>
 
-> **Status: early version.** The whole loop runs end to end on one machine. Expect rough edges, and please open an issue when you hit one.
+You know the feeling: twelve things in flight, half of them living only in your head. Underthread gives them somewhere to go.
 
-## Contents
+You talk to one **steward**. The steward turns what you said into cards, hands each card to the right teammate, and comes back when something needs you. Most days, what needs you is a single tap. Everything runs on your own machine, and nothing goes out into the world unless you send it yourself.
 
-- [Quick start](#quick-start)
-- [How it works](#how-it-works)
-- [Features](#features)
-  - [Manager and specialists](#manager-and-specialists)
-  - [Cards and review](#cards-and-review)
-  - [Questions you answer with a tap](#questions-you-answer-with-a-tap)
-  - [Rules that grow](#rules-that-grow)
-  - [Chat and mailbox](#chat-and-mailbox)
-  - [Routines, daily report and usage](#routines-daily-report-and-usage)
-  - [Desktop dashboard](#desktop-dashboard)
-  - [Phone app](#phone-app)
-  - [Look: Underthread palette, textures, home styles](#look-underthread-palette-textures-home-styles)
-  - [Performance and power](#performance-and-power)
-  - [Tools and running it day to day](#tools-and-running-it-day-to-day)
-- [The bundled team preset](#the-bundled-team-preset)
-- [Privacy and safety](#privacy-and-safety)
-- [Not included](#not-included)
-- [Roadmap](#roadmap)
-- [Changelog](CHANGELOG.md)
-- [License](#license)
+> **Early days.** The whole loop works end to end on one machine, and there are still rough edges. If you hit one, an issue is very welcome.
 
 ---
 
-## Quick start
+## Meet the crew
 
-Requirements: macOS or Linux, Python 3.10+ (standard library only) and [Claude Code](https://docs.claude.com/en/docs/claude-code).
+The repository comes with a ready-made team of seven. Each one has an embroidered patch, and when they're busy they pick up a little tool of their own.
+
+| | Who | What they do |
+|---|---|---|
+| <img src="avatars/ut/manager.png" width="48" alt=""> | **Steward** | Reads every message you send, sorts it into cards, hands them out and writes you a report at six. Rings a tiny bell when there's work. |
+| <img src="avatars/ut/scout.png" width="48" alt=""> | **Scout** | Finds topics, digs up sources and fact-checks the rest of the crew. Never goes anywhere without a magnifying glass. |
+| <img src="avatars/ut/writer.png" width="48" alt=""> | **Quill** | Owns every word: outlines, scripts, hooks, titles. Turns a page in a little notebook while thinking. |
+| <img src="avatars/ut/director.png" width="48" alt=""> | **Lens** | Storyboards, shot lists and edit plans. Snaps a clapperboard when a scene is ready. |
+| <img src="avatars/ut/artist.png" width="48" alt=""> | **Brush** | Covers and concept art through your own ComfyUI machine. Leaves a dab of paint behind. |
+| <img src="avatars/ut/ops.png" width="48" alt=""> | **Signal** | Packaging, the posting calendar, comment-reply drafts and the numbers afterwards. Flies paper planes. |
+| <img src="avatars/ut/smith.png" width="48" alt=""> | **Smith** | Keeps the dashboard and the tools running, and makes a backup before touching anything. Knits when nothing is on fire. |
+
+Don't need a content team? Names, duties, tone and the number of teammates all live in `roster.json`. See [Make it your crew](#make-it-your-crew).
+
+---
+
+## A day with your crew
+
+Here's what using Underthread actually looks like.
+
+<p align="center"><img src="docs/img/hero-home.png" alt="The Widgets home: waiting on you, working now, new replies, shipped today, this week, daily, recent media" width="820"></p>
+
+**08:55 · Coffee first.** You open the dashboard on your phone. If nothing needs you, the home says so in one line, *Nothing waiting on you*, and you can go back to your coffee. On the desktop, the home is a board of small widgets: what's waiting on you, who's working now, new replies, what shipped today, this week's progress, daily jobs and recent media.
+
+**09:10 · Just say it.** You type a sentence into the chat, the way you'd text a colleague. The steward answers, a new card appears, and a teammate's patch lights up as they get to work. You don't fill in a form or pick a template.
+
+<p align="center"><img src="docs/img/send-to-card.gif" alt="A message in the chat becomes a card, and a teammate starts working" width="720"></p>
+
+**10:00 · The routines run themselves.** Jobs you want done every day start at their set time. The routines page shows them as a schedule with a week of past runs, so you can see at a glance which day one was missed. You can pause one with a switch, and a restart never makes it fire twice.
+
+**10:40 · A question, not a wall of text.** Nobody on the crew will hide a decision on page four of a draft. Scout found three tools worth comparing and wants to know which matters more, price or privacy. You get two buttons, and the one Scout would pick is marked and goes first. Got a better idea? "Other…" is always there. Tap, and the card folds itself away while Scout gets back to it.
+
+<p align="center"><img src="docs/img/ask-flow.gif" alt="Tapping the recommended option; the question panel folds away and the card goes back to work" width="720"></p>
+
+**11:30 · Something big?** Anything long or risky starts as a plan. Your teammate tells you what they're about to do, and nothing happens until you say go.
+
+**14:20 · Reviewing, the easy way.** A draft is ready. Every delivery keeps the earlier ones, so you can put v1 and v2 side by side and see exactly what changed. Happy? Accept it, and the crew gets a small "mission complete" moment.
+
+<p align="center"><img src="docs/img/approve.gif" alt="Comparing two versions of a draft, then accepting it" width="720"></p>
+
+**15:05 · "Not like that."** You reject a draft and write one line about why. The steward turns that line into a rule proposal for the teammate who wrote it. Confirm it, and they'll read it before every job from then on. Over time the crew stops making the same mistake twice.
+
+<p align="center"><img src="docs/img/reject-rule.gif" alt="Rejecting with a reason; a new rule proposal appears and gets confirmed" width="720"></p>
+
+**18:00 · The day in one page.** The steward writes a daily report: what's waiting on you, what shipped, what's still in progress, which rules were adopted, and anything that went wrong.
+
+**23:00 · Quiet hours.** Push notifications go quiet for the night, and a short digest is waiting for you in the morning. The crew keeps working.
+
+---
+
+## Try it in 5 minutes
+
+You'll need macOS or Linux, Python 3.10 or newer (standard library only, nothing to `pip install`) and [Claude Code](https://docs.claude.com/en/docs/claude-code).
 
 ```bash
 git clone https://github.com/dxu2/underthread.git && cd underthread
 
-# 1. The first start copies config.json / roster.json / state.json from the *.example.json files
-python3 server.py              # open http://127.0.0.1:8765
+# 1. Start the dashboard. The first run makes your own config, roster and state from the examples.
+python3 server.py              # then open http://127.0.0.1:8765
 
-# 2. Edit roster.json (names, duties, tone), then generate the agent files
-python3 make_agents.py         # writes .claude/agents/ and refreshes the dispatch table in manager.md
+# 2. Make the crew yours: edit roster.json, then turn it into agents.
+python3 make_agents.py
 
-# 3. Optional: let the team run stateutil and friends without a prompt each time
+# 3. Optional: let the crew run their own helper commands without asking you each time.
 cp claude-settings.example.json .claude/settings.json
 
-# 4. In another terminal, start the manager
+# 4. In a second terminal, wake up the steward.
 claude "Start the manager per manager.md"
 ```
 
-Then write to the manager from the dashboard's chat. [SETUP-GUIDE.md](SETUP-GUIDE.md) has the full walkthrough: architecture, roles, restarts and optional tools.
+That's it. Say hello in the dashboard's chat. [SETUP-GUIDE.md](SETUP-GUIDE.md) has the long version: roles, restarts and optional tools.
 
-**Try changes on a copy first.** `PORT=8799 NO_LOOPS=1 python3 server.py` starts a second dashboard with the background loops off. Never test UI changes against your real `state.json`.
+> **Tinkering with the dashboard?** Run a spare copy first with `PORT=8799 NO_LOOPS=1 python3 server.py`, so your real cards stay out of harm's way.
 
 ---
 
-## How it works
+## Things you'll grow to like
+
+- **On your phone, too.** Add the dashboard to your home screen and it runs like an app, with a floating tab bar (long-press an icon to see its name), pull to refresh and optional push notifications.
+
+  <p align="center"><img src="docs/img/phone.gif" alt="The phone app: switching tabs on the floating tab bar, long press for names, pull to refresh" width="300"></p>
+
+- **Push that knows when to shut up.** Each device can get only decisions, decisions plus replies, or everything. Quiet hours run from 23:00 to 09:00 by default, with a morning digest.
+- **⌘K, or just `/`.** Search every card and everything said in chat, or jump straight to an action.
+- **One mailbox.** Replies, deliveries and notices in one list, with Unread, Replies, Updates and Urgent filters.
+- **Your look.** The Underthread palette in coffee and cream, or Ink if you prefer black glass. Night, day, or follow your system. Add a texture on top: Stitch, Sweater, Leather or Saddle.
+
+  <p align="center"><img src="docs/img/textures.gif" alt="Switching textures in Settings: off, Stitch, Sweater, Leather, Saddle" width="720"></p>
+
+- **Four homes.** Widgets, Dense, App or Classic, picked per computer.
+- **Save the good stuff.** On your phone you can save any image from a card at full size, not the thumbnail.
+- **Easy on your battery.** After 20 seconds without input, looping animations pause. There's a switch in Settings if you'd rather keep them going.
+- **Chinese or English.** Switch the interface language in Settings.
+
+**Little things you might not notice:**
+- The opening needle plays once per session. Tap or press any key to skip it, or turn it off in Settings.
+- When a teammate is working, their patch picks up their tool: a bell, a magnifying glass, a notebook, a clapperboard, a brush, a paper plane, knitting needles.
+- Links in a card are clickable even right after Chinese punctuation.
+- Old finished cards quietly move to an archive so the dashboard stays quick, and search still finds them.
+
+---
+
+## Make it your crew
+
+Underthread itself doesn't care what kind of work you do. The steward, cards, reviews, rules and dashboard work the same for any team.
+
+What ships here is one **example preset: a content-creator team** (Bilibili, YouTube, Xiaohongshu), so you can watch a full crew at work straight away. To build a different team:
+
+1. Rewrite the role notes in `roles/*.md`.
+2. Rename, add or remove teammates in `roster.json`.
+3. Adjust `policy.md` and `config.json`.
+4. Run `python3 make_agents.py` again.
+
+No code changes needed. To give a teammate a new face, replace their PNG in `avatars/ut/` and run `python3 tools/avatar_sizes.py` (it needs `cwebp`).
+
+---
+
+## What it promises
+
+1. **Drafts only.** The crew never publishes, posts, uploads, comments or sends anything to the outside world. You do that.
+2. **Ask before anything big.** Long or risky work starts as a plan and waits for your go.
+3. **Hands off your files.** Teammates write new files in their own work folder. They don't delete or overwrite your uploads, and they back up code and config before editing.
+4. **Your data stays home.** Cards, chats, uploads, logs and memories are files in the project folder, all ignored by git. The dashboard only listens on `127.0.0.1`. If you want it on your phone, you expose it yourself, for example over a private network such as Tailscale Serve (push needs https).
+5. **Straight answers.** Every delivery says how sure the teammate is and what they didn't check.
+
+Secrets such as the push keys and the optional GitHub token are created on your machine with mode 600 and never sent to the page. Token usage numbers are read from Claude Code's own transcripts on this machine and stay here.
+
+---
+
+## How it's built
+
+<details>
+<summary>The short version, for the curious</summary>
+
+<br>
 
 ```mermaid
 flowchart LR
-  You((You)) -- messages, approvals --> UI[Dashboard<br/>desktop + phone]
-  UI <--> SRV[server.py<br/>local JSON API]
+  You((You)) -- messages, taps --> UI[Dashboard<br/>desktop + phone]
+  UI <--> SRV[server.py]
   SRV -- new requests --> IN[(inbox.jsonl)]
-  IN --> MGR[Manager<br/>long-running Claude Code session]
-  MGR -- dispatch --> AG[Specialists<br/>Claude Code subagents]
+  IN --> MGR[Steward<br/>long-running Claude Code session]
+  MGR -- hands out cards --> AG[Teammates<br/>Claude Code subagents]
   MGR --> SU[stateutil.py]
   AG --> SU
-  SU -- file-locked writes --> ST[(state.json)]
+  SU -- locked writes --> ST[(state.json)]
   ST --> SRV
 ```
 
-- **One state file.** Cards, chat, agent status and rules live in `state.json`. Only `stateutil.py` writes to it, under an exclusive file lock, so the server, the manager and every agent can write at the same time without clobbering each other.
-- **One inbox.** What you type on the dashboard lands in `inbox.jsonl`. The manager watches it, acknowledges each entry and acts on it.
-- **Agents from a roster.** `roster.json` lists the roles. `make_agents.py` turns each one into a Claude Code subagent (`.claude/agents/`) with its own role notes in `roles/` and its own memory folder.
-- **No build step.** The dashboard is plain HTML, CSS and JavaScript served by `server.py`, a standard-library Python server.
+- **One state file.** Everything lives in `state.json`, and only `stateutil.py` writes to it, under a file lock, so the server, the steward and every teammate can write at once without stepping on each other.
+- **One inbox.** What you type lands in `inbox.jsonl`. The steward watches it and acts on each entry.
+- **A crew from a roster.** `make_agents.py` turns each entry in `roster.json` into a Claude Code subagent with its own role notes, rules and memory folder.
+- **No build step.** The dashboard is plain HTML, CSS and JavaScript, served by a standard-library Python server.
 
----
-
-## Features
-
-### Manager and specialists
-
-![Left rail: each agent with a status word, what it is doing, and a browser-in-use badge (example data)](docs/img/team-rail.png)
-
-The manager is your single point of contact. It sorts each request into a card, picks the specialist, dispatches, checks what comes back and follows up. The specialists do the actual work.
-
-- **Configurable roles.** Add, remove or rename roles in `roster.json`: name, title, duty, tone, colour. Run `make_agents.py` and the manager's dispatch table updates with them.
-- **Role notes and memory.** Each role reads its notes in `roles/<id>.md` at the start of every job, and keeps a small memory folder for facts it will need again. You can read every agent's memory from the dashboard.
-- **Live status.** The left rail shows every agent's state (working, idle), the card it is on and a one-line activity, so you can see at a glance who is busy with what.
-- **Browser-in-use badge.** When an agent is driving a browser or the desktop, its row, the home page and the widgets show a badge with the agent and how long it has been at it (`stateutil.py set-agent --tool chrome|computer`).
-- **Plan first.** Big or risky jobs (long, many generations, or touching files outside the card's folder) start with a plan. Work only begins after you approve it.
-
-### Cards and review
-
-![Card detail: draft with a table of contents, comparing version 1 and version 2 (example data)](docs/img/card-diff.png)
-
-Every piece of work is a card: a category, an owner, a stage (to do, doing, review, done), a thread and a history of drafts.
-
-- **Versioned drafts.** Each new delivery keeps the old one as a version with a label ("v2: tighter intro"). Any two versions can be compared side by side.
-- **Three kinds of delivery.** A *plan* asks for a go-ahead, a *deliverable* is the finished thing, and a *question* means the agent is blocked on you.
-- **Waiting on you.** One review queue collects cards that need a decision, plus cards with replies you have not read yet (marked with a new-reply dot). Open the card and it leaves the queue.
-- **Attachments.** Images show inline, video plays in place, other files are links. Add them with the attach button or by dropping them on the page.
-- **Image viewer.** Click to zoom. On the phone you can save any card image at full size, not the thumbnail.
-- **Links just work.** URLs in card text are clickable, including right after Chinese punctuation.
-- **Mission complete.** Accepting a delivery plays a short "mission complete" scene. Add your own role art in `web/art/` (a transparent cut-out works best) and it appears there; without art the scene plays without a portrait.
-- **Archive.** Done cards that have not moved for a while go to `archive.json`, so the dashboard stays fast. Search still finds them (`stateutil.py archive sweep|list|unarchive-all`).
-
-### Questions you answer with a tap
-
-![Answering a question: tap the recommended option, the panel folds away, the card goes back to work (example data)](docs/img/ask-flow.gif)
-
-Agents don't bury decisions in the middle of a draft. They attach clickable questions to the card.
-
-- **Options with a recommendation.** Each question has two to four options. When the agent has a preference it marks one, and that one is shown first.
-- **"Other…"** is always there for an answer the agent did not think of.
-- **A compact panel.** Open questions sit in a panel at the bottom of the card. On the phone it folds to one line until you open it.
-- **Quoted replies.** Tapping a quick option in chat quotes the question it answers, so the thread stays readable later.
-- **Withdrawn questions** disappear when they no longer apply (`stateutil.py ask-close`).
-
-### Rules that grow
-
-![Rules page: one rule proposal waiting, confirmed rules per role below (example data)](docs/img/rules.png)
-
-When you reject something with a reason, the manager turns the reason into a one-line rule proposal for that role. Confirm it and it lands in the role's `## Confirmed rules`, which the agent reads before every job and which override its defaults. Over time the team stops repeating the same mistakes.
-
-### Chat and mailbox
-
-![Chat with the manager: a quick reply quoting the question it answers; the mailbox open from the top bar (example data)](docs/img/chat-mailbox.png)
-
-- **Manager chat** on the right of the desktop and as its own tab on the phone.
-- **Direct messages** with each specialist.
-- **Mailbox** in the top bar: every reply, delivery and notice in one list, with filters (All, Unread, Replies, Updates, Urgent).
-- **Your messages as bubbles** in card threads, and a composer that starts one line tall and grows as you type.
-- **⌘K palette** (or `/`) to search cards and what was said in chats, and to run actions such as approving a card.
-- **Voice memos** (optional): upload a recording and it is transcribed on your machine with whisper.cpp (`tools/transcribe.py`).
-
-### Routines, daily report and usage
-
-![Routines page with a seven-day run row, beside today's token usage per role (example data)](docs/img/routines-usage.png)
-
-- **Routines.** Recurring jobs (`config.json` → `routines`) fire at a set time each day. The routines page shows them as a schedule with a seven-day row of past runs. Pause one with a switch; it never fires twice after a restart.
-- **Daily report.** At `report_time` the manager writes a report: what waits on you, what shipped, what is in progress, rules adopted, anything that went wrong.
-- **Usage by role.** Today's tokens per role, read from Claude Code's own transcripts on this machine (`usage_roll.py`), on the home page and in Settings.
-- **Plan usage.** The stamina orb shows how much of your Claude plan window is left (`tools/statusline.py`). When it runs out, the manager can sleep until the window resets.
-- **Wake the manager** from Settings if it is asleep or offline: it drops a ping in the inbox.
-
-### Desktop dashboard
-
-![Settings: theme, palette, texture, power saving, opening animation, home style, language (example data)](docs/img/settings.png)
-
-- **Dense home** (the default): today's timeline, waiting on you, today's goals, working now with an ETA, and small counters, all on the first screen.
-- **Lean left rail:** your queues (Home, Main quest, Side quest, Daily, Urgent, Ongoing), then Studio, Reports, Mailbox and Settings, then the team.
-- **Studio** groups the production pages (Pipeline, Board, Channels, Assets) under one tab.
-- **Top bar sync pill:** when the dashboard last synced and whether the manager is online, in one place.
-- **Settings in tabs:** General, Roles, Docs, Logs, System. Roles shows each agent's notes and rules; Docs and Logs let you read the project files and server logs; System shows health checks and a GitHub push token you can store once.
-- **Chinese or English UI**, switchable in Settings.
-
-### Phone app
-
-![Phone: home and a card with the question panel folded, floating tab bar at the bottom; night and day (example data)](docs/img/phone.png)
-
-The same dashboard, laid out for a phone. Add it to your home screen and it runs as a web app.
-
-- **Floating tab bar:** icons only, a long press shows the name, unread counts are a red dot.
-- **Home** with what waits on you, the team panel and what shipped today. When nothing waits, that part folds to one line.
-- **Pull to refresh**, and search that also finds finished cards' drafts.
-- **Push notifications** (optional, Web Push), set per device: only decisions, decisions plus replies, or everything; quiet hours (23:00–09:00 by default) with a morning digest. They need the page served over https; see [Privacy and safety](#privacy-and-safety).
-
-### Look: Underthread palette, textures, home styles
-
-![The Underthread palette in night and day with the Sweater texture, then the Ink palette and the Stitch, Leather and Saddle textures (example data)](docs/img/themes.png)
-
-The dashboard's default look is **Underthread**: solid coffee and cream colours, with no glass. Each role has an embroidered-patch avatar, and the cards have stitched edges, spool-drawn empty states and an optional knit or leather texture. Every screenshot in this README uses it, with the Sweater texture. If you prefer black glass, switch the palette to **Ink** in Settings → Appearance. The avatars live in `avatars/ut/`. To use your own, replace a role's PNG and run `python3 tools/avatar_sizes.py` (it needs `cwebp`).
-
-- **Night, day or auto.** Auto follows your system's light and dark setting.
-- **Palette:** Underthread (the default) or Ink. **Texture:** Off, Stitch, Sweater, Leather or Saddle. The textures are generated images, a few KB each, and the colours stay the same.
-- **Opening animation:** a needle threads the logo once per session. Tap or press any key to skip it, or turn it off in Settings.
-- **Four home styles** on the desktop: Dense, Widgets, App and Classic. The choice is kept per computer.
-- **Motion with feedback:** every button, tab and switch responds to hover, press and switch.
-
-### Performance and power
-
-The dashboard is meant to stay open all day, on a laptop and on a phone.
-
-| What | How |
-|---|---|
-| Fast first open | The page shows a snapshot right away, then fills in |
-| Light polling | Polls leave out what you are not looking at; long polling instead of tight loops; older chat, letters and logs load on demand |
-| Long-lived cache | Static files carry a version (`?v=`) and are cached for a year |
-| Small avatars | `tools/avatar_sizes.py` makes small WebP copies for lists |
-| Instant send | Your message shows before the server answers |
-| Power saving | After 20 seconds without input, or when the window is in the background, looping animations pause. A switch in Settings turns this off |
-| Quiet logs | Dropped connections are counted and summarised once an hour, not logged one by one |
-| No font requests | Nunito and Cinzel (Latin subsets, SIL OFL 1.1) are served locally |
-
-### Tools and running it day to day
+Handy tools in `tools/`:
 
 | Tool | What it does |
 |---|---|
-| `tools/keepalive.sh` | Runs the dashboard and restarts it if it exits |
-| `tools/install_service.sh` | Installs the dashboard as a macOS LaunchAgent (starts at login, restarts if it dies) |
-| `tools/ensure_server.py` | Starts the dashboard if it is not answering; safe to run any time |
-| `tools/statusline.py` | Claude Code status line that feeds plan usage into the dashboard |
-| `tools/comfy.py` | Optional: image generation through your own ComfyUI machine over an SSH tunnel |
-| `tools/transcribe.py` | Optional: voice memo transcription with whisper.cpp |
-| `tools/ghcred.py` | Optional: store a GitHub push token once (keychain or a 0600 file); set `UNDERTHREAD_GH_REPO=owner/name` for the push check |
-| `tools/webpush.py` | Web Push sender used by the server |
+| `keepalive.sh` | Runs the dashboard and restarts it if it exits |
+| `install_service.sh` | Installs the dashboard as a macOS LaunchAgent |
+| `ensure_server.py` | Starts the dashboard if it isn't answering |
+| `statusline.py` | Feeds your Claude plan usage into the dashboard |
+| `avatar_sizes.py` | Makes the small avatar copies the lists use |
+| `comfy.py` | Optional: image generation on your own ComfyUI machine |
+| `transcribe.py` | Optional: voice memo transcription with whisper.cpp |
+| `ghcred.py` | Optional: store a GitHub push token once |
+
+</details>
 
 ---
 
-## The bundled team preset
+## Not here (yet)
 
-The framework is general: the manager, cards, review, rules and dashboard don't assume any kind of work. Roles, rules, categories and platforms are all configuration.
-
-What ships in the repository is **one ready-made example preset: a content-creator team** (Bilibili / YouTube / Xiaohongshu) with a steward plus six specialists (researcher, writer, director, artist, growth, tooling keeper), all with placeholder names. It sets the tone of `manager.md`, `policy.md`, `roles/*.md`, `roster.example.json` and `config.example.json`, so you can watch a complete team work out of the box.
-
-For a different workflow, rewrite the role notes in `roles/*.md`, rename and redefine the roles in `roster.json`, adjust `policy.md` and `config.json`, then run `make_agents.py` again. No code changes are needed.
-
-This repository contains no characters from any game or anime. Please don't commit other people's characters or artwork.
-
----
-
-## Privacy and safety
-
-**Your data stays on your machine.**
-
-- Cards, chat, logs, uploads and agent memory are files in the project folder (`state.json`, `archive.json`, `uploads/`, `work/`, `logs/`, `.claude/agent-memory/`), and all of them are in `.gitignore`.
-- The dashboard listens on `127.0.0.1` only. To use it from your phone you expose it yourself, for example over a private network such as Tailscale Serve. Push notifications need https.
-- Secrets are generated or stored locally with mode 600 (`vapid.json` for push, the optional GitHub token) and are never sent back to the page.
-- Usage numbers come from Claude Code's own transcripts on this machine. `usage_roll.py` reads only the token counts and keeps a small rollup in `work/usage/` (ignored by git).
-- The only outside calls are the ones you set up: Claude Code itself, and any optional tool you turn on.
-
-**Ground rules the team follows** (written into each agent file by `make_agents.py`, plus the role notes and `manager.md`):
-
-- **Drafts only.** Agents never publish, post, upload, comment or send anything to an outside service. You do the publishing.
-- **Plan first** for big or risky work.
-- **Never touch your files.** Agents write new files under `work/<card>/`; they don't delete or overwrite your uploads or anything outside `work/`.
-- **Backups before edits** to code and config (`name.bak-<tag>`, ignored by git).
-- **Honest confidence.** Each delivery says how sure the agent is and what it did not check.
-
----
-
-## Not included
-
-| Not included | Notes |
+| | |
 |---|---|
-| Your data | `config.json`, `roster.json`, `state.json`, `archive.json`, `inbox.jsonl`, `uploads/`, `work/`, `logs/`, everything in `avatars/` except the bundled `avatars/ut/` set |
-| Keys | `vapid.json` and tokens are created on your machine; never commit them |
-| Models | No whisper, ComfyUI or other model weights; follow each model's own licence |
-| Voice | The author's build has local voice calls with the manager; that code is not in this repository |
-| Artwork | No character art. The Underthread avatars, logo and textures ship with the repo. Under the Ink palette, a role with no avatar of yours gets a colour disc with an initial |
-
----
-
-## Roadmap
+| Your data | `config.json`, `roster.json`, `state.json`, `archive.json`, `inbox.jsonl`, `uploads/`, `work/`, `logs/` and your own avatars stay on your machine |
+| Keys | Push keys and tokens are created locally. Never commit them |
+| Models | No whisper, ComfyUI or other model weights. Each keeps its own licence |
+| Voice | The author's own build can hold voice calls with the steward. That code isn't in this repository |
 
 Ideas being explored, not promises:
-
-- Specialists handing work to each other when one card depends on another.
-- Agent memory you can edit from the dashboard, not only read.
-- Approvals with a scope ("yes for this card", "yes for this kind of change").
-- Packaging the setup as a Claude Code plugin.
+- Teammates handing work to each other when one card depends on another.
+- Memories you can edit from the dashboard, not only read.
+- Approvals with a scope: "yes for this card", "yes for this kind of change".
+- Packaging the whole setup as a Claude Code plugin.
 
 ---
 
-## Changelog
+## License and changes
 
-See [CHANGELOG.md](CHANGELOG.md).
+Code is [MIT](LICENSE). It covers this repository's code; any models, fonts, voices and images you plug in keep their own licences. The bundled fonts (Nunito, Cinzel) are under the SIL Open Font License 1.1, with licence texts in `web/fonts/`. The Underthread logo, patch avatars and textures were made for this project and contain no third-party artwork.
 
-## License
+What changed and when: [CHANGELOG.md](CHANGELOG.md).
 
-Code is [MIT](LICENSE). It covers this repository's code only; models, fonts, voices and images you plug in keep their own licences. The bundled fonts (Nunito, Cinzel) are under the SIL Open Font License 1.1; their licence texts are in `web/fonts/`. The Underthread logo, embroidered-patch avatars and textures were made for this project and contain no third-party artwork.
+<p align="center"><sub>Built by one person and a crew that never sleeps. Issues and ideas welcome.</sub></p>
