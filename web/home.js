@@ -56,7 +56,7 @@
   function panel(a, i) {
     const nm = A().aname(a);
     return `<div class="dp" role="button" tabindex="0" data-id="${a.id}" data-hd-pick="${a.id}" style="--i:${i};--tint:var(--c-${a.id}, var(--accent))">
-      <i class="dp-edge"></i><div class="dp-art"><i class="dp-img" style="background-image:url('${esc(A().avatarUrl(a, 1))}'); --ph:${(i * 0.7).toFixed(1)}s"></i><i class="dp-uti" style="background-image:url('${esc(A().avatarUrl(a, 1))}')"></i></div>
+      <i class="dp-edge"></i><div class="dp-art"><i class="dp-img" style="background-image:url('${esc(A().avatarUrl(a, 1))}'); --ph:${(i * 0.7).toFixed(1)}s"></i><i class="dp-uti" style="background-image:url('${esc(A().avatarUrl(a, 1))}')">${A().wsheet && A().wsheet(a, 320) ? `<i class="dp-utw" style="${A().wsheet(a, 320).slice(1)}"></i>` : ""}</i></div>
       <span class="dp-vn">${esc(nm)}</span><i class="dp-un"></i><span class="dp-rg"><i></i></span>
       <div class="dp-info"><div class="n"><b>${esc(nm)}</b><span class="hd-st"></span></div><div class="rl">${esc(A().atitle(a))}</div>
         <div class="dp-t"><span></span>${CHEV}</div><div class="dp-m"><em></em><i class="dp-bar"><u></u></i></div></div>
@@ -110,7 +110,7 @@
     const a = A().agent(id), it = itemFor(a); if (!a) return;
     const w = document.createElement("div"); w.className = "dp-sheet-w";
     w.innerHTML = `<div class="dp-scrim"></div><div class="dp-sheet" role="dialog" aria-label="${esc(A().aname(a))}">
-      <div class="sh-h"><span class="hd-mini${isW(a) ? " working" : ""}" style="background-image:url('${esc(A().avatarUrl(a))}')"></span><div><b>${esc(A().aname(a))}</b><span>${esc(A().atitle(a))}${L().sep}${isW(a) ? L().working : L().resting}</span></div></div>
+      <div class="sh-h"><span class="hd-mini${isW(a) ? " working" : ""}${isW(a) && A().wsheet && A().wsheet(a, 160) ? " wsheet" : ""}" style="background-image:url('${esc(A().avatarUrl(a))}')${isW(a) && A().wsheet ? A().wsheet(a, 160) : ""}"></span><div><b>${esc(A().aname(a))}</b><span>${esc(A().atitle(a))}${L().sep}${isW(a) ? L().working : L().resting}</span></div></div>
       ${it ? `<button class="sh-i" data-sh="open">${IC_OPEN}<span>${L().open}</span><em>${esc(it.title)}</em></button>` : ""}
       <button class="sh-i" data-sh="dm">${IC_DM}<span>${L().dm}</span><em>${L().dmSub}</em></button>
       <button class="sh-i cancel" data-sh="x"><span>${L().cancel}</span></button></div>`;

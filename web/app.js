@@ -216,7 +216,10 @@
     /* open-source build: with no avatars/<id>.png the Ink avatar is a drawn data: SVG that fix() cannot map back to a role, so the phone strip
        (home.js keeps its panels between renders) is set from its data-id instead */
     document.querySelectorAll(".dp[data-id]").forEach(d => { const a = agent(d.dataset.id); if (!a) return; const n = `url("${avatarUrl(a, true)}")`;
-      d.querySelectorAll(".dp-uti, .dp-img").forEach(e => { if (e.style.backgroundImage !== n) e.style.backgroundImage = n; }); });
+      d.querySelectorAll(".dp-uti, .dp-img").forEach(e => { if (e.style.backgroundImage !== n) e.style.backgroundImage = n; });
+      /* t-chibi-anim: the strip keeps its panels between renders, so the work-sheet child follows the manifest / palette here too */
+      const u = d.querySelector(".dp-uti"), c = u && u.querySelector(".dp-utw"), ws = wsheet(a, 320);
+      if (u && ws && !c) u.insertAdjacentHTML("beforeend", `<i class="dp-utw" style="${esc(ws.slice(1))}"></i>`); else if (c && !ws) c.remove(); });
   }
   let AVU_ON = !!document.documentElement.dataset.ut;
   document.addEventListener("theme:change", () => { const on = !!document.documentElement.dataset.ut; if (on === AVU_ON) return; AVU_ON = on; if (ST) { chatCount = -1; render(); avSweep(); } });
@@ -238,6 +241,11 @@
   // A list that calls av() per row renders inside ringOnce(), newest row first, so the ring lands on the newest row (DM threads do the same by index).
   let RING1 = null;
   function ringOnce(fn, set) { const prev = RING1; RING1 = set || new Set(); try { return fn(); } finally { RING1 = prev; } }
+  /* t-chibi-anim: under the Underthread palette (html[data-ut]) a working agent's needle-thread avatar plays a 4-frame sprite sheet
+     (avatars/ut/_s/<id>-work-<160|320|512>.webp, frames side by side, frame 1 = the idle art plus a prop). Returns the inline custom property
+     for the sheet, or "" (other palettes, no sheet, or the ut manifest not loaded yet: AVU.ready re-renders and avSweep adds the phone-strip child). CSS in theme-ut.css. */
+  const WSHEET = new Set(["manager", "scout", "writer", "director", "artist", "ops", "smith"]);
+  function wsheet(a, sz) { return a && document.documentElement.dataset.ut && WSHEET.has(a.id) && AVU.m && AVU.m[a.id] && !AVU.bad.has(a.id) ? `;--wsheet:url('/avatars/ut/_s/${encodeURIComponent(a.id)}-work-${sz || 160}.webp?v=1')` : ""; }
   function av(a, cls = "", forItem) {
     if (a === "me" || a.id === "me") return `<span class="av ${cls}" style="background:var(--ink2)"></span>`;
     // t-working-avatar: ONE place for the "working" look (CSS in style.css). --wp = minus the wall-clock phase of the 4 s cycle, so a node created by a re-render
@@ -245,8 +253,8 @@
     // t-working-item-highlight: inside a row about item X (forItem), the ring stays off when we KNOW the agent is on another item (agents[].item set and different).
     let w = a.status === "working" && !(forItem && a.item && a.item !== forItem);
     if (w && RING1) { if (RING1.has(a.id)) w = false; else RING1.add(a.id); }
-    const tb = toolBadge(a);
-    return `<span class="av ${cls} ${w ? "working" : ""}" style="background-image:url('${avatarUrl(a)}')${w ? `;--wp:${(-(Date.now() % 4000) / 1000).toFixed(3)}s` : ""}" title="${esc(aname(a))}"${w ? ` data-working="1"` : ""}>${w && !tb ? `<i class="aw" title="${t("working")}"></i>` : ""}${tb}</span>`;
+    const tb = toolBadge(a), ws = w ? wsheet(a, 160) : "";
+    return `<span class="av ${cls} ${w ? "working" : ""}${ws ? " wsheet" : ""}" style="background-image:url('${avatarUrl(a)}')${w ? `;--wp:${(-(Date.now() % 4000) / 1000).toFixed(3)}s` : ""}${ws}" title="${esc(aname(a))}"${w ? ` data-working="1"` : ""}>${w && !tb ? `<i class="aw" title="${t("working")}"></i>` : ""}${tb}</span>`;
   }
   /* ===== t-chrome-badge: agents[id].tool = the outside tool an agent is driving right now (stateutil set-agent --tool chrome; "" or idle/offline clears it).
      One badge on every avatar (toolBadge, called by av) + one line 「Chrome 使用中 · 谁 · 在做什么」 (toolLine: desktop header #toolbar, phone home .hd-tool).
@@ -4077,6 +4085,7 @@
     rvApprove: id => rvApprove(id, null), rvCanApprove: it => rvCanApprove(it), awaitsUser: it => awaitsUser(it), busy: it => busy(it), onYou: it => onYou(it), onYouCard: it => onYouCard(it), grpOf: it => grpOf(it), newReplies: () => newReplies(), nrDot: id => nrDot(id), decisions: () => decisions(),   // t-imp-p5 (palette)
     /* t-chrome-badge (home.js .hd-tool) */
     toolLine: w => toolLine(w), toolBadge: a => toolBadge(a), toolWhat: a => toolWhat(a),
+    wsheet: (a, sz) => wsheet(a, sz),   /* t-chibi-anim (home.js .hd-mini / .dp-uti) */
     UI, get ST() { return ST; }, roll, modalStatus: () => modalStatus(), ghOpen: () => ghOpen(), ghLabel: () => ghLabel(), statusSummary: () => statusSummary(statusRows()), loadHealth: a => loadHealth(a), refreshPage: () => renderPage(), phaseFree, avatarUrl, t, items, agent, aname, atitle, av, when, whenH, agoH, ago, byAct, PLAT, stageLabel,
     refresh: async () => { await poll(true); return !UI.down; },   // t-m2-c ④ pull-to-refresh: a forced full fetch; false = the server did not answer
     tablePv: s => tablePv(s),   // t-chat-table (mobile.js chat list preview)

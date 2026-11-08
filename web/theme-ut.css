@@ -290,3 +290,21 @@ html[data-ut] .dp-strip .dp.act .dp-uti { background-size: 84px; background-posi
 html[data-ut] .dp-strip .dp-art { background: var(--chip2); filter: saturate(.85) brightness(.9); }
 html[data-ut] .dp-strip .dp.act .dp-art, html[data-ut] .dp-strip .dp.w .dp-art { filter: none; }
 @media (prefers-reduced-motion: reduce) { html[data-ut] .dp-strip .dp-uti { transition: none; } }
+
+/* t-chibi-anim: under 特典 a working agent's avatar plays a 4-frame sprite sheet (frame 1 = the idle art plus a prop), 0.2 s per frame.
+   App.av() / home.js add .wsheet and --wsheet only when data-ut is set and the role has a sheet, so other palettes never see it.
+   --wp (set by App.av for the ring) is reused as the delay: .8 s divides --wk-period, so a poll re-render lands on the same frame.
+   The phone strip uses a 112 px child (.dp-utw, 320 sheet) because .dp-uti's 50% positioning would fight the frame offset. */
+html[data-ut] .av.working.wsheet, html[data-ut] .hd-mini.working.wsheet {
+  background-image: var(--wsheet) !important; background-size: 400% 100%; background-repeat: no-repeat; background-position: 0 0;
+  animation: ut-wsheet .8s steps(4) var(--wp, 0s) infinite; }
+@keyframes ut-wsheet { from { background-position: 0 0; } to { background-position: 133.333% 0; } }
+html[data-ut] .dp-utw { display: none; }
+html[data-ut] .dp-strip .dp.w .dp-uti:has(.dp-utw) { background-image: none !important; }
+html[data-ut] .dp-strip .dp.w .dp-utw { display: block; position: absolute; width: 112px; height: 112px; left: calc((100% - 112px) * .5); top: calc((100% - 112px) * .4);
+  background: var(--wsheet) 0 0 / 400% 100% no-repeat; animation: ut-wsheet .8s steps(4) infinite;
+  transition: width var(--m-slow) var(--m-ease-ios), height var(--m-slow) var(--m-ease-ios), top var(--m-slow) var(--m-ease-ios), left var(--m-slow) var(--m-ease-ios); }
+html[data-ut] .dp-strip .dp.w.act .dp-utw { width: 84px; height: 84px; left: calc((100% - 84px) * .5); top: 4px; }
+/* reduced motion: hold frame 1 (the prop stays, so "busy" still reads); the ring has its own rule in style.css */
+@media (prefers-reduced-motion: reduce) {
+  html[data-ut] .av.working.wsheet, html[data-ut] .hd-mini.working.wsheet, html[data-ut] .dp-strip .dp.w .dp-utw { animation: none; background-position: 0 0; transition: none; } }
