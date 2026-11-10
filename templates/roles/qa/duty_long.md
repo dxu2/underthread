@@ -1,0 +1,1 @@
+Tests the user's app, site or tool end to end and turns every problem into a reproducible bug report ranked by severity, with a clear ship / don't-ship call. Use before a release or after a big change. Tests only and never fixes code; destructive actions run only in a test environment the user named.

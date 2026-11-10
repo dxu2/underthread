@@ -92,13 +92,16 @@ def sync_roster():
         return
     _roster_mtime = m
     roster = load_json("roster.json", {"roles": []})
-    keys = ("name", "name_en", "title", "title_en", "duty", "duty_en", "color", "room", "agent_name", "order", "look", "voice")
+    keys = ("name", "name_en", "title", "title_en", "duty", "duty_en", "color", "room", "agent_name", "order", "look", "voice",
+            "tint", "seat", "pipe")   # t-hr-registry: tint = art backdrop colour, seat = stage [x, y] (null = no seat), pipe = production-line column(s)
     with S.mutate() as st:
         for i, r in enumerate(roster.get("roles", [])):
             a = st["agents"].setdefault(r["id"], {"id": r["id"], "status": "idle"})
             for k in keys:
                 if k in r:
                     a[k] = r[k]
+                elif k in ("tint", "seat", "pipe"):
+                    a.pop(k, None)
             a["order"] = r.get("order", i)
             a["enabled"] = r.get("enabled", True)
             if r["id"] == "manager" and not a.get("last_seen"):
@@ -144,42 +147,37 @@ def report_loop():
         time.sleep(60)
 
 
-def routines_fire(nowt=None):
-    """t-routine-trigger: queue one {kind: routine_due} inbox entry per config.routines entry per day.
-    meta.routines_fired[id] = last date fired, so restarts never fire twice; a missed time (server down)
-    fires on the next check. A routine first seen AFTER its time today is only recorded (fires from
-    tomorrow), so adding one mid-day doesn't start an unplanned run; first seen before its time, it
-    fires today as normal. Returns the fired ids."""
-    nowt = nowt or dt.datetime.now()
-    today, hm = nowt.date().isoformat(), nowt.strftime("%H:%M")
-    meta = S.read()["meta"]
-    paused = meta.get("routines_paused") or {}   # t-routine-close: 停止常驻任务 from the card; config.json stays the schedule
-    rs = [r for r in (CONFIG.get("routines") or []) if isinstance(r, dict) and r.get("id")
-          and r.get("enabled", True) is not False and r["id"] not in paused]
-    is_due = lambda r: hm >= str(r.get("time", "10:00"))
-    fired_map = meta.get("routines_fired") or {}
-    if not any(r["id"] not in fired_map or (is_due(r) and fired_map[r["id"]] != today) for r in rs):
-        return []   # nothing to do: skip the write so meta.rev doesn't bump every minute
+def schedules_fire(nowt=None):
+    """t-schedule-backend (was t-routine-trigger routines_fire): every entry in state.schedules whose `next` has passed fires once,
+    however many runs were missed while the server was down (the inbox entry says late_min). Imported config routines keep their
+    routine_due inbox entry, meta.routines_fired and the dated routines_log. `next` moves on in the same lock as the inbox append,
+    so a restart never fires twice. nowt: aware datetime (tests). Returns the fired schedule ids."""
+    nowt = nowt or dt.datetime.now().astimezone()
+    if not S.schedules_needs_tick(S.read(), nowt):
+        return []   # nothing due: skip the write so meta.rev doesn't bump every tick
     fired = []
     with S.mutate() as st:
-        done = st["meta"].setdefault("routines_fired", {})
-        for r in rs:
-            rid = r["id"]
-            if rid not in done:
-                done[rid] = today if is_due(r) else ""
-                if is_due(r):
-                    print(f"routines: {rid} first seen after {r.get('time')} today; recorded, fires from tomorrow")
-                continue
-            if not is_due(r) or done.get(rid) == today:
-                continue
-            done[rid] = today
-            # append inside the state lock: if the append fails, the mark isn't saved either
-            S.inbox_append({"kind": "routine_due", "routine": rid, "label": r.get("label", ""),
-                            "time": r.get("time", "10:00"), "date": today})
-            log_routine_run(st["meta"], rid, today)   # t-ri1104-p3: dated run history for the 常驻活动 7-day row
-            fired.append(rid)
-            print(f"routines: queued routine_due {rid} for {today}")
+        for sc, e in S.schedules_due(st, nowt):
+            if sc.get("routine"):
+                log_routine_run(st["meta"], sc["routine"], e["date"])   # t-ri1104-p3: dated run history for the 常驻活动 7-day row
+            fired.append(sc["id"])
+            print(f"schedules: fired {sc['id']} ({e['kind']}, late {e.get('late_min', 0)} min)")
     return fired
+
+
+routines_fire = schedules_fire   # old name
+
+
+def schedules_import():
+    """t-schedule-backend: config.json routines -> state.schedules, once per routine id (see stateutil.schedules_import_routines)."""
+    st0 = S.read()
+    have = set((st0["meta"].get("schedules_imported") or []))
+    if all(not isinstance(r, dict) or not r.get("id") or r["id"] in have for r in CONFIG.get("routines") or []):
+        return []
+    with S.mutate() as st:
+        added = S.schedules_import_routines(st, CONFIG.get("routines") or [])
+    print("schedules: imported config routines", added, "(config.json routines are only read for this one-time import now)")
+    return added
 
 
 ROUTINES_LOG_KEEP = 30   # t-ri1104-p3: dates kept per routine in meta.routines_log
@@ -222,30 +220,21 @@ def routine_item(r):
     return r.get("item") or "r-" + r["id"]
 
 
-def routines_view(meta, nowt=None, items=None):
+def routines_view(meta, nowt=None, items=None, scheds=None):
     """t-routine-close: schedule + paused + next run for the dashboard (read-only; computed, never stored).
-    t-ri1104-p3: + runs = the last 14 logged dates, each with the run card made that day (a card tagged
-    with the routine's card, created that date) if there is one."""
-    nowt = nowt or dt.datetime.now()
-    today, hm = nowt.date().isoformat(), nowt.strftime("%H:%M")
-    paused, fired = meta.get("routines_paused") or {}, meta.get("routines_fired") or {}
+    t-schedule-backend: built from the imported routine entries in state.schedules (same fields as before, so app.js is unchanged).
+    t-ri1104-p3: + runs = the last 14 logged dates, each with the run card made that day."""
     log = meta.get("routines_log") or {}
     out = []
-    for r in CONFIG.get("routines") or []:
-        if not isinstance(r, dict) or not r.get("id"):
+    for sc in scheds or []:
+        if not sc.get("routine") or sc.get("deleted"):
             continue
-        rid, tm = r["id"], str(r.get("time", "10:00"))
-        p = paused.get(rid)
-        if p or r.get("enabled", True) is False:
-            nxt = None
-        else:
-            day = nowt.date()
-            if fired.get(rid) == today or (hm >= tm and rid not in fired):
-                day += dt.timedelta(days=1)
-            nxt = dt.datetime.combine(day, dt.time(*map(int, tm.split(":")))).astimezone().isoformat(timespec="seconds")
-        out.append({"id": rid, "item": routine_item(r), "time": tm, "label": r.get("label", ""),
-                    "paused": (p or {}).get("at") if isinstance(p, dict) else p, "disabled": r.get("enabled", True) is False,
-                    "last": fired.get(rid) or None, "next": nxt, "runs": _routine_runs(routine_item(r), log.get(rid) or [], items or [])})
+        rid = sc["routine"]
+        p = sc.get("paused")
+        out.append({"id": rid, "item": (sc.get("task") or {}).get("item") or "r-" + rid, "time": sc["rule"].get("at"), "label": sc.get("title", ""),
+                    "paused": (p or {}).get("at") if isinstance(p, dict) else p, "disabled": not sc.get("enabled") and not p,
+                    "last": (meta.get("routines_fired") or {}).get(rid) or None, "next": sc.get("next") if sc.get("enabled") else None,
+                    "schedule": sc["id"], "runs": _routine_runs((sc.get("task") or {}).get("item") or "r-" + rid, log.get(rid) or [], items or [])})
     return out
 
 
@@ -258,13 +247,14 @@ def _routine_runs(parent, dates, items):
     return out
 
 
-def routine_loop():
+def schedule_loop():
+    """t-schedule-backend: replaces routine_loop. 30 s, so a reminder is at most ~30 s late."""
     while True:
         try:
-            routines_fire()
+            schedules_fire()
         except Exception as e:  # keep the loop alive
-            print("routine_loop:", e)
-        time.sleep(60)
+            print("schedule_loop:", e)
+        time.sleep(30)
 
 
 # ---------- ri1103-P2: 稍后 (snooze a card until a time, or until the specialist's next reply) ----------
@@ -476,6 +466,8 @@ def push_class(st, m):
     if m.get("item"):
         it = next((i for i in st.get("items", []) if i.get("id") == m["item"]), None)
     urgent = bool(it and it.get("category") == "urgent")
+    if m.get("kind") == "remind":   # t-schedule-backend: a reminder you set yourself: every tier, through quiet hours
+        return "remind", True
     if text.startswith(("待审核", "新规则提议")):
         return "decide", urgent
     if m.get("kind") == "reply":
@@ -484,7 +476,7 @@ def push_class(st, m):
 
 
 def tier_allows(tier, cls):
-    return tier == "all" or cls == "decide" or (tier == "reply" and cls == "reply")
+    return tier == "all" or cls in ("decide", "remind") or (tier == "reply" and cls == "reply")
 
 
 def in_quiet(p, now=None):
@@ -779,10 +771,636 @@ def _guard_asks(it, body):
     return f" · 跳过 {len(oa)} 个未答问题：" + "；".join(a["q"] for a in oa), [_ask_brief(a) for a in oa]
 
 
+# ===== t-hm-build: 招聘市场. Templates from templates/roles/<job>/template.json, hiring through tools/new_role.py (plan / apply / retire / rehire).
+TPL_DIR = os.path.join(ROOT, "templates", "roles")
+TPL_AV_CACHE = os.path.join(ROOT, "logs", "tpl-av")   # recoloured default avatars, rebuilt on demand (logs/ is not synced or published)
+_HEX = re.compile(r"^#[0-9a-fA-F]{6}$")
+_RID = re.compile(r"^[a-z][a-z0-9-]{1,15}$")
+
+
+def _tpl_list():
+    out = []
+    for job in sorted(os.listdir(TPL_DIR)) if os.path.isdir(TPL_DIR) else []:
+        p = os.path.join(TPL_DIR, job, "template.json")
+        if job.startswith(("_", ".")) or not os.path.isfile(p):
+            continue
+        try:
+            t = json.load(open(p, encoding="utf-8"))
+        except ValueError:
+            continue
+        vs = [{"key": v.get("key"), "label": v.get("label") or v.get("key"), "tint": v.get("tint") or "#6f7f8f",
+               "style": (v.get("voice") or {}).get("style", ""), "habits": (v.get("voice") or {}).get("habits", [])}
+              for v in t.get("variants") or [] if v.get("key")]
+        out.append({"key": job, "cat": t.get("cat") or "", "job": t.get("job") or t.get("title") or job, "title": t.get("title") or "",
+                    "title_en": t.get("title_en") or "", "duty": t.get("duty") or "", "duty_en": t.get("duty_en") or "",
+                    "model": t.get("model") or "", "starters": (t.get("starters") or [])[:3], "variants": vs,
+                    "avatar": os.path.isfile(os.path.join(TPL_DIR, job, "avatar.png"))})
+    return out
+
+
+def templates_payload():
+    roster = load_json("roster.json", {"roles": []}).get("roles", [])
+    hired = {}
+    for r in roster:
+        if r.get("template"):
+            hired.setdefault(r["template"], []).append({"id": r["id"], "name": r.get("name") or r["id"], "variant": r.get("variant"),
+                                                        "on": r.get("enabled", True) is not False})
+    return {"templates": _tpl_list(), "hired": hired, "ids": [r["id"] for r in roster]}
+
+
+def tpl_avatar(job, key):
+    """Per-variant art, else the job's own avatar.png, else the bundled default recoloured to the variant tint (same ffmpeg as new_role.py)."""
+    if not re.match(r"^[a-z0-9-]{1,32}$", job or "") or not re.match(r"^[a-z0-9_-]{0,32}$", key or ""):
+        return None
+    d = os.path.join(TPL_DIR, job)
+    for p in (os.path.join(d, "art", key, "avatar.png"), os.path.join(d, "avatar.png")):
+        if key is not None and os.path.isfile(p):
+            return p
+    t = next((x for x in _tpl_list() if x["key"] == job), None)
+    v = t and next((x for x in t["variants"] if x["key"] == key), None)
+    tint = (v or {}).get("tint", "#6f7f8f")
+    if not _HEX.match(tint):
+        return None
+    out = os.path.join(TPL_AV_CACHE, tint.lstrip("#").lower() + ".png")
+    if not os.path.isfile(out):
+        os.makedirs(TPL_AV_CACHE, exist_ok=True)
+        sys.path.insert(0, os.path.join(ROOT, "tools"))
+        import new_role   # noqa: E402
+        tmp = out + ".tmp.png"
+        new_role.recolour(tint, tmp)
+        os.replace(tmp, out)
+    return out
+
+
+def hire(body):
+    """t-ht-build: retire with a handover / rehire get their own paths; everything else is hire_legacy."""
+    op = body.get("op")
+    if op == "retire" and "handover" in body:
+        return retire_role(body)
+    if op == "rehire":
+        return rehire_role(body)
+    return hire_legacy(body)
+
+
+def hire_legacy(body):
+    """One new_role.py call. Every argument is checked here and passed as an argv list (no shell)."""
+    op = body.get("op")
+    if op in HT_OPS:   # t-ht-build: 退休交接单 / 撤销 / 返聘 / 归档 / 撤回调岗
+        return HT_OPS[op](body)
+    if op in ("retire", "rehire"):   # market undo-after-hire (no handover): plain soft retire
+        rid = str(body.get("id") or "")
+        if not _RID.match(rid):
+            raise ValueError("bad id")
+        r = _role(rid)
+        if not r:
+            raise ValueError("no such role")
+        if op == "retire" and rid in CORE_IDS:
+            raise ValueError("管家、HR、工具管家不能退休")
+        args = [op, rid]
+    elif op in ("plan", "apply"):
+        t = next((x for x in _tpl_list() if x["key"] == body.get("job")), None)
+        if not t:
+            raise ValueError("no such template")
+        v = next((x for x in t["variants"] if x["key"] == body.get("variant")), None)
+        if not v:
+            raise ValueError("no such personality")
+        rid, name, tint = str(body.get("id") or ""), str(body.get("name") or "").strip(), str(body.get("tint") or v["tint"])
+        if not _RID.match(rid):
+            raise ValueError("id 要小写字母开头，只用 a-z 0-9 -，2–16 个字")
+        if not name or len(name) > 20 or re.search(r"[\x00-\x1f<>]", name):
+            raise ValueError("名字 1–20 个字")
+        if not _HEX.match(tint):
+            raise ValueError("颜色要 #rrggbb")
+        args = [op, "--template", t["key"], "--variant", v["key"], "--id", rid, "--name", name, "--tint", tint, "--color", tint]
+    else:
+        raise ValueError("unknown op")
+    r = subprocess.run([sys.executable, os.path.join(ROOT, "tools", "new_role.py"), *args], cwd=ROOT, capture_output=True, text=True,
+                       timeout=180, stdin=subprocess.DEVNULL)
+    log_line = f"hire {op} {' '.join(args[1:3])} -> {r.returncode}"
+    print(log_line, flush=True)
+    return {"ok": r.returncode == 0, "op": op, "out": r.stdout[-4000:], "err": r.stderr[-2000:].replace("✗ ", "")}
+
+
+# ===== t-hr-build: HR interview. 面试 on a market card -> a hire-* card + her opening DM (no agent wait); every DM you send her
+# while it runs is stamped with the card id and lights her typing dots; 批准入职 on the card runs new_role.py apply --from-item.
+HR_ID = "hr"
+HR_Q = os.path.join(ROOT, "templates", "hr", "interview.json")
+
+
+def _hr_on():
+    r = next((x for x in load_json("roster.json", {"roles": []}).get("roles", []) if x["id"] == HR_ID), None)
+    return bool(r) and r.get("enabled", True) is not False
+
+
+def interview(body):
+    op = body.get("op") or "start"
+    if op == "abandon":
+        with S.mutate() as st:
+            it = S.find_item(st, str(body.get("item") or ""))
+            if not it or not isinstance(it.get("hire"), dict):
+                raise ValueError("不是面试卡")
+            if it["hire"].get("status") in ("hired", "abandoned") or it.get("stage") == "done":
+                return {"ok": True, "item": it["id"], "already": True}
+            it["hire"]["status"] = "abandoned"
+            it["stage"] = "done"
+            it["closed"] = it["updated"] = S.now()
+            S.add_thread(it, "me", "放弃面试", "done")
+            a = st["agents"].get(HR_ID)
+            if a and a.get("item") == it["id"]:
+                S.set_agent(st, HR_ID, status="idle")
+            S.add_log(st, "me", f"abandon {it['id']}", it["id"])
+        S.inbox_append({"kind": "done", "item": it["id"], "hire": "abandoned"})
+        return {"ok": True, "item": it["id"]}
+    if op != "start":
+        raise ValueError("unknown op")
+    if body.get("mode") == "transfer":   # t-ht-build: 调岗 from 设置 · 角色
+        return transfer_start(body)
+    if not _hr_on():
+        raise ValueError("HR 还没上岗")
+    t = next((x for x in _tpl_list() if x["key"] == body.get("job")), None)
+    if not t:
+        raise ValueError("no such template")
+    v = next((x for x in t["variants"] if x["key"] == body.get("variant")), None)
+    if not v:
+        raise ValueError("no such personality")
+    q = load_json(os.path.relpath(HR_Q, ROOT), {})
+    fill = lambda x: str(x).replace("{job}", t["job"]).replace("{variant}", v["label"]).replace("{duty}", t["duty"])
+    opening = fill(q.get("opening") or "这位{job}（{variant}）我先替你把把关。第一件事：你招 TA 主要替你干什么？")
+    opts = [fill(o) for o in (q.get("first_options") or ["{duty}"]) if fill(o).strip()][:3]
+    with S.mutate() as st:
+        busy = S.open_interview(st)
+        if busy:
+            return {"ok": False, "busy": busy["id"], "title": busy.get("title", ""), "error": _busy_msg(busy)}
+        base = f"hire-{t['key']}-{dt.datetime.now().strftime('%m%d-%H%M')}"
+        cid, n = base, 2
+        while S.find_item(st, cid, restore=False) or S.archive_find(cid):
+            cid, n = f"{base}-{n}", n + 1
+        it = S.upsert_item(st, {"id": cid, "title": f"面试：{t['job']}（{v['label']}）",
+                                "summary": f"HR 在私聊里和你一问一答，问清五件事后出入职草案。模板 {t['key']} · 性格 {v['key']}。",
+                                "category": "side", "owner": HR_ID, "stage": "doing", "kind": "task"}, who="me")
+        it["hire"] = {"job": t["key"], "variant": v["key"], "job_name": t["job"], "variant_label": v["label"], "tint": v["tint"],
+                      "status": "asking", "turns": 0, "filled": 0}
+        lst = st["dms"].setdefault(HR_ID, [])
+        lst.append(S._chat_entry(HR_ID, opening, "|".join(o.replace("|", "/") for o in opts) or None))
+        S.add_thread(it, HR_ID, "开场白已发到私聊：" + opening, "event")
+        S.add_log(st, "me", f"interview {cid}", cid)
+    wd = os.path.join(ROOT, "work", cid)
+    os.makedirs(wd, exist_ok=True)
+    slots = q.get("slots") or []
+    with open(os.path.join(wd, "interview.json"), "w", encoding="utf-8") as f:
+        json.dump({"item": cid, "job": t["key"], "job_name": t["job"], "variant": v["key"], "variant_label": v["label"],
+                   "duty": t["duty"], "starters": t.get("starters", []), "style": v.get("style", ""),
+                   "slots": {x["key"]: None for x in slots if x.get("key")}, "turns": 0, "max_turns": q.get("max_turns", 8),
+                   "opening": opening}, f, ensure_ascii=False, indent=2)
+    return {"ok": True, "item": cid}
+
+
+def _hire_apply(cid):
+    """批准入职 / 批准调岗: new_role.py apply|update --from-item, outside the state lock (it nudges the poll through stateutil.mutate itself)."""
+    h0 = (S.find_item(S.read(), cid) or {}).get("hire") or {}
+    xfer = h0.get("mode") == "transfer"   # t-ht-build
+    args = ["update", str(h0.get("target") or ""), "--from-item", cid, "--json"] if xfer else ["apply", "--from-item", cid, "--json"]
+    r = subprocess.run([sys.executable, os.path.join(ROOT, "tools", "new_role.py"), *args], cwd=ROOT,
+                       capture_output=True, text=True, timeout=180, stdin=subprocess.DEVNULL)
+    try:
+        j = json.loads((r.stdout.strip().splitlines() or ["{}"])[-1])
+    except ValueError:
+        j = {}
+    ok = r.returncode == 0 and j.get("ok") is True
+    print(f"hire {'update' if xfer else 'apply'}_item {cid} -> {r.returncode}", flush=True)
+    err = None if ok else (j.get("error") or (r.stderr or "").replace("✗ ", "").strip()[-600:] or f"exit {r.returncode}")
+    if ok and xfer:   # what the card's ht-diff shows once the files have moved on
+        try:
+            with open(os.path.join(ROOT, "work", cid, "applied.json"), "w", encoding="utf-8") as f:
+                json.dump(j, f, ensure_ascii=False, indent=1)
+        except OSError:
+            pass
+    with S.mutate() as st:
+        it = S.find_item(st, cid)
+        h = it["hire"]
+        if ok and xfer:
+            h.update(status="transferred", at=S.now(), backup_tag=j.get("backup_tag"))
+            it["stage"], it["closed"] = "done", S.now()
+            keys = "、".join(c["key"] for c in j.get("changes") or []) or "无"
+            S.add_thread(it, "me", f"已调岗 · {j.get('name') or h.get('target')}：改了 {keys}。备份 .bak-newrole-{j.get('backup_tag')}；10 分钟内可在卡上「撤回调岗」", "done")
+            for x in j.get("lessons") or []:
+                _ht_lesson(st, h.get("target"), x, cid)
+            if j.get("lessons"):
+                S.add_thread(it, "me", f"{len(j['lessons'])} 条新红线变成了规则提议，在「审核」页点头才生效", "event")
+            a = st["agents"].get(HR_ID)
+            if a and a.get("item") == cid:
+                S.set_agent(st, HR_ID, status="idle")
+        elif ok:
+            h.update(status="hired", hired_id=j.get("id"))
+            it["stage"], it["closed"] = "done", S.now()
+            S.add_thread(it, "me", f"已入职 · {j.get('name')}（{j.get('id')}）出现在团队里", "done")
+            a = st["agents"].get(HR_ID)
+            if a and a.get("item") == cid:
+                S.set_agent(st, HR_ID, status="idle")
+        else:
+            h["status"] = "failed"
+            it["stage"] = "review"
+            S.add_thread(it, "me", ("调岗没办成：" if xfer else "入职没办成：") + err, "event", to=HR_ID)
+        it["updated"] = S.now()
+    if not ok:   # t-ht-build (t-hr-build leftover): HR hears about it like any comment addressed to her, not only via the approve entry
+        S.inbox_append({"kind": "comment", "item": cid, "to": HR_ID, "auto": "hire_failed", "mode": "transfer" if xfer else "hire",
+                        "text": ("批准调岗" if xfer else "批准入职") + f"失败：{err}。请按原因改 work/{cid}/" + ("transfer.json" if xfer else "role.json")
+                                + "，重新交审（upsert-item --stage review），并在私聊里跟用户说一句。"})
+    if ok and xfer:
+        S.inbox_append({"kind": "role_changed", "id": h0.get("target"), "item": cid, "backup_tag": j.get("backup_tag"),
+                        "lessons": len(j.get("lessons") or [])})
+    return {"ok": ok, "id": j.get("id"), "name": j.get("name"), "mode": "transfer" if xfer else "hire", "error": err}
+
+
+# ===== t-ht-build: 调岗 / 退休 from 设置 · 角色 (plan work/t-hr-transfer/plan.md). 调岗 = an HR DM like the interview (xfer-* card,
+# work/<card>/transfer.json, new_role.py update on 批准调岗); 退休 = a handover sheet (GET /api/retire-plan, POST /api/hire retire + handover),
+# a record card retire-<id>-<MMDD>, 8 s undo. CORE roles never retire, the manager is never transferred, founding roles soft-retire only.
+CORE_IDS = {"manager", "hr", "smith"}
+XFER_MAX = 5
+NR = os.path.join(ROOT, "tools", "new_role.py")
+
+
+def _role(rid):
+    return next((x for x in load_json("roster.json", {"roles": []}).get("roles", []) if x["id"] == rid), None)
+
+
+def _nr_mod():
+    sys.path.insert(0, os.path.join(ROOT, "tools"))
+    import new_role   # noqa: E402
+    return new_role
+
+
+def _nr(*args, timeout=180):
+    r = subprocess.run([sys.executable, NR, *args], cwd=ROOT, capture_output=True, text=True, timeout=timeout, stdin=subprocess.DEVNULL)
+    print(f"ht new_role {' '.join(args[:3])} -> {r.returncode}", flush=True)
+    return r, (r.stderr or "").replace("✗ ", "").strip()[-800:]
+
+
+def _busy_msg(it):
+    h = it.get("hire") or {}
+    return (f"HR 正在给「{h.get('job_name', '')}」调岗" if h.get("mode") == "transfer" else f"HR 正在面试「{h.get('job_name', '')}」") + "，先聊完或放弃"
+
+
+def _ht_lesson(st, agent, text, item):
+    """A rule proposal without add_lesson's 2-per-card cap (a transfer can carry several red lines)."""
+    st["lessons"].append({"id": S.new_id("L"), "t": S.now(), "agent": agent, "text": text, "item": item, "status": "pending", "via": "transfer"})
+    S.push_mail(st, "update", f"新规则提议 · {agent}: {text}", item, agent)
+
+
+def _uniq_id(st, base):
+    cid, n = base, 2
+    while S.find_item(st, cid, restore=False) or S.archive_find(cid):
+        cid, n = f"{base}-{n}", n + 1
+    return cid
+
+
+def transfer_start(body):
+    rid = str(body.get("target") or "")
+    if not _RID.match(rid):
+        raise ValueError("bad id")
+    if rid == "manager":
+        raise ValueError("管家不能调岗（manager.md 归她自己，改它走规则提议）")
+    if not _hr_on():
+        raise ValueError("HR 还没上岗")
+    r = _role(rid)
+    if not r or r.get("enabled") is False:
+        raise ValueError("这个角色不在岗")
+    q = (load_json(os.path.relpath(HR_Q, ROOT), {}) or {}).get("transfer") or {}
+    name = r.get("name") or rid
+    opening = str(q.get("opening") or "{name} 想改哪块？可以多选，也可以直接说想怎么改。").replace("{name}", name)
+    opts = [str(o).replace("{name}", name) for o in (q.get("options") or ["职责", "说话味道", "名字称呼", "工具", "加一条红线"])][:5]
+    with S.mutate() as st:
+        busy = S.open_interview(st)
+        if busy:
+            return {"ok": False, "busy": busy["id"], "title": busy.get("title", ""), "error": _busy_msg(busy)}
+        cid = _uniq_id(st, f"xfer-{rid}-{dt.datetime.now().strftime('%m%d-%H%M')}")
+        it = S.upsert_item(st, {"id": cid, "title": f"调岗：{name}",
+                                "summary": f"HR 在私聊里问清改哪块、改成什么（≤{XFER_MAX} 轮），出前后对比草案；你点「批准调岗」才落地。"
+                                           "Confirmed rules 不动，新红线变成规则提议。",
+                                "category": "side", "owner": HR_ID, "stage": "doing", "kind": "task"}, who="me")
+        it["hire"] = {"mode": "transfer", "target": rid, "job_name": name, "variant_label": r.get("title") or "",
+                      "tint": r.get("tint") or r.get("color"), "status": "asking", "turns": 0, "filled": 0, "max_turns": XFER_MAX}
+        st["dms"].setdefault(HR_ID, []).append(S._chat_entry(HR_ID, opening, "|".join(o.replace("|", "/") for o in opts) or None))
+        S.add_thread(it, HR_ID, "开场白已发到私聊：" + opening, "event")
+        S.add_log(st, "me", f"transfer {cid}", cid)
+    NRm = _nr_mod()
+    md = read_text_safe(os.path.join(ROOT, "roles", f"{rid}.md"))
+    secs = NRm.md_sections(md)
+    locked = set(NRm.md_locked(secs))
+    wd = os.path.join(ROOT, "work", cid)
+    os.makedirs(wd, exist_ok=True)
+    with open(os.path.join(wd, "transfer.json"), "w", encoding="utf-8") as f:
+        json.dump({"target": rid, "item": cid, "name": name,
+                   "before": {"roster": r, "md_sha": NRm.sha(md),
+                              "md_sections": {t: b.strip() for k, (t, b) in enumerate(secs) if t and k not in locked},
+                              "locked_sections": [secs[k][0] for k in sorted(locked)]},
+                   "after": {"roster": {}, "md_sections": {}, "lessons": []},
+                   "fields": list(NRm.XFER_FIELDS), "turns": 0, "max_turns": XFER_MAX, "opening": opening}, f, ensure_ascii=False, indent=2)
+    return {"ok": True, "item": cid}
+
+
+def read_text_safe(p):
+    try:
+        return open(p, encoding="utf-8").read()
+    except OSError:
+        return ""
+
+
+def transfer_plan(cid):
+    """GET /api/transfer-plan?item=: the draft's before/after (new_role.py update --plan), or what was applied."""
+    it = S.find_item(S.read(), cid) if re.match(r"^[a-z0-9][a-z0-9-]{1,60}$", cid or "") else None
+    h = (it or {}).get("hire") or {}
+    if h.get("mode") != "transfer":
+        return {"ok": False, "error": "不是调岗卡"}
+    ap = os.path.join(ROOT, "work", cid, "applied.json")
+    if h.get("status") in ("transferred", "undone") and os.path.isfile(ap):
+        j = load_json(os.path.relpath(ap, ROOT), {})
+        j.update(applied=True, status=h.get("status"), at=h.get("at"))
+        return j
+    r, err = _nr("update", str(h.get("target") or ""), "--from-item", cid, "--plan", "--json", timeout=60)
+    try:
+        j = json.loads((r.stdout.strip().splitlines() or ["{}"])[-1])
+    except ValueError:
+        j = {"ok": False}
+    if r.returncode or not j.get("ok"):
+        return {"ok": False, "error": j.get("error") or err or "plan failed"}
+    return j
+
+
+def _owned_schedules(st, rid):
+    out = []
+    for sc in st.get("schedules") or []:
+        if sc.get("deleted"):
+            continue
+        t = sc.get("task") or {}
+        ow = t.get("agent")
+        if not ow and t.get("item"):
+            ow = (S.find_item(st, t["item"], restore=False) or {}).get("owner")
+        if ow == rid:
+            out.append(sc)
+    return out
+
+
+def retire_plan(rid):
+    """GET /api/retire-plan?id=: what the 退休交接单 lists. Read only."""
+    if not _RID.match(rid or ""):
+        return {"ok": False, "error": "bad id"}
+    sync_roster()   # the role must be in state.agents for note_hand to log the handoffs
+    r = _role(rid)
+    if not r:
+        return {"ok": False, "error": "no such role"}
+    st = S.read()
+    a = st["agents"].get(rid) or {}
+    block = None
+    if rid in CORE_IDS:
+        block = "管家、HR、工具管家不能退休"
+    elif r.get("enabled") is False:
+        block = "已经退休了"
+    elif a.get("status") == "working":
+        cur = S.find_item(st, a.get("item"), restore=False) if a.get("item") else None
+        block = f"她在做「{(cur or {}).get('title') or a.get('activity') or '手上的事'}」，交回后再退"
+    else:
+        rr, err = _nr("retire", rid, "--dry", timeout=60)
+        if rr.returncode:
+            block = err
+    pipe = r.get("pipe")
+    pipes = set([pipe] if isinstance(pipe, str) else pipe or [])
+    cands = []
+    for x in load_json("roster.json", {"roles": []}).get("roles", []):
+        if x["id"] in (rid,) or x.get("enabled") is False:
+            continue
+        xp = x.get("pipe")
+        same = bool(pipes & set([xp] if isinstance(xp, str) else xp or []))
+        cands.append({"id": x["id"], "name": x.get("name") or x["id"], "same": same})
+    cands.sort(key=lambda c: (c["id"] != "manager", not c["same"]))
+    items = [{"id": i["id"], "title": i.get("title", ""), "stage": i.get("stage")} for i in st["items"]
+             if i.get("owner") == rid and i.get("stage") != "done"]
+    scheds = [{"id": sc["id"], "title": sc.get("title") or (sc.get("task") or {}).get("text", ""), "routine": sc.get("routine"),
+               "enabled": sc.get("enabled", True)} for sc in _owned_schedules(st, rid)]
+    lessons = [{"id": l["id"], "text": l["text"]} for l in st["lessons"] if l.get("agent") == rid and l.get("status") == "pending"]
+    agent = r.get("agent_name") or f"underthread-{rid}"
+    keep = [f for f in (f"roles/{rid}.md", f".claude/agent-memory/{agent}/", f"work/{rid}-handoff.md", f"avatars/{rid}.png")
+            if os.path.exists(os.path.join(ROOT, f))]
+    return {"ok": True, "id": rid, "name": r.get("name") or rid, "title": r.get("title"), "founding": not r.get("template"),
+            "block": block, "items": items, "schedules": scheds, "lessons": lessons, "candidates": cands, "keep": keep}
+
+
+def retire_role(body):
+    """退休 with a handover sheet. Cards / schedules / proposals move first (one mutate), then new_role.py retire runs outside the lock;
+    if it refuses, the handover is put back."""
+    rid = str(body.get("id") or "")
+    if "handover" not in body:
+        return hire_legacy(body)
+    plan = retire_plan(rid)
+    if not plan.get("ok"):
+        raise ValueError(plan.get("error"))
+    if plan.get("block"):
+        raise ValueError(plan["block"])
+    ho = body.get("handover") or {}
+    ip, sp = ho.get("items") or {}, ho.get("schedules") or {}
+    name = plan["name"]
+    on = {c["id"] for c in plan["candidates"]}
+    with S.mutate() as st:
+        rec = {"id": rid, "name": name, "t": S.now(), "items": [], "schedules": [], "lessons": []}
+        for sc in _owned_schedules(st, rid):
+            act_ = sp.get(sc["id"], "pause")
+            t = sc.setdefault("task", {})
+            e = {"id": sc["id"], "title": sc.get("title", ""), "action": act_, "agent": t.get("agent"), "enabled": sc.get("enabled", True)}
+            if act_ == "manager":
+                t["agent"] = "manager"
+            elif sc.get("enabled", True):
+                S.schedule_pause(st, sc, True, by="me")
+            rec["schedules"].append(e)
+        lines = []
+        for it in st["items"]:
+            if it.get("owner") != rid or it.get("stage") == "done":
+                continue
+            to = ip.get(it["id"], "manager")
+            if to != "park" and to not in on:
+                to = "manager"
+            e = {"id": it["id"], "title": it.get("title", ""), "stage": it.get("stage"), "to": to}
+            if to == "park":
+                it["owner"], it["stage"], it["parked_from"] = "manager", "todo", rid
+                S.add_thread(it, "me", f"搁置 · {name} 退休，返聘时可以一键拿回", "event")
+                lines.append(f"- {it.get('title', it['id'])} → 搁置")
+            else:
+                it["owner"] = to
+                S.note_hand(st, it["id"], to, "reassign", frm=rid)
+                S.add_thread(it, "me", f"交接自 {name}（退休），接手前先读 work/{rid}-handoff.md", "event", to=to)
+                lines.append(f"- {it.get('title', it['id'])} → {(st['agents'].get(to) or {}).get('name') or to}")
+            it["updated"] = S.now()
+            e["at"] = it["updated"]
+            rec["items"].append(e)
+        for l in st["lessons"]:
+            if l.get("agent") == rid and l.get("status") == "pending":
+                l["status"], l["parked"] = "parked", S.now()
+                rec["lessons"].append(l["id"])
+        rcid = _uniq_id(st, f"retire-{rid}-{dt.datetime.now().strftime('%m%d')}")
+        card = S.upsert_item(st, {"id": rcid, "title": f"退休：{name}", "category": "side", "owner": HR_ID if HR_ID in st["agents"] else "manager",
+                                  "stage": "done", "kind": "task",
+                                  "summary": f"{name}（{rid}）软退休：roles/{rid}.md、记忆、交接单、声音、头像都留着，返聘就回来。"}, who="me")
+        card["retire"] = rec
+        card["closed"] = S.now()
+        sl = "；".join(f"{x['title']} → {'转管家' if x['action'] == 'manager' else '暂停'}" for x in rec["schedules"])
+        txt = ["交接清单："] + (lines or ["- 手上没有没完成的单子"]) + ([f"- 定时：{sl}"] if sl else []) + ([f"- 规则提议 {len(rec['lessons'])} 条挂起，返聘时放回"] if rec["lessons"] else [])
+        S.add_thread(card, "me", "\n".join(txt), "done")
+        S.add_log(st, "me", f"retire {rid}", rcid)
+    r, err = _nr("retire", rid)
+    if r.returncode:
+        _retire_restore(rcid, rid, rehire=False)
+        raise ValueError(err or "retire failed")
+    S.inbox_append({"kind": "retired", "id": rid, "record": rcid, "items": [{"id": e["id"], "to": e["to"]} for e in rec["items"]],
+                    "schedules": [{"id": e["id"], "action": e["action"]} for e in rec["schedules"]]})
+    return {"ok": True, "id": rid, "record": rcid, "moved": len(rec["items"])}
+
+
+def _retire_restore(rcid, rid, rehire=True):
+    """Put a retirement back: cards the new owner has not touched since, schedules, parked proposals."""
+    back, kept = [], []
+    with S.mutate() as st:
+        card = S.find_item(st, rcid)
+        rec = (card or {}).get("retire") or {}
+        if rec.get("id") != rid or rec.get("undone"):
+            raise ValueError("没有可撤销的退休记录")
+        for e in rec.get("items") or []:
+            it = S.find_item(st, e["id"])
+            want = "manager" if e["to"] == "park" else e["to"]
+            if it and it.get("owner") == want and it.get("updated") == e.get("at"):
+                it["owner"], it["stage"] = rid, e.get("stage") or it.get("stage")
+                it.pop("parked_from", None)
+                if want != "manager" or e["to"] != "park":
+                    S.note_hand(st, it["id"], rid, "reassign", frm=want)
+                S.add_thread(it, "me", f"撤销退休 · 单子回到 {rec.get('name') or rid}", "event", to=rid)
+                it["updated"] = S.now()
+                back.append(e["id"])
+            else:
+                kept.append(e["id"])
+        for e in rec.get("schedules") or []:
+            sc = next((x for x in st.get("schedules") or [] if x["id"] == e["id"]), None)
+            if not sc:
+                continue
+            sc.setdefault("task", {})["agent"] = e.get("agent")
+            if e.get("enabled") and not sc.get("enabled", True):
+                try:
+                    S.schedule_pause(st, sc, False, by="me")
+                except Exception:   # noqa: BLE001  (a once-rule already past stays paused)
+                    pass
+        for l in st["lessons"]:
+            if l["id"] in (rec.get("lessons") or []) and l.get("status") == "parked":
+                l["status"] = "pending"
+                l.pop("parked", None)
+        rec["undone"] = S.now()
+        if card:
+            S.add_thread(card, "me", f"已撤销退休 · 回来 {len(back)} 张单子" + (f"，{len(kept)} 张新主人已经动过，留在原处" if kept else ""), "event")
+    return back, kept
+
+
+def undo_retire(body):
+    rid = str(body.get("id") or "")
+    st = S.read()
+    recs = [i for i in st["items"] if (i.get("retire") or {}).get("id") == rid and not i["retire"].get("undone")]
+    if not recs:
+        raise ValueError("没有可撤销的退休记录")
+    rcid = recs[-1]["id"]
+    r, err = _nr("rehire", rid)
+    if r.returncode:
+        raise ValueError(err or "rehire failed")
+    back, kept = _retire_restore(rcid, rid)
+    S.inbox_append({"kind": "retire_undone", "id": rid, "record": rcid, "back": back, "kept": kept})
+    return {"ok": True, "id": rid, "back": len(back), "kept": len(kept)}
+
+
+def rehire_role(body):
+    rid = str(body.get("id") or "")
+    if not _RID.match(rid):
+        raise ValueError("bad id")
+    r = _role(rid)
+    if not r:
+        raise ValueError("不在 roster 里（硬归档的用 new_role.py rehire --from-archive）")
+    res, err = _nr("rehire", rid)
+    if res.returncode:
+        return {"ok": False, "op": "rehire", "err": err}
+    with S.mutate() as st:
+        n = 0
+        for l in st["lessons"]:
+            if l.get("agent") == rid and l.get("status") == "parked":
+                l["status"] = "pending"
+                l.pop("parked", None)
+                n += 1
+        parked = [i["id"] for i in st["items"] if i.get("parked_from") == rid and i.get("stage") != "done"]
+        paused = [sc["id"] for sc in _owned_schedules(st, rid) if not sc.get("enabled", True) and (sc.get("paused") or {}).get("by") == "me"]
+        S.add_log(st, "me", f"rehire {rid}")
+    S.inbox_append({"kind": "rehired", "id": rid, "lessons": n, "parked": parked, "paused": paused})
+    return {"ok": True, "op": "rehire", "id": rid, "lessons": n, "parked": parked, "paused": paused}
+
+
+def unpark(body):
+    rid = str(body.get("id") or "")
+    r = _role(rid)
+    if not r or r.get("enabled") is False:
+        raise ValueError("先返聘")
+    with S.mutate() as st:
+        got = []
+        for it in st["items"]:
+            if it.get("parked_from") == rid and it.get("stage") != "done" and it.get("owner") == "manager":
+                it["owner"] = rid
+                it.pop("parked_from", None)
+                S.note_hand(st, it["id"], rid, "reassign", frm="manager")
+                S.add_thread(it, "me", f"拿回搁置的单子 · 回到 {r.get('name') or rid}", "event", to=rid)
+                it["updated"] = S.now()
+                got.append(it["id"])
+    if got:
+        S.inbox_append({"kind": "unparked", "id": rid, "items": got})
+    return {"ok": True, "items": got}
+
+
+def archive_role(body):
+    rid = str(body.get("id") or "")
+    r = _role(rid)
+    if not r:
+        raise ValueError("no such role")
+    if not r.get("template"):
+        raise ValueError("创始成员只能软退休，不能归档")
+    if body.get("confirm") != rid:
+        raise ValueError("归档要二次确认")
+    if r.get("enabled") is not False:
+        raise ValueError("先软退休，再归档")
+    res, err = _nr("retire", rid, "--hard")
+    return {"ok": res.returncode == 0, "op": "archive", "out": res.stdout[-2000:], "err": err}
+
+
+def undo_update(body):
+    cid = str(body.get("item") or "")
+    with S.mutate() as st:
+        it = S.find_item(st, cid)
+        h = (it or {}).get("hire") or {}
+        if h.get("mode") != "transfer" or h.get("status") != "transferred":
+            raise ValueError("这张卡没有可撤回的调岗")
+        if not h.get("at") or (dt.datetime.now().astimezone() - dt.datetime.fromisoformat(h["at"])).total_seconds() > 600:
+            raise ValueError("超过 10 分钟了，撤回要找工具管家按备份手动改回")
+    r, err = _nr("update", "--undo", cid, "--json")
+    if r.returncode:
+        raise ValueError(err or "undo failed")
+    with S.mutate() as st:
+        it = S.find_item(st, cid)
+        it["hire"]["status"] = "undone"
+        S.add_thread(it, "me", "已撤回调岗 · roster 和 roles 文件按备份改回", "event")
+        for l in st["lessons"]:
+            if l.get("item") == cid and l.get("status") == "pending" and l.get("via") == "transfer":
+                l["status"], l["decided"] = "dropped", S.now()
+        it["updated"] = S.now()
+    S.inbox_append({"kind": "role_changed", "id": h.get("target"), "item": cid, "undo": True})
+    return {"ok": True, "item": cid}
+
+
+HT_OPS = {"undo_retire": undo_retire, "unpark": unpark, "archive": archive_role, "undo_update": undo_update}
+
+
 def act(body):
     k = body.get("kind")
     me = "me"
     inbox = None
+    hire_go = None   # t-hr-build: 批准入职 runs new_role.py after the lock is released
     with S.mutate() as st:
         it = S.find_item(st, body["item"]) if body.get("item") else None
         if body.get("item") and not it:
@@ -816,6 +1434,15 @@ def act(body):
             inbox = {"kind": "dm", "agent": body["agent"], "text": body["text"], "attachments": att}
             if src:
                 inbox.update(S.reply_fields(src))
+            iv = S.open_interview(st) if body["agent"] == HR_ID and HR_ID in st["agents"] else None
+            if iv:   # t-hr-build: which interview this is for, and her typing dots at once (not when the manager gets round to it)
+                h = iv["hire"]
+                if h.get("status") == "asking" and iv.get("stage") != "review":
+                    h["turns"] = h.get("turns", 0) + 1
+                inbox.update(item=iv["id"], turn=h.get("turns", 0), hire=h.get("status"))
+                if h.get("mode") == "transfer":   # t-ht-build
+                    inbox.update(mode="transfer", target=h.get("target"), max_turns=h.get("max_turns", XFER_MAX))
+                S.set_agent(st, HR_ID, status="working", item=iv["id"], activity="调岗中 · 在想" if h.get("mode") == "transfer" else "面试中 · 在想")
 
         elif k == "comment":
             to = body.get("to") or it["owner"]
@@ -827,14 +1454,23 @@ def act(body):
         elif k == "approve":
             skipped, oa = _guard_asks(it, body)
             plan = it.get("kind") == "plan"
-            it["stage"] = "doing" if plan else "done"
-            it["approved"] = S.now()
-            if not plan:
-                it["closed"] = S.now()
-            # t-btn-names: the log line uses the button's own words (批准开工 / 验收 · 关单 / 回答); the action kind stays "approve"
-            lbl = "批准开工" if plan else "回答" if it.get("kind") == "question" else "验收 · 关单"
-            S.add_thread(it, me, lbl + (f" · {body['note']}" if body.get("note") else "") + skipped, "approve")
-            inbox = {"kind": "approve", "item": it["id"], "was": it.get("kind"), "note": body.get("note")}
+            if isinstance(it.get("hire"), dict) and it.get("kind") == "deliverable":   # t-hr-build: 批准入职
+                if it["hire"].get("status") in ("applying", "hired", "abandoned", "transferred", "undone"):
+                    raise ValueError("这张卡已经处理过了")
+                it["hire"]["status"] = "applying"
+                it["approved"] = S.now()
+                S.add_thread(it, me, ("批准调岗" if it["hire"].get("mode") == "transfer" else "批准入职") + (f" · {body['note']}" if body.get("note") else "") + skipped, "approve")
+                hire_go = it["id"]
+                inbox = {"kind": "approve", "item": it["id"], "was": it.get("kind"), "note": body.get("note")}
+            else:
+                it["stage"] = "doing" if plan else "done"
+                it["approved"] = S.now()
+                if not plan:
+                    it["closed"] = S.now()
+                # t-btn-names: the log line uses the button's own words (批准开工 / 验收 · 关单 / 回答); the action kind stays "approve"
+                lbl = "批准开工" if plan else "回答" if it.get("kind") == "question" else "验收 · 关单"
+                S.add_thread(it, me, lbl + (f" · {body['note']}" if body.get("note") else "") + skipped, "approve")
+                inbox = {"kind": "approve", "item": it["id"], "was": it.get("kind"), "note": body.get("note")}
             if oa:
                 inbox["open_asks"] = oa
 
@@ -868,6 +1504,8 @@ def act(body):
             inbox = {"kind": "reopen", "item": it["id"]}
 
         elif k == "reassign":
+            if body["owner"] != it.get("owner"):   # t-rb-build: the user moving a card between roles is a handoff
+                S.note_hand(st, it["id"], body["owner"], "reassign", frm=it.get("owner"))
             it["owner"] = body["owner"]
             S.add_thread(it, me, f"改派给 {body['owner']}", "event")
             inbox = {"kind": "dispatch", "item": it["id"], "owner": body["owner"]}
@@ -955,25 +1593,35 @@ def act(body):
                     msg = "恢复常驻 · 管家照常做这张卡"
                 S.add_thread(it, me, msg, "event")
                 inbox = {"kind": k, "routine": None, "item": it["id"]}
-            elif not r:
-                raise ValueError(f"no routine {body.get('routine')}")
             else:
-                rid = r["id"]
-                it = it or S.find_item(st, routine_item(r))
-                pmap = st["meta"].setdefault("routines_paused", {})
-                if k == "routine_pause":
-                    pmap[rid] = {"at": S.now(), "by": me}
-                    msg = "停止常驻任务 · 定时器已停，不会再开新的子卡"
-                else:
-                    pmap.pop(rid, None)
-                    nowt = dt.datetime.now()
-                    # resuming after today's time never starts a same-day run: mark today as fired, next run is tomorrow
-                    if nowt.strftime("%H:%M") >= str(r.get("time", "10:00")):
-                        st["meta"].setdefault("routines_fired", {})[rid] = nowt.date().isoformat()
-                    msg = f"恢复常驻任务 · 每天 {r.get('time', '10:00')}"
+                rid = body.get("routine")
+                sc = next((x for x in st.get("schedules") or [] if x.get("routine") == rid and not x.get("deleted")), None)
+                if not sc:
+                    raise ValueError(f"no routine {rid}")
+                it = it or S.find_item(st, (sc.get("task") or {}).get("item") or "r-" + rid)
+                S.schedule_pause(st, sc, k == "routine_pause", by=me)   # t-schedule-backend: resuming never starts a missed same-day run
+                st["meta"].setdefault("routines_paused", {}).pop(rid, None)
+                msg = "停止常驻任务 · 定时器已停，不会再开新的子卡" if k == "routine_pause" else f"恢复常驻任务 · 每天 {sc['rule'].get('at')}"
                 if it is not None:
                     S.add_thread(it, me, msg, "event")
                 inbox = {"kind": k, "routine": rid, "item": it["id"] if it else None}
+
+        elif k in ("schedule_pause", "schedule_resume", "schedule_rm", "schedule_fire"):   # t-schedule-backend: the 定时 page
+            sc = S.schedule_find(st, body.get("schedule") or "")
+            if not sc:
+                raise ValueError(f"no schedule {body.get('schedule')}")
+            if k == "schedule_rm":
+                sc.update(deleted=S.now(), enabled=False)
+            elif k == "schedule_fire":
+                t0 = dt.datetime.now().astimezone()
+                sc.setdefault("runs", []).append({"for": t0.isoformat(timespec="seconds"), "at": t0.isoformat(timespec="seconds"), "late": 0, "manual": True})
+                sc["last"] = t0.isoformat(timespec="seconds")
+                S.schedule_emit(st, sc, sc["last"], 0, manual=True)
+            else:
+                S.schedule_pause(st, sc, k == "schedule_pause", by=me)
+            if sc.get("routine") and k in ("schedule_pause", "schedule_resume"):
+                st["meta"].setdefault("routines_paused", {}).pop(sc["routine"], None)
+            inbox = {"kind": k, "schedule": sc["id"], "title": sc.get("title"), "item": (sc.get("task") or {}).get("item")}
         else:
             raise ValueError(f"unknown action {k}")
 
@@ -984,12 +1632,19 @@ def act(body):
                 it.pop("snoozed", None)
         S.add_log(st, me, f"{k}" + (f" {it['id']}" if it else ""), it["id"] if it else None)
 
+    hire_res = None
+    if hire_go:
+        hire_res = _hire_apply(hire_go)
+        inbox["hire"] = hire_res
     if inbox and any(S.is_audio_path(p) for p in inbox.get("attachments") or []):
         with S.mutate() as st:   # t-voice-memo: transcripts already finished ride along with the message
             S.claim_transcripts(st, inbox)
     if inbox:
         inbox = S.inbox_append(inbox)
-    return {"ok": True, "inbox": inbox["id"] if inbox else None}
+    out = {"ok": True, "inbox": inbox["id"] if inbox else None}
+    if hire_res is not None:
+        out["hire"] = hire_res
+    return out
 
 
 def transcribe_async(rel, force=False):
@@ -1225,8 +1880,48 @@ def archive_body(gz):
     return a["body"][2] if gz else a["body"][1]
 
 
+# ---- t-hr-registry: which art files each role has (web/art/<id>.jpg, panels/, cut/, avatars/ut/_s/<id>-work-160.webp). The web reads meta.art
+# instead of hard-coded id lists, so a new role's art shows up without a code edit. Cached on the four directories' signatures.
+ART_DIRS = (("jpg", os.path.join(WEB, "art"), ".jpg"), ("panel", os.path.join(WEB, "art", "panels"), ".webp"),
+            ("cut", os.path.join(WEB, "art", "cut"), ".webp"), ("sheet", os.path.join(AVATARS, "ut", "_s"), "-work-160.webp"))
+_ART = {"sig": None, "map": {}}
+# Spare stage seats for roles whose roster entry has no "seat" key (an explicit "seat": null keeps a role off the stage).
+STAGE_SPARE = [[.22, .62], [.60, .22], [.74, .34], [.10, .70], [.46, .76], [.84, .26]]
+
+
+def art_sig():
+    return tuple(_fsig(d) for _, d, _ in ART_DIRS)
+
+
+def art_scan():
+    sig = art_sig()
+    if sig == _ART["sig"]:
+        return _ART["map"]
+    m = {}
+    for k, d, ext in ART_DIRS:
+        try:
+            names = os.listdir(d)
+        except OSError:
+            continue
+        for f in names:
+            if f.endswith(ext) and not f.startswith("."):
+                m.setdefault(f[:-len(ext)], {})[k] = 1
+    _ART.update(sig=sig, map=m)
+    return m
+
+
+def stage_seats(agents):
+    used = [tuple(a["seat"]) for a in agents.values() if isinstance(a.get("seat"), list)]
+    free = [s for s in STAGE_SPARE if tuple(s) not in used]
+    out = {}
+    for a in sorted(agents.values(), key=lambda a: a.get("order", 99)):
+        if "seat" not in a and a.get("enabled", True) and free:
+            out[a["id"]] = free.pop(0)
+    return out
+
+
 def public_state_cached(slim):
-    k = (_fsig(S.STATE), _fsig(S.INBOX), _fsig(AVATARS), _fsig(S.ARCHIVE), json.dumps(_comfy, sort_keys=True), dt.datetime.now().strftime("%Y-%m-%d %H:%M"))
+    k = (_fsig(S.STATE), _fsig(S.INBOX), _fsig(AVATARS), _fsig(S.ARCHIVE), art_sig(), json.dumps(_comfy, sort_keys=True), dt.datetime.now().strftime("%Y-%m-%d %H:%M"))
     with _PSL:
         c = _PSC.get(slim)
         if c and c[0] == k:
@@ -1244,15 +1939,71 @@ def public_state(slim=False):
     st["meta"]["avatars"] = {f.rsplit(".", 1)[0]: f for f in sorted(os.listdir(AVATARS))
                              if f.lower().endswith((".png", ".jpg", ".jpeg", ".webp", ".gif"))}
     st["meta"]["inbox_unacked"] = rev_unacked()[1]
+    st["meta"]["art"] = art_scan()
+    st["meta"]["seats"] = stage_seats(st.get("agents") or {})
     a, live = archive_cached(), {i.get("id") for i in st.get("items", [])}
     ix = [[i.get("id"), i.get("title", ""), i.get("owner", ""), str(i.get("closed") or i.get("updated") or "")[:10]] for i in a["items"] if i.get("id") not in live]
     st["meta"]["archive"] = {"n": len(ix), "v": (a["sig"] or [0, 0])[1], "ix": ix}   # t-perf A: id chips, title search, deep links know archived cards
     st["meta"]["server_time"] = S.now()
-    st["meta"]["routines"] = routines_view(st["meta"], items=st.get("items"))
+    st["meta"]["routines"] = routines_view(st["meta"], items=st.get("items"), scheds=st.get("schedules"))
+    st["schedules"] = [x for x in st.get("schedules") or [] if not x.get("deleted")]   # t-schedule-backend: removed ones stay 30 days for undo, not shown
     st["meta"]["report_time"] = str(CONFIG.get("report_time", "18:00"))   # ri1103-P1: the 日报 row of 今日日程
     st["meta"]["media_v"] = 1   # t-voice-memo: this server transcribes (the page hides 转写/重试 on older servers)
     trim_state(st)
+    ho = st.pop("handoffs", None) or []   # t-rb-build: the log is fetched from /api/handoffs; a poll carries only where it ends
+    st.pop("ho_last", None)
+    st["meta"]["ho"] = {"n": len(ho), "last": ho[-1]["id"] if ho else "", "t": ho[-1]["t"] if ho else "", "start": st["meta"].pop("ho_start", "")}
     return slim_state(st) if slim else st
+
+
+# ---------- t-rb-build: /api/handoffs ----------
+# GET /api/handoffs?since=<iso>[&until=<iso>] -> {list: [{id, t, f, to, item, title, via, inf?}], start, now}. Logged entries
+# (state.handoffs) come first-hand; the stretch before meta.ho_start (when the log began) is inferred from card threads with
+# ho.py's rule (a change of speaker between two roles on one card = one handoff, the same pair on the same card once) and
+# marked inf=1. Inference is cached on the state file signature.
+_HOI = {"k": None, "v": []}
+
+
+def _pt(x):
+    try:
+        d = dt.datetime.fromisoformat(str(x).replace("Z", "+00:00"))
+        return d if d.tzinfo else d.astimezone()
+    except (TypeError, ValueError):
+        return None
+
+
+def _ho_infer(st):
+    k = _fsig(S.STATE)
+    if _HOI["k"] == k:
+        return _HOI["v"]
+    ids, ev = set(st.get("agents") or {}), []
+    ids.discard("me")
+    for it in st.get("items") or []:
+        prev, seen = None, set()
+        for m in it.get("thread") or []:
+            w, t = m.get("who"), m.get("t")
+            if w not in ids or not t:
+                continue
+            if prev and prev != w and (prev, w) not in seen:
+                seen.add((prev, w))
+                ev.append({"id": "i" + uuid.uuid5(uuid.NAMESPACE_URL, f"{it['id']}|{prev}|{w}").hex[:7], "t": t, "f": prev, "to": w,
+                           "item": it["id"], "title": str(it.get("title", ""))[:120], "via": "dispatch" if prev == "manager" else "reply", "inf": 1})
+            prev = w
+    ev.sort(key=lambda e: _pt(e["t"]) or dt.datetime.min.replace(tzinfo=dt.timezone.utc))
+    _HOI.update(k=k, v=ev)
+    return ev
+
+
+def handoffs(q):
+    st = S.read()
+    nowt = dt.datetime.now().astimezone()
+    since = _pt(q.get("since", [""])[0]) or (nowt - dt.timedelta(hours=24))
+    until = _pt(q.get("until", [""])[0])
+    log, start = st.get("handoffs") or [], _pt(st["meta"].get("ho_start"))
+    ok = lambda d: d is not None and d > since and (until is None or d <= until)
+    out = [e for e in _ho_infer(st) if ok(_pt(e["t"])) and (start is None or _pt(e["t"]) < start)]
+    out += [e for e in log if ok(_pt(e["t"]))]
+    return {"list": out[-1000:], "start": st["meta"].get("ho_start", ""), "now": S.now()}
 
 
 # ri1105-P4: a poll carries the newest CHAT_KEEP manager-chat messages, the newest MAIL_KEEP letters plus every unread one, and no logs.
@@ -1544,6 +2295,7 @@ class H(BaseHTTPRequestHandler):
             if u.path in ("/", "/index.html"):
                 return self._file(os.path.join(WEB, "index.html"))
             if u.path == "/api/state":   # t-perf B: cached rev / body (see public_state_cached)
+                sync_roster()   # t-hr-registry: mtime check only; a roster edit shows up even when the watch loop is off (NO_LOOPS) or stuck
                 rev, un = rev_unacked()
                 # ri1105-P5: ?wait=N (<= 25) holds a "same" answer until rev or the inbox count moves, checked every 0.1 s (stat calls only:
                 # rev_unacked re-reads only when state.json / inbox.jsonl changed). The cached body moves every minute; rev does not.
@@ -1571,6 +2323,8 @@ class H(BaseHTTPRequestHandler):
                 return self._send(200, archive_body(False))
             if u.path == "/api/history":   # ri1105-P4: what a poll leaves out (chat before the window, older letters, logs)
                 return self._send(200, history(q))
+            if u.path == "/api/handoffs":   # t-rb-build
+                return self._send(200, handoffs(q))
             if u.path == "/api/item":   # t-mobile-crash-state: the full card (draft + versions) for a slim one
                 it = public_item(q.get("id", [""])[0])
                 return self._send(200, it) if it else self._send(404, {"error": "no such item"})
@@ -1597,6 +2351,15 @@ class H(BaseHTTPRequestHandler):
                     return self._send(200, role_memory(q.get("id", [None])[0]))
                 except ValueError as ex:
                     return self._send(404, {"error": str(ex)})
+            if u.path == "/api/templates":   # t-hm-build
+                return self._send(200, templates_payload())
+            if u.path == "/api/retire-plan":   # t-ht-build
+                return self._send(200, retire_plan(q.get("id", [""])[0]))
+            if u.path == "/api/transfer-plan":   # t-ht-build
+                return self._send(200, transfer_plan(q.get("item", [""])[0]))
+            if u.path == "/api/tpl-av":   # t-hm-build
+                p = tpl_avatar(q.get("job", [""])[0], q.get("v", [""])[0])
+                return self._file(p, media=True) if p else self._send(404, {"error": "not found"})
             if u.path == "/api/roster":
                 return self._send(200, load_json("roster.json", {"roles": []}))
             if u.path.startswith("/api/voice/") and VC:   # t-vb-2
@@ -1694,6 +2457,14 @@ class H(BaseHTTPRequestHandler):
             self._body_ok = True   # ri1105-P2: the whole body is read, this connection can stay open
             if u.path == "/api/action":
                 return self._send(200, act(body))
+            if u.path == "/api/hire":   # t-hm-build: own header (like /api/secret/github) so a stray cross-site form cannot hire
+                if self.headers.get("X-Underthread") != "1":
+                    return self._send(403, {"ok": False, "error": "forbidden"})
+                return self._send(200, hire(body))
+            if u.path == "/api/interview":   # t-hr-build: same header guard as /api/hire
+                if self.headers.get("X-Underthread") != "1":
+                    return self._send(403, {"ok": False, "error": "forbidden"})
+                return self._send(200, interview(body))
             if u.path == "/api/push/subscribe":
                 sub = body["subscription"]
                 origin = body.get("origin") or ""
@@ -1771,9 +2542,13 @@ def main():
         routines_log_backfill()   # t-ri1104-p3
     except Exception as e:
         print("routines_log_backfill:", e)
+    try:
+        schedules_import()   # t-schedule-backend: also with NO_LOOPS, so a scratch copy shows the imported routines
+    except Exception as e:
+        print("schedules_import:", e)
     port = int(os.environ.get("PORT") or CONFIG.get("port") or 8765)
     if not os.environ.get("NO_LOOPS"):
-        for fn in (comfy_probe_loop, report_loop, roster_watch_loop, push_loop, wake_loop, routine_loop, snooze_loop):
+        for fn in (comfy_probe_loop, report_loop, roster_watch_loop, push_loop, wake_loop, schedule_loop, snooze_loop):
             threading.Thread(target=fn, daemon=True).start()
     srv = QuietServer(("127.0.0.1", port), H)
     print(f"Underthread → http://127.0.0.1:{port}")

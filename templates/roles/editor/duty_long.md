@@ -1,0 +1,1 @@
+Edits the user's own writing (articles, emails, papers, posts) for structure, clarity, length and typos, keeping the author's voice and listing every change with a reason. Use when the user has a draft and wants it better rather than rewritten from scratch. Never adds facts, ghost-writes graded work or sends anything.

@@ -32,7 +32,7 @@ STAGES = ["todo", "doing", "review", "waiting", "done"]
 KINDS = ["plan", "deliverable", "question", "task"]
 PLATFORMS = ["bili", "yt", "xhs"]
 CAPS = {"logs": 3000, "mail": 1500, "chat": 1500, "dm": 400, "thread": 400,
-        "inbox_acked": 5000, "reports": 200, "notices": 100}
+        "inbox_acked": 5000, "reports": 200, "notices": 100, "handoffs": 500}
 
 
 def now():
@@ -48,7 +48,8 @@ def blank_state():
         "meta": {"rev": 0, "updated": now(), "stamina": {"pct": None, "note": "", "at": None},
                  "focus": {"pct": None, "at": None}, "inbox_acked": [], "last_report_date": None},
         "items": [], "agents": {}, "logs": [], "lessons": [], "notices": [], "reports": [],
-        "calendar": [], "chat": [], "dms": {}, "mail": [], "media": {},
+        "calendar": [], "chat": [], "dms": {}, "mail": [], "media": {}, "schedules": [],
+        "handoffs": [], "ho_last": {},   # t-rb-build: explicit handoff log (see note_hand)
     }
 
 
@@ -504,6 +505,55 @@ def set_agent(st, agent_id, **fields):
     return a
 
 
+# ---------- t-rb-build: explicit handoff log ----------
+# st["handoffs"] = [{id, t, f, to, item, title, via}] (last CAPS["handoffs"]), st["ho_last"] = {item: agent who last held it}.
+# A handoff = work on one card moves from one team role to another: set-agent X working --item I (via "dispatch" when the
+# manager held it, else "pickup"), a reply on the card by a different role ("reply"), `stateutil handoff` ("dispatch"), and the
+# user's 改派 on the dashboard ("reassign", server.py). The user ("me") never counts. The first time a card is seen, the last
+# holder is taken from its thread (last role that wrote on it). meta.ho_start = when the log began; server.py infers the
+# history before that from card threads (ho.py's rule) and marks those entries inf=1.
+HO_LAST_MAX = 2000
+
+
+def _ho_seed(st, it, who):
+    ids = st.get("agents") or {}
+    for m in reversed(it.get("thread") or []):
+        w = m.get("who")
+        if w in ids and w != "me":
+            return w
+    return None
+
+
+def ho_touch(st, item_id, who):
+    """The manager editing a card (upsert) takes it back silently, so its next set-agent counts as a dispatch from the manager."""
+    if item_id and who in (st.get("agents") or {}):
+        last = st.setdefault("ho_last", {}); last.pop(item_id, None); last[item_id] = who
+
+
+def note_hand(st, item_id, who, via, frm=None):
+    """Record a handoff on item_id to `who` if the card was last held by another role. Returns the entry or None."""
+    ids = st.get("agents") or {}
+    if not item_id or not who or who == "me" or who not in ids:
+        return None
+    st.setdefault("handoffs", []); last = st.setdefault("ho_last", {})
+    st["meta"].setdefault("ho_start", now())
+    it = find_item(st, item_id)
+    prev = frm or last.get(item_id) or (_ho_seed(st, it, who) if it else None)
+    last.pop(item_id, None); last[item_id] = who   # re-insert: newest at the end, oldest trimmed first
+    if len(last) > HO_LAST_MAX:
+        for k in list(last)[: len(last) - HO_LAST_MAX]:
+            last.pop(k, None)
+    if not prev or prev == who or prev == "me" or prev not in ids:
+        return None
+    if via in ("pickup", "auto"):
+        via = "dispatch" if prev == "manager" else "pickup"
+    e = {"id": uuid.uuid4().hex[:8], "t": now(), "f": prev, "to": who, "item": item_id,
+         "title": (it or {}).get("title", "")[:120], "via": via}
+    st["handoffs"].append(e)
+    _cap(st["handoffs"], "handoffs")
+    return e
+
+
 # ---------- lessons ----------
 
 def add_lesson(st, agent, text, item=None):
@@ -613,6 +663,8 @@ def cmd_upsert(a):
         elif old_stage and old_stage != it["stage"]:
             add_thread(it, a.who, f"stage {old_stage} → {it['stage']}", "event")
         add_log(st, a.who, f"upsert {it['id']} [{it['stage']}] {it['title']}", it["id"])
+        if a.who == "manager":
+            ho_touch(st, it["id"], "manager")   # t-rb-build
     print(it["id"])
 
 
@@ -665,8 +717,36 @@ def cmd_items(a):
 def cmd_set_agent(a):
     with mutate() as st:
         set_agent(st, a.id, status=a.status, item=a.item, activity=a.activity, tool=a.tool)
+        if a.status == "working" and a.item:
+            note_hand(st, a.item, a.id, "auto")   # t-rb-build
         if a.activity:
             add_log(st, a.id, a.activity, a.item)
+    print("ok")
+
+
+# ---------- t-hr-build: HR interview cards (hire-*) ----------
+# it["hire"] = {job, variant, job_name, variant_label, status: asking|applying|hired|failed|abandoned, turns, filled, hired_id}
+HIRE_SLOTS = 5
+
+
+def open_interview(st):
+    """The one interview still running (not hired / abandoned, card not done), or None. HR talks to one person at a time."""
+    for it in st.get("items", []):
+        h = it.get("hire")
+        if isinstance(h, dict) and it.get("stage") != "done" and h.get("status") not in ("hired", "abandoned"):
+            return it
+    return None
+
+
+def cmd_interview(a):
+    """HR: after each turn, record how many of the five things are settled (the DM bar shows 已问清 N/5)."""
+    with mutate() as st:
+        it = find_item(st, a.item)
+        if not it or not isinstance(it.get("hire"), dict):
+            sys.exit(f"{a.item} is not an interview card")
+        if a.filled is not None:
+            it["hire"]["filled"] = max(0, min(HIRE_SLOTS, a.filled))
+        it["updated"] = now()
     print("ok")
 
 
@@ -722,10 +802,27 @@ def cmd_reply(a):
         it = find_item(st, a.item)
         if not it:
             raise SystemExit(f"no item {a.item}")
+        note_hand(st, a.item, a.agent, "reply")   # t-rb-build: before add_thread, so the seed sees the previous writer
         add_thread(it, a.agent, text, "msg", attachments=a.attach)
         push_mail(st, "reply", text[:200], a.item, a.agent)
         add_log(st, a.agent, f"reply on {a.item}", a.item)
     print("ok")
+
+
+def cmd_handoff(a):   # t-rb-build: the manager records a dispatch explicitly
+    with mutate() as st:
+        if not find_item(st, a.item):
+            raise SystemExit(f"no item {a.item}")
+        if a.to not in (st.get("agents") or {}):
+            raise SystemExit(f"unknown agent {a.to}")
+        e = note_hand(st, a.item, a.to, a.via, frm=a.frm)
+    print(json.dumps(e, ensure_ascii=False) if e else "no handoff (same holder)")
+
+
+def cmd_handoffs(a):
+    st = read()
+    for e in (st.get("handoffs") or [])[-a.n:]:
+        print(f"{e['t'][5:16]}  {e['f']:>9} -> {e['to']:<9} {e['via']:<8} {e['item']}  {e.get('title', '')[:40]}")
 
 
 # t-option-quote: a reply that quotes an earlier chat / DM message (a quick-option click). The quote is taken from the server's own copy,
@@ -933,6 +1030,11 @@ def main():
     s.set_defaults(fn=cmd_set_usage)
 
     _add_ask_parsers(sub)
+    _add_schedule_parsers(sub)   # t-schedule-backend
+    s = sub.add_parser("handoff", help="t-rb-build: record that work on a card moves to another role (prints the entry)")
+    s.add_argument("item"); s.add_argument("to"); s.add_argument("--from", dest="frm", help="previous holder (default: whoever last held the card)")
+    s.add_argument("--via", default="dispatch", choices=["dispatch", "pickup", "reply", "reassign"]); s.set_defaults(fn=cmd_handoff)
+    s = sub.add_parser("handoffs", help="t-rb-build: print the last N handoffs"); s.add_argument("-n", type=int, default=20); s.set_defaults(fn=cmd_handoffs)
     a = p.parse_args()
     if not a.cmd:
         p.print_help()
@@ -978,9 +1080,289 @@ def _add_ask_parsers(sub):   # t-open-questions
     s.add_argument("item"); s.add_argument("who"); s.add_argument("question", help="text, or - for stdin")
     s.add_argument("--options", required=True, help="'A|B*|C' (a trailing * marks your recommended option)"); s.add_argument("--no-other", action="store_true", help="hide the 其他… button")
     s.set_defaults(fn=cmd_ask)
+    s = sub.add_parser("interview", help="t-hr-build: HR records interview progress on a hire-* card")
+    s.add_argument("item"); s.add_argument("--filled", type=int, help="how many of the five things are settled (0-5)")
+    s.set_defaults(fn=cmd_interview)
     s = sub.add_parser("ask-close", help="withdraw a question that no longer applies")
     s.add_argument("item"); s.add_argument("ask_id"); s.add_argument("--who", default="manager")
     s.set_defaults(fn=cmd_ask_close)
+
+
+# ---------- t-schedule-backend: one-sentence schedules (state.schedules) ----------
+# The manager turns "一小时后提醒我 X" / "以后每周一 9 点跑 Y" into `schedule add`. server.py schedule_loop (30 s) calls schedules_due():
+# a due entry drops an inbox entry for the manager (kind schedule_due; imported config routines keep kind routine_due), and a reminder
+# also goes into the mailbox, which push_loop sends to the phone with no manager needed. Rule maths live in schedules.py.
+import schedules as SC   # noqa: E402
+
+SCHED_PURGE_DAYS = 30   # soft-deleted entries are dropped after this
+
+
+def _aware_now(tz=None):
+    return dt.datetime.now(SC.zone(tz))
+
+
+def schedule_find(st, sid):
+    return next((x for x in st.setdefault("schedules", []) if x.get("id") == sid and not x.get("deleted")), None)
+
+
+def schedule_new(st, title, kind, rule, tz=None, text="", agent=None, item=None, said="", by="manager", end=None, routine=None,
+                 nowt=None, sid=None):
+    """Build (not store) a schedule entry with its first `next`. Raises SC.RuleError."""
+    tz = tz or SC.local_tz_name()
+    SC.zone(tz); SC.check_rule(rule)
+    if kind not in SC.KINDS:
+        raise SC.RuleError(f"kind 只能是 remind 或 task，收到 {kind!r}")
+    if not (title or "").strip():
+        raise SC.RuleError("要有标题（--title）")
+    nowt = nowt or _aware_now(tz)
+    nxt = SC.next_after(rule, tz, nowt)
+    if not nxt:
+        raise SC.RuleError(f"{SC.describe(rule)} 已经过去了")
+    return {"id": sid or new_id("s"), "title": title.strip(), "kind": kind, "rule": rule, "tz": tz,
+            "task": {"text": text or "", "agent": agent, "item": item}, "said": said or "", "enabled": True,
+            "next": SC.iso(nxt), "last": None, "runs": [], "created": now(), "by": by, "routine": routine, "end": end or None}
+
+
+def schedule_emit(st, s, for_iso, late, manual=False, skipped=0):
+    """What a run produces. Called inside mutate() so a failed inbox append also drops the state change."""
+    tk = s.get("task") or {}
+    day = (SC.parse_iso(for_iso) or _aware_now(s.get("tz"))).astimezone(SC.zone(s.get("tz"))).date().isoformat()
+    if s.get("routine"):   # imported config routine: same entry as before, so manager.md's routine_due handling is unchanged
+        e = {"kind": "routine_due", "routine": s["routine"], "label": s["title"], "time": s["rule"].get("at"), "date": day,
+             "schedule": s["id"], "late_min": late}
+        if not manual:
+            st["meta"].setdefault("routines_fired", {})[s["routine"]] = day
+    else:
+        e = {"kind": "schedule_due", "schedule": s["id"], "type": s["kind"], "title": s["title"], "text": tk.get("text", ""),
+             "agent": tk.get("agent"), "item": tk.get("item"), "for": for_iso, "late_min": late}
+    if manual:
+        e["manual"] = True
+    if skipped:
+        e["skipped"] = skipped   # earlier runs missed while the server was down; only this one fires
+    inbox_append(e)
+    if s["kind"] == "remind":
+        txt = f"⏰ 提醒：{s['title']}"
+        if late >= 5:
+            txt += f"（晚了 {late} 分钟，看板刚恢复）"
+        push_mail(st, "remind", txt, item=tk.get("item"), agent=tk.get("agent"))
+    return e
+
+
+def schedules_due(st, nowt=None):
+    """Fire every enabled entry whose `next` has passed (one run each, however many were missed). Returns [(entry, inbox entry)]."""
+    nowt = nowt or _aware_now()
+    out = []
+    for s in st.setdefault("schedules", []):
+        if s.get("deleted") or not s.get("enabled") or not s.get("next"):
+            continue
+        if nowt >= SC.parse_iso(s["next"]):
+            for_iso, late, skipped = SC.advance(s, nowt)
+            out.append((s, schedule_emit(st, s, for_iso, late, skipped=skipped)))
+    cut = (nowt - dt.timedelta(days=SCHED_PURGE_DAYS)).isoformat()
+    st["schedules"] = [s for s in st["schedules"] if not (s.get("deleted") and s["deleted"] < cut)]
+    return out
+
+
+def schedules_needs_tick(st, nowt=None):
+    """Cheap read-only test, so the loop only takes the write lock when something is due."""
+    nowt = nowt or _aware_now()
+    return any(not s.get("deleted") and s.get("enabled") and s.get("next") and nowt >= SC.parse_iso(s["next"])
+               for s in st.get("schedules") or [])
+
+
+def schedules_import_routines(st, routines, nowt=None):
+    """Once per routine id: config.json routines -> schedules (daily task entries tagged with routine=<id>).
+    meta.schedules_imported lists the ids already taken, so a schedule you delete is not re-imported, while a routine added to
+    config.json later still is. Keeps today's state: fired today -> next is tomorrow; not fired yet -> today's time (it fires on the
+    next tick if that has passed, as before); never seen -> next run after now (the old 'first seen after its time' rule)."""
+    meta = st["meta"]
+    done = meta.setdefault("schedules_imported", [])
+    fired, paused, log = meta.get("routines_fired") or {}, meta.get("routines_paused") or {}, meta.get("routines_log") or {}
+    tz = SC.local_tz_name()
+    nowt = nowt or _aware_now(tz)
+    today = nowt.astimezone(SC.zone(tz)).date()
+    added = []
+    for r in routines or []:
+        if not isinstance(r, dict) or not r.get("id") or r["id"] in done:
+            continue
+        rid, tm = r["id"], SC._hm(str(r.get("time", "10:00")))
+        rule = {"type": "daily", "at": tm}
+        s = schedule_new(st, r.get("label") or rid, "task", rule, tz=tz, text=r.get("label", ""), item=r.get("item") or "r-" + rid,
+                         by="import", routine=rid, nowt=nowt, sid="s-rt-" + rid)
+        if rid in fired and fired[rid] != today.isoformat():
+            s["next"] = SC.iso(SC.wall(today, tm, SC.zone(tz)))   # today's run still owed (may already be due)
+        s["last"] = fired.get(rid) or None
+        s["runs"] = [{"for": SC.iso(SC.wall(dt.date.fromisoformat(d), tm, SC.zone(tz))), "at": None, "late": 0} for d in (log.get(rid) or [])[-SC.RUNS_KEEP:]]
+        if rid in paused or r.get("enabled", True) is False:
+            s["enabled"] = False
+            p = paused.get(rid)
+            s["paused"] = p if isinstance(p, dict) else {"at": p or now(), "by": "import"}
+        st.setdefault("schedules", []).append(s)
+        done.append(rid)
+        added.append(s["id"])
+    if added:
+        meta["schedules_migrated"] = meta.get("schedules_migrated") or now()
+    return added
+
+
+def schedule_pause(st, s, on, by="manager", nowt=None):
+    """on=True pauses. Resuming never starts a run that was missed while paused: next = first run after now."""
+    if on:
+        s["enabled"] = False
+        s["paused"] = {"at": now(), "by": by}
+        return
+    if s.get("finished") and s["rule"]["type"] == "once":
+        raise SC.RuleError("一次性的已经跑过了，不能再开；要再提醒就新建一条")
+    nxt = SC.next_after(s["rule"], s.get("tz"), nowt or _aware_now(s.get("tz")))
+    if not nxt:
+        raise SC.RuleError(f"{SC.describe(s['rule'])} 已经过去了")
+    s.update(enabled=True, next=SC.iso(nxt)); s.pop("paused", None); s.pop("finished", None)
+
+
+def _sched_line(s):
+    st_ = "开" if s.get("enabled") else ("完" if s.get("finished") else "停")
+    nx = (s.get("next") or "—")[:16].replace("T", " ")
+    who = (s.get("task") or {}).get("agent") or ""
+    return f"{s['id']:<22} {st_} {s['kind']:<6} {SC.describe(s['rule']):<18} 下次 {nx:<16} {s['title']}{' @' + who if who else ''}"
+
+
+def _sched_preview(s):
+    nxt = SC.parse_iso(s["next"])
+    ups = [t.astimezone(SC.zone(s["tz"])) for t in [nxt] + SC.upcoming(s["rule"], s["tz"], nxt, 2)]
+    return (f"{'提醒' if s['kind'] == 'remind' else '任务'} · {SC.describe(s['rule'])} · {s['title']}"
+            + (f" → {s['task']['agent']}" if s["task"].get("agent") else "") + f"\n时区 {s['tz']}\n接下来："
+            + "".join(f"\n  {t.strftime('%Y-%m-%d %a %H:%M %Z')}" for t in ups))
+
+
+def _rule_arg(a):
+    try:
+        if getattr(a, "rule_json", None):
+            return SC.check_rule(json.loads(a.rule_json))
+        return SC.parse_rule(a.rule, a.tz)
+    except SC.RuleError:
+        raise
+    except Exception as e:
+        raise SC.RuleError(str(e))
+
+
+def _end_arg(a):
+    if getattr(a, "until", None):
+        return {"until": dt.date.fromisoformat(a.until).isoformat()}
+    if getattr(a, "count", None):
+        return {"count": int(a.count)}
+    return None
+
+
+def _sched_cmd(fn):
+    def run(a):
+        try:
+            fn(a)
+        except SC.RuleError as e:
+            print(f"error: {e}", file=sys.stderr)
+            sys.exit(2)
+    return run
+
+
+def cmd_schedule_add(a):
+    rule = _rule_arg(a)
+    st0 = read()
+    s = schedule_new(st0, a.title, a.kind, rule, tz=a.tz, text=_text_arg(a.text) if a.text else "", agent=a.agent, item=a.item,
+                     said=a.said or "", by=a.who, end=_end_arg(a))
+    if a.dry_run:
+        print("(dry run, nothing saved)\n" + _sched_preview(s))
+        return
+    with mutate() as st:
+        st.setdefault("schedules", []).append(s)
+    print(s["id"]); print(_sched_preview(s))
+
+
+def cmd_schedule_list(a):
+    ss = [s for s in read().get("schedules") or [] if not s.get("deleted") and (a.all or s.get("enabled"))]
+    if a.json:
+        print(json.dumps(ss, ensure_ascii=False, indent=1)); return
+    for s in sorted(ss, key=lambda x: x.get("next") or "9"):
+        print(_sched_line(s))
+    if not ss:
+        print("(没有定时)" if a.all else "(没有启用中的定时；--all 看全部)")
+
+
+def cmd_schedule_show(a):
+    s = schedule_find(read(), a.id)
+    if not s:
+        raise SC.RuleError(f"没有定时 {a.id}")
+    print(json.dumps(s, ensure_ascii=False, indent=1))
+
+
+def _sched_mut(a, f):
+    with mutate() as st:
+        s = schedule_find(st, a.id)
+        if not s:
+            raise SC.RuleError(f"没有定时 {a.id}")
+        r = f(st, s)
+    return s, r
+
+
+def cmd_schedule_pause(a):
+    s, _ = _sched_mut(a, lambda st, s: schedule_pause(st, s, True, by=a.who)); print("paused", s["id"])
+
+
+def cmd_schedule_resume(a):
+    s, _ = _sched_mut(a, lambda st, s: schedule_pause(st, s, False, by=a.who)); print("resumed", s["id"], "next", s["next"])
+
+
+def cmd_schedule_rm(a):
+    s, _ = _sched_mut(a, lambda st, s: s.update(deleted=now(), enabled=False)); print("removed", s["id"])
+
+
+def cmd_schedule_edit(a):
+    def f(st, s):
+        if a.title: s["title"] = a.title.strip()
+        if a.kind: s["kind"] = a.kind
+        if a.text is not None: s["task"]["text"] = _text_arg(a.text)
+        if a.agent is not None: s["task"]["agent"] = a.agent or None
+        if a.item is not None: s["task"]["item"] = a.item or None
+        if a.tz: SC.zone(a.tz); s["tz"] = a.tz
+        if a.rule or a.rule_json: s["rule"] = _rule_arg(a)
+        if a.until or a.count: s["end"] = _end_arg(a)
+        if s.get("enabled"):
+            nxt = SC.next_after(s["rule"], s["tz"], _aware_now(s["tz"]))
+            if not nxt:
+                raise SC.RuleError(f"{SC.describe(s['rule'])} 已经过去了")
+            s["next"] = SC.iso(nxt)
+    s, _ = _sched_mut(a, f); print(_sched_preview(s) if s.get("next") else _sched_line(s))
+
+
+def cmd_schedule_fire(a):
+    def f(st, s):
+        nowt = _aware_now(s.get("tz"))
+        s.setdefault("runs", []).append({"for": SC.iso(nowt), "at": SC.iso(nowt), "late": 0, "manual": True})
+        del s["runs"][:-SC.RUNS_KEEP]
+        s["last"] = SC.iso(nowt)
+        return schedule_emit(st, s, SC.iso(nowt), 0, manual=True)
+    s, e = _sched_mut(a, f); print(json.dumps(e, ensure_ascii=False))
+
+
+def _add_schedule_parsers(sub):
+    def common(s, add):
+        s.add_argument("--title", required=add); s.add_argument("--kind", choices=list(SC.KINDS), default="remind" if add else None)
+        s.add_argument("--rule", required=False, help="'once 2026-11-08 09:00' | 'in 90m' | 'daily 09:00' | 'weekly mon,thu 09:00' | 'monthly 1|last 18:00'")
+        s.add_argument("--rule-json", help="rule as JSON (rare)")
+        s.add_argument("--text", default=None, help="task text, or - for stdin"); s.add_argument("--agent", default=None); s.add_argument("--item", default=None)
+        s.add_argument("--tz", help="IANA zone (default: this machine's)"); s.add_argument("--until", help="last date YYYY-MM-DD"); s.add_argument("--count", type=int)
+        s.add_argument("--who", default="manager")
+    sc = sub.add_parser("schedule", help="t-schedule-backend: one-off / daily / weekly / monthly schedules").add_subparsers(dest="op", required=True)
+    s = sc.add_parser("add", help="new schedule (prints id + the next 3 runs)"); common(s, True)
+    s.add_argument("--said", help="the user's own sentence"); s.add_argument("--dry-run", action="store_true", help="parse and preview only; saves nothing")
+    s.set_defaults(fn=_sched_cmd(lambda a: (_need_rule(a), cmd_schedule_add(a))))
+    s = sc.add_parser("list"); s.add_argument("--all", action="store_true"); s.add_argument("--json", action="store_true"); s.set_defaults(fn=_sched_cmd(cmd_schedule_list))
+    for name, fn in (("show", cmd_schedule_show), ("pause", cmd_schedule_pause), ("resume", cmd_schedule_resume), ("rm", cmd_schedule_rm), ("fire", cmd_schedule_fire)):
+        s = sc.add_parser(name); s.add_argument("id"); s.add_argument("--who", default="manager"); s.set_defaults(fn=_sched_cmd(fn))
+    s = sc.add_parser("edit"); s.add_argument("id"); common(s, False); s.set_defaults(fn=_sched_cmd(cmd_schedule_edit))
+
+
+def _need_rule(a):
+    if not (a.rule or a.rule_json):
+        raise SC.RuleError("要 --rule，例如 --rule 'in 1h' 或 --rule 'weekly mon 09:00'")
 
 
 if __name__ == "__main__":

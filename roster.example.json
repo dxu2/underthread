@@ -26,7 +26,8 @@
         "outfit": "#d9714f",
         "eye": "#8a2b1f",
         "acc": "ribbon"
-      }
+      },
+      "tint": "#8f3a3a"
     },
     {
       "id": "scout",
@@ -63,7 +64,9 @@
         "outfit": "#3f8f8a",
         "eye": "#5b3c7a",
         "acc": "glasses"
-      }
+      },
+      "tint": "#8c6fb0",
+      "pipe": "topic"
     },
     {
       "id": "writer",
@@ -100,7 +103,9 @@
         "outfit": "#e3d3a8",
         "eye": "#6b4a1e",
         "acc": "pen"
-      }
+      },
+      "tint": "#6a4e9a",
+      "pipe": "script"
     },
     {
       "id": "director",
@@ -137,7 +142,12 @@
         "outfit": "#7a5aa8",
         "eye": "#3a2a5a",
         "acc": "headphones"
-      }
+      },
+      "tint": "#243a66",
+      "pipe": [
+        "board",
+        "edit"
+      ]
     },
     {
       "id": "artist",
@@ -174,7 +184,9 @@
         "outfit": "#f1eadc",
         "eye": "#9a3a62",
         "acc": "beret"
-      }
+      },
+      "tint": "#d58f98",
+      "pipe": "board"
     },
     {
       "id": "ops",
@@ -211,7 +223,9 @@
         "outfit": "#2f4a6e",
         "eye": "#1f5a43",
         "acc": "headset"
-      }
+      },
+      "tint": "#44444a",
+      "pipe": "pack"
     },
     {
       "id": "smith",
@@ -248,7 +262,8 @@
         "outfit": "#5a6478",
         "eye": "#3a4a6a",
         "acc": "goggles"
-      }
+      },
+      "tint": "#7fa8d8"
     }
   ]
 }

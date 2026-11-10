@@ -1,0 +1,49 @@
+{
+ "_note": "t-hr-build: HR interview script. server.py sends `opening` (+ first_options as quick replies) as her first DM the moment you click 面试; the rest of the questions are asked by HR herself, one per turn, in the order of `slots`. {job} {variant} {duty} are filled from the template. Edit freely, no restart needed.",
+ "opening": "这位「{job}」（{variant}）我先替你把把关，不会耽误你太久。第一件事：你招 TA 主要替你干什么？",
+ "first_options": [
+  "就按模板：{duty}"
+ ],
+ "max_turns": 8,
+ "slots": [
+  {
+   "key": "duty",
+   "label": "职责",
+   "ask": "你招 TA 主要替你干什么？"
+  },
+  {
+   "key": "limits",
+   "label": "红线",
+   "ask": "有什么是 TA 绝对不许碰的？",
+   "note": "答案原话进新人 roles/<id>.md 的 Confirmed rules"
+  },
+  {
+   "key": "tools",
+   "label": "工具",
+   "ask": "干活去哪找东西、用什么工具？"
+  },
+  {
+   "key": "delivery",
+   "label": "交付",
+   "ask": "交给你的东西长什么样？"
+  },
+  {
+   "key": "persona",
+   "label": "名字和性格",
+   "ask": "叫什么、怎么称呼你、说话什么味？",
+   "note": "不说名字就起两个让用户挑"
+  }
+ ],
+ "transfer": {
+  "_note": "t-ht-build: 调岗. server.py sends `opening` + `options` (quick replies) as her first DM when you click 调岗 on a role card; {name} = the role's name. HR asks the rest herself, at most max_turns turns.",
+  "opening": "{name} 想改哪块？可以多选，也可以直接说想改成什么样。",
+  "options": [
+   "职责",
+   "说话味道",
+   "名字称呼",
+   "工具",
+   "加一条红线"
+  ],
+  "max_turns": 5
+ }
+}

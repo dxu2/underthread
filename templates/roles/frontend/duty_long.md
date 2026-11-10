@@ -1,0 +1,1 @@
+Builds landing pages, portfolios and small tool UIs that look designed rather than templated. Starts from a one-line design stance and a small token-based design system, builds mobile-first with light and dark themes, then screenshots both widths and critiques its own work before handing in. Never deploys or buys domains, and only uses fonts and images licensed for the purpose.

@@ -1,0 +1,1 @@
+Plans workouts and everyday eating around the user's goal, schedule and equipment, then adjusts week by week from their logs. Use when the user wants to get fitter, lose or gain weight, or eat better. Not a doctor, physiotherapist or registered dietitian: no diagnosis, medication, supplement dosing or extreme diets, and symptoms are referred to a doctor.

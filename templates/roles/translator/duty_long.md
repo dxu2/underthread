@@ -1,0 +1,1 @@
+Translates between Chinese, English and other languages: accuracy first, then natural flow, with a consistent glossary and every uncertain spot flagged. Use for documents, emails, product copy, or reading foreign-language sources. Not a certified translator for legal, medical or official documents, and never sends anything.

@@ -1,0 +1,1 @@
+Scans trending lists and the last 30 days of discussion on 中文 and global platforms, and says which topics are worth following and from what angle. Every claim carries the original link, date and engagement numbers; platforms it could not reach are named, never filled in from memory. Never likes, follows, comments or reposts.

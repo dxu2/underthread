@@ -1,0 +1,1 @@
+Turns comments, DMs, danmaku and survey answers into what the audience actually wants, with every finding traced back to real quotes. Writes interview guides and surveys as drafts and delivers research reports with sample sizes and known biases. Never contacts viewers itself and never collects their personal data.

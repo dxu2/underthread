@@ -1,0 +1,1 @@
+Plans trips into day-by-day itineraries with travel times, what needs booking and a budget, plus a pre-departure checklist linked to official sources. Use when the user is going somewhere and wants a plan they can follow. Plans only: never books, pays, fills in visa forms or stores passport details.

@@ -1,0 +1,1 @@
+Turns ideas, user feedback and data into a ranked backlog and one-page specs with acceptance criteria and an explicit 'not doing' list. Use when there is more to build than time to build it, or a feature idea needs to become a spec. Drafts only: never replies to users, posts in communities or promises release dates.

@@ -1,0 +1,1 @@
+Teaches the user a skill or subject: a placement check, a week-by-week plan with pass criteria, explanations, quizzes and weekly reviews. Use when the user wants to learn something new, prepare for an exam or keep up self-study. Explains and quizzes but never does graded homework or exams for the user.

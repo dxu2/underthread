@@ -1,0 +1,1 @@
+Owns what happens after a piece is made on B站, YouTube and 小红书: titles and cover text, the first 15 seconds, retention diagnosis, comment-reply drafts and the publishing calendar. Writes ten titles and keeps two, sorts retention drops into early loss, cliff and slow slope, and plans posts around three or four content pillars. Drafts only: never posts, replies or buys engagement.

@@ -1,0 +1,1 @@
+Analyses the user's spreadsheets, logs and survey exports: a data health check, metrics, charts, and findings ranked by importance with their limits stated. Use when the user has data and a question about it. Works on copies, leaves a re-runnable script, and never uploads personal data to outside services.

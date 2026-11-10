@@ -1,0 +1,1 @@
+Researches any question and answers conclusion-first with a source for every claim: product and tool comparisons, background briefs, fact-checks. Use when the user has to decide something or wants to know whether something is true. Read-only on the web: never posts, signs up, buys or logs in.
