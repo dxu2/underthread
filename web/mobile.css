@@ -30,7 +30,7 @@ button { touch-action: manipulation; }
 body[data-mtab="menu"] #left { display: flex !important; }
 body[data-mtab="page"] #main { display: block !important; }
 body[data-mtab="chat"] #right { display: flex !important; }
-body[data-mtab] #layout > * { animation: m-in .45s var(--ease) backwards; }  /* backwards: no lingering transform, so fixed sheets stay full-screen */
+body[data-mtab] #layout > * { animation: m-in var(--m-base) var(--m-ease-emph) backwards; }   /* t-anim-p1 ②: was .45s */  /* backwards: no lingering transform, so fixed sheets stay full-screen */
 @keyframes m-in { from { opacity: 0; transform: translateY(8px); } }
 #main::before, #main::after { display: none; }
 #page { padding: 8px 16px calc(96px + env(safe-area-inset-bottom)); -webkit-overflow-scrolling: touch; }
@@ -1102,7 +1102,9 @@ html[data-theme="white"][data-ut="light-warm"] .cl-search:focus-within { box-sha
    Seven slanted bust panels, the working / tapped one expands. Panel art = web/art/panels/<id>.webp (540x630). --c-<id> = the art's own background colour:
    used for panel base, the "just assigned" halo and the working glow ONLY; every piece of chrome (edge, buttons, stats, pills) stays on the neutral --accent* / --glass* tokens.
    Blur budget: no blur here except the long-press sheet while it is open. White-theme rules live here on purpose (the white variables exist only in this file). ===== */
-:root { --c-manager: #8f3a3a; --c-scout: #8c6fb0; --c-writer: #6a4e9a; --c-director: #243a66; --c-artist: #d58f98; --c-ops: #44444a; --c-smith: #7fa8d8; }
+/* t-hr-registry: the per-role tint comes from roster.json "tint" (home.js writes --tint-hex inline; no --c-<id> list any more). Phone only, like the
+   old :root list: the desktop app home (home-app.css) never had per-role tints and keeps --accent. */
+.dp, .a2-r { --tint-ph: var(--tint-hex); }
 .office > .hd { width: 100%; }
 /* t-m-team-panel (11-05, user: 「有点挤，加点 padding」): the ink skin flattens the 首页 board (skin-ink.css: .office .hd { padding: 0 } on a transparent page), but 特典 paints it as a --panel card again (theme-ut.css .hd), so the header, the slanted strip and the stats touched the card edge. Give the card its inset back under 特典 only. */
 html[data-ut][data-skin="ink"] .office .hd { padding: 12px 12px 4px; }
@@ -1386,7 +1388,8 @@ body.vp-fix #rv-undo { bottom: auto; top: calc(var(--app-h) - var(--tb-h) - 64px
   -webkit-mask-image: linear-gradient(#000 50%, transparent 96%); mask-image: linear-gradient(#000 50%, transparent 96%); -webkit-mask-composite: source-over; mask-composite: add; }
 [data-theme="light"] .roster > .rc > .rc-art, [data-theme="white"] .roster > .rc > .rc-art { height: 250px; -webkit-mask-image: linear-gradient(#000 40%, transparent 98%); mask-image: linear-gradient(#000 40%, transparent 98%); }
 /* no art (onerror removes the img): back to the plain header with the avatar */
-.roster > .rc:not(:has(> .rc-art)) { padding-top: 18px; }
+/* no-art cards: the themed .rc:hover padding (0,4,0) used to win on tap and jump the card 208px (t-ht-build) */
+.roster > .rc:not(:has(> .rc-art)), .roster > .rc:not(:has(> .rc-art)):hover, [data-theme] .roster > .rc:not(:has(> .rc-art)), [data-theme] .roster > .rc:not(:has(> .rc-art)):hover { padding-top: 18px; }
 /* clean type: no halos */
 .roster > .rc > :not(.rc-art), .roster > .rc .stats small, .roster > .rc .now .dim { text-shadow: none; }
 .roster > .rc .rc-h { margin: -28px 0 0; }
@@ -1638,7 +1641,12 @@ html.vt-run #drawer, html.vt-run #page { transition: none !important; }
 .dw-toc.open .toc-l button { padding: 10px 12px; font-size: var(--fs-15); }
 .dw-toc.open .toc-l button.l2 { padding-left: 26px; }
 .dw-toc.open .toc-bar { margin: 2px 20px 14px; }
-body.kb .dw-toc:not(.open) { display: none; }   /* keyboard up: the pill would sit on the text being typed against */
+body.kb .dw-toc:not(.open) { display: none; }
+/* t-ri1109-a P2: app.js tocSync() adds .away once the draft card has scrolled above the top; the pill fades and drops out of the way of the thread */
+.dw-toc:not(.open) { transition: opacity .2s ease, transform .2s ease; }
+.dw-toc.away:not(.open) { opacity: 0; transform: translateY(10px); }
+.dw-toc.away:not(.open), .dw-toc.away:not(.open) .toc-box { pointer-events: none; }
+@media (prefers-reduced-motion: reduce) { .dw-toc:not(.open) { transition: none; } }   /* keyboard up: the pill would sit on the text being typed against */
 
 /* ===== ri1103-P5 (2026-11-03): search sheet = same categories as ⌘K (全部 / 草稿 / 卡片讨论 / 对话). Hit rows show the sentence (2 lines, words marked). ===== */
 .ms-tabs { display: flex; gap: 6px; padding: 2px max(16px, env(safe-area-inset-left)) 8px; overflow-x: auto; scrollbar-width: none; }
@@ -1771,3 +1779,125 @@ html[data-theme] #tabbar .tb-dot { top: 6px; left: calc(50% + 6px); width: 10px;
   background: var(--glass-solid, var(--bg)); box-shadow: inset 0 0 0 1px var(--glass-line), 0 6px 18px rgba(0,0,0,.16); transition: opacity var(--m-quick, .14s) ease, transform var(--m-quick, .14s) ease; }
 #tabbar .tb-tip.on { opacity: 1; transform: translate(-50%, 0); }
 @media (prefers-reduced-motion: reduce) { #tabbar .tb-tip { transition: opacity .12s linear; transform: translate(-50%, 0); } }
+/* ===== t-m-team-alt A2 (11-07 20:07): phone home team card. Rows for working members, idle members as a grey stack on the last line, no header.
+   Reuses .hd (card) and .hd-stats; the avatar is .hd-mini so the 特典 work-sheet rule in theme-ut.css (and its reduced-motion hold) applies. */
+.hd-a2 { padding: 14px 14px 10px; }
+.a2-rows { --a2: 60px; } .a2-rows[data-n="1"] { --a2: 92px; } .a2-rows[data-n="2"], .a2-rows[data-n="3"] { --a2: 72px; }
+.a2-r { display: grid; grid-template-columns: var(--a2) 1fr; gap: 12px; align-items: start; padding: 2px 0; border-radius: 12px; transition: transform var(--m-quick) var(--m-ease-std); }
+.a2-r + .a2-r { margin-top: 12px; } .a2-r:active { transform: scale(var(--m-press-row)); }
+.a2-av.hd-mini { width: var(--a2); height: var(--a2); }
+.a2-rows[data-n="1"] .a2-r { align-items: center; gap: 16px; }
+.a2-b { min-width: 0; }
+.a2-n { font-family: var(--f-cjk); font-size: var(--fs-15); font-weight: 600; color: var(--ink); line-height: 1.3; }
+.a2-t { font-family: var(--f-cjk); font-size: var(--fs-14); color: var(--ink2); line-height: 1.4; overflow-wrap: anywhere; }
+.a2-m { display: flex; align-items: baseline; gap: 8px; margin-top: 3px; }
+.a2-k { flex: 1; min-width: 0; font-family: var(--f-cjk); font-size: var(--fs-12); color: var(--dim); }
+.a2-lk { flex: none; padding: 4px 0 4px 8px; margin: -4px 0; background: none; border: 0; color: var(--accent); font-family: var(--f-cjk); font-size: var(--fs-13); white-space: nowrap; }
+.a2-lk[hidden] { display: none; }
+.a2-rest-t { font-family: var(--f-cjk); font-size: var(--fs-16); color: var(--ink); line-height: 1.4; }
+.a2-rest-k { margin-top: 2px; font-family: var(--f-cjk); font-size: var(--fs-12); color: var(--dim); line-height: 1.45; overflow-wrap: anywhere; }
+.a2-stack { display: inline-flex; align-items: center; margin-top: 12px; padding: 4px 6px 4px 0; background: none; border: 0; color: var(--dim); font-family: var(--f-cjk); font-size: var(--fs-12); }
+.a2-rows:empty + .a2-rest[hidden] + .a2-stack { margin-top: 0; }
+.a2-stack[hidden], .a2-rest[hidden] { display: none; }
+.a2-faces { display: inline-flex; margin-right: 6px; }
+.a2-faces i, .a2-g i { display: block; border-radius: 50%; background-size: cover; background-position: center; filter: grayscale(1) brightness(.8); opacity: .6; }
+.a2-faces i { width: 22px; height: 22px; box-shadow: 0 0 0 1.5px var(--panel); } .a2-faces i + i { margin-left: -7px; }
+/* idletap (user 20:19): idle parts get press feedback; the idle grid opens / closes with grid-rows 0fr -> 1fr, faces rise in one by one */
+.a2-exp { display: grid; grid-template-rows: 0fr; opacity: 0; visibility: hidden; transition: grid-template-rows var(--m-slow) var(--m-ease-ios), opacity var(--m-base) var(--m-ease-std), visibility 0s var(--m-slow); }
+.a2-exp.on { grid-template-rows: 1fr; opacity: 1; visibility: visible; transition: grid-template-rows var(--m-slow) var(--m-ease-ios), opacity var(--m-base) var(--m-ease-std); }
+.a2-ex-in { min-height: 0; overflow: hidden; }
+.a2-ex-in > .a2-eh { margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--line); }
+.a2-exp .a2-g { opacity: 0; transform: translateY(6px); transition: opacity var(--m-base) var(--m-ease-std), transform var(--m-base) var(--m-spring); }
+.a2-exp.on .a2-g { opacity: 1; transform: none; transition-delay: calc(var(--gi, 0) * 30ms); }
+.a2-stack { border-radius: 16px; margin-left: -6px; padding-left: 6px; transition: background var(--m-quick) var(--m-ease-std), transform var(--m-quick) var(--m-ease-std); }
+.a2-stack:active { background: var(--accent-soft); }   /* the scale comes from glass.js press (WAAPI, pointer events: works on iOS) */
+.a2-faces i { transition: margin var(--m-base) var(--m-spring); } .a2-stack.on .a2-faces i + i { margin-left: -3px; }
+.a2-rest.go { margin: -6px -8px; padding: 6px 8px; border-radius: 14px; transition: background var(--m-quick) var(--m-ease-std), transform var(--m-quick) var(--m-ease-std); }
+.a2-rest.go .a2-rest-k::after { content: " ›"; }
+.a2-rest.go:active { background: var(--accent-soft); }
+.a2-fold:active { opacity: .6; }
+@media (prefers-reduced-motion: reduce) { .a2-exp, .a2-exp.on, .a2-exp .a2-g, .a2-exp.on .a2-g, .a2-faces i, .a2-stack, .a2-rest.go { transition: none; } }
+.a2-eh { display: flex; align-items: center; justify-content: space-between; font-family: var(--f-cjk); font-size: var(--fs-12); color: var(--dim); }
+.a2-fold { background: none; border: 0; padding: 4px 0 4px 8px; color: var(--dim); font: inherit; }
+.a2-gr { display: grid; grid-template-columns: repeat(auto-fill, minmax(42px, 1fr)); gap: 8px 2px; margin-top: 8px; }
+.a2-g { display: flex; flex-direction: column; align-items: center; gap: 4px; background: none; border: 0; padding: 0; color: var(--dim); font-family: var(--f-cjk); font-size: var(--fs-11); min-width: 0; }
+.a2-g i { width: 32px; height: 32px; } .a2-g span { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.a2-g:active { transform: scale(var(--m-press-row)); }
+.a2-r:focus-visible, .a2-stack:focus-visible, .a2-g:focus-visible, .a2-lk:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+.a2-av.wsheet::before, .a2-av.wsheet::after { display: none; }   /* the moving chibi already says "working"; the spin ring stays on the static patch */
+/* ===== t-m-a2-restore (11-07): five D1 features back on the A2 card, kept small.
+   search = the D1 .hd-srch in the card's top-right corner; 「Chrome」 tag after a working name; long-press = the D1 quick sheet (home.js a2Wire);
+   dispatch = the new row fades in + the D1 halo (dp-halo / dp-lit) on .a2-glow, never on .a2-av (that would replace the chibi sheet animation);
+   completion = the D1 mission plate (dp-streak / dp-flash / dp-plate) on the finishing row, which stays 2.3 s. */
+.hd-a2 > .a2-srch { position: absolute; top: 8px; right: 8px; z-index: 2; width: 28px; height: 28px; margin: 0;
+  transition: transform var(--m-quick) var(--m-ease-std), background var(--m-quick) var(--m-ease-std); }
+.a2-rows > .a2-r:first-child .a2-b, .a2-rest { padding-right: 30px; }
+.a2-r, .a2-g, .a2-faces i { -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
+.a2-r { position: relative; }
+.a2-glow { position: relative; display: block; width: var(--a2); height: var(--a2); }
+.a2-glow > .a2-av { position: relative; z-index: 1; }
+.a2-n { display: flex; align-items: center; gap: 6px; min-width: 0; }
+.a2-tg { flex: none; padding: 1px 6px; border-radius: 6px; background: var(--accent-soft); color: var(--accent); font: 600 var(--fs-11)/1.45 var(--f-sys); letter-spacing: .02em; animation: a2-tg-in var(--m-base) var(--m-ease-std) both; }
+.a2-tg[hidden] { display: none; }
+@keyframes a2-tg-in { from { opacity: 0; transform: scale(.8); } }
+.a2-r.lit { animation: a2-in .45s var(--m-ease-std) both; }
+@keyframes a2-in { from { opacity: 0; transform: translateY(6px); } }
+.a2-r.lit .a2-glow { animation: dp-lit 1.5s var(--m-ease-std); }
+.a2-r.lit .a2-glow::before { content: ""; position: absolute; inset: -14px; border-radius: 50%; pointer-events: none;
+  background: radial-gradient(closest-side, color-mix(in srgb, var(--tint) 80%, transparent), transparent); animation: dp-halo 1.5s var(--m-ease-std) both; }
+.a2-fx { position: absolute; inset: -4px -6px; border-radius: 14px; overflow: hidden; pointer-events: none; z-index: 3; }
+.a2-r.mc .a2-fx .s1, .a2-r.mc .a2-fx .s2 { position: absolute; top: -10%; bottom: -10%; right: -40%; width: 40%; transform: skewX(-16deg); background: linear-gradient(90deg, transparent, rgba(255,255,255,.7), transparent); animation: dp-streak .7s var(--m-ease-emph) both; }
+.a2-r.mc .a2-fx .s2 { width: 14%; animation-delay: .08s; opacity: .8; }
+.a2-r.mc .a2-fx .fl { position: absolute; inset: 0; background: #fff; opacity: 0; animation: dp-flash .5s ease-out both; }
+.a2-r.mc .a2-fx .pl { position: absolute; left: -6%; right: -6%; top: 50%; height: 40px; margin-top: -20px; padding-left: calc(6% + var(--a2) + 18px); display: flex; flex-direction: column; justify-content: center; background: var(--accent); color: var(--accent-ink);
+  font: 600 var(--fs-13)/1 var(--f-display); letter-spacing: .2em; clip-path: polygon(0 12%, 100% 0, 100% 88%, 0 100%); animation: dp-plate 2.3s var(--m-ease-emph) both; }
+.a2-r.mc .a2-fx .pl small { font: 600 var(--fs-10) var(--f-cjk); letter-spacing: .3em; opacity: .7; margin-top: 3px; }
+@keyframes a2-plate-rm { 0% { opacity: 0; } 10%, 85% { opacity: 1; } 100% { opacity: 0; } }
+@media (prefers-reduced-motion: reduce) {
+  .a2-r.lit, .a2-r.lit .a2-glow, .a2-tg, .a2-srch { animation: none; transition: none; } .a2-r.lit .a2-glow::before { display: none; }
+  .a2-r.mc .a2-fx .s1, .a2-r.mc .a2-fx .s2, .a2-r.mc .a2-fx .fl { display: none; } .a2-r.mc .a2-fx .pl { animation-name: a2-plate-rm; }
+}
+
+/* ===== t-m-chat-avatar-row (B, 11-08): phone chat puts a 24px avatar + name row ABOVE each bubble, and the bubble gets the full width under it.
+   Agents: the .mh row on the left. Me: .m-hd (mobile.js decorateThread) on the right. A run from the same speaker shows the row once (.m-cont).
+   Desktop (style.css >= 761px + decorateDesk) is untouched. ===== */
+#right .msg, #right .msg.me { padding-left: 0; padding-right: 0; align-self: stretch; }
+#right .msg:not(.m-cont) { margin-top: 10px; }
+#right .msg.m-cont { margin-top: -4px; }
+#right .msg .mh { position: static; display: flex; align-items: center; gap: 8px; margin: 0 2px 6px; font-size: var(--fs-13); font-weight: 600; color: var(--ink2); line-height: 1; }
+#right .msg .mh .av, #right .m-hd .m-meav, #right .m-typing > .av { width: 24px; height: 24px; flex: none; --wk-r: 12px; }
+#right .msg .m-nm { display: none; }
+#right .msg.m-cont .mh, #right .msg.m-cont .m-hd { display: none; }
+#right .msg .mb, #right .msg.me .mb { max-width: 100%; }
+#right .m-hd { display: flex; flex-direction: row-reverse; align-items: center; gap: 8px; margin: 0 2px 6px; font-size: var(--fs-13); font-weight: 600; color: var(--ink2); line-height: 1; }
+#right .m-hd .m-meav { position: static; }
+#right .m-hd .m-meav.ph b { font-size: 12px; }
+#right .m-typing { flex-direction: column; align-items: flex-start; gap: 6px; margin-top: 10px; }
+#right .m-typing .mb { max-width: 100%; }
+
+/* t-schedule-ui: 定时 page on phones. Undo pill sits above the tab bar like #rv-undo; the switch + ⋯ stay on one line. */
+#sc-undo { left: 16px; right: 16px; width: auto; bottom: calc(var(--tb-h) + 14px); transform: translateY(12px) scale(.96); }
+#sc-undo.on { transform: none; }
+body.vp-fix #sc-undo { bottom: auto; top: calc(var(--app-h) - var(--tb-h) - 64px); }
+.sc-more { width: 36px; height: 36px; margin-right: -6px; }
+.sc-row .rs-s { line-height: 1.7; }
+
+/* t-hm-build: 招聘市场 on the phone, one column; the sheet stacks its fields */
+.mk-grid { grid-template-columns: minmax(0, 1fr); gap: 12px; }
+.mk-chips { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; margin-right: -16px; padding-right: 16px; } .mk-chips::-webkit-scrollbar { display: none; }
+.mk-chips button { flex: none; }
+.mk-card:hover { transform: none; }
+.mk-b { height: 40px; font-size: var(--fs-14); }
+.mk-sw button { padding: 7px 2px; }
+.mk-sh-row { grid-template-columns: 1fr 1fr; } .mk-sh-row .mk-tint { grid-column: 1 / -1; }
+.mk-av.xl { width: 64px; height: 64px; }
+#mk-undo, #ht-undo { bottom: calc(var(--tb-h, 64px) + 12px + env(safe-area-inset-bottom)); }
+/* t-ht-build: the handover sheet is a bottom sheet here (#modal aligns to the bottom); selects drop under the title */
+.ht-row { grid-template-columns: 1fr; }
+.ht-row select { max-width: none; width: 100%; min-height: 40px; }
+.ht-sheet { max-height: 58vh; }
+.mdl.ht-mdl { width: 100%; }   /* style.css sets min(580px, 94vw) for desk; the phone sheet is full width like every .mdl */
+.ht-b { padding: 8px 16px; }
+
+/* t-ri1108-a P4: 定时 page titles wrap to two lines before the ellipsis (long routine / standing-card names were cut at ~10 chars) */
+.rs-n b { white-space: normal; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow-wrap: anywhere; line-height: 1.3; }

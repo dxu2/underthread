@@ -840,10 +840,9 @@
       if (!prev || new Date(t) - new Date(prev) > 5 * 60e3) m.insertAdjacentHTML("beforebegin", `<div class="m-tsep">${sepTime(t)}</div>`);
       const pe = m.previousElementSibling; m.classList.toggle("m-cont", !!pe && pe.classList.contains("msg") && w === pw);   // P3: same speaker again, no stamp between = one avatar for the run
       prev = t; pw = w;
-      if (m.classList.contains("me")) m.insertAdjacentHTML("beforeend", meAv());
-      if (m.dataset.who && m.dataset.who !== App.UI.chat) {   // someone else speaking in this thread: show their name, like a WeChat group
-        const mb = m.querySelector(".mb"); mb && mb.insertAdjacentHTML("beforebegin", `<div class="m-nm">${esc(App.aname(App.agent(m.dataset.who)))}</div>`);
-      }
+      /* t-m-chat-avatar-row: avatar + name row above the bubble (agents: their .mh; me: .m-hd, on the right). chatPatch keeps nodes, so only add it once.
+         The group-style .m-nm is gone: the .mh row already names whoever speaks. */
+      if (m.classList.contains("me") && !m.querySelector(":scope > .m-hd")) m.insertAdjacentHTML("afterbegin", `<div class="m-hd">${meAv()}<span class="m-hn">${esc(meName())}</span></div>`);
     });
     const key = App.UI.chat, n = msgs.length;
     if (box._for === key && n > (box._n || 0)) { const last = msgs[msgs.length - 1]; motion(last, "m-new", 260); if (last.classList.contains("me")) $("#right .ch-comp").classList.remove("sending"); }
@@ -858,6 +857,7 @@
     const o = App.ST.meta.owner, ch = o && !o.startsWith("<") ? [...o.trim()][0] : (en() ? "Me" : "我");
     return `<span class="av m-meav ph"><b>${esc(ch)}</b></span>`;
   }
+  function meName() { const o = App.ST.meta.owner; return o && !o.startsWith("<") ? o.trim() : (en() ? "Me" : "我"); }
   function syncTyping(box) {   // agent busy and you spoke last → a typing bubble at the bottom
     const a = App.agent(App.UI.chat), l = convMsgs(App.UI.chat), last = l[l.length - 1];
     const on = App.typingOn ? App.typingOn(a, last) : a.status === "working" && last && last.who === "me";   // t-typing-fix: same rule as desktop
@@ -1250,9 +1250,11 @@
     side: '<circle cx="6.5" cy="5.5" r="2"/><circle cx="6.5" cy="18.5" r="2"/><circle cx="17.5" cy="9" r="2"/><path d="M6.5 7.5v9M17.5 11c0 3.5-4 3-9.5 6"/>',
     daily: '<path d="M9.5 6.5H20M9.5 12H20M9.5 17.5H20"/><path d="M4 6.5h.01M4 12h.01M4 17.5h.01" stroke-width="2.6"/>',
     urgent: '<path d="M12 4 L21 19.5 H3 Z"/><path d="M12 10v4.2M12 16.8h.01"/>',
-    ongoing: '<path d="M4 11V9.5A3.5 3.5 0 0 1 7.5 6H18"/><path d="M15.5 3.5 18 6l-2.5 2.5"/><path d="M20 13v1.5a3.5 3.5 0 0 1-3.5 3.5H6"/><path d="M8.5 15.5 6 18l2.5 2.5"/>',
+    ongoing: '<circle cx="12" cy="12.5" r="8"/><path d="M12 8.2v4.5l3 1.8"/><path d="M5 4.2 3 6.2M19 4.2l2 2"/>',   /* t-schedule-ui: 定时 = clock */
     board: '<rect x="4" y="4.5" width="16" height="15" rx="2"/><path d="M9.5 4.5v15M14.8 4.5v15"/><path d="M6.7 8h.01M12 8h.01M17.3 8h.01" stroke-width="2.4"/>',
     pipe: '<circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/><path d="M7 12h3M14 12h3"/>',   // t-imp-p3
+    crew: '<circle cx="8.5" cy="8.5" r="2.8"/><circle cx="16.5" cy="9.5" r="2.3"/><path d="M3.5 19c.6-3.2 2.6-5 5-5s4.4 1.8 5 5"/><path d="M14.2 14.4c.7-.5 1.5-.8 2.3-.8 2 0 3.5 1.5 4 4.4"/>',   /* t-rb-build */
+    market: '<rect x="4" y="7" width="16" height="12.5" rx="2"/><path d="M9 7V5.5A1.5 1.5 0 0 1 10.5 4h3A1.5 1.5 0 0 1 15 5.5V7"/><path d="M4 12.5h16"/><path d="M11 12.5v1.6h2v-1.6"/>',   /* t-hm-build */
     studio: '<path d="M3.5 9.8A1.8 1.8 0 0 1 5.3 8h2.2l1.6-2.5h5.8L16.5 8h2.2a1.8 1.8 0 0 1 1.8 1.8v8.4a1.8 1.8 0 0 1-1.8 1.8H5.3a1.8 1.8 0 0 1-1.8-1.8z"/><circle cx="12" cy="13.6" r="3.3"/>',   /* t-nav-shoot: 制作 row */
     logs: '<path d="M6 4h12v13.5a2.5 2.5 0 0 1-2.5 2.5H6.5A2.5 2.5 0 0 1 4 17.5V17h3V6.5A2.5 2.5 0 0 0 4.5 4"/><path d="M10 9h5M10 12.5h5"/>',
     reports: '<path d="M7 3.5h7l4 4V19a1.5 1.5 0 0 1-1.5 1.5h-9.5A1.5 1.5 0 0 1 5.5 19V5A1.5 1.5 0 0 1 7 3.5z"/><path d="M14 3.5V8h4M8.5 12.5h7M8.5 15.5h5"/>',

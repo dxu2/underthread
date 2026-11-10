@@ -44,7 +44,9 @@
       const tag = /\d/.test(m[2]) ? "ol" : "ul";
       while (stack.length > depth + 1) html += `</li></${stack.pop()}>`;
       if (stack.length === depth + 1) html += "</li>";
-      while (stack.length < depth + 1) { html += `<${tag}>`; stack.push(tag); }
+      /* t-md-ol-start: a blank line or a link paragraph ends the list, so "2." opens a new <ol>; carry its number */
+      const n = tag === "ol" ? parseInt(m[2], 10) : 1;
+      while (stack.length < depth + 1) { html += stack.length === depth && n !== 1 && n < 1e6 ? `<ol start="${n}">` : `<${tag}>`; stack.push(tag); }
       let txt = m[3], box = "";
       const cb = txt.match(/^\[( |x)\]\s+(.*)$/i);
       if (cb) { box = `<span class="cb${cb[1] !== " " ? " on" : ""}"></span>`; txt = cb[2]; }

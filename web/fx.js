@@ -120,7 +120,15 @@
     if (!reduce) {
       el.classList.remove("enter"); void el.offsetWidth; el.classList.add("enter");
       let i = 0;
-      for (const c of el.querySelectorAll(".card, .rc, .mini, .log-i, .mail-i, .rep, .plat, .grp-h, .col, .act-row")) c.style.setProperty("--i", Math.min(i++, 14));
+      const rs = el.querySelectorAll(".card, .rc, .mini, .log-i, .mail-i, .rep, .plat, .grp-h, .col, .act-row");
+      if (phoneMQ.matches) for (const c of rs) c.style.setProperty("--i", Math.min(i++, 14));
+      else {
+        /* t-anim-p1 ①: desktop animates only the first 8 rows inside the viewport; the rest get .fx-still (style.css).
+           Read every rect first, then write, so the loop forces one layout instead of one per row. */
+        const vh = innerHeight, on = new Set();
+        for (const c of rs) { if (on.size >= 8) break; const b = c.getBoundingClientRect(); if (b.bottom > 0 && b.top < vh) on.add(c); }
+        for (const c of rs) { const a = on.has(c); c.classList.toggle("fx-still", !a); if (a) c.style.setProperty("--i", i++); }
+      }
       clearTimeout(el._enterT); el._enterT = setTimeout(() => el.classList.remove("enter"), 1400);
     }
     if (el.id === "pagebody") rows(el);

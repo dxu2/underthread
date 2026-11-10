@@ -26,8 +26,8 @@
   const T = {
     zh: { quests: "委托", all_quests: "全部", search_ph: "搜索条目和对话",
       review: "首页", main: "主线",   // t-nav-home: display name only (the page key stays "review")
-      side: "支线", daily: "日常委托", urgent: "紧急活动", ongoing: "常驻活动",
-      pipe: "制作线", board: "委托板", logs: "日志", reports: "报告", channels: "频道", studio: "制作", docs: "文档", assets: "素材", roles: "角色", mail: "信箱",
+      side: "支线", daily: "杂活", urgent: "紧急活动", ongoing: "定时",
+      pipe: "制作线", board: "委托板", logs: "日志", reports: "报告", channels: "频道", studio: "制作", market: "招聘市场", crew: "团队", docs: "文档", assets: "素材", roles: "角色", mail: "信箱",
       today: "今日日程", meetings: "个", team: "TEAM", stamina: "体力", updated: "更新于",
       todo: "待办", doing: "进行中", review_s: "待你审核", waiting: "等别人", done: "完成",
       plan: "待拍板", deliverable: "待验收", question: "待回答", task: "任务",
@@ -64,8 +64,8 @@
       docs_pick: "选一个文档", ch_none: "未标平台",
     },
     en: { quests: "Quests", all_quests: "All", search_ph: "Search items and chats",
-      review: "Home", main: "Main quest", side: "Side quest", daily: "Daily", urgent: "Urgent", ongoing: "Ongoing",
-      pipe: "Pipeline", board: "Board", logs: "Log", reports: "Reports", channels: "Channels", studio: "Studio", docs: "Docs", assets: "Assets", roles: "Roster", mail: "Mailbox",
+      review: "Home", main: "Main quest", side: "Side quest", daily: "Errands", urgent: "Urgent", ongoing: "Schedules",
+      pipe: "Pipeline", board: "Board", logs: "Log", reports: "Reports", channels: "Channels", studio: "Studio", market: "Hiring", crew: "Team", docs: "Docs", assets: "Assets", roles: "Roster", mail: "Mailbox",
       today: "Today", meetings: "", team: "TEAM", stamina: "Stamina", updated: "updated",
       todo: "To do", doing: "In progress", review_s: "Your review", waiting: "Waiting", done: "Done",
       plan: "Decide", deliverable: "Accept", question: "Answer", task: "Task",
@@ -104,7 +104,7 @@
   };
   const t = (k, vars) => { let s = (T[UI.lang] && T[UI.lang][k]) ?? T.zh[k] ?? k; for (const [a, b] of Object.entries(vars || {})) s = s.replace("{" + a + "}", b); return s; };
   const EN_SUB = { settings: "SETTINGS", review: "HOME", main: "MAIN QUEST", side: "SIDE QUEST", daily: "DAILY COMMISSIONS", urgent: "URGENT EVENTS",
-    ongoing: "ONGOING EVENTS", studio: "STUDIO", pipe: "PRODUCTION LINE", board: "COMMISSION BOARD", logs: "JOURNAL", reports: "REPORTS", channels: "CHANNELS", docs: "ARCHIVE", assets: "ASSET LIBRARY", roles: "ROSTER", mail: "MAILBOX" };
+    ongoing: "SCHEDULES", studio: "STUDIO", market: "HIRING MARKET", crew: "TEAM", pipe: "PRODUCTION LINE", board: "COMMISSION BOARD", logs: "JOURNAL", reports: "REPORTS", channels: "CHANNELS", docs: "ARCHIVE", assets: "ASSET LIBRARY", roles: "ROSTER", mail: "MAILBOX" };
   const CATS = ["main", "side", "daily", "urgent", "ongoing"];
   const STAGES = ["todo", "doing", "review", "waiting", "done"];
   const PLAT_ZH = { bili: "B站", yt: "YouTube", xhs: "小红书" }, PLAT_EN = { bili: "Bilibili", yt: "YouTube", xhs: "RedNote" };
@@ -241,11 +241,13 @@
   // A list that calls av() per row renders inside ringOnce(), newest row first, so the ring lands on the newest row (DM threads do the same by index).
   let RING1 = null;
   function ringOnce(fn, set) { const prev = RING1; RING1 = set || new Set(); try { return fn(); } finally { RING1 = prev; } }
-  /* t-chibi-anim: under the Underthread palette (html[data-ut]) a working agent's needle-thread avatar plays a 4-frame sprite sheet
-     (avatars/ut/_s/<id>-work-<160|320|512>.webp, frames side by side, frame 1 = the idle art plus a prop). Returns the inline custom property
-     for the sheet, or "" (other palettes, no sheet, or the ut manifest not loaded yet: AVU.ready re-renders and avSweep adds the phone-strip child). CSS in theme-ut.css. */
-  const WSHEET = new Set(["manager", "scout", "writer", "director", "artist", "ops", "smith"]);
-  function wsheet(a, sz) { return a && document.documentElement.dataset.ut && WSHEET.has(a.id) && AVU.m && AVU.m[a.id] && !AVU.bad.has(a.id) ? `;--wsheet:url('/avatars/ut/_s/${encodeURIComponent(a.id)}-work-${sz || 160}.webp?v=1')` : ""; }
+  /* t-chibi-anim: under 特典 (html[data-ut]) a working agent's needle-thread avatar plays a 4-frame sprite sheet (avatars/ut/_s/<id>-work-<160|320|512>.webp,
+     frames side by side, frame 1 = the idle art plus the prop). Returns the inline custom property for the sheet, or "" (other palettes / no sheet). CSS in theme-ut.css. */
+  /* t-hr-registry: no role id lists in the web. ST.meta.art = {id: {jpg, panel, cut, sheet}} is scanned by the server from web/art/ and avatars/ut/_s/;
+     a.tint / a.seat / a.pipe come from roster.json via state.agents. A role with no art falls back to its avatar (or the letter circle). */
+  const hasArt = (a, k) => !!(a && ST && ST.meta && ST.meta.art && (ST.meta.art[a.id] || {})[k]);
+  const tintOf = a => [a && a.tint, a && a.color].find(c => /^#[0-9a-f]{3,8}$/i.test(c || "")) || "var(--accent)";
+  function wsheet(a, sz) { return a && document.documentElement.dataset.ut && hasArt(a, "sheet") && !AVU.bad.has(a.id) ? `;--wsheet:url('/avatars/ut/_s/${encodeURIComponent(a.id)}-work-${sz || 160}.webp?v=1')` : ""; }
   function av(a, cls = "", forItem) {
     if (a === "me" || a.id === "me") return `<span class="av ${cls}" style="background:var(--ink2)"></span>`;
     // t-working-avatar: ONE place for the "working" look (CSS in style.css). --wp = minus the wall-clock phase of the 4 s cycle, so a node created by a re-render
@@ -953,6 +955,7 @@
     const quiet = mins < 60 ? (en ? `no update for ${mins} min` : `${mins} 分钟没更新`) : mins < 48 * 60 ? (en ? `no update for ${Math.floor(mins / 60)}h` : `${Math.floor(mins / 60)} 小时没更新`) : (en ? `no update since ${when(u.at)}` : `${when(u.at)} 起没更新`);
     const pill = stale && u.at ? `${why} · ${quiet}` : "";
     const sub = lost5 ? (en ? `full since ${clock(five.resets_at)}` : `${clock(five.resets_at)} 已回满`)
+      : left === 100 ? (en ? "full" : "满格")   /* t-ri1108-a P3: nothing used yet, so no 「HH:MM 复活」 */
       : reset5 ? (en ? `full at ${at5}` : `${at5} 复活`) : "";
     const subPh = stale && u.at ? `${why} · ${ageShort(u.at)}` : sub;   // phones have no pill: the subtitle says why instead
     const age = u.at ? ageTxt(u.at) : "";
@@ -1102,6 +1105,39 @@
     if (down) R.dataset.net = "off"; else if (snapMin >= 0) R.dataset.net = "snap"; else delete R.dataset.net;
     clearTimeout(syncPaint.t); if (down || UI.fail) syncPaint.t = setTimeout(syncPaint, 1000);   // the seconds keep counting while offline
   }
+  /* t-ums-build (Mailbox C): the flap's cross-stitches and the red yarn ball behind the unread count. Always in the markup (serialized form,
+     so the #hdrctrl innerHTML compare stays equal), drawn only under html[data-ut] (theme-ut.css); other themes hide them and look as before. */
+  const MAIL_X = '<path class="ums-x" d="M3.3 4.8l1.6 1.6M4.9 4.8l-1.6 1.6M5.25 6.3l1.6 1.6M6.85 6.3l-1.6 1.6M7.2 7.75l1.6 1.6M8.8 7.75l-1.6 1.6M9.15 6.3l1.6 1.6M10.75 6.3l-1.6 1.6M11.1 4.8l1.6 1.6M12.7 4.8l-1.6 1.6"></path>';
+  const YARN = '<svg class="ums-yarn" viewBox="0 0 20 20" preserveAspectRatio="none" aria-hidden="true"><path class="ums-bt" d="M14.6 17.6c1.8 2.6 4.6 3.2 6.8 1.4"></path><circle class="ums-b0" cx="10" cy="10" r="9.6"></circle>'
+    + '<path class="ums-bw" d="M1.6 7.2Q10 2.6 18.6 8M1.4 12.6Q10 8.4 18.6 13.6M6.4 1.4Q1.8 9.6 6.8 18.6M13.4 1.4Q18.4 9.6 13.2 18.6"></path></svg>';
+  /* t-ums-build (Soul C): under Underthread the orb shows a knitting swatch instead of the vessel (both live in .orb; CSS picks one by
+     html[data-ut], so a theme switch needs no rebuild). 6 rows x 4 stitches, knitted bottom-up to the % left; a needle lies across the row
+     being knitted. Built once; a poll only toggles .on on the stitches and moves the needle, so nothing replays. Decoration only (aria-hidden),
+     the % stays the text next to it. Few big stitches on purpose: 40 small ones read as texture at 1x (t-ums-mock). */
+  const SW = { rows: 6, cols: 4, x: 9, y: 5.5, w: 8.5, h: 7 };
+  function swatchSvg() {
+    const r = n => Math.round(n * 100) / 100;
+    let st = "";
+    for (let i = 0; i < SW.rows * SW.cols; i++) {
+      const row = Math.floor(i / SW.cols), col = i % SW.cols, x = SW.x + col * SW.w, y = SW.y + (SW.rows - 1 - row) * SW.h, m = x + SW.w / 2;
+      st += `<g class="ums-k"><rect class="ums-kc" x="${r(x + .35)}" y="${r(y + .35)}" width="${r(SW.w - .7)}" height="${r(SW.h - .7)}" rx="1.2"/>`
+        + `<path class="ums-kv" d="M${r(x + 1.4)} ${r(y + 1.3)}Q${r(x + 2.4)} ${r(y + SW.h - 2)} ${r(m)} ${r(y + SW.h - 1.1)}M${r(x + SW.w - 1.4)} ${r(y + 1.3)}Q${r(x + SW.w - 2.4)} ${r(y + SW.h - 2)} ${r(m)} ${r(y + SW.h - 1.1)}"/></g>`;
+    }
+    return `<svg class="ums-sw" viewBox="0 0 52 52" aria-hidden="true"><rect class="ums-cloth" x="6.5" y="2.5" width="39" height="47" rx="3.5"/>`
+      + `<path class="ums-cast" d="M9 48.2H43"/>${st}<g class="ums-nd"><g class="ums-ndi"><path class="ums-needle" d="M2.5 0H48.6"/><circle class="ums-knob" cx="2.6" cy="0" r="2.4"/>`
+      + `<path class="ums-knob" d="M48.2 -1.05L51.6 0 48.2 1.05z"/></g></g></svg>`;
+  }
+  function swatchSet(sw, left) {
+    if (!sw) return;
+    const n = SW.rows * SW.cols, done = left == null ? 0 : Math.round(Math.max(0, Math.min(100, left)) / 100 * n);
+    if (sw.dataset.done === String(done)) return;
+    sw.dataset.done = done;
+    sw.querySelectorAll(".ums-k").forEach((g, i) => g.classList.toggle("ums-on", i < done));
+    const row = done ? Math.min(SW.rows - 1, Math.floor((done - 1) / SW.cols)) : 0;   /* the row holding the last knitted stitch */
+    const nd = sw.querySelector(".ums-nd");
+    nd.style.transform = `translateY(${SW.y + (SW.rows - 1 - row) * SW.h}px)`;
+    nd.classList.toggle("ums-off", done >= n);   /* full: the needle is put away */
+  }
   function renderHeader() {
     const m = mgrState(), ag = agents().filter(a => a.enabled !== false && a.id !== "manager");
     const working = ag.filter(a => a.status === "working").length;
@@ -1112,17 +1148,18 @@
     sta.className = "stamina" + (U.stale ? " stale" : "") + (U.lost5 ? " lost" : "") + (U.approx ? " est" : "");
     sta.title = U.tip;
     // Build the soul vessel once so its waves keep flowing; later renders only move the level.
-    if (!sta.querySelector(".orb")) {
+    if (!sta.querySelector(".orb .ums-sw")) {
       const wave = "M0 0 Q10 -4 20 0 T40 0 T60 0 T80 0 T100 0 V60 H0 Z";
-      sta.innerHTML = `<div class="orb"><svg viewBox="0 0 52 52"><defs><clipPath id="orbclip"><circle cx="26" cy="26" r="20"/></clipPath></defs>
+      sta.innerHTML = `<div class="orb"><svg class="ums-vs" viewBox="0 0 52 52" aria-hidden="true"><defs><clipPath id="orbclip"><circle cx="26" cy="26" r="20"/></clipPath></defs>
         <circle class="ring2" cx="26" cy="26" r="25"/><circle class="ring" cx="26" cy="26" r="22.5"/><circle class="well" cx="26" cy="26" r="20"/>
         <g clip-path="url(#orbclip)"><g class="liq"><path class="w2" d="${wave}" transform="translate(-6 2)"/><path class="w1" d="${wave}"/></g>
-        <ellipse class="shine" cx="19" cy="17" rx="6" ry="3.2" transform="rotate(-28 19 17)"/></g></svg></div>
+        <ellipse class="shine" cx="19" cy="17" rx="6" ry="3.2" transform="rotate(-28 19 17)"/></g></svg>${swatchSvg()}</div>
         <div class="lbl"><b></b><small>STAMINA</small></div><div class="pct"><b></b><small></small></div><div class="focus"><i></i></div><span class="st-age" hidden></span>`;
     }
     const lvl = 46 - (Math.max(0, Math.min(100, U.left ?? 0)) / 100) * 36;  // keep a crest visible when full
     sta.querySelector(".liq").style.transform = `translateY(${lvl}px)`;
     sta.querySelector(".orb").classList.toggle("low", U.left != null && U.left < 20);
+    swatchSet(sta.querySelector(".orb .ums-sw"), U.left);
     sta.querySelector(".lbl b").textContent = UI.lang === "en" ? "Soul" : "体力";
     {   // t-m2-a ②: the % rolls when it changes (the span is kept, only its digits move)
       const pb = sta.querySelector(".pct b");
@@ -1141,7 +1178,7 @@
        t-mailbox-top: 信箱 is back as a pill at the right end (desktop only; the rail row is hidden by CSS, the phone keeps it in 更多).
        The SVG is written in its serialized form (explicit closing tags) so the innerHTML compare below stays equal and the pill is not rebuilt every poll. */
     const mlab = UI.lang === "en" ? "Mailbox" : "信箱", mn = unread > 99 ? "99+" : String(unread);
-    const hc = `<button data-h="mail" class="hc-mail" aria-label="${mlab}${unread ? " " + mn : ""}"><svg viewBox="0 0 16 16" aria-hidden="true"><rect x="1.8" y="3.2" width="12.4" height="9.6" rx="2"></rect><path d="M2.5 4.5 8 8.6l5.5-4.1"></path></svg><span>${mlab}</span>${unread ? `<span class="n">${mn}</span>` : ""}</button>`
+    const hc = `<button data-h="mail" class="hc-mail" aria-label="${mlab}${unread ? " " + mn : ""}"><svg viewBox="0 0 16 16" aria-hidden="true"><rect x="1.8" y="3.2" width="12.4" height="9.6" rx="2"></rect><path class="ums-flap" d="M2.5 4.5 8 8.6l5.5-4.1"></path>${MAIL_X}</svg><span>${mlab}</span>${unread ? `<span class="n">${YARN}${mn}</span>` : ""}</button>`
       + `<button data-h="chat" class="hc-chat" aria-expanded="${document.body.classList.contains("chat-pop")}">${UI.lang === "en" ? "Chat" : "聊天"}</button>`;
     if ($("#hdrctrl").innerHTML.trim() !== hc) $("#hdrctrl").innerHTML = hc;
   }
@@ -1196,17 +1233,22 @@
   function counts() {
     const c = { review: 0 }; for (const k of CATS) c[k] = 0;
     c.pipe = items().filter(i => i.stage !== "done" && isContent(i)).length;   // t-imp-p3
+    c.crew = agents().filter(a => a.id !== "manager" && a.status === "working").length;   /* t-rb-build: 团队 row = roles working now */
     c.mail = mailUnread();   /* t-hdr-trim ①: 信箱 row in the rail; ri1105-P4: server count */
     for (const it of items()) { if (onYou(it)) c.review++; if (it.stage !== "done") c[it.category] = (c[it.category] || 0) + 1; }
     c.review += newReplies().length;   // t-review-unread: cards with unread replies (never one already counted above)
     return c;
   }
+  /* t-ri1109-a (P1+P4): one short routine name for the rail and the home timeline. rtShort drops 「（r-…）」, the 「…每日 N 个」 lead and "app";
+     rtFull keeps the whole label minus the item id, for title tooltips. */
+  function rtShort(r) { return String(r.label || r.id).replace(/[（(][^）)]*[）)]/g, "").replace(/^.*?每日\s*(\d+\s*个\s*)?(一条|打磨)?/, "").replace(/^app\s*/i, "").trim() || r.id; }
+  function rtFull(r) { return String(r.label || r.id).replace(/[（(][^）)]*[）)]/g, "").trim() || r.id; }
   function renderLeft() {
     const c = counts();
-    const navs = ["review", ...CATS, "sep", "studio", "reports", "mail", "settings"];   /* t-nav-shoot (11-05): 制作线 / 委托板 / 频道 / 素材 are one 制作 row; the pages keep their own ids */   /* t-hdr-trim ①: 信箱 moved here from the top bar (phone: same row in 更多) */   // t-settings-tab: 日志 / 文档 / 角色 moved into 设置
+    const navs = ["review", ...CATS, "sep", "crew", "market", "studio", "reports", "mail", "settings"];   /* t-nav-shoot (11-05): 制作线 / 委托板 / 频道 / 素材 are one 制作 row; the pages keep their own ids */   /* t-hdr-trim ①: 信箱 moved here from the top bar (phone: same row in 更多) */   // t-settings-tab: 日志 / 文档 / 角色 moved into 设置
     const selK = STU.includes(UI.page) ? "studio" : UI.page, sew = UI.navSew !== selK; UI.navSew = selK;   /* t-thread-motif ②: the thread sews in only when the selection changes, not on every poll rebuild */
     $("#nav").innerHTML = navs.map(k => k === "sep" ? `<div class="nav-sep"></div>` :
-      `<button class="nav-i ${selK === k ? "on" : ""} ${k === "urgent" && c.urgent ? "urgent" : ""}" data-go="${k}"><span>${NAV_IC[k] ? `<i class="nv-ic" aria-hidden="true"><svg viewBox="0 0 24 24">${NAV_IC[k]}</svg></i>` : ""}<span class="nv-t">${t(k)}${selK === k ? `<svg class="nv-ul${sew ? " sew" : ""}" viewBox="0 0 100 6" preserveAspectRatio="none" aria-hidden="true"><path pathLength="1" d="M1 3.6C20 2.2 40 4.4 60 3.2S88 2.6 96 3.4"/></svg><i class="nv-knot${sew ? " sew" : ""}" aria-hidden="true"></i>` : ""}</span></span>${k === "mail" ? (c.mail ? `<span class="n mb">${c.mail > 99 ? "99+" : c.mail}</span>` : `<span class="n z"></span>`) : `<span class="n${c[k] === 0 ? " z" : ""}">${c[k] ?? ""}</span>`}</button>`).join("");
+      `<button class="nav-i ${selK === k ? "on" : ""} ${k === "urgent" && c.urgent ? "urgent" : ""}" data-go="${k}"><span>${NAV_IC[k] ? `<i class="nv-ic" aria-hidden="true"><svg viewBox="0 0 24 24">${NAV_IC[k]}</svg></i>` : ""}<span class="nv-t">${t(k)}${selK === k ? `<svg class="nv-ul${sew ? " sew" : ""}" viewBox="0 0 100 6" preserveAspectRatio="none" aria-hidden="true"><path pathLength="1" d="M1 3.6C20 2.2 40 4.4 60 3.2S88 2.6 96 3.4"/></svg><i class="nv-knot${sew ? " sew" : ""}" aria-hidden="true"></i>` : ""}</span></span>${k === "mail" ? (c.mail ? `<span class="n mb">${YARN}${c.mail > 99 ? "99+" : c.mail}</span>` : `<span class="n z"></span>`) : `<span class="n${c[k] === 0 ? " z" : ""}">${c[k] ?? ""}</span>`}</button>`).join("");
 
     // calendar
     const today = dayKey(new Date()), tmr = dayKey(new Date(Date.now() + 864e5));
@@ -1214,17 +1256,18 @@
     // ri1103-P1: the team's fixed daily routines (meta.routines) join the user's own events, sorted by time; paused ones fold into one line.
     // ri1103-P2: meta.report_time comes from config.json report_time (server.py public_state); an older server sends none -> the row shows no time.
     const rts = (ST.meta && ST.meta.routines) || [], nowM = new Date().getHours() * 60 + new Date().getMinutes();
-    const rtName = r => String(r.label || r.id).replace(/[（(][^）)]*[）)]/g, "").replace(/^.*?每日\s*(\d+\s*个\s*)?(一条|打磨)?/, "").replace(/^app\s*/i, "").trim() || r.id;
+    const rtName = rtShort;   /* t-ri1109-a P4: shared with widgets.js (App.rtShort) */
     const rtLeft = hm => { const [h, m] = hm.split(":").map(Number), d = h * 60 + m - nowM; return d > 0 ? `${Math.floor(d / 60)}:${pad(d % 60)}${UI.lang === "en" ? "" : " 后"}` : null; };
-    const rtRow = (tm, who, name, done, itemId) => {
+    const rtRow = (tm, who, name, done, itemId, full) => {   /* t-ri1109-a P4: a dispatched row says only ✓ (the grey row already reads as done); the title carries time, full name and state */
       const left = !done && tm && rtLeft(tm), a = who && agent(who);
-      const st = done ? `✓ ${done}` : left || (tm ? (UI.lang === "en" ? "due" : "到点") : (UI.lang === "en" ? "tonight" : "今晚"));
-      return { k: "0" + (tm || "99"), h: `<div class="cal-i cal-rt ${done ? "past" : ""}"${itemId ? ` data-item="${esc(itemId)}"` : ""}><span class="tm">${esc(tm || "—")}</span>${a ? av(a, "cal-av") : ""}<span class="cal-nm">${esc(name)}</span><span class="cal-st${left ? " soon" : ""}">${esc(st)}</span></div>` };
+      const st = done ? "✓" : left || (tm ? (UI.lang === "en" ? "due" : "到点") : (UI.lang === "en" ? "tonight" : "今晚"));
+      const tip = `${tm ? tm + " " : ""}${full || name} · ${done || st}`;
+      return { k: "0" + (tm || "99"), h: `<div class="cal-i cal-rt ${done ? "past" : ""}"${itemId ? ` data-item="${esc(itemId)}"` : ""} title="${esc(tip)}"><span class="tm">${esc(tm || "—")}</span>${a ? av(a, "cal-av") : ""}<span class="cal-nm">${esc(name)}</span><span class="cal-st${left ? " soon" : ""}">${esc(st)}</span></div>` };
     };
     const itemOwner = id => { const it = (ST.items || []).find(x => x.id === id); return it && it.owner; };
     const rtLive = rts.filter(r => !r.paused && !r.disabled && r.time), rtOff = rts.filter(r => r.paused || r.disabled);
     const sent = UI.lang === "en" ? "sent" : "已派";
-    const rtRows = rtLive.map(r => rtRow(r.time, itemOwner(r.item), rtName(r), r.last === today ? sent : "", r.item));
+    const rtRows = rtLive.map(r => rtRow(r.time, itemOwner(r.item), rtName(r), r.last === today ? sent : "", r.item, rtFull(r)));
     if (ST.meta) rtRows.push(rtRow(ST.meta.report_time || "", "manager", UI.lang === "en" ? "Daily report" : "日报", ST.meta.last_report_date === today ? (UI.lang === "en" ? "sent" : "已发") : "", ""));
     const nowHM = `${pad(new Date().getHours())}:${pad(new Date().getMinutes())}`;
     $("#cal").classList.toggle("cal-empty", !evs.length && !rtRows.length && !UI.calForm);   // t-cal-fold: nothing today or tomorrow -> one faint row, "+" still there
@@ -1242,12 +1285,12 @@
     // ui1: rows animate in once (not on every poll re-render); the open chat's row is marked; unread mail shows a dot
     const teamFirst = !UI.teamIn; UI.teamIn = true; $("#team").classList.toggle("team-enter", teamFirst);
     /* t-ri1104-p2: TEAM rows use the same unread count as the chat (was: unread mail from that agent) */
-    $("#team").innerHTML = `<div class="side-h"><span class="sc">TEAM</span></div>` + agents().map((a, i) => {
+    setSrc($("#team"), `<div class="side-h"><span class="sc">TEAM</span></div>` + agents().map((a, i) => {   // t-send-flicker: unchanged rail keeps its avatar rings running
       const ms = a.id === "manager" && mgrState();
       const st = ms ? (ms.on ? "working" : ms.sleep ? "sleeping" : "offline") : a.status || "idle";
       const sub = mgrOnline(a) ? (MOBQ.matches ? MGR_ON() : MGR_WATCH()) : a.status === "working" && a.activity ? `▶ ${esc(a.tool ? toolWhat(a) || a.activity : a.activity)}` : esc(aduty(a));   // t-now-closed
       return `<div class="team-i ${a.status === "working" && a.activity && !mgrOnline(a) ? "busy" : ""} ${a.enabled === false ? "disabled" : ""} ${UI.chat === a.id ? "on" : ""} ${unreadOf(a.id) && UI.chat !== a.id ? "unread" : ""}" style="--i:${Math.min(i, 12)}" data-chat="${a.id}">${av(a)}<div><div class="nm"><span class="nmt">${esc(aname(a))}</span><span class="st ${st}"${ms && ms.sleep ? ` title="${esc(ms.txt)}"` : ""}>${ms ? (ms.on ? t("online") : ms.sleep ? (ms.back ? `☾ ${ms.back}` : ms.txt) : t("offline")) : t(st)}</span>${unreadOf(a.id) && UI.chat !== a.id ? `<i class="tn">${unreadTag(unreadOf(a.id))}</i>` : ""}</div><div class="du">${qBadge(a.id)}${sub}</div></div></div>`;   /* t-hdr-trim ⑩: 排队 chip leads the second line, so name + status + count fit one line in zh and en */
-    }).join("");
+    }).join(""));
   }
   document.addEventListener("click", e => {
     const g = e.target.closest("[data-go]"); if (g) { go(g.dataset.go); return; }
@@ -1267,7 +1310,9 @@
     side: '<path d="M7 20.5V5.5"/><circle cx="7" cy="3.6" r="1.6" fill="currentColor" stroke="none"/><path d="M7 16c0-4.4 2.8-7 7-7h2.5"/><circle cx="18.6" cy="9" r="1.6" fill="currentColor" stroke="none"/>',
     daily: '<rect x="4" y="5.5" width="16" height="14.5" rx="2.5"/><path d="M4 10h16M8.5 3.5v4M15.5 3.5v4"/><path d="M10.2 12.6l3.6 3.6M13.8 12.6l-3.6 3.6"/>',
     urgent: '<circle cx="15" cy="9" r="3.6" fill="currentColor"/><path d="M12.4 11.6 4.5 19.5"/>',
-    ongoing: '<path d="M12 12c-2-3-3.8-4.5-6-4.5a4.5 4.5 0 0 0 0 9c2.2 0 4-1.5 6-4.5s3.8-4.5 6-4.5a4.5 4.5 0 0 1 0 9c-2.2 0-4-1.5-6-4.5z"/>',
+    ongoing: '<circle cx="12" cy="12.5" r="8"/><path d="M12 8.2v4.5l3 1.8"/><path d="M5 4.2 3 6.2M19 4.2l2 2"/>',   /* t-schedule-ui: 定时 = clock */
+    crew: '<circle cx="8.5" cy="8.5" r="2.8"/><circle cx="16.5" cy="9.5" r="2.3"/><path d="M3.5 19c.6-3.2 2.6-5 5-5s4.4 1.8 5 5"/><path d="M14.2 14.4c.7-.5 1.5-.8 2.3-.8 2 0 3.5 1.5 4 4.4"/>',   /* t-rb-build: 团队 = two people */
+    market: '<rect x="4" y="7" width="16" height="12.5" rx="2"/><path d="M9 7V5.5A1.5 1.5 0 0 1 10.5 4h3A1.5 1.5 0 0 1 15 5.5V7"/><path d="M4 12.5h16"/><path d="M11 12.5v1.6h2v-1.6"/>',   /* t-hm-build: 招聘市场 = briefcase */
     studio: '<path d="M3 9.8A1.8 1.8 0 0 1 4.8 8h2.4l1.6-2.5h6.4L16.8 8h2.4A1.8 1.8 0 0 1 21 9.8v8.4a1.8 1.8 0 0 1-1.8 1.8H4.8A1.8 1.8 0 0 1 3 18.2z"/><circle cx="12" cy="13.6" r="3.4"/><path d="M12 13.6v.01"/>',
     reports: '<path d="M6 3.5h8l4.5 4.5v12.5H6z"/><path d="M14 3.5V8h4.5"/><path d="M8.6 17l2.4-3 2 1.6 2-2.6"/>',
     mail: '<rect x="3" y="5.5" width="18" height="13" rx="2.5"/><path d="M3.8 7.2l8.2 6.3 8.2-6.3"/>',
@@ -1277,7 +1322,7 @@
     const en = UI.lang === "en";
     return `<div class="st-tabs stu-tabs"><div class="seg" data-seg="stutab" role="tablist">${STU.map(x => `<button type="button" class="seg-i ${x === k ? "on" : ""}" role="tab" aria-selected="${x === k}" data-stutab="${x}">${STU_L[x][en ? 1 : 0]}</button>`).join("")}</div></div>`;
   }
-  const pageAlias = p => { if (p === "studio") { const l = LS.get("stuTab", "pipe"); return STU.includes(l) ? l : "pipe"; } if (["roles", "docs", "logs"].includes(p)) { UI.setTab = p; LS.set("setTab", p); return "settings"; } return p === "home" ? "review" : p; };   // t-settings-tab: old pages = 设置 tabs   // r-improve-1102 P5: #page=home (the phone 首页 tab's name) = the 首页 page, key "review"
+  const pageAlias = p => { if (p === "studio") { const l = LS.get("stuTab", "pipe"); return STU.includes(l) ? l : "pipe"; } if (["roles", "docs", "logs"].includes(p)) { UI.setTab = p; LS.set("setTab", p); return "settings"; } return p === "home" ? "review" : p === "team" ? "crew" : p; };   // t-settings-tab: old pages = 设置 tabs   // r-improve-1102 P5: #page=home (the phone 首页 tab's name) = the 首页 page, key "review"
   function go(p) {
     p = pageAlias(p);
     // the "new" group on the review page compares against when you last left it
@@ -1305,7 +1350,7 @@
         <span>${t(it.category)}${it.category === "urgent" ? " ⚑" : ""}</span>
         <span>${whenH(it.created)}</span><span class="dim">${UI.lang === "en" ? "act." : "动态"} ${whenH(it.activity)}</span>
         <span>${(it.platforms || []).map(p => `<span class="tag pf">${PLAT[p] || p}</span>`).join(" ")}</span></div>
-      <div class="body"><h3>${nrDot(it.id)}${esc(it.title)}</h3><p>${esc(it.summary || "")}</p>${wkTag(ws)}${askRow(it)}</div>
+      <div class="body"><h3>${nrDot(it.id)}${esc(it.title)}</h3><p>${esc(mailPv(it.summary || ""))}</p>${wkTag(ws)}${askRow(it)}</div>
       <div class="owner">${av(a, "sm", it.id)}<span>${esc(aname(a))}</span></div>
       <div class="acts"><button data-arch="${it.id}">${t("archive")}</button>${it.stage !== "done" && !routineOf(it) ? `<button data-quickdone="${it.id}">${t("complete")}</button>` : ""}</div></div>`;
   }
@@ -1327,7 +1372,7 @@
   function reviewRow(it, fresh) {
     const a = agent(it.owner), th = (it.thread || []).filter(x => x.kind !== "event").length;
     return actRow({ attr: `data-item="${it.id}"`, av: av(a, "", it.id), ws: workersOf(it.id), unread: fresh, name: aname(a), title: it.title, time: agoH(it.activity || it.updated),
-      preview: it.summary || "", chip: rowLabel(it), n: th, extra: waitTag(it) });
+      preview: mailPv(it.summary || ""), chip: rowLabel(it), n: th, extra: waitTag(it) });
   }
   // ===== P5 (t-aes-p5): phone home 待审 = a review card per item: first image on top, owner + time, title, summary, 看详情 / 批准.
   // 批准 only where the detail page has it (stage review AND kind plan / deliverable); questions and other kinds get 看详情 only.
@@ -1343,7 +1388,7 @@
     const ok = rvCanApprove(it);
     return `<div class="rv-card${img ? "" : " no-img"}" data-item="${it.id}">${media}<div class="rv-body">
       <div class="rv-meta">${av(a, "sm", it.id)}<b>${esc(aname(a))}</b>${fresh ? `<i class="rv-dot"></i>` : ""}<span>· ${t(it.category)} · ${agoH(it.activity || it.updated)}</span>${waitTag(it)}${img ? "" : `<span class="rv-kind sm">${kind}</span>`}</div>
-      <h3>${nrDot(it.id)}${esc(it.title)}</h3>${it.summary ? `<p>${esc(it.summary)}</p>` : ""}${askRow(it)}
+      <h3>${nrDot(it.id)}${esc(it.title)}</h3>${it.summary ? `<p>${esc(mailPv(it.summary))}</p>` : ""}${askRow(it)}
       <div class="rv-acts${ok ? "" : " one"}"><button class="rv-open" data-rv-open="${it.id}">${zh ? "看详情" : "Open"}</button>${ok ? `<button class="rv-ok${openAsks(it).length ? " has-ask" : ""}" data-rv-ok="${it.id}">${okBtnIn(it)}</button>` : ""}</div>
     </div></div>`;
   }
@@ -1365,8 +1410,12 @@
   const openAsks = it => liveAsks(it).filter(a => !a.answer);
   // t-btn-names: the approve button is named by what happens after the press (plan -> back to doing, the specialist goes on;
   // deliverable -> the card closes; question -> the answer is recorded). Only labels: the action kinds (approve / done) are unchanged.
-  const okLabel = (it, en = UI.lang === "en") => it && it.kind === "plan" ? (en ? "Approve & start" : "批准开工") : it && it.kind === "question" ? (en ? "Answer" : "回答") : (en ? "Accept & close" : "验收 · 关单");
-  const okDone = (it, en = UI.lang === "en") => it && it.kind === "plan" ? (en ? "Approved · work begins" : "已批准开工 · 专员接着做") : it && it.kind === "question" ? (en ? "Answered" : "已回答") : (en ? "Accepted · card closed" : "已验收 · 卡已关");
+  /* t-hr-build: an HR interview card's draft is approved with 批准入职 (the server runs new_role.py) */
+  const isHire = it => !!(it && it.hire && it.kind === "deliverable");
+  /* t-ht-build: a transfer card (hire.mode transfer) says 批准调岗 */
+  const isXfer = it => isHire(it) && it.hire.mode === "transfer";
+  const okLabel = (it, en = UI.lang === "en") => isXfer(it) ? (en ? "Approve transfer" : "批准调岗") : isHire(it) ? (en ? "Approve hire" : "批准入职") : it && it.kind === "plan" ? (en ? "Approve & start" : "批准开工") : it && it.kind === "question" ? (en ? "Answer" : "回答") : (en ? "Accept & close" : "验收 · 关单");
+  const okDone = (it, en = UI.lang === "en") => isXfer(it) ? (en ? "Approved · transferring" : "已批准 · 正在调岗") : isHire(it) ? (en ? "Approved · onboarding" : "已批准 · 正在办入职") : it && it.kind === "plan" ? (en ? "Approved · work begins" : "已批准开工 · 专员接着做") : it && it.kind === "question" ? (en ? "Answered" : "已回答") : (en ? "Accepted · card closed" : "已验收 · 卡已关");
   const askLeft = (it, en = UI.lang === "en") => { const n = openAsks(it).length; return !n ? "" : en ? `${n} question${n > 1 ? "s" : ""} unanswered` : `还有 ${n} 个问题没答`; };
   // ===== t-ask-rec: the asker's recommended option = ask.rec (written as "B*" in stateutil), else an option whose text says （推荐） (older asks).
   // 「全按推荐」 shows when 2+ asks are open and at least one has a recommendation; it answers those after a 4.5 s undo hold, one ordinary answer each.
@@ -1652,7 +1701,7 @@
   }
   function mailPv(s, a) {   // t-chat-table: phones use it too now (mail rows + 动态 rows)
     s = tablePv(s).replace(/!?\[([^\]]*)\]\([^)]*\)/g, "$1").replace(/\*\*(.+?)\*\*/g, "$1").replace(/__(.+?)__/g, "$1").replace(/`([^`]+)`/g, "$1")
-      .replace(/^\s{0,3}(#{1,6}\s+|>\s?|[-*+]\s+)/gm, "").replace(/\s+/g, " ").trim();
+      .replace(/^\s{0,3}(#{1,6}\s+|>\s?|[-*+]\s+)/gm, "").replace(/\*\*/g, "").replace(/\s+/g, " ").trim();   /* t-ri1108-a P1: a cut-off bold leaves a lone ** */
     for (const n of ["管家", "manager", a && aname(a), a && a.id].filter(Boolean)) {
       const re = new RegExp("^" + n.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + "\\s*[:：]\\s*");
       if (re.test(s)) { s = s.replace(re, ""); break; }
@@ -1674,20 +1723,20 @@
      Phone 动态 rows of such mail show the card's latest thread line instead (who said it + text, max 60 chars).
      Generic 验收 / 完成 stamps and stage events are skipped; with no line left: 已关单 / 等你验收 / the stage label. Display only. */
   const REV_MAIL = /^待审核\s*[:：]/;
-  function cardLine(it) {
+  function cardLine(it, rowA) {   /* t-ri1108-a P1: rowA = the row's own speaker; no name prefix when it is the same person */
     const en = UI.lang === "en", th = (it.thread || []).filter(x => x.kind !== "event" && x.kind !== "approve" && x.kind !== "done" && String(x.text || "").trim());
     const x = th[th.length - 1];
     if (!x) return it.stage === "done" ? (en ? "Closed" : "已关单") : it.stage === "review" ? (en ? "Waiting for your review" : "等你验收") : stageLabel(it.stage);
     const who = x.who === "me" ? (en ? "You" : "你") : x.who ? aname(agent(x.who)) : "";
     let s = mailPv(x.text, x.who && x.who !== "me" ? agent(x.who) : null);
     if ([...s].length > 60) s = [...s].slice(0, 60).join("") + "…";
-    return who ? who + (en ? ": " : "：") + s : s;
+    return who && !(rowA && x.who === rowA.id) ? who + (en ? ": " : "：") + s : s;
   }
   function mailRow(g) {
     const m = g.last, it = m.item ? ST.items.find(i => i.id === m.item) : null, a = m.agent ? agent(m.agent) : null;
     const unread = g.ms.some(x => !x.read);
     return actRow({ attr: `data-mail="${m.id}" data-mailids="${g.ms.map(x => x.id).join(",")}"`, av: a ? av(a, "", m.item) : av("me"), ws: it ? workersOf(it.id) : [], unread,
-      name: a ? aname(a) : whoName("me"), title: it ? it.title : archTitle(m.item), time: agoH(m.t), preview: REV_MAIL.test(m.text || "") && it ? cardLine(it) : mailPv(m.text, a),
+      name: a ? aname(a) : whoName("me"), title: it ? it.title : archTitle(m.item), time: agoH(m.t), preview: REV_MAIL.test(m.text || "") && it ? cardLine(it, a) : mailPv(m.text, a),
       chip: it ? rowLabel(it) : (m.kind === "reply" ? t("replies") : t("updates")), n: g.ms.length });
   }
   document.addEventListener("click", e => {
@@ -1697,7 +1746,9 @@
 
   const PAGES = {
     quests() { return questsPage(); },
-    ongoing() { return ongoingPage(); },   /* t-ri1104-p3 */
+    market() { return window.Market ? Market.page(pageHead("market")) : pageHead("market"); },
+    crew() { return window.Team ? Team.page(pageHead("crew")) : pageHead("crew"); },   /* t-rb-build: web/team.js (null = keep its DOM) */   /* t-hm-build: web/market.js (null = keep its DOM) */
+    ongoing() { return Array.isArray(ST.schedules) ? schedPage() : ongoingPage(); },   /* t-ri1104-p3; t-schedule-ui: 定时 page when the server sends state.schedules */
     review() {
       if (widgetHome()) return window.Widgets ? Widgets.html($("#pagebody"), rulesBlock()) : rulesBlock();   // t-home-widgets: null = keep the current DOM
       const phoneLike = MOBQ.matches || appHome();   // t-home-applike: the desktop app-style home renders the phone home
@@ -1778,14 +1829,14 @@
         const adopted = ls.filter(l => l.agent === a.id && l.status === "adopted").length;
         const pend = ls.filter(l => l.agent === a.id && l.status === "pending");
         const cur = liveItem(a);   // t-now-closed: a closed card is not "current"
-        return `<div class="rc frame ${a.enabled === false ? "disabled" : ""}"><img class="rc-art" src="/static/art/${esc(a.id)}.jpg?v=1" alt="" width="560" height="840" loading="lazy" decoding="async" onerror="this.remove()"><div class="rc-h">${av(a, "lg")}<div><div class="nm">${esc(aname(a))}</div><div class="ti">${esc(atitle(a))} · <span class="mono">${esc(a.agent_name || "main session")}</span></div></div></div>
+        return `<div class="rc frame ${a.enabled === false ? "disabled" : ""}">${hasArt(a, "jpg") || !(ST.meta && ST.meta.art) ? `<img class="rc-art" src="/static/art/${esc(a.id)}.jpg?v=1" alt="" width="560" height="840" loading="lazy" decoding="async" onerror="this.remove()">` : ""}<div class="rc-h">${av(a, "lg")}<div><div class="nm">${esc(aname(a))}</div><div class="ti">${esc(atitle(a))} · <span class="mono">${esc(a.agent_name || "main session")}</span></div></div></div>
           <div class="du">${esc(aduty(a))}</div>
           <div class="now">${a.status === "working" ? `<span style="color:var(--accent)">▶ ${t("working")}</span> ${esc(a.activity || "")} ${cur ? `· <a data-item="${cur.id}" href="#">${esc(cur.title)}</a>` : ""}` : `<span class="dim">${t(a.status || "idle")} ${a.last_seen ? "· " + ago(a.last_seen) : ""}</span>`}</div>
           <div class="stats"><div><b>${done.length}</b><small>${t("closed")}</small></div><div><b>${done.length ? Math.round(first / done.length * 100) + "%" : "—"}</b><small>${t("first_pass")}</small></div><div><b>${adopted}</b><small>${t("adopted")}</small></div></div>
           ${rcLinks(a)}
           ${rcTasks(a, mine)}
           ${pend.length ? `<div class="dim" style="font-size:12px;margin-top:6px"><a href="#" data-ui12go="review">${UI.lang === "en" ? `${pend.length} rule proposal(s) → Review page` : `${pend.length} 条规则提议 → 在「审核」页处理`}</a></div>` : ""}
-          <div style="display:flex;gap:8px;margin-top:10px">${a.id !== "manager" ? `<button class="btn-s" data-chat="${a.id}">${t("dm")}</button>` : `<button class="btn-s" data-chat="manager">${t("dm")}</button>`}</div></div>`;
+          <div style="display:flex;gap:8px;margin-top:10px">${a.id !== "manager" ? `<button class="btn-s" data-chat="${a.id}">${t("dm")}</button>` : `<button class="btn-s" data-chat="manager">${t("dm")}</button>`}</div>${window.HT ? HT.acts(a) : ""}</div>`;
       }).join("")}</div>`;
     },
     mail() {
@@ -1853,23 +1904,26 @@
   // Stage = tag "pipe:<key>" when present, else guessed from the owner's role (marked "推断" on the card). No new state fields, no server change.
   // Moving a card never writes state: dropping it on another column sends the manager a chat message asking to retag it (the manager applies it).
   const PIPE = [
-    { k: "topic", zh: "选题", en: "Topic", who: ["scout"], d: "选题论证 + 调研", de: "Pitch + research" },
-    { k: "script", zh: "脚本", en: "Script", who: ["writer"], d: "立项文档 + 脚本 + 事实核查", de: "Production doc, script, fact-check" },
-    { k: "board", zh: "分镜·素材", en: "Boards · art", who: ["director", "artist"], d: "分镜 + 封面 / 概念图", de: "Storyboard, cover, concept art" },
+    { k: "topic", zh: "选题", en: "Topic", d: "选题论证 + 调研", de: "Pitch + research" },
+    { k: "script", zh: "脚本", en: "Script", d: "立项文档 + 脚本 + 事实核查", de: "Production doc, script, fact-check" },
+    { k: "board", zh: "分镜·素材", en: "Boards · art", d: "分镜 + 封面 / 概念图", de: "Storyboard, cover, concept art" },
     { k: "shoot", zh: "拍摄", en: "Shoot", who: ["me"], d: "你来拍", de: "You shoot" },
-    { k: "edit", zh: "剪辑", en: "Edit", who: ["director"], d: "粗剪方案 / 粗剪", de: "Edit plan, rough cut" },
-    { k: "pack", zh: "包装·排期", en: "Package", who: ["ops"], d: "三平台包装 + 排期", de: "Per-platform copy + slot" },
+    { k: "edit", zh: "剪辑", en: "Edit", d: "粗剪方案 / 粗剪", de: "Edit plan, rough cut" },
+    { k: "pack", zh: "包装·排期", en: "Package", d: "三平台包装 + 排期", de: "Per-platform copy + slot" },
     { k: "ready", zh: "待发布", en: "Ready", who: ["me"], d: "你来发布", de: "You publish" },
   ];
   const PIPE_ALIAS = { "选题": "topic", "调研": "topic", "脚本": "script", "核查": "script", "分镜": "board", "素材": "board", "封面": "board", "拍摄": "shoot", "剪辑": "edit", "粗剪": "edit", "包装": "pack", "排期": "pack", "待发布": "ready", "发布": "ready" };
-  const BY_OWNER = { scout: "topic", writer: "script", artist: "board", director: "board", ops: "pack" };
-  const CONTENT_ROLES = new Set(["scout", "writer", "director", "artist", "ops"]);
+  /* t-hr-registry: a content role = a roster entry with "pipe" (one column or a list); its first column is where its untagged cards land. */
+  const pipesOf = a => a && a.enabled !== false ? [].concat(a.pipe || []).filter(k => PIPE.some(p => p.k === k)) : [];
+  const byOwner = id => pipesOf(ST.agents && ST.agents[id])[0];
+  const contentRoles = () => agents().filter(a => pipesOf(a).length);
+  const pipeWho = p => p.who || contentRoles().filter(a => pipesOf(a).includes(p.k)).map(a => a.id);
   function pipeTag(it) {
     for (const g of it.tags || []) { const m = /^pipe[:：](.+)$/i.exec(String(g).trim()); if (m) { const v = m[1].trim().toLowerCase(); return PIPE.some(p => p.k === v) ? v : PIPE_ALIAS[m[1].trim()] || null; } }
     return null;
   }
-  const isContent = it => ["main", "side"].includes(it.category) && (pipeTag(it) || (it.platforms || []).length || CONTENT_ROLES.has(it.owner));
-  function pipeOf(it) { const k = pipeTag(it); return k ? { k, guess: false } : { k: BY_OWNER[it.owner] || "topic", guess: true }; }
+  const isContent = it => ["main", "side"].includes(it.category) && (pipeTag(it) || (it.platforms || []).length || !!byOwner(it.owner));
+  function pipeOf(it) { const k = pipeTag(it); return k ? { k, guess: false } : { k: byOwner(it.owner) || "topic", guess: true }; }
   const pipeName = p => UI.lang === "en" ? p.en : p.zh;
   function weekDays() {   // Monday-first, this week
     const n = new Date(), mon = new Date(n.getFullYear(), n.getMonth(), n.getDate() - ((n.getDay() + 6) % 7));
@@ -2025,17 +2079,24 @@
     const wk = pipeWeek(content);
     const bar = `<div class="ph-bar"><span class="count">${en ? "Days booked this week" : "本周已排"} <b>${wk.used}</b>${en ? "" : " 天"}</span><span class="count">${en ? "In production" : "在制作"} <b>${content.length}</b></span></div>`;
     const empty = !content.length ? `<div class="pl-empty"><b>${en ? "No content items yet." : "还没有内容单子。"}</b>
-      ${en ? "Main / side quests with a platform, a <code>pipe:&lt;stage&gt;</code> tag, or a content owner (scout, writer, director, artist, ops) show up here, one column per production stage. Calendar entries for this week fill the slots above."
-        : "主线 / 支线里，标了平台、带 <code>pipe:阶段</code> 标签、或者负责人是内容组（" + ["scout", "writer", "director", "artist", "ops"].map(id => aname(agent(id))).join("、") + "）的卡，会按制作阶段出现在下面七列。上面的发布位读的是日程里本周的条目。"}</div>` : "";
+      ${en ? "Main / side quests with a platform, a <code>pipe:&lt;stage&gt;</code> tag, or a content owner (" + contentRoles().map(a => esc(a.id)).join(", ") + ") show up here, one column per production stage. Calendar entries for this week fill the slots above."
+        : "主线 / 支线里，标了平台、带 <code>pipe:阶段</code> 标签、或者负责人是内容组（" + contentRoles().map(a => esc(aname(a))).join("、") + "）的卡，会按制作阶段出现在下面七列。上面的发布位读的是日程里本周的条目。"}</div>` : "";
     const cols = PIPE.map(p => {
       const g = content.map(i => ({ i, p: pipeOf(i) })).filter(x => x.p.k === p.k).sort((a, b) => byAct(a.i, b.i));
-      const who = p.who.map(w => w === "me" ? `<span class="pl-me">${en ? "You" : "你"}</span>` : av(agent(w), "sm")).join("");
+      const who = pipeWho(p).map(w => w === "me" ? `<span class="pl-me">${en ? "You" : "你"}</span>` : av(agent(w), "sm")).join("");
       return `<div class="pl-col${g.length ? "" : " none"}" data-pdrop="${p.k}"><div class="col-h"><span>${pipeName(p)}</span><span class="pl-who">${who}<i>${g.length}</i></span></div>
         <div class="pl-d">${esc(en ? p.de : p.d)}</div>${g.map(x => pipeCard(x.i, x.p.guess)).join("")}</div>`;
     }).join("");
-    const skip = skipped.length ? `<div class="pl-skip">${en ? `${skipped.length} main/side item(s) don't look like content (no platform, no pipe tag, not a content owner), so they are not shown:` : `另有 ${skipped.length} 张主线/支线卡不像内容（没平台、没 pipe 标签、负责人不在内容组），没放进来：`} ${skipped.map(i => `<a href="#" data-item="${i.id}">${esc(i.title)}</a>`).join("、")}</div>` : "";
+    /* t-ri1108-a P5: one line + 「展开 ›」; the list opens one card per line. RI8.skip keeps it open across poll rebuilds; the click flips the class in place. */
+    const skip = skipped.length ? `<div class="pl-skip${RI8.skip ? " ri8-open" : ""}"><div class="ri8-skip-h"><span>${en ? `${skipped.length} more main/side card(s) are not in the pipeline (no platform, no pipe tag, owner not in the content group)` : `另有 ${skipped.length} 张主线/支线卡没放进制作线（没平台、没 pipe 标签、负责人不在内容组）`}</span><button type="button" class="ri8-skip-t" data-ri8-skip aria-expanded="${RI8.skip}">${RI8.skip ? (en ? "Hide ‹" : "收起 ‹") : (en ? "Show ›" : "展开 ›")}</button></div><div class="ri8-skip-l"><div>${skipped.map(i => `<a href="#" data-item="${i.id}">${esc(i.title)}</a>`).join("")}</div></div></div>` : "";
     return pageHead("pipe", bar) + wk.html + empty + `<div class="pl-board">${cols}</div>` + skip;
   };
+  const RI8 = { skip: false };
+  document.addEventListener("click", e => {
+    const b = e.target.closest("[data-ri8-skip]"); if (!b) return;
+    const box = b.closest(".pl-skip"), en = UI.lang === "en"; RI8.skip = !RI8.skip;
+    box.classList.toggle("ri8-open", RI8.skip); b.setAttribute("aria-expanded", RI8.skip); b.textContent = RI8.skip ? (en ? "Hide ‹" : "收起 ‹") : (en ? "Show ›" : "展开 ›");
+  });
   const plFade = el => el.classList.toggle("more", el.scrollWidth - el.clientWidth - el.scrollLeft > 4);   // fade the right edge while columns hide past it
   const plSL = {};   // polls re-render the page; keep each sideways row where you left it (phones open the week strip at today)
   hooks.push(k => {
@@ -2203,6 +2264,211 @@
       (od.length ? `<div class="rs-h"><b>${en ? "On demand" : "按需常驻"}</b><span>${en ? "no fixed time" : "没有固定时间"}</span></div><div class="rs-list">${od.map(odRow).join("")}</div>` : "")) +
       (done.length ? stageGroups(done, "ongoing", true) : "");
   }
+  /* t-schedule-ui: 定时 page (was 每日). One list of every state.schedules entry (imported routines included): human rule, next run,
+     kind, agent, 迟到 tag, an on/off switch that flips in place, a ⋯ menu with 立即运行 / 删除 (held 5 s behind an undo pill, then
+     schedule_rm). Polls patch the rows in place (the switch node survives, so its slide plays) and keep the row order frozen while the
+     page is open; a new or removed entry redraws the page. 按需常驻 cards and finished one-offs follow the list. */
+  const SCH = { hold: new Set(), order: null, pend: null, timer: 0 }, SCH_HOLD = 5000;
+  const schZh = () => UI.lang !== "en";
+  const schAll = () => (ST.schedules || []).filter(s => s && !s.deleted && !SCH.hold.has(s.id));
+  const schFin = s => !s.enabled && (!!s.finished || (s.rule && s.rule.type === "once" && !s.next));
+  function schRule(r) {
+    const zh = schZh(); if (!r) return "—";
+    const at = String(r.at || "");
+    if (r.type === "once") { const [d, t0] = at.split("T"); return `${zh ? "一次性" : "Once"} ${(d || "").slice(5)} ${t0 || ""}`.trim(); }
+    if (r.type === "daily") return `${zh ? "每天" : "Daily"} ${at}`;
+    if (r.type === "weekly") {
+      const ds = (r.days || []).map(d => zh ? "一二三四五六日"[d - 1] : "Mon Tue Wed Thu Fri Sat Sun".split(" ")[d - 1]);
+      return zh ? `每周${ds.join("、")} ${at}` : `Weekly ${ds.join(", ")} ${at}`;
+    }
+    if (r.type === "monthly") return r.mday === -1 ? `${zh ? "每月最后一天" : "Monthly, last day"} ${at}` : `${zh ? `每月 ${r.mday} 号` : `Monthly, day ${r.mday}`} ${at}`;
+    return at;
+  }
+  const schAt = s => { const a = String((s.rule && s.rule.at) || ""); return a.includes("T") ? a.split("T")[1] : a || "—"; };
+  function schNext(s) {
+    const zh = schZh();
+    if (schFin(s)) return zh ? "已完成" : "Done";
+    if (!s.enabled) return zh ? "已暂停" : "Paused";
+    const nd = s.next && new Date(s.next); if (!nd || isNaN(nd)) return "—";
+    const m = Math.round((nd - Date.now()) / 6e4);
+    if (m <= 0) return zh ? "到点" : "due now";
+    if (m < 60) return zh ? `还有 ${m} 分钟` : `in ${m} min`;
+    const days = Math.round((new Date(nd.getFullYear(), nd.getMonth(), nd.getDate()) - new Date(new Date().setHours(0, 0, 0, 0))) / 864e5), t0 = hm(s.next);
+    if (days === 0) return zh ? `今天 ${t0}` : `today ${t0}`;
+    if (days === 1) return zh ? `明天 ${t0}` : `tomorrow ${t0}`;
+    if (days < 7) return zh ? `周${"日一二三四五六"[nd.getDay()]} ${t0}` : `${"Sun Mon Tue Wed Thu Fri Sat".split(" ")[nd.getDay()]} ${t0}`;
+    return `${nd.getMonth() + 1}/${nd.getDate()} ${t0}`;
+  }
+  const schLastRun = s => { const rs = s.runs || []; return rs[rs.length - 1] || null; };
+  const schLate = s => { const x = schLastRun(s); return x && x.late > 0 ? x.late : 0; };
+  const schRt = s => ((ST.meta && ST.meta.routines) || []).find(r => r.schedule === s.id || (s.routine && r.id === s.routine)) || null;
+  function schWho(s) {
+    const tk = s.task || {}, it = tk.item && (ST.items || []).find(i => i.id === tk.item);
+    const id = tk.agent || (it && it.owner); return id ? agent(id) : null;
+  }
+  function schName(s, a) {
+    const n = String(s.title || s.id).replace(/[（(][^）)]*[）)]/g, "").trim(), o = a ? aname(a) : "";
+    return (o && n.startsWith(o) ? n.slice(o.length).trim() : n) || n;
+  }
+  function schDots(s, r) {
+    if (!s.rule || s.rule.type !== "daily") return "";
+    const zh = schZh(), today = dayKey(new Date()), WK = zh ? ["周日", "周一", "周二", "周三", "周四", "周五", "周六"] : ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+    const pz = s.paused && s.paused.at, done = new Map();
+    (s.runs || []).forEach(x => { const d = x.for && new Date(x.for); if (d && !isNaN(d)) done.set(dayKey(d), x); });
+    const cell = d => {
+      const k = dayKey(d), x = r && Array.isArray(r.runs) ? r.runs.find(y => y.date === k) : null;
+      if (x) return x.item && x.stage !== "done" ? ["…", "run", x.item] : ["✓", "ok", x.item || ""];
+      if (done.has(k)) return ["✓", "ok", ""];
+      if (!s.enabled && pz && k >= dayKey(new Date(pz))) return ["⏸", "off", ""];
+      if (k === today && s.enabled && s.next && dayKey(new Date(s.next)) === today) return [schAt(s), "next", ""];
+      return ["·", "na", ""];
+    };
+    return `<div class="rs-dots">${Array.from({ length: 7 }, (_, i) => new Date(Date.now() - (6 - i) * 864e5)).map((d, i) => { const [x, c, id] = cell(d); return `<span class="rs-d"${id ? ` data-item="${esc(id)}"` : ""}><b class="${c}">${esc(x)}</b><small>${i === 6 ? (zh ? "今天" : "Today") : WK[d.getDay()]}</small></span>`; }).join("")}</div>`;
+  }
+  function schLastLine(s, r) {
+    const zh = schZh(), bits = [], x = schLastRun(s);
+    const rc = r && Array.isArray(r.runs) ? [...r.runs].reverse().find(y => y.item) : null;
+    if (schFin(s)) bits.push(`${zh ? "已完成" : "Done"} ${esc(when(s.finished || s.last))}${x && x.late > 0 ? (zh ? ` · 晚了 ${x.late} 分钟` : ` · ${x.late} min late`) : ""}`);
+    else if (!s.enabled && s.paused && s.paused.at) bits.push(`${esc(when(s.paused.at))} ${zh ? "起暂停" : "paused"}`);
+    if (schFin(s)) { }
+    else if (rc) bits.push(`${zh ? "最近一期" : "Latest"} <u data-item="${esc(rc.item)}">${esc(rc.item)}</u>`);
+    else if (x && x.at) bits.push(`${zh ? "上次" : "Last"} ${esc(when(x.at))}${x.manual ? (zh ? "（手动）" : " (manual)") : ""}${x.late > 0 ? (zh ? ` · 晚了 ${x.late} 分钟` : ` · ${x.late} min late`) : ""}`);
+    else if (s.last) bits.push(`${zh ? "上次" : "Last"} ${esc(/T/.test(s.last) ? when(s.last) : s.last.slice(5))}`);
+    else bits.push(zh ? "还没跑过" : "No run yet");
+    const tx = s.task && s.task.text && s.task.text !== s.title ? s.task.text : "";
+    if (s.said) bits.push(`${zh ? "你说的" : "You said"}「${esc(s.said)}」`);
+    else if (tx) bits.push(esc(tx));
+    return `<div class="rs-last">${bits.join(" · ")}</div>`;
+  }
+  function schRow(s) {
+    const zh = schZh(), a = schWho(s), r = schRt(s), fin = schFin(s), late = schLate(s), it = s.task && s.task.item;
+    const kind = s.kind === "remind" ? (zh ? "提醒" : "Reminder") : (zh ? "派活" : "Task");
+    const sw = fin ? "" : `<button type="button" class="rs-tg sc-tg" data-sct="${esc(s.id)}" role="switch" aria-checked="${!!s.enabled}" aria-label="${s.enabled ? (zh ? "暂停" : "Pause") : (zh ? "开启" : "Turn on")}"><i></i></button>`;
+    return `<div class="rs-row sc-row${s.enabled ? "" : " rs-off"}${fin ? " sc-fin" : ""}" data-sc="${esc(s.id)}"${it ? ` data-item="${esc(it)}"` : ""}>
+        <div class="rs-t">${esc(schAt(s))}</div>
+        <div class="rs-m"><div class="rs-n">${a ? av(a, "rs-av", it || undefined) : ""}<b>${esc(schName(s, a))}</b></div><div class="rs-s"><span class="sc-k ${s.kind === "remind" ? "rm" : "tk"}">${kind}</span>${late ? `<span class="sc-late">${zh ? `迟到 ${late} 分` : `late ${late}m`}</span>` : ""}${a ? esc(aname(a)) + " · " : ""}${esc(schRule(s.rule))}</div></div>
+        <div class="rs-r"><div class="sc-ctl">${sw}<button type="button" class="sc-more" data-scm="${esc(s.id)}" aria-label="${zh ? "更多操作" : "More"}" aria-haspopup="menu"><svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><circle cx="3.5" cy="8" r="1.4"/><circle cx="8" cy="8" r="1.4"/><circle cx="12.5" cy="8" r="1.4"/></svg></button></div><span class="rs-nx">${esc(schNext(s))}</span></div>
+        ${fin ? "" : schDots(s, r)}${schLastLine(s, r)}</div>`;
+  }
+  function schSort(a, b) {
+    const k = s => s.enabled ? 0 : 1, n = s => s.next ? Date.parse(s.next) : Infinity;
+    return k(a) - k(b) || n(a) - n(b) || String(a.title).localeCompare(String(b.title));
+  }
+  function schedPage() {
+    const zh = schZh(), body = document.getElementById("pagebody"), cur = body && body.querySelector(".sc-page");
+    const all = schAll(), fin = all.filter(schFin);
+    let live = all.filter(s => !schFin(s));
+    const ids = live.map(s => s.id).sort().join(",");
+    if (cur && SCH.order && [...SCH.order].sort().join(",") === ids) { const pos = new Map(SCH.order.map((id, i) => [id, i])); live.sort((a, b) => pos.get(a.id) - pos.get(b.id)); }
+    else live.sort(schSort);
+    SCH.order = live.map(s => s.id);
+    const linked = new Set(all.map(s => s.task && s.task.item).filter(Boolean));
+    const runIds = new Set(((ST.meta && ST.meta.routines) || []).flatMap(r => (r.runs || []).map(x => x.item).filter(Boolean)));
+    const rest = items().filter(i => i.category === "ongoing" && !linked.has(i.id) && !runIds.has(i.id) && !(parentOf(i) && linked.has(parentOf(i).id)));
+    const od = rest.filter(i => grpOf(i) !== "done"), done = rest.filter(i => grpOf(i) === "done");
+    const on = live.filter(s => s.enabled).length;
+    const hint = zh ? "跟管家说一句「明天 9 点提醒我…」就能建" : "Tell the manager “remind me tomorrow at 9…” to add one";
+    const top = live.length ? `<div class="rs-h"><b>${zh ? "全部定时" : "All schedules"}</b><span>${zh ? `${live.length} 项 · ${on} 项在跑` : `${live.length} · ${on} on`}</span></div>` : "";
+    const odRow = i => { const a = agent(i.owner); return `<div class="rs-row od" data-item="${esc(i.id)}"><div class="rs-m"><div class="rs-n">${a ? av(a, "rs-av", i.id) : ""}<b>${esc(i.title)}</b></div><div class="rs-s">${zh ? "管家说开工才跑" : "Runs when the manager starts it"} · ${zh ? "上次" : "last"} ${esc(when(i.activity || i.updated))}</div></div><span class="rs-nx dim">${i.paused && i.stage === "doing" ? (zh ? "已暂停" : "Paused") : (zh ? "等管家叫" : "On call")}</span></div>`; };
+    const finOpen = doneOpen("sched-fin");
+    const restH = (od.length ? `<div class="rs-h"><b>${zh ? "按需常驻" : "On demand"}</b><span>${zh ? "没有固定时间" : "no fixed time"}</span></div><div class="rs-list">${od.map(odRow).join("")}</div>` : "") +
+      (fin.length ? `<button type="button" class="df-row sc-finrow" data-donefold="sched-fin" aria-expanded="${finOpen}"><span>${zh ? `已完成的一次性 · ${fin.length}` : `Finished one-offs · ${fin.length}`}</span><i aria-hidden="true">▸</i></button>${finOpen ? `<div class="rs-list sc-list">${fin.sort((a, b) => String(b.finished || b.last).localeCompare(String(a.finished || a.last))).map(schRow).join("")}</div>` : ""}` : "") +
+      (done.length ? stageGroups(done, "ongoing", true) : "") +
+      (live.length || od.length || fin.length ? `<div class="sc-hint">${hint}</div>` : "");
+    const rows = ringOnce(() => live.map(s => [s.id, schRow(s)]));
+    const empty = !live.length && !od.length && !fin.length && !done.length;
+    if (cur && cur.dataset.lang === UI.lang && !empty && cur.querySelector(".sc-live") && live.length) {   /* patch in place: same entries, same order */
+      const same = [...cur.querySelectorAll(".sc-live > [data-sc]")].map(e => e.dataset.sc).join(",") === live.map(s => s.id).join(",");
+      if (same) {
+        const tp = cur.querySelector("[data-scp=top]"); if (tp._h !== top) { tp.innerHTML = top; tp._h = top; }
+        const rp = cur.querySelector("[data-scp=rest]"); if (rp._h !== restH) { rp.innerHTML = restH; rp._h = restH; }
+        rows.forEach(([id, h]) => { const el = cur.querySelector(`.sc-live > [data-sc="${CSS.escape(id)}"]`); if (el && el._h !== h) schPatch(el, h); });
+        return null;
+      }
+    }
+    const html = pageHead("ongoing") + `<div class="sc-page" data-lang="${UI.lang}">` + (empty
+      ? utEmpty(hint, "empty sc-empty", zh ? "还没有定时" : "No schedules yet")
+      : `<div data-scp="top">${top}</div><div class="rs-list sc-live">${rows.map(x => x[1]).join("")}</div><div data-scp="rest">${restH}</div>`) + `</div>`;
+    requestAnimationFrame(() => {   /* remember what each part was drawn from, so the next poll can patch */
+      const p = document.querySelector("#pagebody .sc-page"); if (!p) return;
+      const tp = p.querySelector("[data-scp=top]"), rp = p.querySelector("[data-scp=rest]"); if (tp) tp._h = top; if (rp) rp._h = restH;
+      rows.forEach(([id, h]) => { const el = p.querySelector(`.sc-live > [data-sc="${CSS.escape(id)}"]`); if (el) el._h = h; });
+    });
+    return html;
+  }
+  /* swap a row's contents but keep its switch node, so a toggle's slide is never cut by the poll that follows it */
+  function schPatch(el, h) {
+    const tpl = document.createElement("template"); tpl.innerHTML = h.trim(); const nw = tpl.content.firstElementChild; if (!nw) return;
+    const oldSw = el.querySelector(".sc-tg"), newSw = nw.querySelector(".sc-tg");
+    if (oldSw && newSw) { ["aria-checked", "aria-label"].forEach(k => oldSw.setAttribute(k, newSw.getAttribute(k))); newSw.replaceWith(oldSw); }
+    el.className = nw.className; [...nw.attributes].forEach(x => { if (x.name !== "class") el.setAttribute(x.name, x.value); });
+    if (!nw.hasAttribute("data-item")) el.removeAttribute("data-item");
+    el.replaceChildren(...nw.childNodes); el._h = h;
+  }
+  const schById = id => (ST.schedules || []).find(s => s.id === id);
+  function schToggle(b) {
+    const s = schById(b.dataset.sct); if (!s) return;
+    const zh = schZh(), on = b.getAttribute("aria-checked") === "true", row = b.closest(".sc-row");
+    b.setAttribute("aria-checked", String(!on)); b.disabled = true;
+    if (row) { row.classList.toggle("rs-off", on); const nx = row.querySelector(".rs-nx"); if (nx && on) nx.textContent = zh ? "已暂停" : "Paused"; }
+    api(on ? "schedule_pause" : "schedule_resume", { schedule: s.id })
+      .then(() => { const n = schById(s.id); toast(on ? (zh ? "已暂停 · 到点不会再触发" : "Paused") : (zh ? `已开启 · 下次 ${n ? schNext(n) : ""}` : `On · next ${n ? schNext(n) : ""}`)); })
+      .catch(() => { b.setAttribute("aria-checked", String(on)); if (row) row.classList.toggle("rs-off", !on); renderPage(); })
+      .finally(() => { b.disabled = false; });
+  }
+  function schMenu(b) {
+    const s = schById(b.dataset.scm); if (!s) return;
+    const zh = schZh(), fin = schFin(s);
+    const fireSub = s.kind === "remind" ? (zh ? "现在就发一条提醒" : "Send the reminder now") : (zh ? "现在就交给管家派活" : "Hand it to the manager now");
+    const pop = snzOpen(`<div class="snz-h"><b>${esc(schName(s, schWho(s)))}</b><small>${esc(schRule(s.rule))}</small></div>` +
+      (fin ? "" : `<button type="button" class="snz-o" role="menuitem" data-sc-fire><b>${zh ? "立即运行" : "Run now"}</b><span>${fireSub}</span></button>`) +
+      `<button type="button" class="snz-o sc-del" role="menuitem" data-sc-del><b>${zh ? "删除" : "Delete"}</b><span>${zh ? "5 秒内可撤销" : "undo within 5 s"}</span></button>`, b);
+    pop.addEventListener("click", e => {
+      if (e.target.closest("[data-sc-fire]")) {
+        pop.classList.add("busy");
+        api("schedule_fire", { schedule: s.id })
+          .then(() => { snzClose(false); toast(s.kind === "remind" ? (zh ? "已发出提醒 · 在信箱里" : "Reminder sent") : (zh ? "已触发 · 管家会接着派活" : "Fired · the manager takes it from here")); })
+          .catch(() => pop.classList.remove("busy"));
+      } else if (e.target.closest("[data-sc-del]")) { snzClose(false); schDelStart(s); }
+    });
+  }
+  function schUndoBar() {
+    let u = document.getElementById("sc-undo");
+    if (!u) { u = document.createElement("div"); u.id = "sc-undo"; u.setAttribute("role", "status"); u.hidden = true; document.body.appendChild(u); }
+    return u;
+  }
+  function schUndoHide() { const u = document.getElementById("sc-undo"); if (u && !u.hidden) { u.classList.remove("on"); clearTimeout(u._h); u._h = setTimeout(() => { u.hidden = true; }, 260); } }
+  function schDelStart(s) {
+    if (SCH.pend) schDelCommit();
+    const zh = schZh(), row = document.querySelector(`.sc-row[data-sc="${CSS.escape(s.id)}"]`);
+    SCH.pend = s.id;
+    const go = () => { SCH.hold.add(s.id); if (UI.page === "ongoing") renderPage(); };
+    if (row && !matchMedia("(prefers-reduced-motion: reduce)").matches) { row.style.height = row.offsetHeight + "px"; void row.offsetWidth; row.classList.add("sc-out"); setTimeout(go, 220); } else go();
+    const u = schUndoBar();
+    u.innerHTML = `<span class="rv-u-tx"><b>${zh ? "已删除" : "Deleted"}</b>${esc(schName(s, schWho(s)))}</span><button type="button" data-sc-undo>${zh ? "撤销" : "Undo"}</button><i class="rv-u-bar" style="--hold:${SCH_HOLD}ms"></i>`;
+    clearTimeout(u._h); u.hidden = false; void u.offsetWidth; u.classList.add("on");
+    clearTimeout(SCH.timer); SCH.timer = setTimeout(() => schDelCommit(), SCH_HOLD);
+  }
+  function schDelCommit(keepalive) {
+    const id = SCH.pend; if (!id) return;
+    clearTimeout(SCH.timer); SCH.pend = null; schUndoHide();
+    const body = JSON.stringify({ kind: "schedule_rm", schedule: id });
+    if (keepalive) { try { fetch("/api/action", { method: "POST", keepalive: true, headers: { "Content-Type": "application/json" }, body }); } catch (e) { } return; }
+    api("schedule_rm", { schedule: id }).then(() => { SCH.hold.delete(id); }).catch(() => { SCH.hold.delete(id); if (UI.page === "ongoing") renderPage(); });
+  }
+  function schUndo() {
+    const id = SCH.pend; if (!id) return;
+    clearTimeout(SCH.timer); SCH.pend = null; SCH.hold.delete(id); schUndoHide();
+    if (UI.page === "ongoing") renderPage();
+    toast(schZh() ? "已撤销删除" : "Restored");
+  }
+  document.addEventListener("click", e => {
+    if (!e.target.closest) return;
+    const tg = e.target.closest("[data-sct]"); if (tg) { e.preventDefault(); schToggle(tg); return; }
+    const mm = e.target.closest("[data-scm]"); if (mm) { e.preventDefault(); schMenu(mm); return; }
+    if (e.target.closest("[data-sc-undo]")) { e.stopPropagation(); schUndo(); }
+  });
+  addEventListener("pagehide", () => schDelCommit(true));
   function catPage(c) {
     const list = items().filter(i => i.category === c);
     let html = pageHead(c);
@@ -2388,7 +2654,9 @@
     const a = it.owner && agent(it.owner), st = it.archived ? (UI.lang === "en" ? "archived" : "已归档") : rowLabel(it);
     return `<span class="idc st-${esc(it.archived ? "archived" : grpOf(it))}" data-idc="${esc(id)}" role="link" tabindex="0" title="${esc(id + " · " + (it.title || "") + " · " + st)}">${a ? `<i class="idc-av" style="background-image:url('${avatarUrl(a)}')"></i>` : ""}<b>${esc(it.title || id)}</b><small>${esc(st)}</small></span>`;
   };
-  const idcGo = c => { const id = c.dataset.idc; if (c.closest("#drawer") && UI.item) { if (id !== UI.item) navItem(id); } else openItem(id); };
+  const idcGo = c => { const id = c.dataset.idc; if (c.closest("#drawer") && UI.item) { if (id !== UI.item) navItem(id); }
+    else if (PHONE.matches && document.body.dataset.mtab === "chat" && window.MRoute) MRoute({ item: id });   /* t-m-idchip-tap: the drawer lives in #main, which the phone chat screen covers; MRoute leaves the chat first (same path as a push tap) */
+    else openItem(id); };
   document.addEventListener("click", e => {   // capture: a chip can sit inside rows / bubbles that have their own click handlers
     const c = e.target.closest && e.target.closest("[data-idc]"); if (!c) return;
     e.preventDefault(); e.stopPropagation(); idcGo(c);
@@ -2463,11 +2731,12 @@
       week: its.filter(i => i.stage === "done" && i.closed && new Date(i.closed) > wk).length, oldest: rev.length ? Math.min(...rev.map(i => new Date(i.activity || i.updated))) : null };
   }
   // t-visual-stage: pins on the terrace picture (positions are fractions of the hero image; a new role without a seat is skipped)
-  const STG_SEAT = { manager: [.40, .56], smith: [.66, .70], writer: [.16, .30], director: [.30, .27], artist: [.80, .52], scout: [.53, .40], ops: [.90, .72] };
+  /* t-hr-registry: seat = roster "seat" ([x, y] in 0-1; null = off the stage), else a spare seat the server hands out (meta.seats) */
+  const seatOf = a => a.enabled === false ? null : Array.isArray(a.seat) ? a.seat : a.seat === null ? null : (ST.meta.seats || {})[a.id] || null;
   function stageHero(ob) {
     if (ob.dataset.hv !== "stage") { ob.dataset.hv = "stage"; ob.innerHTML = ""; ob._stg = ""; }
     const en = UI.lang === "en", A = agents(), busy = A.filter(a => a.status === "working" && !mgrOnline(a)), c = homeCounts();
-    const pins = A.filter(a => STG_SEAT[a.id]).map(a => { const [x, y] = STG_SEAT[a.id], w = a.status === "working" && !mgrOnline(a), it = w ? liveItem(a) : null;
+    const pins = A.filter(a => seatOf(a)).map(a => { const [x, y] = seatOf(a), w = a.status === "working" && !mgrOnline(a), it = w ? liveItem(a) : null;
       const pos = `left:${x * 100}%;top:${y * 100}%`;
       return `<span role="button" tabindex="0" class="stg-pin${w ? " w" : ""}" style="${pos};background-image:url('${avatarUrl(a)}')"${it ? ` data-item="${it.id}"` : ""} title="${esc(aname(a))}${it ? " · " + esc(it.title) : ""}" aria-label="${esc(aname(a))}"></span>`
         + (it ? `<span class="stg-tag" style="${pos}">${esc(aname(a))} · ${esc(it.title)}</span>` : ""); }).join("");
@@ -2487,13 +2756,15 @@
     return Object.values(by).map(g => (g.ms.sort((a, b) => a.t.localeCompare(b.t)), g)).sort((a, b) => b.ms[b.ms.length - 1].t.localeCompare(a.ms[a.ms.length - 1].t));
   }
   const nrDot = id => nrMail(id).length ? `<i class="nr-dot" title="${UI.lang === "en" ? "New reply" : "有新回复"}"></i>` : "";
-  const nrFirst = t => (String(t || "").replace(/^[^:：\n]{1,8}[:：]\s*/, "").split(/(?<=[。！？!?])|\n/)[0] || "").trim();
+  /* t-ri1108-a P1: was "drop any 1-8 char prefix before a colon, keep the first sentence": that ate 「我的建议：」-style openings and kept **.
+     mailPv strips Markdown and only a real speaker prefix; the row clamps the rest. */
+  const nrFirst = (t, a) => mailPv(t, a);
   function nrBlock() {
     const g = newReplies(); if (!g.length) return "";
     const zh = UI.lang !== "en", n = g.length, shown = g.slice(0, 4);   // t-review-unread: n = cards, the same unit as the badges
     return `<div class="nr"><div class="nr-h"><b>${zh ? "新回复" : "New replies"}</b><small>${n}</small><span class="sp"></span><button class="nr-all" data-nr-all>${zh ? "全部标为已读" : "Mark all read"}</button></div>` +
       shown.map(({ it, ms }) => { const m = ms[ms.length - 1], a = agent(m.agent);
-        return `<div class="nr-r" role="link" tabindex="0" data-nr="${esc(it.id)}">${av(a)}${ms.length > 1 ? `<span class="nr-n">${ms.length}</span>` : ""}<b>${esc(aname(a))} <i>· ${esc(it.title)}</i></b><time>${agoH(m.t)}</time><p>${esc(nrFirst(m.text))}</p><i class="nr-dot"></i></div>`; }).join("") +
+        return `<div class="nr-r" role="link" tabindex="0" data-nr="${esc(it.id)}">${av(a)}${ms.length > 1 ? `<span class="nr-n">${ms.length}</span>` : ""}<b>${esc(aname(a))} <i>· ${esc(it.title)}</i></b><time>${agoH(m.t)}</time><p>${esc(nrFirst(m.text, a))}</p><i class="nr-dot"></i></div>`; }).join("") +
       (g.length > shown.length ? `<button class="nr-more" data-h="mail">${zh ? `还有 ${g.length - shown.length} 张卡有新回复 · 去信箱` : `${g.length - shown.length} more cards · open mailbox`}</button>` : "") + `</div>`;
   }
   // r-improve-1102 P3: read marks shared through the server. A chat / DM message is mirrored into the mailbox (kind reply, no card); reading the thread
@@ -2802,6 +3073,7 @@
     const sr = sc.getBoundingClientRect(), mr = m.getBoundingClientRect(), line = sr.top + tocOff(sc) + 40;
     let cur = -1; TOC.hs.forEach((h, i) => { if (h.getBoundingClientRect().top <= line) cur = i; });
     const pc = mr.height ? Math.round(Math.max(0, Math.min(1, (sr.bottom - mr.top) / mr.height)) * 100) : 0;
+    nav.classList.toggle("away", PHONE.matches && !TOC.open && TOC.card.getBoundingClientRect().bottom < sr.top + tocOff(sc));   /* t-ri1109-a P2: phone pill fades once the draft has scrolled off the top */
     if (TOC.cur !== cur) {
       TOC.cur = cur; $$("[data-toc]", nav).forEach((b, i) => b.classList.toggle("on", i === cur));
       if (window.Glass) Glass.toc(nav);   /* t-toc-glass: slide the indicator to the lit line */
@@ -2924,7 +3196,7 @@
       return `<div class="cs-card draftc ${e.dkind === "deliverable" ? "deliverable" : ""} ${e.old ? "old" : ""} ${open ? "" : "folded"}" data-vkey="${e.vkey}">
         <div class="cs-h">${av(agent(e.who), "sm")}<span class="nm">${esc(whoName(e.who))}</span><span class="at">@${esc(whoName("me"))}</span><span class="tm">· ${hm(e.t)}</span>
           ${dk ? `<span class="dtag">${esc(dk)}</span>` : ""}${e.label ? `<span class="dlabel">${esc(e.label)}</span>` : ""}<span class="sp"></span><button data-copy-v="${e.vkey}">${t("copy")}</button></div>
-        ${conf}${e.vkey === "cur" ? vdBlock(it) : ""}<div class="md">${md(e.text)}</div>${(e.atts || []).length ? `<div class="vatt">${attHTML(e.atts)}</div>` : ""}<button class="cs-more" data-fold="${e.vkey}">${open ? t("collapse") + " ▴" : t("expand") + " ▾"}</button></div>`;
+        ${conf}${e.vkey === "cur" ? vdBlock(it) + (window.HT ? HT.diffBlock(it) : "") : ""}<div class="md">${md(e.text)}</div>${(e.atts || []).length ? `<div class="vatt">${attHTML(e.atts)}</div>` : ""}<button class="cs-more" data-fold="${e.vkey}">${open ? t("collapse") + " ▴" : t("expand") + " ▾"}</button></div>`;
     }
     if (e.kind === "msg" && e.who === "me") {
       const to = e.to || "manager";
@@ -3632,6 +3904,7 @@
     const o = ST.meta.owner, ch = o && !o.startsWith("<") ? [...o.trim()][0] : (UI.lang === "en" ? "Me" : "我");
     return `<span class="av m-meav ph"><b>${esc(ch)}</b></span>`;
   }
+  function deskMeName() { const o = ST.meta.owner; return o && !o.startsWith("<") ? o.trim() : (UI.lang === "en" ? "Me" : "我"); }
   function decorateDesk(box, list) {
     if (MOBQ.matches || !box) return;
     const msgs = [...box.querySelectorAll(".msg[data-t]")];
@@ -3643,9 +3916,12 @@
         if (!prev || new Date(t0) - new Date(prev) > 5 * 60e3) m.insertAdjacentHTML("beforebegin", `<div class="m-tsep">${esc(deskStamp(t0))}</div>`);
         const pe = m.previousElementSibling; m.classList.toggle("m-cont", !!pe && pe.classList.contains("msg") && w === pw);
         prev = t0; pw = w;
+        if (m.dataset.dd) { prev = t0; pw = w; return; }   // t-send-flicker: kept bubbles are already decorated
+        m.dataset.dd = "1";
         m.title = new Date(t0).toLocaleString(UI.lang === "en" ? "en-US" : "zh-CN", { month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit" });
-        if (m.classList.contains("me")) m.insertAdjacentHTML("beforeend", deskMeAv());
-        else if (m.dataset.who && m.dataset.who !== UI.chat) { const mb = m.querySelector(".mb"); if (mb) mb.insertAdjacentHTML("beforebegin", `<div class="m-nm">${esc(aname(agent(m.dataset.who)))}</div>`); }
+        /* t-chat-avatar-row-desk (option B, same as the phone): my avatar + name row goes ABOVE the bubble (.m-hd, right-aligned by CSS).
+           Agents already have it in .mh, which now shows their name too, so the group-style .m-nm is gone. */
+        if (m.classList.contains("me") && !m.querySelector(":scope > .m-hd")) m.insertAdjacentHTML("afterbegin", `<div class="m-hd">${deskMeAv()}<span class="m-hn">${esc(deskMeName())}</span></div>`);
       });
       if (atBottom) box.scrollTop = box.scrollHeight;
     }
@@ -3679,6 +3955,35 @@
     align(); requestAnimationFrame(loop);
     box.addEventListener("touchstart", stop, { passive: true }); box.addEventListener("wheel", stop, { passive: true }); setTimeout(stop, 1500);
   }
+  /* t-send-flicker (11-07): sending a message re-rendered the whole thread 3 times (local bubble, POST ok, server copy), plus the header and the
+     roster, so every avatar ring restarted and the images re-decoded: a visible flash. Now each message block keeps its DOM when its HTML is
+     unchanged; only new / changed blocks are swapped in. Kept nodes are never detached (that would restart their animations too). */
+  function phz(h) { return h.replace(/--wp:-?[\d.]+s/g, ""); }   // avatar rings carry a wall-clock phase; ignore it when comparing
+  function setSrc(el, h) { if (el && (el._src !== phz(h) || !el.firstChild)) { el.innerHTML = h; el._src = phz(h); } }   // hoisted: renderLeft runs before this line
+  const deco = n => n.nodeType === 1 && (n.classList.contains("m-tsep") || n.classList.contains("m-typing"));   // added by decorateDesk, not ours
+  function chatPatch(box, parts) {
+    parts = parts.filter(Boolean);
+    const old = box._parts, total = old ? old.reduce((n, e) => n + e.nodes.length, 0) : -1;
+    if (!old || total !== [...box.childNodes].filter(n => !deco(n)).length || old.some(e => e.nodes.some(n => n.parentNode !== box))) {   // first render, or someone else rebuilt the box
+      box.innerHTML = parts.join(""); box._parts = null;
+      const t = document.createElement("template"), nodes = [...box.childNodes]; let k = 0;
+      const ps = parts.map(p => { t.innerHTML = p; const n = t.content.childNodes.length; return { src: phz(p), nodes: nodes.slice(k, k += n) }; });
+      box._parts = k === nodes.length ? ps : null;
+      return;
+    }
+    const pool = new Map(); old.forEach(e => { const a = pool.get(e.src); a ? a.push(e) : pool.set(e.src, [e]); });
+    const next = parts.map(p => { const k = phz(p), a = pool.get(k), e = a && a.shift(); return e ? { e } : { src: k, html: p }; });
+    const used = new Set(next.filter(x => x.e).map(x => x.e)); let changed = false;
+    old.forEach(e => { if (!used.has(e)) { changed = true; e.nodes.forEach(n => n.remove()); } });
+    let cur = box.firstChild; const t = document.createElement("template");
+    const skip = () => { while (cur && cur.nodeType === 1 && cur.classList.contains("m-tsep")) cur = cur.nextSibling; };
+    box._parts = next.map(x => {
+      skip();
+      if (x.e) { if (x.e.nodes[0] !== cur) { changed = true; x.e.nodes.forEach(n => box.insertBefore(n, cur)); } else cur = x.e.nodes[x.e.nodes.length - 1].nextSibling; return x.e; }
+      changed = true; t.innerHTML = x.html; const nodes = [...t.content.childNodes]; nodes.forEach(n => box.insertBefore(n, cur)); return { src: x.src, nodes };
+    });
+    if (changed) box.querySelectorAll(":scope > .m-tsep").forEach(n => n.remove());   // decorateDesk redraws the time stamps (plain text)
+  }
   function renderChat() {
     const firstBuild = !chatBuilt; if (!chatBuilt) buildChat();
     const r = $("#right");
@@ -3688,11 +3993,12 @@
     const ms = mgrState();
     const st = a.id === "manager" ? (ms.on ? `<span class="on">▶ ${t("online")}</span>` : ms.sleep ? `<span class="zz">☾ ${esc(ms.txt)}</span>` : `<span class="off">● ${t("offline")}</span>`)
       : a.status === "working" ? `<span class="on">▶ ${t("working")}</span>` : `<span class="idle">${t(a.status || "idle")}</span>`;
-    $(".ch-who", r).innerHTML = `${av(a, "lg")}<span class="nm">${esc(aname(a))}</span><span class="ti">${esc(atitle(a))}</span>${qBadge(a.id)}${st}<span class="sp"></span>`;
-    $(".ch-roster", r).innerHTML = agents().filter(x => x.enabled !== false).map(x => {
+    if (window.Market && Market.hrBar) Market.hrBar(r);   /* t-hr-build: the 面试中 bar above the HR DM */
+    setSrc($(".ch-who", r), `${av(a, "lg")}<span class="nm">${esc(aname(a))}</span><span class="ti">${esc(atitle(a))}</span>${qBadge(a.id)}${st}<span class="sp"></span>`);
+    setSrc($(".ch-roster", r), agents().filter(x => x.enabled !== false).map(x => {
       const un = x.id !== UI.chat ? unreadOf(x.id) : 0;   /* t-ri1104-p2: a count from unreadOf (was: a dot when the last message was theirs) */
       return `<button data-pick="${x.id}" class="${x.id === UI.chat ? "on" : ""}">${av(x)}<span>${esc(aname(x))}</span>${un ? `<i class="unread n">${unreadTag(un)}</i>` : ""}${qBadge(x.id, true)}</button>`;
-    }).join("").replace(UI.chatFold && !MOBQ.matches ? / title="[^"]*"/g : /$^/, "");   // t-rail-tip: folded rail shows #rail-tip, never the OS tooltip
+    }).join("").replace(UI.chatFold && !MOBQ.matches ? / title="[^"]*"/g : /$^/, ""));   // t-rail-tip: folded rail shows #rail-tip, never the OS tooltip
     $("textarea", r).placeholder = MOBQ.matches ? t("chat_ph", { n: aname(a) }) : (UI.lang === "en" ? `Message ${aname(a)}…` : `对${aname(a)}说……`);   // t-web-dm: desktop moves the shortcut hint below the field
     pendSync();
     const real = chatList(UI.chat), pl = pendOf(UI.chat), list = pl.length ? real.concat(pl) : real;   // t-perf C: local bubbles ride at the end
@@ -3728,13 +4034,13 @@
       const r = nextMe[chatFrom + i]; if (!r || r.reply_to) return optChips(m.options, m.id); return optDone(m.options, r.text); };
     const pendSt = m => m.st === "fail" ? `<span class="pend-x">${UI.lang === "en" ? "Not sent" : "没发出去"}</span><button type="button" class="pend-b" data-pend-retry="${m.pend}">${UI.lang === "en" ? "Retry" : "重试"}</button><button type="button" class="pend-b" data-pend-drop="${m.pend}">${UI.lang === "en" ? "Delete" : "删除"}</button>`
       : m.st === "ok" ? whenH(m.t) : (UI.lang === "en" ? "Sending…" : "发送中…");
-    box.innerHTML = list.length ? more + view.map((m, i) => sepHTML(i) + (m.pend
+    chatPatch(box, list.length ? [more].concat(view.map((m, i) => sepHTML(i) + (m.pend
       ? `<div class="msg me pend${m.st === "ok" ? " pend-ok" : m.st === "fail" ? " pend-fail" : ""}" data-t="${esc(m.t)}" data-pend="${m.pend}">${rqLine(m)}<div class="mb">${md(m.text)}${attHTML(m.attachments)}</div><div class="mt">${pendSt(m)}</div></div>`
       : m.who === "me"
       ? `<div class="msg me" data-t="${esc(m.t)}"${m.id ? ` data-mid="${esc(m.id)}"` : ""}>${rqLine(m)}<div class="mb">${md(m.text)}${attHTML(m.attachments)}</div><div class="mt">${whenH(m.t)}</div></div>`
       : `<div class="msg" data-t="${esc(m.t)}"${m.id ? ` data-mid="${esc(m.id)}"` : ""} data-who="${esc(m.who)}"><div class="mh">${mav(m, i)}${esc(aname(agent(m.who)))} <small>${whenH(m.t)}</small></div><div class="mb md">${chipParens(md(m.text))}</div>${attHTML(m.attachments)}
-         ${optsOf(m, i)}</div>`)).join("")
-      : `<div class="empty">${UI.chat === "manager" ? (UI.lang === "en" ? "Tell the manager what you want done." : "跟管家说你想做什么。") : (UI.lang === "en" ? "DM goes through the manager to this agent." : "私信会由管家转给这个角色。")}</div>`;
+         ${optsOf(m, i)}</div>`)))
+      : [`<div class="empty">${UI.chat === "manager" ? (UI.lang === "en" ? "Tell the manager what you want done." : "跟管家说你想做什么。") : (UI.lang === "en" ? "DM goes through the manager to this agent." : "私信会由管家转给这个角色。")}</div>`]);
     if (nearBottom) box.scrollTop = box.scrollHeight;
     const opened = !!CHN.fresh; CHN.fresh = false;
     chatRenderedFor = UI.chat; chatCount = sig;
@@ -4081,18 +4387,21 @@
   // ---------- API for the mobile layer (mobile.js) ----------
   window.App = {
     okLabel, okDone, askLeft, openAsks: it => openAsks(it),   // t-btn-names
+    rtShort, rtFull,   /* t-ri1109-a: routine names, shared with widgets.js */
     utEmpty: (text, cls, h) => utEmpty(text, cls, h),   /* t-thread-motif ④ (widgets.js, palette.js, mobile.js) */
     rvApprove: id => rvApprove(id, null), rvCanApprove: it => rvCanApprove(it), awaitsUser: it => awaitsUser(it), busy: it => busy(it), onYou: it => onYou(it), onYouCard: it => onYouCard(it), grpOf: it => grpOf(it), newReplies: () => newReplies(), nrDot: id => nrDot(id), decisions: () => decisions(),   // t-imp-p5 (palette)
     /* t-chrome-badge (home.js .hd-tool) */
     toolLine: w => toolLine(w), toolBadge: a => toolBadge(a), toolWhat: a => toolWhat(a),
     wsheet: (a, sz) => wsheet(a, sz),   /* t-chibi-anim (home.js .hd-mini / .dp-uti) */
+    hasArt: (a, k) => hasArt(a, k), tintOf: a => tintOf(a),   /* t-hr-registry (home.js, widgets.js) */
     UI, get ST() { return ST; }, roll, modalStatus: () => modalStatus(), ghOpen: () => ghOpen(), ghLabel: () => ghLabel(), statusSummary: () => statusSummary(statusRows()), loadHealth: a => loadHealth(a), refreshPage: () => renderPage(), phaseFree, avatarUrl, t, items, agent, aname, atitle, av, when, whenH, agoH, ago, byAct, PLAT, stageLabel,
     refresh: async () => { await poll(true); return !UI.down; },   // t-m2-c ④ pull-to-refresh: a forced full fetch; false = the server did not answer
     tablePv: s => tablePv(s),   // t-chat-table (mobile.js chat list preview)
+    mailPv: (s, a) => mailPv(s, a),   /* t-ri1108-a P1 (widgets.js 新回复 rows) */
     verCheck: () => verCheck(true), attachPick: p => attachPick(p),   // t-lib-attach (viewer.js)   // t-new-ver (tests)
     setHome: v => setHome(v), homeStyle: () => UI.home, queueOf: id => queueOf(id), qBadge: (id, small) => qBadge(id, small),   /* t-agent-queue */ seenOf: id => seenOf(id), unreadOf: id => unreadOf(id),   /* t-ri1104-p2 */ chatMailRead: (id, t) => chatMailRead(id, t),   /* r-improve-1102 P3 (was swallowed by a // comment until 11-04) */   /* t-home-applike (palette) */
     draft: k => DRAFT.get(k), liveItem: a => liveItem(a), mgrOnline: a => mgrOnline(a), typingOn: (a, l) => typingOn(a, l), typingUntil: l => typingUntil(l),   // t-now-closed (home.js hero, office.js bubble)   // t-draft-keep (mobile.js chat list marks [草稿])
-    go: p => go(p), openItem: id => openItem(id), seekItem: (id, sp) => seekItem(id, sp), seekChat: (t, q) => seekChat(t, q),   /* t-ri1103-p5 */ closeItem: () => closeItem(), backItem: () => backItem(), setChat: id => setChat(id), api: (k, b) => api(k, b), toast: (m, e) => toast(m, e),
+    go: p => go(p), openModal: (h, f) => openModal(h, f), closeModal: () => closeModal(), renderPage: () => renderPage(),   /* t-hm-build */ openItem: id => openItem(id), seekItem: (id, sp) => seekItem(id, sp), seekChat: (t, q) => seekChat(t, q),   /* t-ri1103-p5 */ closeItem: () => closeItem(), backItem: () => backItem(), setChat: id => setChat(id), api: (k, b) => api(k, b), toast: (m, e) => toast(m, e),
     rejectItem(id) { openItem(id); modalReject(); }, on: fn => hooks.push(fn), inkEb, route: (P, via) => route(P, via),
     snoozed: it => snoozed(it), snzMenu: (id, anchor, done) => snzMenu(id, anchor, done), snzLine: () => snzLine(), snzText: it => snzText(it),   /* ri1103-P2 */
     usage: () => usage(), roleUsage: () => roleUsage(), ruHTML: (n, o) => ruHTML(n, o), fmtTok,   /* t-home-usage */

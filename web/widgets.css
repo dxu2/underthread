@@ -359,3 +359,12 @@ html[data-home="widgets"] .wg-usage .wg-eb .ru-all { display: inline-flex; align
   transition: background-color .16s ease, color .16s ease; }
 html[data-home="widgets"] .wg-usage .wg-eb:hover .ru-all { background: color-mix(in srgb, var(--ink) 8%, transparent); color: var(--ink); }
 @media (prefers-reduced-motion: reduce) { html[data-home="widgets"] .wg-usage .wg-eb .ru-all { transition: none; } }
+/* ===== t-ri1109-a P1 (2026-11-09): timeline labels. widgets.js tlPlace() sets .ran (dot, no label, name in title), .l / .r (label starts / ends
+   at the tick so it stays inside the card), .lo1 / .lo2 (second / third row) and .rows2 / .rows3 on the bar (room for those rows). ===== */
+html[data-dense] #hd2 .d-tl-bar .rt.ran { top: -1px; width: 8px; height: 8px; margin-left: -4px; border: 0; border-radius: 50%; background: var(--ink2); transition: transform .16s ease; }
+html[data-dense] #hd2 .d-tl-bar .rt.ran:hover { transform: scale(1.4); }
+html[data-dense] #hd2 .d-tl-bar .rt.l u { transform: none; margin-left: -1px; }
+html[data-dense] #hd2 .d-tl-bar .rt.r u { transform: translateX(-100%); }
+html[data-dense] #hd2 .d-tl-bar .rt.lo1 u { top: 34px; } html[data-dense] #hd2 .d-tl-bar .rt.lo2 u { top: 50px; }   /* the tick stays short: a longer one would cut through the row above */
+html[data-dense] #hd2 .d-tl-bar.rows2 { margin-bottom: 43px; } html[data-dense] #hd2 .d-tl-bar.rows3 { margin-bottom: 59px; }
+@media (prefers-reduced-motion: reduce) { html[data-dense] #hd2 .d-tl-bar .rt.ran { transition: none; } }

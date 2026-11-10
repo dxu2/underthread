@@ -10,20 +10,21 @@
   const hm = t => { const d = new Date(t); return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`; };
   const en = () => A().UI.lang === "en";
   const ago = t => { const m = Math.max(1, Math.round((Date.now() - ms(t)) / 6e4)); if (en()) return m < 60 ? `${m} min` : m < 1440 ? `${Math.round(m / 60)} h` : `${Math.round(m / 1440)} d`; return m < 60 ? `${m} 分钟` : m < 1440 ? `${Math.round(m / 60)} 小时` : `${Math.round(m / 1440)} 天`; };
-  const ART = new Set();   // open-source build: no character art ships with the repo; 此刻在忙 uses the avatar (add ids here once web/art/<id>.jpg exists)
-  const art = a => ART.has(a.id) ? `/static/art/${a.id}.jpg` : A().avatarUrl(a);
+  const art = a => A().hasArt(a, "jpg") ? `/static/art/${a.id}.jpg` : A().avatarUrl(a);
   const fileUrl = p => "/" + String(p).split("/").map(encodeURIComponent).join("/");
   const WD = "日一二三四五六";
 
   // ---------- layout ----------
-  const SIZES = { usage: ["m", "l"], review: ["m", "l"], busy: ["m", "l"], replies: ["m", "l"], today: ["s", "m", "l"], week: ["s", "m"], ongoing: ["s", "m"], media: ["s", "m"] };
+  const SIZES = { usage: ["m", "l"], review: ["m", "l"], busy: ["m", "l"], replies: ["m", "l"], today: ["s", "m", "l"], week: ["s", "m"], ongoing: ["s", "m"], media: ["s", "m"], team: ["s", "m", "l"] };   /* t-rb-build: 团队交接 (web/team.js) */
   const NAME = { usage: ["各角色用量", "Usage by role"], review: ["等你拍板", "Waiting on you"], busy: ["此刻在忙", "Working now"], replies: ["新回复", "New replies"], today: ["今天交付", "Shipped today"],
-    week: ["本周进度", "This week"], ongoing: ["常驻活动", "Routines"], media: ["最近素材", "Recent media"] };
-  const DEF = [["usage", "l"], ["review", "l"], ["busy", "l"], ["replies", "l"], ["today", "m"], ["week", "m"], ["ongoing", "m"], ["media", "m"]];
+    week: ["本周进度", "This week"], ongoing: ["每日", "Dailies"], media: ["最近素材", "Recent media"], team: ["团队交接", "Team handoffs"] };
+  const DEF = [["team", "m"], ["usage", "l"], ["review", "l"], ["busy", "l"], ["replies", "l"], ["today", "m"], ["week", "m"], ["ongoing", "m"], ["media", "m"]];
   const KEY = "rt.widgets";
   const load = () => { try { const v = JSON.parse(localStorage.getItem(KEY) || "null"); if (Array.isArray(v) && v.every(x => SIZES[x[0]])) {
       // t-home-usage: a layout saved before the usage widget existed gets it once, first (removing it later sticks)
       if (!v.some(x => x[0] === "usage") && !localStorage.getItem("rt.wgUsage")) { v.unshift(["usage", "l"]); localStorage.setItem("rt.wgUsage", "1"); localStorage.setItem(KEY, JSON.stringify(v)); }
+      /* t-rb-build: the same once for 团队交接 (P1: a small home card, size M) */
+      if (!v.some(x => x[0] === "team") && !localStorage.getItem("rt.wgTeam")) { v.unshift(["team", "m"]); localStorage.setItem("rt.wgTeam", "1"); localStorage.setItem(KEY, JSON.stringify(v)); }
       return v; } } catch { } return DEF.map(x => x.slice()); };
   const save = L => { try { localStorage.setItem(KEY, JSON.stringify(L)); } catch { } };
   const nm = k => NAME[k][en() ? 1 : 0];
@@ -44,9 +45,9 @@
     const imgs = []; its.slice().sort((a, b) => ms(b.activity) - ms(a.activity)).forEach(i => [...(i.draft_attachments || []), ...(i.attachments || [])].forEach(p => { if (/\.(png|jpe?g|webp|gif)$/i.test(p) && !imgs.some(x => x.p === p) && imgs.length < 6) imgs.push({ p, it: i }); }));
     return { waiting, busy, nr, shipped, days, doing: live.filter(i => app.grpOf(i) === "doing").length, todo: live.filter(i => app.grpOf(i) === "todo").length, ongoing, rp, imgs };
   }
-  const isEmpty = (k, D) => ({ usage: false, review: !D.waiting.length, busy: !D.busy.length, replies: !D.nr.length, today: !D.shipped.length, ongoing: !D.ongoing.length, media: !D.imgs.length, week: false })[k];
+  const isEmpty = (k, D) => ({ team: false, usage: false, review: !D.waiting.length, busy: !D.busy.length, replies: !D.nr.length, today: !D.shipped.length, ongoing: !D.ongoing.length, media: !D.imgs.length, week: false })[k];
   const calmText = k => ({ review: ["没有等你拍板的", "Nothing waiting on you"], busy: ["大家都在待机", "Everyone is idle"], replies: ["没有新回复", "No new replies"], today: ["今天还没有交付", "Nothing shipped today"],
-    ongoing: ["没有常驻活动", "No routines"], media: ["还没有素材", "No media yet"] })[k][en() ? 1 : 0];
+    ongoing: ["没有每日的活", "No dailies"], media: ["还没有素材", "No media yet"] })[k][en() ? 1 : 0];
 
   // ---------- widgets ----------
   const eb = (k, n, dot) => `<div class="wg-eb">${dot ? '<span class="wg-dot"></span>' : ""}<b>${nm(k)}</b>${n != null ? `<span class="n">${n}</span>` : ""}</div>`;
@@ -56,6 +57,7 @@
   // more: one row + 「还有 N 件 ›」 (the footer used to be clipped by ~21px under two rows)
   const fitM = (s, len, big) => s === "l" ? { n: big, foot: true } : len <= 2 ? { n: 2, foot: false } : { n: 1, foot: true };
   const W = {
+    team(s) { return window.Team ? Team.widget(s) : eb("team"); },   /* t-rb-build: drawn by web/team.js (S ring, M mini graph, L full graph + last 3) */
     usage(s) {   // t-home-usage: tokens per role today + the quota strip; markup shared with the phone card / 系统状态 (App.ruHTML)
       const R = A().roleUsage && A().roleUsage(), all = R && R.rows && R.rows.length;   // t-sync-pill batch 2: 「全部 N 位 ›」 replaces the bottom 「+N more」 line
       return `<div class="wg-eb" data-ru-open><b>${nm("usage")}</b><span>${en() ? "today" : "今天"}</span>${all ? `<span class="n ru-all">${en() ? `all ${all} ›` : `全部 ${all} 位 ›`}</span>` : `<span class="n">token</span>`}</div>`
@@ -79,7 +81,7 @@
     replies(s, D) {
       const { n } = fitM(s, D.nr.length, 4);
       return eb("replies", D.nr.length) + D.nr.slice(0, n).map(g => { const m = g.ms[g.ms.length - 1], a = A().agent(m.agent);
-        return `<div class="wg-row" data-item="${esc(g.it.id)}"><img class="wg-av" src="${A().avatarUrl(a)}" alt=""><div class="t">${esc(g.it.title)}<small>${esc(String(m.text || "").replace(/^[^:：\n]{1,8}[:：]\s*/, "").split(/\n/)[0])}</small></div><time>${ago(m.t)}</time></div>`; }).join("") +
+        return `<div class="wg-row" data-item="${esc(g.it.id)}"><img class="wg-av" src="${A().avatarUrl(a)}" alt=""><div class="t">${esc(g.it.title)}<small>${esc(A().mailPv ? A().mailPv(m.text, a) : String(m.text || ""))}</small></div><time>${ago(m.t)}</time></div>`; }).join("") +
         (D.nr.length > n ? `<div class="wg-more"><span data-go="mail">${en() ? `${D.nr.length - n} more cards ›` : `还有 ${D.nr.length - n} 张卡 · 去信箱 ›`}</span></div>` : "");
     },
     today(s, D) {
@@ -181,7 +183,7 @@
     if (t.dataset.wgEdit != null) EDIT = !EDIT;
     else if (t.dataset.wgReset != null) save(DEF.map(x => x.slice()));
     else if (t.dataset.wgHide) save(L.filter(x => x[0] !== t.dataset.wgHide));
-    else if (t.dataset.wgAdd) { L.push([t.dataset.wgAdd, SIZES[t.dataset.wgAdd].includes("m") ? "m" : SIZES[t.dataset.wgAdd][0]]); save(L); }
+    else if (t.dataset.wgAdd) { const x = [t.dataset.wgAdd, SIZES[t.dataset.wgAdd].includes("m") ? "m" : SIZES[t.dataset.wgAdd][0]]; if (x[0] === "team") L.unshift(x); else L.push(x); save(L); }   /* t-rb-build: 团队交接 comes back first */
     else if (t.dataset.wgSize) { const [k, z] = t.dataset.wgSize.split(":"); const x = L.find(y => y[0] === k); if (x) x[1] = z; save(L); }
     else if (t.dataset.wgMove) { const [k, d] = t.dataset.wgMove.split(":"); const i = L.findIndex(y => y[0] === k), j = i + +d; if (i >= 0 && j >= 0 && j < L.length) { [L[i], L[j]] = [L[j], L[i]]; save(L); } }
     redraw();
@@ -251,7 +253,25 @@
   // Same data -> same DOM; changed data -> only the sections whose HTML changed are swapped. Ticking text (elapsed, now marker,
   // 「N 小时后」) is stripped by norm() and updated in place by the 30 s ticker below.
   const dkey = d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-  const rtName = r => String(r.label || r.id).replace(/[（(][^）)]*[）)]/g, "").replace(/^.*?每日\s*(\d+\s*个\s*)?(一条|打磨)?/, "").replace(/^app\s*/i, "").trim() || r.id;
+  /* t-ri1109-a P1: the timeline label is the part after 「：」 (「晨报：研究员写稿…」 -> 「研究员写稿…」), cut to 5 characters; the full name goes into title */
+  const rtName = r => { const n = A().rtShort(r), t = n.split(/[：:]/).pop().trim() || n; return [...t].length > 6 ? [...t].slice(0, 5).join("") + "…" : t; };
+  const rtFull = r => A().rtFull(r);
+  /* t-ri1109-a P1: place not-yet-run labels without collisions. Width is estimated from the text (CJK 11 px, other 6.3 px at --fs-11) against the
+     bar's current width, so the same data gives the same HTML on every poll. Centred on the tick; clamped to the card's edges; a label that would hit
+     the one before it drops to the next row (up to three, only when nothing has run yet early in the day); with all three taken it shows no text (the tick keeps the title). */
+  const tlEst = s => [...s].reduce((w, ch) => w + (/[\u2e80-\uffff]/.test(ch) ? 11 : 6.3), 0) + 4;
+  function tlPlace(rs) {
+    const bar = document.querySelector("#hd2 .d-tl-bar"), bw = (bar && bar.clientWidth) || 680, end = [-1e9, -1e9, -1e9];
+    return rs.map(r => {
+      if (r.ran) return { row: -1 };
+      const w = tlEst(`${hm(r.t)} ${r.name}`), x = tlX(r.t) / 100 * bw;
+      let l = x - w / 2, al = "";
+      if (l < 0) { l = x; al = "l"; } else if (l + w > bw) { l = x - w; al = "r"; }
+      const row = end.findIndex(e => e + 6 <= l);
+      if (row >= 0) end[row] = l + w;
+      return { row: row < 0 ? -2 : row, al };
+    });
+  }
   const dayAt = hhmm => { const [h, m] = String(hhmm).split(":").map(Number), d = new Date(); d.setHours(h || 0, m || 0, 0, 0); return d.getTime(); };
   const inH = t => { const h = (t - Date.now()) / 36e5; return en() ? `in ${h < 1 ? Math.max(1, Math.round(h * 60)) + " min" : (Math.round(h * 10) / 10) + " h"}` : h < 1 ? `${Math.max(1, Math.round(h * 60))} 分钟后` : `${Math.round(h * 10) / 10} 小时后`; };
   const TL = { h0: 8, h1: 22 };
@@ -261,8 +281,8 @@
     const app = A(), ST = app.ST, its = app.items(), D = data(), now = Date.now(), td = new Date().toDateString(), tk = dkey(new Date());
     const isT = t => !!t && new Date(t).toDateString() === td;
     const meta = ST.meta || {};
-    const rts = (meta.routines || []).filter(r => !r.paused && !r.disabled && r.time).map(r => ({ t: dayAt(r.time), name: rtName(r), ran: r.last === tk, item: r.item }));
-    if (meta.report_time) rts.push({ t: dayAt(meta.report_time), name: en() ? "Daily report" : "日报", ran: meta.last_report_date === tk, item: "" });
+    const rts = (meta.routines || []).filter(r => !r.paused && !r.disabled && r.time).map(r => ({ t: dayAt(r.time), name: rtName(r), full: rtFull(r), ran: r.last === tk, item: r.item }));
+    if (meta.report_time) rts.push({ t: dayAt(meta.report_time), name: en() ? "Daily report" : "日报", full: en() ? "Daily report" : "日报", ran: meta.last_report_date === tk, item: "" });
     rts.sort((a, b) => a.t - b.t);
     const cal = (ST.calendar || []).filter(e => e.date === tk);
     const goals = its.filter(i => !/^r-/.test(i.id) && i.category !== "ongoing" && (i.stage === "done" ? isT(i.closed) : (isT(i.created) || isT(i.activity))));
@@ -280,13 +300,14 @@
     TL.h0 = Math.min(8, new Date(now).getHours()); TL.h1 = Math.max(22, new Date(now).getHours() + 1);
     const ticks = []; for (let h = TL.h0; h <= TL.h1; h += 2) ticks.push(`<span style="left:${pct((h - TL.h0) / (TL.h1 - TL.h0) * 100)}">${String(h).padStart(2, "0")}:00</span>`);
     const next = X.rts.find(r => r.t > now && !r.ran), evN = X.cal.length;
+    const pl = tlPlace(X.rts), ranN = X.rts.filter(r => r.ran).length;
     const tl = `<section class="d-card d-tl" data-sec="tl"><div class="d-tl-ax">${ticks.join("")}</div>
-      <div class="d-tl-bar" style="--now:${pct(tlX(now))}"><i class="past"></i>
+      <div class="d-tl-bar${(n => n > 0 ? " rows" + (n + 1) : "")(Math.max(0, ...pl.map(x => x.row)))}" style="--now:${pct(tlX(now))}"><i class="past"></i>
       ${D.shipped.map(i => `<b class="dot" style="left:${pct(tlX(i.closed))}" title="${esc(hm(i.closed) + " " + i.title)}" data-item="${esc(i.id)}"></b>`).join("")}
       ${X.cal.filter(e => e.time).map(e => `<b class="ev" style="left:${pct(tlX(dayAt(e.time)))}" title="${esc(e.time + " " + (e.title || ""))}"></b>`).join("")}
-      ${X.rts.map(r => `<em class="rt${r.ran ? " ran" : ""}" style="left:${pct(tlX(r.t))}"${r.item ? ` data-item="${esc(r.item)}"` : ""}><u>${hm(r.t)} ${esc(r.name)}</u></em>`).join("")}
+      ${X.rts.map((r, i) => `<em class="rt${r.ran ? " ran" : ""}${pl[i].row > 0 ? " lo" + pl[i].row : ""}${pl[i].al ? " " + pl[i].al : ""}" style="left:${pct(tlX(r.t))}"${r.item ? ` data-item="${esc(r.item)}"` : ""} title="${esc(`${hm(r.t)} ${r.full}${r.ran ? (zh ? " · 已跑" : " · ran") : ""}`)}">${pl[i].row >= 0 ? `<u>${hm(r.t)} ${esc(r.name)}</u>` : ""}</em>`).join("")}
       <span class="now"><u><span class="d-tk" data-now="1">${(zh ? "现在 " : "now ") + hm(now)}</span></u></span></div>
-      <div class="d-tl-ft">${zh ? `今天交付 <b>${D.shipped.length}</b> 件 · ${evN ? `${evN} 个日程` : "没有会议"}` : `<b>${D.shipped.length}</b> shipped today · ${evN ? `${evN} events` : "no meetings"}`}${next ? ` · ${zh ? "下一个" : "next"}：${hm(next.t)} ${esc(next.name)}（<span class="d-tk" data-at="${next.t}">${inH(next.t)}</span>）` : ""}${D.nr.length ? ` · <button type="button" class="d-link in" data-go="mail">${zh ? `${D.nr.length} 张卡有新回复 ›` : `${D.nr.length} cards with new replies ›`}</button>` : ""}${A().snzLine ? A().snzLine() : ""}</div></section>`;
+      <div class="d-tl-ft">${ranN ? (zh ? `已跑 ${ranN} 个 · ` : `${ranN} ran · `) : ""}${zh ? `今天交付 <b>${D.shipped.length}</b> 件 · ${evN ? `${evN} 个日程` : "没有会议"}` : `<b>${D.shipped.length}</b> shipped today · ${evN ? `${evN} events` : "no meetings"}`}${next ? ` · ${zh ? "下一个" : "next"}：${hm(next.t)} ${esc(next.name)}（<span class="d-tk" data-at="${next.t}">${inH(next.t)}</span>）` : ""}${D.nr.length ? ` · <button type="button" class="d-link in" data-go="mail">${zh ? `${D.nr.length} 张卡有新回复 ›` : `${D.nr.length} cards with new replies ›`}</button>` : ""}${A().snzLine ? A().snzLine() : ""}</div></section>`;
     // 2 等你拍板
     const W = X.waiting, tag = i => i.category === "urgent" ? `<em class="u">${zh ? "紧急" : "Urgent"}</em>` : `<em>${kindL(i)}</em>`;
     const needs = `<section class="d-needs${W.length ? "" : " d-needs0"}" data-sec="needs"><div class="d-h"><b>${nm("review")}</b>${W.length ? `<span class="n hot">${W.length}</span>` : ""}${W.length ? "" : `<span class="d-ok">✓ ${calmText("review")}</span>`}<span class="sp"></span>${W.length > 2 ? `<button type="button" class="d-link" data-go="board">${zh ? "全部" : "All"} ${W.length} ›</button>` : ""}</div>

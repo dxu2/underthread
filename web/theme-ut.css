@@ -308,3 +308,43 @@ html[data-ut] .dp-strip .dp.w.act .dp-utw { width: 84px; height: 84px; left: cal
 /* reduced motion: hold frame 1 (the prop stays, so "busy" still reads); the ring has its own rule in style.css */
 @media (prefers-reduced-motion: reduce) {
   html[data-ut] .av.working.wsheet, html[data-ut] .hd-mini.working.wsheet, html[data-ut] .dp-strip .dp.w .dp-utw { animation: none; background-position: 0 0; transition: none; } }
+
+/* ===== t-ums-build: Mailbox C (yarn-ball count, cross-stitched flap) + Soul C (knitting swatch). app.js always writes the extra marks;
+   outside Underthread they are hidden so every other theme looks exactly as before. Decorations are aria-hidden; the count and the % stay text. */
+.hc-mail .ums-x, .hc-mail .ums-yarn, .nav-i .n .ums-yarn, .orb .ums-sw { display: none; }
+/* -- Mailbox: same pill, felt face; the flap is a row of cross-stitches; the count sits on a red yarn ball (99+ stretches it to an oval) -- */
+html[data-ut] .hdr-ctrl .hc-mail { background: var(--panel); box-shadow: inset 0 0 0 1px var(--line2), 0 1px 2px color-mix(in srgb, var(--ink) 10%, transparent); padding-right: 8px; }
+html[data-ut] .hdr-ctrl .hc-mail:hover { background: color-mix(in srgb, var(--ink) 5%, var(--panel)); }
+html[data-ut] .hdr-ctrl .hc-mail > svg { width: 17px; height: 17px; overflow: visible; }
+html[data-ut] .hc-mail .ums-flap { display: none; }
+html[data-ut] .hc-mail .ums-x { display: inline; stroke: var(--accent); stroke-width: 1.15; stroke-linecap: round; }
+html[data-ut] .hc-mail .n, html[data-ut][data-theme] #nav .nav-i .n.mb:not(.z) { position: relative; z-index: 0; background: none; text-shadow: 0 0 2px var(--dot), 0 0 1px var(--dot); }
+html[data-ut] .hdr-ctrl .hc-mail .n { height: 21px; min-width: 21px; padding: 0 5px; margin-left: 1px; font-size: var(--fs-11); }
+html[data-ut][data-theme] #nav .nav-i .n.mb:not(.z) { height: 21px; min-width: 21px; line-height: 21px; padding: 0 5px; margin-right: 4px; }
+html[data-ut] .hc-mail .n .ums-yarn, html[data-ut] .nav-i .n .ums-yarn { display: block; position: absolute; inset: 0; width: 100%; height: 100%; z-index: -1; overflow: visible; stroke: none; fill: none; }
+html[data-ut] .n .ums-yarn .ums-b0 { fill: var(--dot); }
+html[data-ut] .n .ums-yarn .ums-bw { stroke: color-mix(in srgb, var(--dot), #000 30%); stroke-width: 1; vector-effect: non-scaling-stroke; opacity: .75; }   /* a shade of --dot, not a new hue */
+html[data-ut] .n .ums-yarn .ums-bt { stroke: var(--dot); stroke-width: 1.4; stroke-linecap: round; vector-effect: non-scaling-stroke; }
+/* -- Soul: the vessel gives way to a knitted swatch, 6 rows x 4 big stitches knitted up to the % left; a needle on the current row -- */
+html[data-ut] .orb { filter: none; animation: none; --ums-thread: color-mix(in srgb, var(--accent) 78%, var(--soul)); }
+html[data-ut] .orb.low { --ums-thread: var(--urgent); }
+html[data-ut] .orb .ums-vs { display: none; }
+html[data-ut] .orb .ums-sw { display: block; }
+.orb .ums-sw .ums-cloth { fill: var(--panel2); stroke: var(--line2); stroke-width: 1; }
+.orb .ums-sw .ums-cast { fill: none; stroke: color-mix(in srgb, var(--ums-thread) 60%, var(--panel2)); stroke-width: 1.2; stroke-dasharray: 2 1.4; }
+.orb .ums-sw .ums-kc { fill: transparent; }
+.orb .ums-sw .ums-kv { fill: none; stroke: var(--line3); stroke-width: 1.2; stroke-linecap: round; stroke-dasharray: .1 2.3; opacity: .8; }   /* not knitted yet: a dotted trace only, so the knitted block reads as a level */
+.orb .ums-sw .ums-on .ums-kc { fill: color-mix(in srgb, var(--ums-thread) 32%, var(--panel2)); }
+.orb .ums-sw .ums-on .ums-kv { stroke: var(--ums-thread); stroke-width: 2.3; stroke-dasharray: none; opacity: 1; }
+.orb .ums-sw .ums-needle { stroke: var(--ink2); stroke-width: 1.6; stroke-linecap: round; }
+.orb .ums-sw .ums-knob { fill: var(--ink2); }
+.orb .ums-sw .ums-nd.ums-off { display: none; }
+@media (prefers-reduced-motion: no-preference) {
+  html[data-ut] .orb .ums-sw .ums-kc, html[data-ut] .orb .ums-sw .ums-kv { transition: fill .5s var(--ease), stroke .5s var(--ease), stroke-width .5s var(--ease), opacity .5s var(--ease); }
+  html[data-ut] .orb .ums-sw .ums-nd { transition: transform .8s var(--ease); }
+  html[data-ut] .orb .ums-sw .ums-ndi { animation: ums-knit 2.2s ease-in-out infinite; }
+  html[data-ut] .hc-mail .n .ums-yarn .ums-bt, html[data-ut] #nav .nav-i .n .ums-yarn .ums-bt { transform-origin: 70% 70%; transform-box: fill-box; animation: ums-tail 3s ease-in-out infinite; }
+}
+html[data-ut] .stamina.stale .orb .ums-sw .ums-ndi { animation-play-state: paused; }
+@keyframes ums-knit { 0%, 100% { transform: translateX(0); } 50% { transform: translateX(1.6px); } }
+@keyframes ums-tail { 0%, 100% { transform: rotate(0); } 50% { transform: rotate(8deg); } }

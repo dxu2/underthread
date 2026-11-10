@@ -38,16 +38,17 @@ d.dataset.splash="1";d.style.setProperty("--ut-guard",t==="white"?"#ffffff":t===
 <link rel="stylesheet" href="/static/splash.css?v=1">
 <script src="/static/splash.js?v=1" defer></script>
 <!-- ri1106-P1: no Google Fonts request any more; Cinzel (latin) is self-hosted in web/fonts, see style.css @font-face -->
-<link rel="stylesheet" href="/static/style.css?v=154">
-<link rel="stylesheet" href="/static/mobile.css?v=121" media="(max-width: 760px)">
+<link rel="stylesheet" href="/static/style.css?v=167">
+<link rel="stylesheet" href="/static/mobile.css?v=135" media="(max-width: 760px)">
 <link rel="stylesheet" href="/static/home-app.css?v=9">   <!-- t-home-applike: desktop app-style 首页 (scoped to html[data-home=app]) -->
-<link rel="stylesheet" href="/static/widgets.css?v=9">   <!-- t-home-widgets: desktop widget 首页 (scoped to html[data-home=widgets]) -->
+<link rel="stylesheet" href="/static/team.css?v=1">   <!-- t-rb-build -->
+<link rel="stylesheet" href="/static/widgets.css?v=10">   <!-- t-home-widgets: desktop widget 首页 (scoped to html[data-home=widgets]) -->
 <link rel="stylesheet" href="/static/skin-ink.css?v=8">   <!-- t-visual-ink: 墨刊 skin, every rule scoped to html[data-skin="ink"] -->
 <link rel="stylesheet" href="/static/glass.css?v=9">   <!-- t-glass-system: shared glass + motion tokens; card / rail / TOC glass. <html data-glass="0"> turns it off -->
-<link rel="stylesheet" href="/static/theme-ut.css?v=2">   <!-- t-theme-ut: Underthread 特典配色, only under html[data-ut] -->
+<link rel="stylesheet" href="/static/theme-ut.css?v=9">   <!-- t-theme-ut: Underthread 特典配色, only under html[data-ut] -->
 <link rel="stylesheet" href="/static/texture-knit.css?v=1">   <!-- t-theme-knit: 质感「针织」, only under html[data-texture^=knit] (rt.texture, 设置 → 外观 → 质感) -->
 <link rel="stylesheet" href="/static/texture-leather.css?v=1">   <!-- t-theme-leather: 质感「皮革」, only under html[data-texture^=leather] (leather1 软皮 / leather2 马鞍) -->
-<link rel="stylesheet" href="/static/oss.css?v=5">   <!-- open-source build: text wordmark, hides switches for parts not shipped (stage art, voice) -->
+<link rel="stylesheet" href="/static/oss.css?v=6">   <!-- open-source build: text wordmark, hides switches for parts not shipped (stage art, voice) -->
 </head>
 <body>
 <header id="top">
@@ -73,18 +74,21 @@ d.dataset.splash="1";d.style.setProperty("--ut-guard",t==="white"?"#ffffff":t===
 <div id="boot-sk" class="sk boot-sk" aria-busy="true" aria-label="加载中"><div class="sk-st"><b></b><b></b><b></b><b></b></div><div class="sk-c"><i style="width:30%"></i><i></i><i style="width:72%"></i></div><div class="sk-c"><i style="width:42%"></i><i style="width:88%"></i><i style="width:60%"></i></div><div class="sk-c"><i style="width:36%"></i><i></i><i style="width:50%"></i></div></div>
 <div id="modal" hidden></div>
 <div id="toast" hidden></div>
-<script src="/static/md.js?v=2"></script>
-<script src="/static/fx.js?v=10"></script>
+<script src="/static/md.js?v=3"></script>
+<script src="/static/fx.js?v=11"></script>
 <script src="/static/diff.js?v=1"></script>
-<script src="/static/app.js?v=180"></script>
+<script src="/static/app.js?v=202"></script>
+<script src="/static/market.js?v=4"></script>
+<script src="/static/transfer.js?v=1"></script>   <!-- t-ht-build: 调岗 / 退休 -->
 <script src="/static/preview.js?v=1"></script>
 <script src="/static/palette.js?v=15"></script>
-<script src="/static/home.js?v=19"></script>
-<script src="/static/widgets.js?v=15"></script>   <!-- t-home-widgets -->
+<script src="/static/home.js?v=25"></script>
+<script src="/static/team.js?v=1"></script>   <!-- t-rb-build: 团队交接 widget + 团队 page -->
+<script src="/static/widgets.js?v=20"></script>   <!-- t-home-widgets -->
 <script src="/static/rolefiles.js?v=3"></script>
 <script src="/static/viewer.js?v=7"></script>
 <script src="/static/glass.js?v=3"></script>   <!-- t-glass-system: sliding nav pill, TOC indicator / close animation -->
-<script src="/static/mobile.js?v=93"></script>
+<script src="/static/mobile.js?v=99"></script>
 <script src="/static/push.js?v=4"></script>
 </body>
 </html>

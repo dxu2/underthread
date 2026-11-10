@@ -5,7 +5,7 @@
 (function () {
   const A = () => window.App, $ = (s, r = document) => r.querySelector(s);
   const esc = s => String(s == null ? "" : s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
-  const ORDER = ["manager", "scout", "writer", "director", "artist", "ops", "smith"];   // same order as the art
+  // t-hr-registry: no id list here; roster order (agents[].order) decides the strip order
   const REPORT = "18:00";
   const S = { act: null, pick: 0, last: null, prev: {} };
 
@@ -41,7 +41,7 @@
   const clock = iso => { const d = new Date(iso); return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`; };
   const dur = m => m < 60 ? L().m(Math.max(1, m)) : L().hm(Math.floor(m / 60), String(m % 60).padStart(2, "0"));
   const durShort = m => m < 60 ? L().m(Math.max(1, m)) : m < 48 * 60 ? L().h(Math.round(m / 60)) : L().d(Math.round(m / 1440));
-  const ordered = ag => ORDER.map(id => ag.find(a => a.id === id)).filter(Boolean).concat(ag.filter(a => !ORDER.includes(a.id)));
+  const ordered = ag => ag.slice().sort((a, b) => (a.order ?? 99) - (b.order ?? 99));
   function oldest(c) { if (!c.oldest) return ""; const m = mins(new Date(c.oldest).toISOString()); return L().oldest(durShort(m)); }
   const urgent = c => c.review >= 3 || (c.review > 0 && c.oldest && mins(new Date(c.oldest).toISOString()) > 12 * 60);
   const itemStage = id => { const it = (A().ST.items || []).find(i => i.id === id); return it && it.stage; };
@@ -55,8 +55,8 @@
   // ---------- build ----------
   function panel(a, i) {
     const nm = A().aname(a);
-    return `<div class="dp" role="button" tabindex="0" data-id="${a.id}" data-hd-pick="${a.id}" style="--i:${i};--tint:var(--c-${a.id}, var(--accent))">
-      <i class="dp-edge"></i><div class="dp-art"><i class="dp-img" style="background-image:url('${esc(A().avatarUrl(a, 1))}'); --ph:${(i * 0.7).toFixed(1)}s"></i><i class="dp-uti" style="background-image:url('${esc(A().avatarUrl(a, 1))}')">${A().wsheet && A().wsheet(a, 320) ? `<i class="dp-utw" style="${A().wsheet(a, 320).slice(1)}"></i>` : ""}</i></div>
+    return `<div class="dp" role="button" tabindex="0" data-id="${a.id}" data-hd-pick="${a.id}" style="--i:${i};--tint:var(--tint-ph, var(--accent));--tint-hex:${A().tintOf(a)}">
+      <i class="dp-edge"></i><div class="dp-art"><i class="dp-img" style="background-image:${A().hasArt && A().hasArt(a, "panel") ? `url('/static/art/panels/${a.id}.webp'),` : ""}url('${esc(A().avatarUrl(a, 1))}'); --ph:${(i * 0.7).toFixed(1)}s"></i><i class="dp-uti" style="background-image:url('${esc(A().avatarUrl(a, 1))}')">${A().wsheet && A().wsheet(a, 320) ? `<i class="dp-utw" style="${A().wsheet(a, 320).slice(1)}"></i>` : ""}</i></div>
       <span class="dp-vn">${esc(nm)}</span><i class="dp-un"></i><span class="dp-rg"><i></i></span>
       <div class="dp-info"><div class="n"><b>${esc(nm)}</b><span class="hd-st"></span></div><div class="rl">${esc(A().atitle(a))}</div>
         <div class="dp-t"><span></span>${CHEV}</div><div class="dp-m"><em></em><i class="dp-bar"><u></u></i></div></div>
@@ -180,9 +180,147 @@
     root._ready = true;
   }
 
+  // ---------- A2 (t-m-team-alt, user pick 11-07 20:07): phone-only team card ----------
+  // Working members as rows (chibi work sheet under 特典 data-ut while working, static patch elsewhere / reduced motion), full title + 「HH:MM 起 · N 分钟」,
+  // 看画面 as a text link (data-live, same capture handler as the Chrome pill). Idle members fold into a grey avatar stack on the last line; a tap
+  // expands names (tap a face to DM). No header line. 0 working: 「都歇着呢。」 + the latest delivery. Stats row unchanged (same .hd-stat markup + patch).
+  // The desktop app-style home keeps the D1 strip (render() picks by width).
+  const C2 = { zh: { idle: n => `${n} 人空闲`, exp: "空闲 · 点头像私信", fold: "收起", rest: "都歇着呢。", last: (nm, t, ti) => `最近一单：${nm} ${t} 交了「${ti}」`,
+      since: (c, d) => `${c} 起 · ${d}`, q: n => `还排着 ${n} 个`, live: "看画面", none: "还没有交付" },
+    en: { idle: n => `${n} idle`, exp: "Idle · tap a face to message", fold: "Hide", rest: "Everyone's resting.", last: (nm, t, ti) => `Last shipped: ${nm} · ${t} · ${ti}`,
+      since: (c, d) => `since ${c} · ${d}`, q: n => `${n} queued`, live: "Watch", none: "Nothing shipped yet" } };
+  const L2 = () => C2[lang()];
+  const PHONE = matchMedia("(max-width: 760px)");
+  const S2 = { x: false, prev: null, mc: {} };   // a2restore: prev = last poll per member (dispatch / completion events), mc = rows still playing 委托完成
+  const whenShort = iso => { const d = new Date(iso), n = new Date(); return d.toDateString() === n.toDateString() ? clock(iso) : `${d.getMonth() + 1}/${d.getDate()}`; };
+  function lastShip() {
+    const it = (A().ST.items || []).filter(i => i.stage === "done" && i.updated).sort((x, y) => (y.updated || "").localeCompare(x.updated || ""))[0];
+    if (!it) return { t: L2().none, id: null };
+    const ow = it.owner && A().agent(it.owner);
+    return { t: L2().last(ow ? A().aname(ow) : "", whenShort(it.updated), it.title || it.id), id: it.id };
+  }
+  function a2Av(a, w) {
+    const ws = w && A().wsheet ? A().wsheet(a, 320) : "";
+    return `<span class="a2-av hd-mini${w ? " working" : ""}${ws ? " wsheet" : ""}" style="background-image:url('${esc(A().avatarUrl(a))}')${ws}" aria-hidden="true"></span>`;
+  }
+  // a2restore (t-m-a2-restore): data-lp = long-press opens the D1 quick sheet; .a2-glow wraps the avatar so the dispatch halo never overrides the chibi sheet animation;
+  // .a2-tg = the 「Chrome」 tag (agents[id].tool); .a2-fx hosts the 委托完成 streak / plate (same markup as the D1 mission()).
+  function a2Row(a) {
+    return `<div class="a2-r" role="button" tabindex="0" data-a2="${a.id}" data-lp="${a.id}" style="--tint:var(--tint-ph, var(--accent));--tint-hex:${A().tintOf(a)}"><span class="a2-glow">${a2Av(a, true)}</span><div class="a2-b"><div class="a2-n"><span class="a2-nm">${esc(A().aname(a))}</span><span class="a2-tg" hidden></span></div><div class="a2-t"></div>
+      <div class="a2-m"><span class="a2-k"></span><button type="button" class="a2-lk" data-live="${a.id}" hidden>${L2().live} <span aria-hidden="true">›</span></button></div></div><div class="a2-fx" aria-hidden="true"></div></div>`;
+  }
+  const toolTag = k => k === "chrome" ? "Chrome" : k === "computer" ? (lang() === "en" ? "Computer" : "电脑") : String(k);
+  function a2Lit(el) { el.classList.remove("lit"); void el.offsetWidth; el.classList.add("lit"); setTimeout(() => el.classList.remove("lit"), 1700); }
+  function a2Mission(el) {
+    const fx = $(".a2-fx", el); if (!fx) return;
+    fx.innerHTML = `<i class="s1"></i><i class="s2"></i><i class="fl"></i><b class="pl">COMPLETE<small>${L().done}</small></b>`;
+    el.classList.add("mc"); setTimeout(() => { el.classList.remove("mc"); fx.innerHTML = ""; }, 2300);
+  }
+  // long-press on a working row, a stacked idle face or an expanded idle face -> the D1 sheet(); the click that follows the hold is swallowed (capture on #officebox)
+  function a2Wire(ob) {
+    if (ob._a2lp) return; ob._a2lp = true;
+    let down = null, lp = 0;
+    ob.addEventListener("pointerdown", e => {
+      if (ob.dataset.hv !== "a2") return; const t = e.target.closest("[data-lp]"); if (!t) return;
+      down = { x: e.clientX, y: e.clientY, id: t.dataset.lp };
+      clearTimeout(lp); lp = setTimeout(() => { if (down) { down.long = true; sheet(down.id); } }, 480);
+    });
+    ob.addEventListener("pointermove", e => { if (down && (Math.abs(e.clientX - down.x) > 8 || Math.abs(e.clientY - down.y) > 8)) { clearTimeout(lp); down = null; } });
+    // the click after the hold is hit-tested at release, i.e. on the sheet's scrim (which would close the sheet at once): swallow it at window capture
+    const eat = e => { e.stopPropagation(); e.preventDefault(); removeEventListener("click", eat, true); };
+    const end = () => { clearTimeout(lp); if (down && down.long) { addEventListener("click", eat, true); setTimeout(() => removeEventListener("click", eat, true), 400); } down = null; };
+    ob.addEventListener("pointerup", end); ob.addEventListener("pointercancel", end);
+    ob.addEventListener("contextmenu", e => { if (ob.dataset.hv === "a2" && e.target.closest("[data-lp]")) e.preventDefault(); });
+  }
+  function a2Build(ob) {
+    const stats = ["review", "doing", "todo", "week"].map((k, i) => [k, L().st[i]]).map(([k, l], i) => `<div class="hd-stat" role="button" tabindex="0" data-hd-f="${k}" style="--i:${i}"><b data-k="${k}">0</b><i class="hd-rdot"></i><span>${l}</span>${k === "review" ? `<small class="hd-old"></small>` : ""}</div>`).join("");
+    ob.dataset.lang = lang(); ob.dataset.hv = "a2";
+    ob.innerHTML = `<div class="hd hd-a2"><button type="button" class="hd-srch a2-srch" data-msearch aria-label="${lang() === "en" ? "Search" : "搜索"}"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="M16 16 L20.5 20.5"/></svg></button><div class="a2-rows"></div><div class="a2-rest" role="button" tabindex="0" hidden><div class="a2-rest-t">${L2().rest}</div><div class="a2-rest-k"></div></div>
+      <button type="button" class="a2-stack" aria-expanded="false"><span class="a2-faces"></span><span class="a2-sn"></span></button>
+      <div class="a2-exp" aria-hidden="true"><div class="a2-ex-in"><div class="a2-eh"><span>${L2().exp}</span><button type="button" class="a2-fold">${L2().fold} <span aria-hidden="true">‹</span></button></div><div class="a2-gr"></div></div></div>
+      <div class="hd-stats">${stats}</div></div>`;
+    if (!ob._a2kd) { ob._a2kd = true; ob.addEventListener("keydown", e => { if (ob.dataset.hv !== "a2") return; const s = e.target.closest(".hd-stat,.a2-r"); if (s && e.target === s && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); s.click(); } }); }
+    a2Wire(ob);
+  }
+  function a2Patch(ob, d) {
+    const root = $(".hd-a2", ob); if (!root) return;
+    S.last = d;
+    const as = ordered(d.agents), w = as.filter(isW), c = d.counts, now = Date.now();
+    // a2restore: events inferred from the previous poll, same rule as the D1 apply(): idle -> working = lit, working -> idle with its card done = 委托完成
+    // a cold open paints the IndexedDB snapshot first (App.UI.snap): no baseline from it, or whatever changed while the phone was away would light up / play on open
+    const snap = !!A().UI.snap, first = !S2.prev, lit = [], fin = [];
+    if (first && !snap) S2.prev = {};
+    if (!snap) as.forEach(a => {
+      const p = S2.prev[a.id], wn = isW(a);
+      if (p && !first) { if (!p.w && wn) lit.push(a.id); if (p.w && !wn && p.item && itemStage(p.item) === "done") { S2.mc[a.id] = { t: now, item: p.item }; fin.push(a.id); } }
+      S2.prev[a.id] = { w: wn, item: a.item || (p && p.item) };
+    });
+    Object.keys(S2.mc).forEach(id => { if (now - S2.mc[id].t >= 2300 || w.some(a => a.id === id)) delete S2.mc[id]; });
+    const show = as.filter(a => isW(a) || S2.mc[a.id]), idle = as.filter(a => !isW(a) && !S2.mc[a.id]);
+    // rows: reconciled per member (a new worker is inserted, a finished one removed), so the other rows' chibi sheets never restart; no DOM writes when nothing changed
+    const rows = $(".a2-rows", root), want = show.map(a => a.id), have = {};
+    [...rows.children].forEach(el => { if (want.includes(el.dataset.a2)) have[el.dataset.a2] = el; else el.remove(); });
+    show.forEach((a, i) => {
+      let el = have[a.id];
+      if (!el) { const t = document.createElement("div"); t.innerHTML = a2Row(a); el = t.firstElementChild; }
+      if (rows.children[i] !== el) rows.insertBefore(el, rows.children[i] || null);
+    });
+    setA(rows, "data-n", Math.min(show.length, 4));   // avatar size steps with the head count (user 20:14: show the chibi generously)
+    show.forEach(a => {
+      const el = $(`.a2-r[data-a2="${a.id}"]`, rows); if (!el) return;
+      const tg = $(".a2-tg", el), tk = isW(a) ? a.tool || "" : ""; setT(tg, tk ? toolTag(tk) : ""); if (tg.hidden === !!tk) tg.hidden = !tk;
+      if (S2.mc[a.id]) {   // finishing: the row stays (static) until the plate has played, then the next patch removes it
+        const di = (A().ST.items || []).find(i => i.id === S2.mc[a.id].item); if (di) setT($(".a2-t", el), di.title || di.id);
+        setA(el, "data-hd-open", S2.mc[a.id].item); setA(el, "data-chat", null); const lk = $(".a2-lk", el); if (!lk.hidden) lk.hidden = true;
+        return;
+      }
+      const it = itemFor(a), sn = a.since, qn = A().queueOf ? A().queueOf(a.id).length : 0;
+      // the chibi sheet var depends on data-ut, which can flip without a rebuild: rewrite the avatar only when its markup would change
+      const av = $(".a2-av", el), nav = a2Av(a, true); if (av.outerHTML !== nav) av.outerHTML = nav;
+      setT($(".a2-t", el), it ? it.title : (a.activity || L().working));
+      setT($(".a2-k", el), [sn ? L2().since(clock(sn), dur(mins(sn))) : (a.activity && it ? a.activity : ""), qn ? L2().q(qn) : ""].filter(Boolean).join(" · "));
+      const lk = $(".a2-lk", el), lv = a.tool === "chrome"; if (lk.hidden === lv) lk.hidden = !lv;
+      setA(el, "data-hd-open", it ? it.id : null); setA(el, "data-chat", it ? null : a.id);
+      setA(el, "aria-label", L().aria(A().aname(a), L().working, it && it.title, it ? L().tapOpen : L().tapChat));
+    });
+    const rest = $(".a2-rest", root); if (rest.hidden === !show.length) rest.hidden = !!show.length;
+    if (!show.length) { const ls = lastShip(); setT($(".a2-rest-k", root), ls.t); setA(rest, "data-hd-open", ls.id); rest.classList.toggle("go", !!ls.id); setA(rest, "role", ls.id ? "button" : null); setA(rest, "tabindex", ls.id ? "0" : null); }   // idletap: 0 working opens the latest delivery
+    // idle stack + expanded grid
+    const stk = $(".a2-stack", root); if (stk.hidden === !idle.length) stk.hidden = !idle.length;
+    const fk = idle.map(a => a.id).join(",");
+    if (stk.dataset.k !== fk) {
+      stk.dataset.k = fk;
+      setH($(".a2-faces", stk), idle.slice(0, 3).map(a => `<i data-lp="${a.id}" style="background-image:url('${esc(A().avatarUrl(a))}')"></i>`).join(""));
+      setH($(".a2-gr", root), idle.map((a, i) => `<button type="button" class="a2-g" data-chat="${a.id}" data-lp="${a.id}" style="--gi:${i}"><i style="background-image:url('${esc(A().avatarUrl(a))}')"></i><span>${esc(A().aname(a).split(" ")[0])}</span></button>`).join(""));
+    }
+    const x = S2.x && idle.length > 0;
+    setH($(".a2-sn", stk), `${L2().idle(idle.length)} <span aria-hidden="true">${x ? "‹" : "›"}</span>`);
+    setA(stk, "aria-expanded", String(x)); const ex = $(".a2-exp", root); ex.classList.toggle("on", x); setA(ex, "aria-hidden", String(!x)); stk.classList.toggle("on", x);   // idletap: grid-rows 0fr -> 1fr animates the open / close
+    lit.forEach(id => { const el = $(`.a2-r[data-a2="${id}"]`, rows); if (el) a2Lit(el); });
+    fin.forEach(id => {
+      const el = $(`.a2-r[data-a2="${id}"]`, rows); if (el) a2Mission(el);
+      setTimeout(() => { const o = document.getElementById("officebox"); if (o && o.dataset.hv === "a2" && S.last) a2Patch(o, S.last); }, 2350);
+    });
+    const old = $(".hd-old", root); if (old) { setT(old, c.review ? oldest(c) : ""); old.classList.toggle("hot", !!c.review && !!c.oldest && mins(new Date(c.oldest).toISOString()) > 12 * 60); }
+    const hf = A().UI.hf || "review";
+    root.querySelectorAll(".hd-stat").forEach(s => { const k = s.dataset.hdF; s.classList.toggle("on", hf === k); s.classList.toggle("alert", k === "review" && c.review > 0); A().roll($("b", s), String(c[k]), "hd." + k); });
+  }
+  document.addEventListener("click", e => {
+    const ob = e.target.closest("#officebox"); if (!ob || ob.dataset.hv !== "a2") return;
+    if (e.target.closest(".a2-stack, .a2-fold")) { S2.x = !S2.x; if (S.last) a2Patch(ob, S.last); return; }
+    if (e.target.closest("[data-chat]")) return;   // app.js handles it (idle faces, a working member with no card)
+    const f = e.target.closest("[data-hd-f]");
+    if (f) { const k = f.dataset.hdF, U = A().UI; U.hf = (U.hf || "review") === k && k !== "review" ? "review" : k; A().refreshPage(); return; }
+    const o = e.target.closest("[data-hd-open]"); if (o) { A().openItem(o.dataset.hdOpen); return; }
+  });
+
   // ---------- entry ----------
   function render(ob, d) {
     d = { ...d, agents: d.agents.filter(a => a.enabled !== false) };
+    if (PHONE.matches) {   // t-m-team-alt A2 on phones; the desktop app-style home keeps D1
+      if (ob.dataset.hv !== "a2" || !ob.firstElementChild || ob.dataset.lang !== lang()) a2Build(ob);
+      a2Patch(ob, d); return;
+    }
     const fresh = ob.dataset.hv !== "d1" || !ob.firstElementChild || ob.dataset.lang !== lang();   // a language switch rebuilds (all copy is baked in at build)
     if (fresh) { ob.dataset.hv = "d1"; build(ob, d); }
     patch(ob, d);
@@ -199,6 +337,6 @@
     const o = e.target.closest("[data-hd-open]"); if (o) { A().openItem(o.dataset.hdOpen); return; }
   });
   // t-now-elapsed: 「01:57 起 · N 分钟」 and the progress bar were only recomputed on a new state rev; re-apply the last data every 20 s
-  setInterval(() => { const ob = document.getElementById("officebox"); if (S.last && ob && ob.dataset.hv === "d1" && $(".hd", ob)) apply(ob, S.last, false); }, 20000);
+  setInterval(() => { const ob = document.getElementById("officebox"); if (S.last && ob && ob.dataset.hv === "d1" && $(".hd", ob)) apply(ob, S.last, false); if (S.last && ob && ob.dataset.hv === "a2") a2Patch(ob, S.last); }, 20000);
   window.HomeD = { render };
 })();
