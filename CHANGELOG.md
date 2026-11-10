@@ -2,6 +2,25 @@
 
 What changed in Underthread, newest first. Each release is a sync from the author's own build; features that need private artwork or are not ready for others are left out.
 
+## 2026-11-09
+
+### Added
+- **Hiring market** (`web/market.js`): 24 job templates in `templates/roles/`, each with three personalities, its own patch avatar and a working animation. Hire straight from a card; `tools/new_role.py plan|apply|retire|rehire|update` does the same from the command line.
+- **Role registry**: per-role tint, pipeline stage and art come from `roster.json` (`tint`, `pipe`) instead of id lists in the web code. Roster edits show up without a restart.
+- **Transfer and retire** (`web/transfer.js`): change a teammate's job or retire them from Settings → Roles, with a before/after view and a 10-minute undo. The manager, HR and the tooling keeper cannot be retired.
+- **HR interview** (optional): with a role whose id is `hr`, the market's Interview button opens a DM where HR asks five questions, one per turn, then drafts the new role for you to approve. `templates/hr/interview.json` holds the script.
+- **One-sentence schedules** (`schedules.py`, `stateutil.py schedule add|list|...`): tell the steward in one sentence; the 定时 page lists every schedule with in-place switches, run history and undo.
+- **Team page and team widget** (`web/team.js`, `web/team.css`): who works on what and who handed what to whom; home widget in S, M and L.
+- **Mailbox and Soul in knit** (Underthread palette): a yarn-ball unread count and a knitted swatch for what is left of your usage.
+
+### Changed
+- Chat (phone and desktop): the avatar sits on a row above the bubble, and bubbles are wider.
+- Phone home: the team rows get back their working timer, queue count and latest delivery.
+- Category display names: 日常委托 is now 杂活 and 常驻活动 is now 每日.
+- Motion: list rows rise in, only the first rows on screen animate, and tab switches are shorter.
+- Numbered lists in cards keep their numbers when a blank line or a link splits them.
+- Improvement rounds 11-08 and 11-09: timeline labels, card ids in DMs open the card on the phone, no flicker after sending a message, and smaller fixes.
+
 ## 2026-11-07
 
 ### Added

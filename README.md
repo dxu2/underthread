@@ -122,6 +122,8 @@ That's it. Say hello in the dashboard's chat. [SETUP-GUIDE.md](SETUP-GUIDE.md) h
 - **Four homes.** Widgets, Dense, App or Classic, picked per computer.
 - **Save the good stuff.** On your phone you can save any image from a card at full size, not the thumbnail.
 - **Easy on your battery.** After 20 seconds without input, looping animations pause. There's a switch in Settings if you'd rather keep them going.
+- **Schedules in one sentence.** Tell the steward "remind me tomorrow at 9…" or "every weekday at 9, ask the scout for trends" and it becomes a schedule on the 定时 page, with on/off switches.
+- **A team page.** Who is working on what, who handed what to whom, and a team widget for the home in small, medium and large.
 - **Chinese or English.** Switch the interface language in Settings.
 
 **Little things you might not notice:**
@@ -142,6 +144,12 @@ What ships here is one **example preset: a content-creator team** (Bilibili, You
 2. Rename, add or remove teammates in `roster.json`.
 3. Adjust `policy.md` and `config.json`.
 4. Run `python3 make_agents.py` again.
+
+**Or hire from the market.** The 招聘市场 (Hiring market) page lists 24 job templates (data analyst, coder, editor, travel planner, tutor and more), each with three personalities. Click **直接雇** (Hire) and the new teammate shows up in your team right away, with an avatar, a role note and an agent file. From the command line: `python3 tools/new_role.py plan|apply|retire|rehire`. Run `python3 make_agents.py` once after setup so the agent files exist.
+
+  <p align="center"><img src="docs/img/market.png" alt="The hiring market: job cards with three personalities each, Interview and Hire buttons" width="720"></p>
+
+Teammates can also be moved to a new job (调岗) or retired (退休) from Settings → Roles. An optional HR role can interview you in a DM before a hire; add a role with id `hr` to your roster to turn it on.
 
 No code changes needed. To give a teammate a new face, replace their PNG in `avatars/ut/` and run `python3 tools/avatar_sizes.py` (it needs `cwebp`).
 
