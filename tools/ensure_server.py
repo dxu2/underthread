@@ -3,11 +3,12 @@
 
     python3 tools/ensure_server.py        # prints "up" or how it was started
 
-Order: already answering → nothing to do; launchd service installed → kickstart it;
-otherwise start tools/keepalive.sh detached, logging to logs/server.log.
+Order: already answering → nothing to do; launchd service installed (macOS) → kickstart it;
+otherwise start tools/keepalive.sh with bash, detached, logging to logs/server.log (macOS and Linux).
 """
 import json
 import os
+import shutil
 import subprocess
 import time
 import urllib.request
@@ -38,13 +39,13 @@ def main():
         print("up")
         return
     uid = os.getuid()
-    if subprocess.run(["launchctl", "print", f"gui/{uid}/{LABEL}"], capture_output=True).returncode == 0:
+    if shutil.which("launchctl") and subprocess.run(["launchctl", "print", f"gui/{uid}/{LABEL}"], capture_output=True).returncode == 0:
         subprocess.run(["launchctl", "kickstart", "-k", f"gui/{uid}/{LABEL}"])
         how = "kickstarted launchd service"
     else:
         os.makedirs(os.path.join(ROOT, "logs"), exist_ok=True)
         log = open(os.path.join(ROOT, "logs", "keepalive.out"), "a")
-        subprocess.Popen(["/bin/zsh", os.path.join(ROOT, "tools", "keepalive.sh")], cwd=ROOT, stdout=log, stderr=log,
+        subprocess.Popen(["bash", os.path.join(ROOT, "tools", "keepalive.sh")], cwd=ROOT, stdout=log, stderr=log,
                          stdin=subprocess.DEVNULL, start_new_session=True)
         how = "started tools/keepalive.sh in the background"
     for _ in range(20):
