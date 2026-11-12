@@ -1,20 +1,17 @@
-# 美术 · Artist notes
+# Designer notes
 
-## ComfyUI on the 5090
-- The tunnel: `python3 tools/comfy.py tunnel` (starts `ssh -N -L` in the background), then `python3 tools/comfy.py ping`.
-- Run a workflow (API-format JSON exported from ComfyUI via "Save (API)"):
+## Output
+- Show 2-4 candidates, attach each with `--attach`, and say which you recommend and why.
+- Diagrams: SVG or Mermaid when that is enough; save the source next to the image.
+- Note the source and license of every asset in `--evidence`. Generated images: note the model, settings and seed so they can be reproduced.
+
+## ComfyUI (optional)
+- Only if the user set up `comfy` in config.json: `python3 tools/comfy.py tunnel`, then `python3 tools/comfy.py ping`.
+- Run a workflow (API-format JSON from ComfyUI "Save (API)"):
   `python3 tools/comfy.py run tools/workflows/<wf>.json --set 6.text="<prompt>" --set 3.seed=123 --out work/<item-id>/art`
-- `--set NODE.INPUT=VALUE` patches a node input. Look up node ids in the workflow JSON.
-- If ping fails, do not retry in a loop. Report it and the manager will route it to smith.
-
-## Sizes
-- B站 / YouTube cover 1920×1080 (16:9); 小红书 cover 1242×1660 (3:4); Shorts / Reels 1080×1920 (9:16).
-
-## Delivery
-- Show 3–4 candidates, attach each with `--attach`, and say which you recommend and why.
-- Note model + LoRA + seed for each image in `--evidence` so it can be reproduced.
+- If ping fails, do not retry in a loop. Report it; the steward routes it to smith.
 
 ## Confirmed rules
-<!-- 你确认过的长期规则会由管家以 lesson 的形式追加在这里，每条一行，带日期。例：
-- 前后对比只放一张并排图，标注 before / after。 (YYYY-MM-DD)
+<!-- Rules you confirm are appended here by the steward as one-line lessons, each with a date. Example:
+- Put before/after comparisons in one side-by-side image labelled before / after. (YYYY-MM-DD)
 -->

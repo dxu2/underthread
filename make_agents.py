@@ -17,6 +17,19 @@ ROOT = os.path.dirname(os.path.abspath(__file__))
 OUT = os.path.join(ROOT, ".claude", "agents")
 S = "python3 stateutil.py"
 
+
+def dashboard_url():
+    """The dashboard address agents are told about: config.json port (same default as server.py)."""
+    port = 8765
+    for name in ("config.json", "config.example.json"):
+        try:
+            with open(os.path.join(ROOT, name), encoding="utf-8") as f:
+                port = int(json.load(f).get("port") or port)
+            break
+        except (OSError, ValueError, TypeError):
+            continue
+    return f"http://127.0.0.1:{port}"
+
 HARD_RULES = f"""## Hard rules (every role)
 
 - **Drafts only.** Never publish, post, upload, comment or send anything on B站 / YouTube / 小红书 or any other outside service. The user publishes.
@@ -30,8 +43,8 @@ HARD_RULES = f"""## Hard rules (every role)
 - **Persona** (if any) applies only to internal replies to the user, never to drafts, scripts or published copy.
 """
 
-# t-template-format: roles hired from templates/roles/ carry "team": "general" (tools/new_role.py sets it). They get a neutral opening
-# and these hard rules instead: no 自媒体 platforms, no per-platform copy blocks. Roles without the field keep the content-team text above.
+# Roles with "team": "general" (the default roster, and every role hired from templates/roles/) get a neutral opening and these
+# hard rules. Roles without the field (the content-zh preset) keep the content-team text above (B站 / YouTube / 小红书).
 HARD_RULES_GENERAL = """## Hard rules (every role)
 
 - **Ask before acting outside.** Never publish, post, upload, send messages or email, buy, pay, book or sign up on any outside service. Prepare it as a draft; the user does it.
@@ -43,7 +56,7 @@ HARD_RULES_GENERAL = """## Hard rules (every role)
 - **No passwords or codes.** Never type or ask for passwords, verification codes or payment details; stop and ask the user.
 - **Rights.** Only use material the user is allowed to use. Note the source and license in `--evidence`.
 - **Honesty.** Set `--confidence` truthfully and say what you did not check. Facts get a source.
-- **Language.** Write in Chinese unless asked otherwise.
+- **Language.** Write in the language the user writes to you in, unless asked otherwise.
 - **Persona** (if any) applies only to internal replies to the user, never to the work you deliver.
 """
 
@@ -88,10 +101,15 @@ def load_roster():
     sys.exit("no roster.json")
 
 
-def address_text(a):
-    """t-address-2: how this role addresses the user (roster.json "address")."""
+def address_text(a, general=False):
+    """How this role addresses the user (roster.json "address"). English wording for general roles, Chinese for the content preset."""
     if not a or not a.get("name"):
         return ""
+    if general:
+        t = f"- Call the user \"{a['name']}\" once at the start or end of a reply; use \"you\" in between.\n"
+        if a.get("open"):
+            t += f"- When the user comes back or says hello, start with \"{a['open']}, {a['name']}\".\n"
+        return t + "".join(f"- Use \"{x['name']}\" only {x['when']}.\n" for x in a.get("alt", []))
     alts = [x["name"] for x in a.get("alt", [])]
     t = (f"- 称呼用户「{a['name']}」" + (f"或「{a['short']}」" if a.get("short") else "") +
          ("" if "老板" in alts else "，不叫「老板」") + "。开口或收尾叫一次就够，中间用「你」。\n")
@@ -110,8 +128,8 @@ def agent_file(r):
     if voice.get("style") or voice.get("habits"):
         vtxt = "\n## Voice (internal replies only)\n\n" + (f"- {voice['style']}\n" if voice.get("style") else "") + \
                "".join(f"- {h}\n" for h in voice.get("habits", []))
-    vtxt += address_text(r.get("address"))
-    general = r.get("team") == "general"   # t-template-format
+    general = r.get("team") == "general"
+    vtxt += address_text(r.get("address"), general)
     method = r.get("method") or []
     mtxt = ("\n## Working style\n\n" + "".join(f"- {m}\n" for m in method)) if method else ""
     desc = (f"{r.get('title_en') or r['title']} ({r['name']}) on the user's {'' if general else 'content '}team. {r.get('duty_long', '')} "
@@ -128,10 +146,10 @@ def agent_file(r):
     fm.append(f"memory: {r.get('memory', 'project')}")
     fm.append("---")
     body = f"""
-# {r['name']} · {r['title']} ({r.get('name_en', '')} · {r.get('title_en', '')})
+# {(r.get('name_en') or r['name']) + ' · ' + (r.get('title_en') or r['title']) if general else r['name'] + ' · ' + r['title'] + ' (' + r.get('name_en', '') + ' · ' + r.get('title_en', '') + ')'}
 
 {"You are one specialist on the user's personal team of AI teammates." if general else "You are one specialist on a personal 自媒体 team (B站 / YouTube / 小红书)."} A long-running manager session dispatches you;
-the user reviews everything you deliver on a local dashboard (http://127.0.0.1:8765). Your roster id is `{r['id']}`.
+the user reviews everything you deliver on a local dashboard ({dashboard_url()}). Your roster id is `{r['id']}`.
 
 ## Your job
 
@@ -157,12 +175,16 @@ def update_manager(roles):
     p = os.path.join(ROOT, "manager.md")
     if not os.path.exists(p):
         return
-    rows = ["| Roster id | Role | subagent_type | Room |", "|---|---|---|---|"]
+    rows = ["| Roster id | Role | subagent_type |", "|---|---|---|"]
     for r in roles:
         if r["id"] == "manager":
             continue
         st = r.get("agent_name") if r.get("enabled", True) else f"(disabled) {r.get('agent_name')}"
-        rows.append(f"| `{r['id']}` | {r['title'] if r['title'].startswith(r['name']) else r['name'] + ' · ' + r['title']} | `{st}` | {r.get('room', '')} |")
+        if r.get("team") == "general":
+            label = f"{r.get('name_en') or r['name']} · {r.get('title_en') or r['title']}"
+        else:
+            label = r['title'] if r['title'].startswith(r['name']) else r['name'] + ' · ' + r['title']
+        rows.append(f"| `{r['id']}` | {label} | `{st}` |")
     block = "<!-- DISPATCH:BEGIN (generated by make_agents.py) -->\n" + "\n".join(rows) + "\n<!-- DISPATCH:END -->"
     text = open(p, encoding="utf-8").read()
     new = re.sub(r"<!-- DISPATCH:BEGIN.*?<!-- DISPATCH:END -->", block, text, flags=re.S)
@@ -197,7 +219,7 @@ def main():
         if not os.path.exists(notes):
             os.makedirs(os.path.dirname(notes), exist_ok=True)
             with open(notes, "w", encoding="utf-8") as f:
-                f.write(f"# {r['name']} · {r['title']}\n\n(role notes: how this role works for you)\n\n## Confirmed rules\n")
+                f.write(f"# {r.get('name_en') or r['name']} · {r.get('title_en') or r['title']}\n\n(role notes: how this role works for you)\n\n## Confirmed rules\n")
         wrote.append(r["agent_name"])
     if not dry:
         keep = {f"{n}.md" for n in wrote}

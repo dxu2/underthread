@@ -1,14 +1,168 @@
 {
- "meta": {"rev": 1, "updated": "2026-10-26T22:00:00-07:00", "stamina": {"pct": 100, "note": "初始", "at": "2026-10-26T22:00:00-07:00"}, "focus": {"pct": null, "at": null}, "inbox_acked": [], "last_report_date": null},
+ "meta": {
+  "rev": 1,
+  "updated": "2026-10-26T21:45:00-07:00",
+  "stamina": {
+   "pct": 100,
+   "note": "",
+   "at": "2026-10-26T21:00:00-07:00"
+  },
+  "focus": {
+   "pct": null,
+   "at": null
+  },
+  "inbox_acked": [],
+  "last_report_date": null
+ },
  "items": [
-  {"id": "q-demo-plan", "title": "主线 EP1：立项计划（示例）", "title_en": "Main quest EP1: project plan (sample)", "summary": "这是一张示例卡片。真实卡片由管家或 agent 用 stateutil.py upsert-item 写入。点开它看看详情页：草稿、把握度、时间线，以及底部的 批准 / 驳回 / 完成。", "summary_en": "This is a sample card. Real cards are written by the manager or an agent with stateutil.py upsert-item. Open it to see the detail view: the draft, confidence, the timeline, and Approve / Reject / Done at the bottom.", "category": "main", "stage": "review", "kind": "plan", "owner": "writer", "platforms": ["bili", "yt"], "tags": ["示例"], "tags_en": ["sample"], "draft": "## 计划\n\n| 阶段 | 产出 | 负责 |\n|---|---|---|\n| 选题论证 | 一页 brief | 研究员 |\n| 脚本 | 口播稿 v1 | 编剧 |\n| 封面 | 3 版缩略图 | 美术 |\n\n批准后编剧才会开始执行；驳回时写原因，管家会把原因整理成规则提议。", "draft_en": "## Plan\n\n| Stage | Output | Owner |\n|---|---|---|\n| Topic case | One-page brief | Researcher |\n| Script | Voice-over script v1 | Writer |\n| Thumbnail | 3 thumbnail options | Artist |\n\nThe writer starts only after you approve. If you reject, give a reason; the manager turns reasons into rule proposals.", "versions": [], "evidence": ["示例：对标视频链接会列在这里"], "evidence_en": ["Sample: links to benchmark videos are listed here"], "attachments": [], "confidence": "med", "confidence_note": "示例数据", "confidence_note_en": "Sample data", "due": null, "links": [], "thread": [{"id": "d1", "t": "2026-10-26T21:58:00-07:00", "who": "writer", "text": "计划已提交，等你拍板。", "text_en": "Plan submitted, waiting for your call.", "kind": "msg"}], "rejects": 0, "created": "2026-10-26T21:50:00-07:00", "updated": "2026-10-26T21:58:00-07:00", "activity": "2026-10-26T21:58:00-07:00"},
-  {"id": "q-demo-xhs", "title": "小红书笔记：工作台改造（示例）", "title_en": "Xiaohongshu post: desk makeover (sample)", "summary": "示例交付：三平台文案已写好，确认后复制发布。", "summary_en": "Sample deliverable: copy for all three platforms is written; confirm, then copy it and post.", "category": "side", "stage": "review", "kind": "deliverable", "owner": "ops", "platforms": ["xhs"], "tags": ["示例"], "tags_en": ["sample"], "draft": "**标题**：把桌面改成了游戏 UI 的任务面板\n\n**正文**：……\n\n**标签**：#桌面改造 #效率工具", "draft_en": "**Title**: I turned my desk into a game-UI quest board\n\n**Body**: …\n\n**Tags**: #DeskMakeover #ProductivityTools", "versions": [], "evidence": [], "attachments": [], "confidence": "high", "confidence_note": "", "due": null, "links": [], "thread": [], "rejects": 0, "created": "2026-10-26T21:40:00-07:00", "updated": "2026-10-26T21:45:00-07:00", "activity": "2026-10-26T21:45:00-07:00"},
-  {"id": "q-demo-tool", "title": "ComfyUI 隧道连通（示例）", "title_en": "ComfyUI tunnel check (sample)", "summary": "工匠在检查 tools/comfy.py ping。", "summary_en": "The smith is running tools/comfy.py ping.", "category": "ongoing", "stage": "doing", "kind": "task", "owner": "smith", "platforms": [], "tags": ["示例"], "tags_en": ["sample"], "draft": "", "versions": [], "evidence": [], "attachments": [], "confidence": null, "confidence_note": "", "due": null, "links": [], "thread": [], "rejects": 0, "created": "2026-10-26T21:30:00-07:00", "updated": "2026-10-26T21:30:00-07:00", "activity": "2026-10-26T21:30:00-07:00"}
+  {
+   "id": "q-demo-plan",
+   "title": "搬家计划（示例）",
+   "title_en": "Moving plan (sample)",
+   "summary": "这是一张示例卡片。真实卡片由管家或队员用 stateutil.py upsert-item 写入。点开看详情：草稿、把握度、时间线，以及底部的 批准 / 驳回 / 完成。",
+   "summary_en": "This is a sample card. Real cards are written by the steward or a teammate with stateutil.py upsert-item. Open it to see the draft, the confidence, the timeline, and Approve / Reject / Done at the bottom.",
+   "category": "main",
+   "stage": "review",
+   "kind": "plan",
+   "owner": "director",
+   "platforms": [],
+   "tags": [
+    "示例"
+   ],
+   "tags_en": [
+    "sample"
+   ],
+   "draft": "## 计划\n\n| 步骤 | 产出 | 负责 |\n|---|---|---|\n| 比较三家搬家公司 | 一张对比表 | 研究员 |\n| 通知清单 | 要改地址的地方 | 协调 |\n| 打包时间表 | 每周清单 | 规划 |\n\n批准后才开始执行；驳回时写原因，管家会把原因整理成规则提议。",
+   "draft_en": "## Plan\n\n| Step | Output | Owner |\n|---|---|---|\n| Compare three movers | One comparison table | Researcher |\n| Change-of-address list | Everywhere to update | Coordinator |\n| Packing timeline | A checklist per week | Planner |\n\nWork starts only after you approve. If you reject, give a reason; the steward turns reasons into rule proposals.",
+   "versions": [],
+   "evidence": [
+    "示例：参考链接会列在这里"
+   ],
+   "attachments": [],
+   "confidence": "med",
+   "confidence_note": "示例数据",
+   "due": null,
+   "links": [],
+   "thread": [],
+   "rejects": 0,
+   "created": "2026-10-26T21:30:00-07:00",
+   "updated": "2026-10-26T21:45:00-07:00",
+   "activity": "2026-10-26T21:45:00-07:00",
+   "confidence_note_en": "sample data",
+   "evidence_en": [
+    "Sample: source links are listed here"
+   ]
+  },
+  {
+   "id": "q-demo-email",
+   "title": "给房东的邮件（示例）",
+   "title_en": "Email to the landlord (sample)",
+   "summary": "示例交付：邮件草稿写好了，确认后你自己复制发送。",
+   "summary_en": "Sample deliverable: the email draft is ready; approve it, then copy and send it yourself.",
+   "category": "side",
+   "stage": "review",
+   "kind": "deliverable",
+   "owner": "writer",
+   "platforms": [],
+   "tags": [
+    "示例"
+   ],
+   "tags_en": [
+    "sample"
+   ],
+   "draft": "**主题**：退租通知\n\n您好，……\n\n（队员只写草稿，从不替你发送。）",
+   "draft_en": "**Subject**: Notice of moving out\n\nHello, …\n\n(Teammates only draft. They never send anything for you.)",
+   "versions": [],
+   "evidence": [],
+   "attachments": [],
+   "confidence": "high",
+   "confidence_note": "",
+   "due": null,
+   "links": [],
+   "thread": [],
+   "rejects": 0,
+   "created": "2026-10-26T21:30:00-07:00",
+   "updated": "2026-10-26T21:45:00-07:00",
+   "activity": "2026-10-26T21:45:00-07:00"
+  },
+  {
+   "id": "q-demo-tool",
+   "title": "整理下载文件夹（示例）",
+   "title_en": "Tidy the downloads folder (sample)",
+   "summary": "工具管家在写一个按类型归档的小脚本。",
+   "summary_en": "Smith is writing a small script that sorts files by type.",
+   "category": "daily",
+   "stage": "doing",
+   "kind": "task",
+   "owner": "smith",
+   "platforms": [],
+   "tags": [
+    "示例"
+   ],
+   "tags_en": [
+    "sample"
+   ],
+   "draft": "",
+   "draft_en": "",
+   "versions": [],
+   "evidence": [],
+   "attachments": [],
+   "confidence": null,
+   "confidence_note": "",
+   "due": null,
+   "links": [],
+   "thread": [],
+   "rejects": 0,
+   "created": "2026-10-26T21:30:00-07:00",
+   "updated": "2026-10-26T21:45:00-07:00",
+   "activity": "2026-10-26T21:45:00-07:00"
+  },
+  {
+   "id": "q-demo-ask",
+   "title": "要比较哪几个城市？（示例）",
+   "title_en": "Which cities should I compare? (sample)",
+   "summary": "研究员在等你回答一个问题。",
+   "summary_en": "The researcher is waiting for your answer.",
+   "category": "daily",
+   "stage": "review",
+   "kind": "question",
+   "owner": "scout",
+   "platforms": [],
+   "tags": [
+    "示例"
+   ],
+   "tags_en": [
+    "sample"
+   ],
+   "draft": "你想比较哪几个城市的房租？",
+   "draft_en": "Which cities do you want rent compared for?",
+   "versions": [],
+   "evidence": [],
+   "attachments": [],
+   "confidence": null,
+   "confidence_note": "",
+   "due": null,
+   "links": [],
+   "thread": [],
+   "rejects": 0,
+   "created": "2026-10-26T21:30:00-07:00",
+   "updated": "2026-10-26T21:45:00-07:00",
+   "activity": "2026-10-26T21:45:00-07:00"
+  }
  ],
  "agents": {},
  "logs": [],
  "lessons": [],
- "notices": [{"id": "n-welcome", "t": "2026-10-26T22:00:00-07:00", "text": "欢迎使用 Underthread：示例卡片可以在卡片上「归档」掉", "text_en": "Welcome to Underthread: you can Archive the sample cards from the card itself", "level": "info", "until": null}],
+ "notices": [
+  {
+   "id": "n-welcome",
+   "t": "2026-10-26T21:00:00-07:00",
+   "text": "欢迎使用 Underthread：示例卡片可以在卡片上「归档」掉",
+   "text_en": "Welcome to Underthread: you can Archive the sample cards from the card itself",
+   "level": "info",
+   "until": null
+  }
+ ],
  "reports": [],
  "calendar": [],
  "chat": [],

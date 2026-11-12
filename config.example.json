@@ -2,18 +2,5 @@
   "owner": {"display_name": "<your name>"},
   "port": 8765,
   "report_time": "18:00",
-  "routines": [
-    {"id": "smith-improve", "time": "10:00", "label": "工匠每日 5 个 app 改进提案（r-smith-improve）"}
-  ],
-  "platforms": {
-    "bili": {"name": "B站", "home": "<https://space.bilibili.com/...>"},
-    "yt": {"name": "YouTube", "home": "<https://youtube.com/@...>"},
-    "xhs": {"name": "小红书", "home": "<https://www.xiaohongshu.com/user/profile/...>"}
-  },
-  "comfy": {
-    "ssh_host": "<user@your-5090-box>",
-    "remote_port": 8188,
-    "local_port": 8188,
-    "default_workflow": "tools/workflows/example_api.json"
-  }
+  "routines": []
 }

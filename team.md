@@ -1,12 +1,12 @@
 # Team overview
 
-A personal content team (自媒体) for B站, YouTube and 小红书, mostly in Chinese.
-One manager session triages what you ask for and dispatches specialists. They hand back drafts, plans and files.
-You review, approve, reject with a reason, or publish yourself.
+A personal crew of AI teammates for one person.
+One steward session (the manager) triages what you ask for and dispatches specialists. They hand back drafts, plans and files.
+You review, approve, reject with a reason, or send things out yourself.
 
 ## Principles
 
-1. **You publish, they draft.** Nothing goes out without you.
+1. **You send, they draft.** Nothing goes out without you.
 2. **Plan before big work.** Approve the plan, then the work happens.
 3. **Corrections become rules.** A rejection can turn into a one-line rule you adopt. The team should not repeat a mistake.
 4. **Conclusion first.** Every card leads with what it is and what it needs from you.
@@ -14,19 +14,21 @@ You review, approve, reject with a reason, or publish yourself.
 
 ## Roles
 
-| Role | Does |
+| Role (roster id) | Does |
 |---|---|
-| 管家 Steward (manager) | Main session. Triage, dispatch, relay, schedule (doubles as producer), daily report |
-| 研究员 Scout | Topic pool, trend and benchmark breakdowns, research, fact-checking |
-| 编剧 Writer | Production doc, scripts, hooks, titles and every piece of copy |
-| 导演 Director | Storyboard, shot list, edit plan, ffmpeg rough cuts and subtitles |
-| 美术 Artist | Covers, concepts, b-roll stills on the 5090 via ComfyUI |
-| 运营 Ops | Per-platform packaging, publishing calendar, comment replies, analytics review |
-| 工匠 Smith | Dashboard, scripts and pipelines, first responder for tooling errors |
+| Steward (`manager`) | Main session. Triage, dispatch, relay, schedule, daily report |
+| Scout · Researcher (`scout`) | Research, comparisons, fact-checks, sources |
+| Quill · Writer (`writer`) | Docs, drafts, summaries, messages and emails to send |
+| Lens · Planner (`director`) | Plans, checklists, reviews of the others' drafts |
+| Brush · Designer (`artist`) | Images, diagrams, mockups (optionally through your own ComfyUI) |
+| Signal · Coordinator (`ops`) | Calendar, follow-ups, message drafts, weekly review |
+| Smith · Tooling keeper (`smith`) | Dashboard, scripts, automation, first responder for tooling errors |
 
-Roles are by function: corrections to one craft (writing, covers…) pile up as rules on one role.
+Roles are by function: corrections to one craft (writing, design…) pile up as rules on one role.
+Rename them, change them or add new ones in `roster.json` (then `python3 make_agents.py`), or hire from the hiring page.
+For the Chinese content-creator team (B站 / YouTube / 小红书), run `python3 tools/preset.py apply content-zh`.
 
-## Content pipeline (main quest)
+## A typical project
 
-选题论证 + 调研 (scout) → 立项文档 + 脚本 (writer) → 事实核查 (scout) → 分镜 (director) + 封面/概念图 (artist)
-→ 拍摄 (you) → 粗剪方案 / 粗剪 (director) → 三平台包装 + 排期 (ops) → 发布 (you) → 数据复盘 (ops)
+question or idea (you) → research (scout) → plan (director) → drafts (writer) + visuals (artist)
+→ review (director) → you approve → calendar and follow-ups (ops) → you send

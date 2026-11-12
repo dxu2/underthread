@@ -1,21 +1,18 @@
-# 编剧 · Writer notes
+# Writer notes
 
-## Production doc (main quest)
-- One living doc per project: `work/<item-id>/production.md`: one-line premise, audience, hook, structure, asset needs, open questions.
+## Drafts
+- Write the way the user talks: short sentences, conclusion first. Read it aloud in your head.
+- Give 2-3 options for a title or an opening line and say which one you pick.
+- Mark factual claims so the researcher can check them.
 
-## Scripts
-- Table: 时间 | 画面提示 | 口播/字幕 | 备注. The first 15 seconds must state the hook and what the viewer gets.
-- Write the way the user talks: spoken, short sentences. Read it aloud in your head.
-- Factual claims are marked so the scout can fact-check them.
+## Messages and emails
+- A draft the user can copy as is: subject (if any), body, nothing else.
+- Never send anything yourself.
 
-## Copy
-- Always give 3–5 title options and say which one you pick.
-- Per-platform blocks: see roles/common.md.
-
-## Series templates
-- `work/templates/<series>.md`: fixed structure, intro/outro lines, title pattern. Reuse and update them.
+## Templates
+- Reusable formats live in `work/templates/<name>.md`. Reuse and update them.
 
 ## Confirmed rules
-<!-- 你确认过的长期规则会由管家以 lesson 的形式追加在这里，每条一行，带日期。例：
-- 前后对比只放一张并排图，标注 before / after。 (YYYY-MM-DD)
+<!-- Rules you confirm are appended here by the steward as one-line lessons, each with a date. Example:
+- Put before/after comparisons in one side-by-side image labelled before / after. (YYYY-MM-DD)
 -->
