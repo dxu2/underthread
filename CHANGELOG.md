@@ -1,25 +1,46 @@
 # Changelog
 
-What changed in Underthread, newest first. Each release is a sync from the author's own build; features that need private artwork or are not ready for others are left out.
+What changed in Underthread, newest first. Underthread is developed in the open from the author's daily use; a few features that depend on private artwork or aren't ready for others yet are left out.
+
+## Unreleased
+
+### Added
+- **Demo mode**: `python3 server.py --demo` (or `python3 tools/demo.py`) shows the dashboard with a crew at work, without Claude Code. It runs in a separate `.demo/` folder that is rebuilt on every start and never touches your own cards. The steward's chat lines follow `--lang zh|en` or `$LANG`, and what you click gets a canned "(Demo) …" reply. `PORT` picks the port.
+- **Presets**: `python3 tools/preset.py list|apply <name> [--dry]` switches the whole team. The Chinese content-creator team (B站 / YouTube / 小红书) now lives in `presets/content-zh/`. Every replaced file is backed up as `<file>.bak-preset-<time>`.
+- **Tests and CI**: `tests/smoke.py` (about 15 s, runs in a temporary copy), `tests/scan.py` (leak scan, optional private word list in the git-ignored `tests/scan-words.txt`), and a GitHub Actions workflow on Ubuntu and macOS with Python 3.10 and 3.12.
+- **Request guard**: the server answers only known host names (against DNS rebinding; extra names go in `allowed_hosts` in `config.json`), and a POST from a browser must be same-origin and carry the `X-Underthread` header (against cross-site requests).
+- **Desktop notices**: a small card slides in at the top right for a new reply, a delivery waiting for review, a rule proposal, a reminder or a new question; click it to open the card.
+- **Docs**: a Chinese README (`README.zh-CN.md`), `CONTRIBUTING.md`, `SECURITY.md`, `CODE_OF_CONDUCT.md`, issue and pull request templates, and new pages in `docs/`: architecture, custom crew, phone and push, troubleshooting and FAQ.
+
+### Changed
+- **Default crew in neutral English**: Steward, Scout (Researcher), Quill (Writer), Lens (Planner), Brush (Designer), Signal (Coordinator), Smith (Tooling keeper), for any kind of personal work. Ids and avatars are unchanged. `roles/*.md`, `team.md`, `policy.md` and `manager.md` are rewritten in English for a new user. Roles with `"team": "general"` get neutral hard rules in their agent file.
+- **One settings file**: `.claude/settings.json` ships with the repository (status line plus the steward's permissions) and `claude-settings.example.json` is gone, so no setup step copies over it. Personal additions go in the git-ignored `.claude/settings.local.json`.
+- **Fresh install**: the first visit follows the browser language; the sample cards start "a few minutes ago" instead of weeks ago; the usage widget says "No tokens used yet today" when Claude Code has not run here yet; the avatar index no longer 404s before `tools/avatar_sizes.py` has run; a taken port prints one clear line instead of a traceback; `tools/new_role.py` works before the server has ever started.
+- **ComfyUI is optional and neutral**: the status labels say "ComfyUI", and the ComfyUI line and its probe only appear when `config.json` has a `comfy` block. `config.example.json` has no default routine, platforms or ComfyUI settings.
+- **Run-forever tooling on Linux**: `tools/keepalive.sh` runs under bash on macOS and Linux and pauses 15 s when the server dies right after starting. `tools/install_service.sh` is macOS only; on other systems it says so and points to `keepalive.sh`; `tools/ensure_server.py` falls back to `keepalive.sh` without launchd.
+- **Home is widgets only**: the older app-style home and the top-bar usage orb are removed. Widget layout is stored on the server.
+- Upload responses no longer include the absolute file path.
+- **README**: the first screen now says what Underthread is, who it's for and that it uses your Claude plan's usage; the quickstart lists hard requirements and what you should see after each step; one set of crew names (Steward, Scout, Quill, Lens, Brush, Signal, Smith), with steward = `manager` in code.
+- **SETUP-GUIDE**: brought up to date (no more pixel office; adds the Hiring market, Schedules, push, archive and usage brakes).
 
 ## 2026-11-09
 
 ### Added
 - **Hiring market** (`web/market.js`): 24 job templates in `templates/roles/`, each with three personalities, its own patch avatar and a working animation. Hire straight from a card; `tools/new_role.py plan|apply|retire|rehire|update` does the same from the command line.
 - **Role registry**: per-role tint, pipeline stage and art come from `roster.json` (`tint`, `pipe`) instead of id lists in the web code. Roster edits show up without a restart.
-- **Transfer and retire** (`web/transfer.js`): change a teammate's job or retire them from Settings → Roles, with a before/after view and a 10-minute undo. The manager, HR and the tooling keeper cannot be retired.
+- **Transfer and retire** (`web/transfer.js`): change a teammate's job or retire them from Settings → Roster, with a before/after view and a 10-minute undo. The manager, HR and the tooling keeper cannot be retired.
 - **HR interview** (optional): with a role whose id is `hr`, the market's Interview button opens a DM where HR asks five questions, one per turn, then drafts the new role for you to approve. `templates/hr/interview.json` holds the script.
-- **One-sentence schedules** (`schedules.py`, `stateutil.py schedule add|list|...`): tell the steward in one sentence; the 定时 page lists every schedule with in-place switches, run history and undo.
+- **One-sentence schedules** (`schedules.py`, `stateutil.py schedule add|list|...`): tell the steward in one sentence; the Schedules page (定时 in the Chinese interface) lists every schedule with in-place switches, run history and undo.
 - **Team page and team widget** (`web/team.js`, `web/team.css`): who works on what and who handed what to whom; home widget in S, M and L.
-- **Mailbox and Soul in knit** (Underthread palette): a yarn-ball unread count and a knitted swatch for what is left of your usage.
+- **Mailbox and usage meter in knit** (Underthread palette): a yarn-ball unread count and a knitted swatch for what is left of your usage.
 
 ### Changed
 - Chat (phone and desktop): the avatar sits on a row above the bubble, and bubbles are wider.
 - Phone home: the team rows get back their working timer, queue count and latest delivery.
-- Category display names: 日常委托 is now 杂活 and 常驻活动 is now 每日.
+- Category display names in the Chinese interface: 日常委托 is now 杂活 and 常驻活动 is now 每日 (Errands and Dailies in English).
 - Motion: list rows rise in, only the first rows on screen animate, and tab switches are shorter.
 - Numbered lists in cards keep their numbers when a blank line or a link splits them.
-- Improvement rounds 11-08 and 11-09: timeline labels, card ids in DMs open the card on the phone, no flicker after sending a message, and smaller fixes.
+- Polish: timeline labels, card ids in DMs open the card on the phone, no flicker after sending a message, and smaller fixes.
 
 ## 2026-11-07
 
