@@ -51,3 +51,6 @@ __pycache__/
 *.pyc
 .venv*/
 .DS_Store
+
+# your own private word list for tests/scan.py
+tests/scan-words.txt
