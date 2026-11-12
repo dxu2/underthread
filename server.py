@@ -220,7 +220,7 @@ def routines_log_backfill():
 
 
 def routine_item(r):
-    """The card a routine belongs to: config "item", else "r-" + id (smith-improve -> r-smith-improve)."""
+    """The card a routine belongs to: config "item", else "r-" + id (daily-check -> r-daily-check)."""
     return r.get("item") or "r-" + r["id"]
 
 

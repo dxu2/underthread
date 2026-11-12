@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""ComfyUI on the 5090, over an SSH tunnel. Stdlib only.
+"""ComfyUI on your GPU machine, over an SSH tunnel. Stdlib only.
 
     python3 tools/comfy.py tunnel                 # ssh -f -N -L <local>:127.0.0.1:<remote> <host>
     python3 tools/comfy.py ping                   # GPU / VRAM / queue
