@@ -7,11 +7,11 @@ push_subs.json*
 .env.*
 
 # ---- your own data and config (copy from *.example.json) ----
-config.json
-roster.json
-state.json*
-archive.json*
-inbox.jsonl*
+/config.json
+/roster.json
+/state.json*
+/archive.json*
+/inbox.jsonl*
 *.lock
 .*.lock
 manager-handoff.md

@@ -1,0 +1,23 @@
+{
+  "_note": "Merged into config.json by tools/preset.py (only these keys).",
+  "platforms": {
+    "bili": {
+      "name": "B站",
+      "home": "<https://space.bilibili.com/...>"
+    },
+    "yt": {
+      "name": "YouTube",
+      "home": "<https://youtube.com/@...>"
+    },
+    "xhs": {
+      "name": "小红书",
+      "home": "<https://www.xiaohongshu.com/user/profile/...>"
+    }
+  },
+  "comfy": {
+    "ssh_host": "<user@your-gpu-box>",
+    "remote_port": 8188,
+    "local_port": 8188,
+    "default_workflow": "tools/workflows/example_api.json"
+  }
+}
