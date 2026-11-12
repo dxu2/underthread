@@ -1,0 +1,38 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  smoke:
+    name: smoke (${{ matrix.os }}, Python ${{ matrix.python }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+        python: ["3.10", "3.12"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Leak scan
+        run: python3 tests/scan.py
+      - name: Smoke test
+        run: python3 tests/smoke.py
+      - name: Keepalive runs in the foreground (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          cp state.example.json state.json
+          PORT=8790 NO_LOOPS=1 timeout 8 bash tools/keepalive.sh > ka.log 2>&1 &
+          for i in $(seq 1 20); do curl -fs -o /dev/null http://127.0.0.1:8790/ && break; sleep 0.5; done
+          curl -fs -o /dev/null -w "dashboard: %{http_code}\n" http://127.0.0.1:8790/
