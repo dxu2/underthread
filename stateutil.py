@@ -62,11 +62,43 @@ def _shape(st):
     return st
 
 
+_ISO = re.compile(r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2})?([+-]\d{2}:\d{2}|Z)?$")
+
+
+def _fresh_times(st):
+    """Shift every timestamp in the sample state so the newest one is a few minutes ago, in local time.
+    Otherwise a fresh install opens on cards that have been 'waiting 17 days'."""
+    stamps = []
+
+    def walk(o, fn):
+        if isinstance(o, dict):
+            for k, v in o.items():
+                o[k] = walk(v, fn)
+        elif isinstance(o, list):
+            for i, v in enumerate(o):
+                o[i] = walk(v, fn)
+        elif isinstance(o, str) and _ISO.match(o):
+            return fn(o)
+        return o
+
+    def parse(s):
+        t = dt.datetime.fromisoformat(s.replace("Z", "+00:00"))
+        return t if t.tzinfo else t.astimezone()
+
+    walk(st, lambda s: stamps.append(parse(s)) or s)
+    if not stamps:
+        return st
+    shift = dt.datetime.now().astimezone() - dt.timedelta(minutes=5) - max(stamps)
+    return walk(st, lambda s: (parse(s) + shift).astimezone().isoformat(timespec="seconds"))
+
+
 def _load():
     if not os.path.exists(STATE):
         example = os.path.join(ROOT, "state.example.json")
         if os.path.exists(example):
-            shutil.copy(example, STATE)
+            with open(example, encoding="utf-8") as f:
+                seed = json.load(f)
+            _save(_fresh_times(seed))
         else:
             return blank_state()
     with open(STATE, encoding="utf-8") as f:

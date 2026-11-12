@@ -158,7 +158,7 @@ class Roll:
                 return
             try:
                 if not os.path.isdir(self.proj):
-                    self.err = "没找到会话记录目录"
+                    self.err = None   # no Claude Code session has run in this folder yet: nothing to count, not an error
                 else:
                     self._ledger_sync()
                     self._scan()
