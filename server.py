@@ -29,6 +29,8 @@ sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "too
 import webpush as WP  # noqa: E402
 try:   # t-vb-2: voice calls (a missing or broken voicecall.py must never take the dashboard down)
     import voicecall as VC  # noqa: E402
+except ModuleNotFoundError:   # voice calls are not part of this repo: stay quiet
+    VC = None
 except Exception as _e:  # noqa: BLE001
     VC = None
     print("voicecall not loaded:", repr(_e))
@@ -2795,6 +2797,8 @@ class H(BaseHTTPRequestHandler):
 
 def main():
     global CONFIG
+    if "--demo" in sys.argv[1:]:   # demo mode: tools/demo.py builds .demo/ with sample data and runs this server there
+        os.execv(sys.executable, [sys.executable, os.path.join(ROOT, "tools", "demo.py")] + [a for a in sys.argv[1:] if a != "--demo"])
     ensure_live_files()
     CONFIG = load_json("config.json", {})
     _comfy["configured"] = bool(CONFIG.get("comfy"))
