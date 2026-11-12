@@ -9,7 +9,7 @@
 
   const UI = {
     page: (p => p === "home" || p === "crew" || p === "team" ? "review" :   /* t-drop-team-tab */ ["roles", "docs", "logs"].includes(p) ? "settings" : p)(LS.get("page", "review")), setTab: (p => ["roles", "docs", "logs"].includes(p) ? p : LS.get("setTab", "general"))(LS.get("page", "review")),   /* t-settings-tab: 角色 / 文档 / 日志 live under 设置 */ item: null, chat: LS.get("chat", "manager"), home: "widgets",   /* t-home-style-trim (11-11): the web home is the widget home only; dense / app / classic and their switches are gone. rt.home3 is rewritten to "widgets" below */
-    lang: LS.get("lang", "zh"), theme: LS.get("theme", "dark"), sort: LS.get("sort", "activity"),
+    lang: LS.get("lang", /^zh/i.test(navigator.language || "") ? "zh" : "en"),   /* audit SM-03: first visit follows the browser language */ theme: LS.get("theme", "dark"), sort: LS.get("sort", "activity"),
     logAgent: "", mailFilter: "all", doc: null, docs: null, docText: "", openRep: null, calForm: false, tick: 0,
     seen: LS.get("seen", {}), chatW: LS.get("chatW", 420), chatFold: LS.get("chatFold", false),
   };
@@ -57,7 +57,7 @@
       mgr_waking: "用量已重置，正在唤醒管家；几分钟内没回应就到管家的 session 里说一句话。",
       waiting_long: "「{t}」已经等你审核超过 24 小时",
       no_owner_urgent: "紧急：「{t}」还没有人接",
-      next: "NEXT", sync: "SYNC", inbox: "INBOX", comfy_on: "5090 在线", comfy_off: "5090 未连",
+      next: "NEXT", sync: "SYNC", inbox: "INBOX", comfy_on: "ComfyUI 在线", comfy_off: "ComfyUI 未连",
       no_next: "没有日程", tomorrow: "明天", today_w: "今天", yesterday: "昨天",
       ago_m: "{n} 分钟前", ago_h: "{n} 小时前", just: "刚刚",
       unacked: "待处理", reports_empty: "还没有日报。每天 {t} 管家会自动写一份。",
@@ -95,7 +95,7 @@
       mgr_waking: "Usage has reset; waking the manager. No reply in a few minutes? Send any message in its session.",
       waiting_long: "\"{t}\" has waited on your review for 24h+",
       no_owner_urgent: "Urgent: \"{t}\" has no owner yet",
-      next: "NEXT", sync: "SYNC", inbox: "INBOX", comfy_on: "5090 online", comfy_off: "5090 not linked",
+      next: "NEXT", sync: "SYNC", inbox: "INBOX", comfy_on: "ComfyUI online", comfy_off: "ComfyUI not linked",
       no_next: "no events", tomorrow: "Tomorrow", today_w: "Today", yesterday: "Yesterday",
       ago_m: "{n}m ago", ago_h: "{n}h ago", just: "just now",
       unacked: "pending", reports_empty: "No reports yet. The manager writes one daily at {t}.",
@@ -1281,7 +1281,7 @@
     modalStatus();
   });
   /* t-sync-pill (detail polish batch 2, V1): the top bar shows one pill, 「● 已同步」 = the last poll answered. Two misses in a row (~30 s) turn it red with a
-     running 「断线 · N 秒没连上 · 自动重试中」. Hover / focus opens the details (connection, last data change, next event, 5090, team, inbox); a click still opens
+     running 「断线 · N 秒没连上 · 自动重试中」. Hover / focus opens the details (connection, last data change, next event, ComfyUI, team, inbox); a click still opens
      系统状态. The manager's online state lives in the left rail only. Built once and then only text nodes change, so a poll never rebuilds the popover under the mouse.
      Phones hide #sync; there html[data-net="off"] shows #net-off under the header, only while disconnected. */
   function syncPaint() {
@@ -1293,7 +1293,7 @@
       sy.classList.add("sy1"); sy.tabIndex = 0; sy.setAttribute("role", "button");
       sy.innerHTML = `<span class="sy-pill"><i class="sy-dot" aria-hidden="true"></i><b class="sy-k"></b><small class="sy-s"></small></span>`
         + `<div class="sy-pop" role="tooltip"><span data-l="c"></span><b data-v="c"></b><span data-l="d"></span><b data-v="d"></b><span data-l="n"></span><b data-v="n"></b>`
-        + `<span data-l="t"></span><b data-v="t"></b><span>5090</span><b data-v="g"></b><span data-l="i"></span><b data-v="i"></b><div class="ft"></div></div>`;
+        + `<span data-l="t"></span><b data-v="t"></b><span data-l="g">ComfyUI</span><b data-v="g"></b><span data-l="i"></span><b data-v="i"></b><div class="ft"></div></div>`;
     }
     const set = (sel, v, html) => { const e = sy.querySelector(sel); if (!e) return; if (html) { if (e._h !== v) { e._h = v; e.innerHTML = v; } } else if (e.textContent !== v) e.textContent = v; };
     const secs = UI.lastOk ? Math.max(0, Math.round((Date.now() - UI.lastOk) / 1000)) : 0;
@@ -1318,6 +1318,7 @@
     const nBusy = ag.filter(isBusy).length;   // t-ui-fix-r6 R6-08: same busy count as the home header
     set('[data-v="t"]', en ? `${ag.length} · ${nBusy} working` : `${ag.length} 位 · ${nBusy} 位在忙`);
     set('[data-v="g"]', c.online ? (en ? "online" : "在线") : (en ? "not linked" : "未连"));
+    sy.querySelectorAll('[data-l="g"], [data-v="g"]').forEach(x => { x.hidden = c.configured === false; });   /* no comfy block in config.json: no ComfyUI line */
     set('[data-v="i"]', en ? `${M.inbox_unacked || 0} unhandled` : `${M.inbox_unacked || 0} 条没处理`);
     set(".sy-pop .ft", en ? "Click for System status · the manager's state is in the left rail" : "点一下打开系统状态 · 管家在线看左栏");
     // phone: a strip under the header, only while disconnected
@@ -4543,7 +4544,7 @@
     }
     // 4. ComfyUI tunnel (already in /api/state)
     const c = (H && H.comfy) || ST.meta.comfy || {};
-    rows.push({ k: "comfy", t: "5090 · ComfyUI", lv: c.online ? "ok" : c.online === false ? "warn" : "unk",
+    if (c.configured !== false) rows.push({ k: "comfy", t: "ComfyUI", lv: c.online ? "ok" : c.online === false ? "warn" : "unk",
       s: (c.online ? (en ? "Tunnel up" : "隧道已连") : c.online === false ? (en ? "Tunnel down · image jobs will wait" : "隧道未连 · 出图会排队") : (en ? "Not probed yet" : "还没探测"))
         + (c.at ? ` · ${en ? "checked" : "探测于"} ${ageTxt(c.at)}` : "") });
     // 5. push (needs /api/health; this device's own state comes from push.js)

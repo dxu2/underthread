@@ -85,6 +85,8 @@ def rel(p):
 
 
 def load_roster():
+    if not os.path.exists(ROSTER) and os.path.exists(ROSTER[:-5] + ".example.json"):
+        shutil.copy(ROSTER[:-5] + ".example.json", ROSTER)   # fresh clone: same first-run copy server.py makes
     with open(ROSTER, encoding="utf-8") as f:
         return json.load(f)
 

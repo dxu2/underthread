@@ -27,7 +27,7 @@
   const errInfo = e => ({ name: (e && e.name) || "Error", message: String((e && e.message) || e) });
   const timeout = (p, ms, what) => Promise.race([p, new Promise((_, no) => setTimeout(() => no(new Error(`${what} timed out after ${ms / 1000}s`)), ms))]);
   const b64 = s => { const p = "=".repeat((4 - s.length % 4) % 4), raw = atob((s + p).replace(/-/g, "+").replace(/_/g, "/")); return Uint8Array.from(raw, c => c.charCodeAt(0)); };
-  const lang = () => (window.App && App.UI && App.UI.lang) || (() => { try { return JSON.parse(localStorage.getItem("rt.lang")) || "zh"; } catch (_) { return "zh"; } })();
+  const lang = () => (window.App && App.UI && App.UI.lang) || (() => { const b = /^zh/i.test(navigator.language || "") ? "zh" : "en"; try { return JSON.parse(localStorage.getItem("rt.lang")) || b; } catch (_) { return b; } })();
   const payload = () => ({ subscription: sub.toJSON(), origin: location.origin, ua: navigator.userAgent, lang: lang() });   /* t-i18n-b: push text in this device's UI language */
   const changed = () => { try { document.dispatchEvent(new Event("push:change")); } catch (_) { } };
 

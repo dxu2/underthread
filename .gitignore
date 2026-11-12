@@ -22,6 +22,7 @@ uploads/
 work/
 logs/
 rcshots/
+.demo/
 avatars/*
 # the Underthread needle-thread avatar set ships with the repo (shown under the 特典 palette)
 !avatars/ut/
@@ -31,6 +32,8 @@ voices*/
 .claude/agent-memory/
 .claude/agents/
 .claude/settings.local.json
+# .claude/settings.json ships with the repo (statusLine usage feed + the steward's permissions); put your own
+# additions in .claude/settings.local.json, which Claude Code merges on top and git ignores.
 
 # ---- backups: the project writes name.bak-<tag>, so match *.bak* (not just *.bak) ----
 *.bak*

@@ -54,7 +54,7 @@
     }
     add("mail", zh ? "打开信箱" : "Open mailbox", zh ? "动态" : "Activity", "mail inbox 信箱 动态 xx", () => phone() ? fire("data-go", "mail") : fire("data-h", "mail"));
     if (App.ghOpen) add("ghtok", zh ? "GitHub 推送令牌" : "GitHub push token", zh ? "配一次，以后推送不用再输" : "Set once for pushes", "github token git push 令牌 推送 gh", () => App.ghOpen());
-    add("status", zh ? "系统状态" : "System status", zh ? "用量、管家心跳、服务器、5090…" : "Usage, heartbeat, server, 5090…", "status system usage 体力 用量 状态 health xt", () => App.modalStatus());
+    add("status", zh ? "系统状态" : "System status", zh ? "用量、管家心跳、服务器、ComfyUI…" : "Usage, heartbeat, server, ComfyUI…", "status system usage 体力 用量 状态 health xt", () => App.modalStatus());
     for (const a of Object.values(App.ST.agents || {}).filter(a => a.enabled !== false).sort((x, y) => (x.order ?? 99) - (y.order ?? 99))) {
       add("dm:" + a.id, a.id === "manager" ? (zh ? `和${App.aname(a)}（管家）对话` : `Chat with ${App.aname(a)}`) : (zh ? `给${App.aname(a)}发私信` : `Message ${App.aname(a)}`),
         App.atitle(a), `dm 私信 chat 对话 ${a.id} ${App.aname(a)} ${a.name_en || ""} ${App.atitle(a)}`, () => fire("data-chat", a.id));

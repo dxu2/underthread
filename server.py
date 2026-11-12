@@ -69,7 +69,7 @@ def load_json(name, default):
 
 CONFIG = {}
 _roster_mtime = None
-_comfy = {"online": None, "at": None}
+_comfy = {"online": None, "at": None, "configured": False}   # configured: config.json has a "comfy" block (otherwise the UI hides the row); set in load_config
 START = time.time()  # t-imp-p4: server uptime for /api/health
 try:   # t-home-usage: per-role token rollup; a broken module must not stop the dashboard
     import usage_roll
@@ -118,6 +118,8 @@ def sync_roster():
 
 def comfy_probe_loop():
     c = CONFIG.get("comfy") or {}
+    if not c:
+        return   # no ComfyUI set up: nothing to probe, the UI hides the row
     port = int(c.get("local_port", 8188))
     while True:
         try:
@@ -1770,7 +1772,7 @@ def save_upload(body):
     fn = f"{dt.datetime.now():%Y%m%d-%H%M%S}-{uuid.uuid4().hex[:4]}-{name}"
     with open(os.path.join(UPLOADS, fn), "wb") as f:
         f.write(raw)
-    return {"ok": True, "path": f"uploads/{fn}", "abs": os.path.join(UPLOADS, fn)}
+    return {"ok": True, "path": f"uploads/{fn}"}   # audit SM-15: no absolute path in responses
 
 
 MAX_UPLOAD = 8 * 1024**3  # 8 GB: raw footage
@@ -1803,7 +1805,7 @@ def save_upload_stream(rfile, length, name):
     finally:
         if os.path.exists(part):
             os.remove(part)
-    return {"ok": True, "path": f"uploads/{fn}", "abs": dest, "bytes": length}
+    return {"ok": True, "path": f"uploads/{fn}", "bytes": length}   # audit SM-15
 
 
 def list_docs():
@@ -1917,7 +1919,7 @@ def public_item(iid):
 # ---------- t-perf B: nothing is re-read or re-encoded unless a file it comes from changed ----------
 # A poll used to read state.json twice (public_state + _unacked_count, ~43 ms for a "same") and json-encode + gzip the whole state for
 # every client (~75 ms). Now: rev + unacked count are cached by the (inode, mtime_ns, size) of state.json and inbox.jsonl; the encoded
-# body (raw + gzip) by those plus avatars/, archive.json, the 5090 probe and the minute (routines' next run moves with the clock).
+# body (raw + gzip) by those plus avatars/, archive.json, the ComfyUI probe and the minute (routines' next run moves with the clock).
 # state.json is only ever replaced with os.replace (stateutil._save), so a new inode / mtime always marks a new version.
 def _fsig(p):
     try:
@@ -2616,6 +2618,8 @@ class H(BaseHTTPRequestHandler):
                 except ValueError:
                     tw = 360
                 return self._thumb(q.get("p", [""])[0], tw)
+            if u.path == "/avatars/_s/index.json" and not os.path.exists(os.path.join(AVATARS, "_s", "index.json")):
+                return self._send(200, {})   # audit SM-05: no small-avatar manifest yet (tools/avatar_sizes.py not run): empty, not a console 404
             for prefix, base in (("/static/", WEB), ("/uploads/", UPLOADS), ("/avatars/", AVATARS),
                                  ("/work/", os.path.join(ROOT, "work"))):
                 if u.path.startswith(prefix):
@@ -2793,6 +2797,7 @@ def main():
     global CONFIG
     ensure_live_files()
     CONFIG = load_json("config.json", {})
+    _comfy["configured"] = bool(CONFIG.get("comfy"))
     sync_roster()
     try:
         routines_log_backfill()   # t-ri1104-p3
@@ -2806,8 +2811,13 @@ def main():
     if not os.environ.get("NO_LOOPS"):
         for fn in (comfy_probe_loop, report_loop, roster_watch_loop, push_loop, wake_loop, schedule_loop, snooze_loop):
             threading.Thread(target=fn, daemon=True).start()
-    srv = QuietServer(("127.0.0.1", port), H)
-    print(f"Underthread → http://127.0.0.1:{port}")
+    try:
+        srv = QuietServer(("127.0.0.1", port), H)
+    except OSError as e:   # audit SM-14: a clear line instead of a traceback when the port is taken
+        print(f"Underthread: cannot listen on 127.0.0.1:{port} ({e.strerror or e}). Is another copy running? "
+              f"Stop it, or start this one with PORT=<other port>.", file=sys.stderr, flush=True)
+        sys.exit(1)
+    print(f"Underthread → http://127.0.0.1:{port}", flush=True)
     try:
         srv.serve_forever()
     except KeyboardInterrupt:
