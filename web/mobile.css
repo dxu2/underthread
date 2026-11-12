@@ -50,7 +50,12 @@ body[data-mtab] #layout > * { animation: m-in var(--m-base) var(--m-ease-emph) b
 .board { grid-template-columns: repeat(5, 80vw); overflow-x: auto; scroll-snap-type: x mandatory; margin: 0 -16px; padding: 0 16px 8px; }
 .col { scroll-snap-align: center; min-height: 55vh; }
 .roster, .plats, .docs { grid-template-columns: 1fr; } .docs .dl::after { display: none; }
-.log-i { grid-template-columns: 70px 22px 1fr; } .log-i > span:nth-child(3) { display: none; }
+/* t-phone-docs: one pane at a time. Reading a doc hides the list; 「‹ 全部文档」 goes back. */
+.docs { grid-template-columns: minmax(0, 1fr); } .docs .md { min-width: 0; }   /* v2: a wide table (SETUP-GUIDE.md) stretched the 1fr column past the screen; it now scrolls inside .tbl */
+.docs.has-doc .dl { display: none; }
+.docs .doc-back { display: flex; align-items: center; gap: 8px; width: 100%; min-height: 44px; margin: 0 0 10px; padding: 8px 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--chip); color: var(--ink); font-size: var(--fs-14); text-align: left; transition: background .2s, transform .15s; }
+.docs .doc-back span { margin-left: auto; color: var(--dim); font-size: var(--fs-12); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+.docs .doc-back:active { background: var(--line); }
 .mail-i { grid-template-columns: 8px 70px 22px 1fr; }
 .empty { padding: 40px 0; }
 
@@ -226,11 +231,15 @@ body.kb #page, body.kb #left { padding-bottom: 24px; }
 .m-set b { display: block; font-family: var(--f-cjk); font-size: var(--fs-15); font-weight: 600; letter-spacing: .04em; }
 .m-set small { display: block; font-size: var(--fs-12); color: var(--dim); margin-top: 2px; letter-spacing: .04em; }
 .m-set em { font-style: normal; color: var(--dim); font-size: var(--fs-20); }
-.sw { flex: none; position: relative; width: 44px; height: 24px; border-radius: 12px; border: 1px solid var(--line2); background: var(--chip); transition: background .4s, border-color .4s, box-shadow .4s; }
-.sw i { position: absolute; top: 50%; left: 5px; width: 11px; height: 11px; transform: translateY(-50%) rotate(45deg); border: 1px solid var(--ink2); background: var(--bg);
-  transition: left .45s var(--ease), background .4s, box-shadow .4s, border-color .4s; }
-.sw.on { border-color: var(--glow); background: var(--glow-b); box-shadow: 0 0 14px var(--glow-b); }
-.sw.on i { left: 25px; background: var(--soul); border-color: var(--soul); box-shadow: 0 0 10px var(--glow); }
+/* t-plain-toggle (user 11-10 23:54): a plain switch — round knob sliding in a pill track, track = accent when on. No glow, no diamond. Hit target = the whole row. */
+.sw { flex: none; position: relative; width: 44px; height: 26px; border-radius: 13px; border: 0; background: color-mix(in srgb, var(--ink) 20%, transparent); box-shadow: none; transition: background-color .25s var(--ease); }
+.sw i { position: absolute; top: 3px; left: 3px; width: 20px; height: 20px; border: 0; border-radius: 50%; transform: none; background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,.28), 0 0 0 .5px rgba(0,0,0,.06);
+  translate: 0 0; transition: translate .28s cubic-bezier(.3,1.3,.5,1); }
+.sw.on { background: var(--accent); }
+.sw.on i { translate: 18px 0; }
+html:not([data-ut]) .sw.on i { background: var(--bg); }   /* Ink: the accent is near-white at night, so the knob takes the page colour (dark on light, light on dark) */
+:focus-visible > .sw { outline: 2px solid var(--accent); outline-offset: 2px; }
+@media (prefers-reduced-motion: reduce) { .sw i { transition: none; } }
 .m-foot { text-align: center; font-family: var(--f-display); font-size: 9.5px; letter-spacing: .3em; color: var(--faint); margin: 26px 0 0; text-transform: uppercase; }
 
 /* item sheet */
@@ -381,6 +390,7 @@ body.kb .cl-rows { padding-bottom: 24px; }
 .cl-m { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 5px; align-self: stretch; justify-content: center; padding-right: 16px; position: relative; }
 .cl-row + .cl-row .cl-m::before { content: ""; position: absolute; left: 0; right: 0; top: 0; height: 1px; background: var(--line); }
 .cl-t { display: flex; align-items: baseline; gap: 8px; }
+.cl-row .aq { pointer-events: none; }   /* t-ui-fix-r2 B10: the 排队 N pill sits mid-row, so a normal tap opened the queue pop-over instead of the DM; the row now always opens the DM (the pill in the DM header still opens the queue) */
 .cl-t .nm { font-family: var(--f-cjk); font-size: var(--fs-17); font-weight: 600; color: var(--ink); letter-spacing: .04em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .cl-t .st, .cl-back .st { font-style: normal; font-size: var(--fs-11); color: var(--accent); white-space: nowrap; }
 .cl-t time { margin-left: auto; font-size: var(--fs-12); color: var(--dim); font-family: var(--f-display); letter-spacing: .03em; white-space: nowrap; }
@@ -598,6 +608,7 @@ body #right .ch-comp.sending .m-send svg { animation: none; }
 .msg .opts, #right .msg .opts { gap: 8px; }
 #right .msg .opts .btn-s { min-height: 34px; padding: 0 14px; border-radius: 17px; background: var(--glass-lite); border: 1px solid var(--glass-line); box-shadow: none; font-size: var(--fs-13); font-weight: 600; letter-spacing: 0; color: var(--ink); }   /* P3: quick replies = tinted glass pills (no blur: list content) */
 #right .msg .opts .btn-s.rec { border-color: var(--accent); box-shadow: inset 0 0 0 .5px var(--accent); }   /* t-opt-star */
+#right .msg .opts .btn-s { padding-block: 7px; }   /* t-i18n-chips: room above/below when a long quick reply wraps; one line still sits in the 34px min-height */
 
 /* ===== ui8 (t-composer-fix): + stays beside 发送; no 90° spin; panel = 拍照 / 上传媒体 =====
    Spin cause: style.css `.ch-comp > button:hover { transform: rotate(90deg) }` also matched .m-send; on touch the :hover sticks after the tap. */
@@ -987,7 +998,7 @@ body:has(#drawer.open) #page { transform: translateX(var(--m-recede)); opacity: 
 body.kb #drawer .dw-dock { padding-bottom: 10px; }
 #drawer .dw-scroll { padding-bottom: calc(var(--dock-h, 150px) + 22px); }
 /* floating TOP / LATEST ride above the dock; no blur of their own (blur budget) */
-#drawer .cs-jump { bottom: calc(var(--dock-h, 150px) + 14px); }
+#drawer .cs-jump { bottom: 10px; }   /* t-ui-fix-r3 R3-10: sticky already stops at the scroller's padding (which is dock-h + 22), so adding dock-h again parked the buttons near the top, over the header and text */
 #drawer .cs-jump button { background: var(--glass-solid); -webkit-backdrop-filter: none; backdrop-filter: none; border-color: var(--glass-line); box-shadow: var(--glass-shadow); }
 
 #drawer .composer { --r-to: 0fr; --r-att: 0fr; --c-send: 0px; position: relative; padding: 0; margin: 0; display: grid; grid-template-columns: 40px minmax(0, 1fr) var(--c-send); grid-template-rows: var(--r-to) var(--r-att) auto;
@@ -1108,6 +1119,7 @@ html[data-theme="white"][data-ut="light-warm"] .cl-search:focus-within { box-sha
 .office > .hd { width: 100%; }
 /* t-m-team-panel (11-05, user: 「有点挤，加点 padding」): the ink skin flattens the 首页 board (skin-ink.css: .office .hd { padding: 0 } on a transparent page), but 特典 paints it as a --panel card again (theme-ut.css .hd), so the header, the slanted strip and the stats touched the card edge. Give the card its inset back under 特典 only. */
 html[data-ut][data-skin="ink"] .office .hd { padding: 12px 12px 4px; }
+html[data-ut][data-skin="ink"][data-texture] .office .hd { padding-bottom: 12px; }   /* t-ui-fix-r2 B08: leather / knit stitch the card ~6px in, so 「最久 N 分钟」 and the selected-stat bar sat on the stitching */
 html[data-ut][data-skin="ink"] .office .hd .hd-h { margin-bottom: 10px; padding: 0 2px 0 4px; }
 .hd { --sk: 24px; --pg: 3px; --edge: rgba(255,255,255,.30); position: relative; border: 1px solid var(--line2); border-radius: 20px; background: var(--panel); padding: 10px 12px 12px; box-sizing: border-box;
   box-shadow: 0 1px 0 var(--line), 0 12px 28px -14px rgba(0,0,0,.55); overflow: hidden; -webkit-user-select: none; user-select: none; }
@@ -1524,6 +1536,7 @@ body[data-ret="main"][data-mtab="chat"][data-cv="thread"] #main, body[data-ret="
 .lib-chips { flex: none; width: 100%; }
 .lib-seg { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
 .lib-seg::-webkit-scrollbar { display: none; }
+.lib-seg > button { flex-shrink: 0; }   /* t-ui-fix-r5 R5-01: the R4-14 ellipsis (overflow:hidden) let chips shrink to 「所…」 instead of the row scrolling; chips keep their width, the row scrolls */
 .lib-q { flex: none; width: 100%; height: 38px; font-size: var(--fs-16); }
 .lib-g { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
 .lib-cap { padding: 6px 8px; font-size: var(--fs-12); }
@@ -1680,6 +1693,9 @@ body.kb .dw-toc:not(.open) { display: none; }
 /* t-theme-leather: 质感 has 5 options (关 / 针脚 / 毛衣 / 软皮 / 马鞍): give it its own full-width line with equal segments, so it neither squeezes the description into a 3-char column (390) nor overflows (320). */
 .st-row > .st-seg[data-seg="texture"] { flex: 1 0 100%; margin-left: 0; display: flex; }
 .st-seg[data-seg="texture"] .seg-i { flex: 1 1 0; min-width: 0; padding: 0 6px; }
+/* t-ui-fix-r2 B09: 主题 and 配色 squeezed their description into a 1/3-width column 4–5 lines tall; same full-width line as 质感 */
+.st-row > .st-seg:is([data-seg="ut"], [data-seg="tmode"]) { flex: 1 0 100%; margin-left: 0; display: flex; }
+.st-seg:is([data-seg="ut"], [data-seg="tmode"]) .seg-i { flex: 1 1 0; min-width: 0; padding: 0 6px; }
 .st-p-roles, .st-p-docs, .st-p-logs { margin: 0 -2px; }
 
 /* ===== t-ri1104-p1: the tab pill stays readable over content.
@@ -1699,7 +1715,7 @@ html[data-theme] #tabbar::before { top: -28px; background: linear-gradient(to to
 #pagebody .dc-ok i { font-style: normal; font-weight: 600; color: var(--ok); }
 
 /* t-ri1104-p3: 常驻活动 schedule on phones: time column narrower, dots full width */
-.rs-row { grid-template-columns: 52px 1fr auto; gap: 4px 10px; padding: 14px; border-radius: 16px; }
+.rs-row { grid-template-columns: minmax(52px, max-content) 1fr auto; gap: 4px 10px; padding: 14px; border-radius: 16px; }
 .rs-t { font-size: var(--fs-20); }
 .rs-dots, .rs-last { grid-column: 1 / 4; }
 .rs-dots { gap: 4px; }
@@ -1901,3 +1917,72 @@ body.vp-fix #sc-undo { bottom: auto; top: calc(var(--app-h) - var(--tb-h) - 64px
 
 /* t-ri1108-a P4: 定时 page titles wrap to two lines before the ellipsis (long routine / standing-card names were cut at ~10 chars) */
 .rs-n b { white-space: normal; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow-wrap: anywhere; line-height: 1.3; }
+
+/* t-ri1111-a P5: the 委托 category track fades at an edge that has more to swipe (Urgent was hard-cut, Schedules out of sight).
+   The pill (bg + ring) moves to the wrapper so only the scrolling buttons fade, not the pill's own edge. */
+.m-seg.q { border-radius: 999px; background: var(--chip); box-shadow: inset 0 0 0 1px var(--line2); }
+html[data-theme="white"] .m-seg.q { background: #f0f0f0; box-shadow: none; }   /* mirrors the per-theme .seg pills above (660 / 1095) */
+html[data-theme="white"][data-ut="light-warm"] .m-seg.q { background: var(--panel2); box-shadow: inset 0 0 0 1px var(--line); }
+html[data-theme] .m-seg.q .seg { background: none; box-shadow: none; --fl: 0px; --fr: 0px;
+  -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 var(--fl), #000 calc(100% - var(--fr)), transparent 100%);
+          mask-image: linear-gradient(90deg, transparent 0, #000 var(--fl), #000 calc(100% - var(--fr)), transparent 100%); }
+.m-seg.q .seg.fl { --fl: 36px; } .m-seg.q .seg.fr { --fr: 36px; }
+
+/* ===== t-ui-fix-p1 (2026-11-12): UI audit P1-3 / P1-4, phone only (this file loads below 761px) ===== */
+/* P1-4: the DM header band was 55% → transparent behind the pills, so message text read through between them. Solid down to the pill
+   bottom, then a short fade. The unread count sits out on the back button's corner with a bg ring instead of over the chevron. */
+body[data-cv="thread"] .cl-back { background: linear-gradient(to bottom, var(--bg) 0, var(--bg) env(safe-area-inset-top), var(--bg) calc(env(safe-area-inset-top) + 44px), transparent 100%); }
+.cl-back button .n { top: -8px; right: auto; left: -9px; box-shadow: 0 0 0 2px var(--bg); }
+/* P1-3: tap targets. List rows (今日日程 in 更多, 设置 → 文档) get taller; card ids in 日志 get vertical padding (inline span: no reflow).
+   Small chips and pills keep their look and get an invisible ::before hit slop (none of these used ::before, checked 11-12). */
+#cal .cal-i { min-height: 36px; }
+.docs .dl button { padding-top: 10px; padding-bottom: 10px; }
+.log-i .it { padding: 12px 6px; margin: 0 -6px; }
+#cal .side-h > button, .hd-srch, .a2-stack, .ph-bar > button, .mk-chips > button, .mk-sw > button, .pl-add, .lib-seg > button, .st-prev, .ask-o, .sy-btn, .sy-x, .dw-id { position: relative; }
+#cal .side-h > button::before, .hd-srch::before, .a2-stack::before, .ph-bar > button::before, .mk-chips > button::before, .mk-sw > button::before, .pl-add::before,
+.lib-seg > button::before, .st-prev::before, .ask-o::before, .sy-btn::before, .sy-x::before, .dw-id::before { content: ""; position: absolute; inset: -7px -2px; }
+#cal .side-h > button::before { inset: -10px -15px -10px -15px; }
+.hd-srch::before { inset: -7px; }
+/* the 职位 chip row is a sideways scroller, which clips the slop: give it 7 px of room above and below, taken back by margins (no visual change) */
+.mk-chips { padding-top: 7px; padding-bottom: 7px; margin-top: -7px; margin-bottom: 9px; }
+
+/* ===== t-ui-fix-r3 (2026-11-12) ===== */
+/* R3-09: scrolled card header: the strip behind the pills is near-solid (80% let lines read through, worse where blur is off), and the id chip gets a pill fill like 待验收 / 杂活 */
+#drawer .dw-top::after { background: color-mix(in srgb, var(--bg) 93%, transparent); }
+#drawer .dw-lead .dw-id { padding: 4px 10px; border-radius: 999px; transition: background-color var(--m-base) var(--m-ease-std); }
+#drawer.dw-scrolled .dw-lead .dw-id { background: var(--glass-lite); }
+/* R3-16: more small phone targets get the same invisible ::before slop as P1-3 (none of these used ::before, checked 11-12):
+   全部标为已读 (19px), the 定时 on/off switch (24px), reply-quote chips (25px), 私用录音 … 显示 (21px) */
+.nr-all, .nr-more, .rs-tg, .rq, .lib-pvt { position: relative; }
+.nr-all::before, .nr-more::before, .rs-tg::before, .rq::before, .lib-pvt::before { content: ""; position: absolute; inset: -12px -6px; }
+.rs-tg::before { inset: -10px -4px; }
+.rq::before { inset: -6px -2px; }
+/* R3-17: plain 墨刊 flattens the home board (transparent, padding 0) but kept .hd's overflow:hidden, so the hero avatar ring was cut at the
+   page gutter; with no card edge to respect, let it paint */
+html[data-skin="ink"]:not([data-ut]) .office .hd { overflow: visible; }
+
+/* ===== t-ui-fix-r4 (phone) =====
+   R4-15: an open question bar never takes more than ~40% of the screen; the long question scrolls inside it (full width, under 「N 个问题要你选」). */
+#drawer .dw-askbar:not(.fold) .ask-row { max-height: 40vh; overflow-y: auto; overscroll-behavior: contain; }
+#drawer .dw-askbar:not(.fold) .ask-rt > span { padding-left: 12px; }
+/* R4-16: the four hero stat labels are centred even when one wraps (en 「7-day shipped」) */
+.hd-stat span { text-align: center; line-height: 1.25; }
+.cl-p em { color: var(--dim); }   /* t-ui-fix-r4: role line under a DM name (was --faint, 3.3:1) */
+#drawer .dw-askbar:not(.fold) .ask-opts.sm { max-height: none; overflow: visible; }   /* R4-15: one scroller (the bar), not two */
+
+/* ===== t-ui-fix-r5 (phone) =====
+   R5-06: the card id chip keeps its full text; the stage tag gives way first (ellipsis, full label in its title), paddings tighten under 400px */
+#drawer .dw-lead .dw-id { flex: none; }
+#drawer .dw-lead .tag { min-width: 0; flex: 0 1 auto; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; display: block; line-height: 38px; }
+@media (max-width: 400px) {
+  #drawer .dw-lead { gap: 6px; }
+  #drawer .dw-lead .tag { padding: 0 12px; }
+  #drawer .dw-lead .dw-id { padding: 4px 6px; }
+  #drawer .dw-top .r select[data-f="category"], #drawer.dw-scrolled .dw-top .r select[data-f="category"] { padding: 0 24px 0 10px; background-position: right 9px center; }
+  html[lang="en"] #drawer .dw-lead { gap: 4px; }
+  html[lang="en"] #drawer .dw-lead .tag { padding: 0 10px; font-size: var(--fs-11); }
+  html[lang="en"] #drawer .dw-lead .dw-id svg { display: none; }   /* the whole chip still copies (title says so); en labels are ~30px longer */
+}
+/* R5-07: 墨刊 + a texture (针脚/毛衣, also 皮革) paints the hero .hd as a stitched card again, so it needs the card padding and clip back (R3-17's overflow:visible
+   stays for plain 墨刊, where the board has no card edge) */
+html[data-skin="ink"]:not([data-ut]):is([data-texture^="knit"], [data-texture^="leather"]) .office .hd { overflow: hidden; padding: 12px; }

@@ -52,7 +52,9 @@ html[data-skin="ink"]:not([data-ink-light="0"]) .hdr-ctrl .hc-th.light i { backg
 @keyframes inkBar { from { transform: scaleX(0); } to { transform: scaleX(1); } }
 
 /* ---------- typography: page titles, eyebrow ---------- */
-html[data-skin="ink"] .ph h1 { font-family: var(--f-sys); font-size: 60px; font-weight: 600; letter-spacing: -.035em; line-height: 1.02; text-shadow: none; }
+/* t-title-align: one page-title size shared by .ph h1 and the home 「Today.」 (.ink-hello b). Desk 60px; phone 34px (phone pages hide .ph, only home shows it) */
+html[data-skin="ink"] { --pt-fs: 60px; }
+html[data-skin="ink"] .ph h1 { font-family: var(--f-sys); font-size: var(--pt-fs); font-weight: 600; letter-spacing: -.035em; line-height: 1.02; text-shadow: none; }
 html[data-skin="ink"] .ph h1::after { content: ""; display: inline-block; width: .16em; height: .16em; border-radius: 50%; background: var(--dot); margin-left: .06em; animation: inkDot .4s var(--ease) .1s backwards; }
 html[data-skin="ink"] .ph .en, html[data-skin="ink"] .ph .orn { display: none; }
 html[data-skin="ink"] .ink-eb { display: flex; gap: 10px; align-items: center; font: 600 var(--fs-12)/1 var(--f-sys); letter-spacing: .04em; color: var(--dim); margin: 0 0 12px; text-transform: uppercase; }
@@ -116,11 +118,11 @@ html[data-skin="ink"][data-theme="dark"].es-art .empty::before, html[data-skin="
 
 /* ---------- phone ---------- */
 @media (max-width: 760px) {
-  html[data-skin="ink"] .ph h1 { font-size: 40px; }
+  html[data-skin="ink"] { --pt-fs: 34px; }
   html[data-skin="ink"] .ink-hello { display: block; margin: 6px 2px 14px; }
   html[data-skin="ink"] .ink-hello[hidden] { display: none; }
   html[data-skin="ink"] .ink-hello .ink-eb { margin: 0 0 4px; }
-  html[data-skin="ink"] .ink-hello b { display: block; font: 600 var(--fs-34)/1.05 var(--f-sys); letter-spacing: -.035em; color: var(--ink); }
+  html[data-skin="ink"] .ink-hello b { display: block; font: 600 var(--pt-fs)/1.05 var(--f-sys); letter-spacing: -.035em; color: var(--ink); }
   html[data-skin="ink"] .ink-hello b::after { content: ""; display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: var(--dot); margin-left: 3px; animation: inkDot .4s var(--ease) .1s backwards; }
   html[data-skin="ink"] .office .hd { background: transparent; border: 0; box-shadow: none; padding: 0; -webkit-backdrop-filter: none; backdrop-filter: none; }
   html[data-skin="ink"] .office .hd::before, html[data-skin="ink"] .office .hd::after { display: none; }
@@ -155,3 +157,6 @@ html[data-skin="ink"][data-theme="dark"].es-art .empty::before, html[data-skin="
 @media (min-width: 761px) and (max-width: 1200px) { html[data-skin="ink"] #top .brand img { height: 24px; } }
 /* below 1080 px only the mark shows (the same image cropped to its left end), so the stamina numbers keep their room */
 /* t-hdr-trim ①: the ≤1080 mark-only crop is gone — with 信箱 / 日报 / 刷新用量 / 舞台 out of the top bar the 24px wordmark fits down to 761 (measured 800 / 900 / 1024) */
+
+/* ===== t-ui-fix-r4 contrast (2026-11-12): 墨刊·深 --dim was 4.35:1 on black and ~3.4 on cards (mailbox meta, market text): one step lighter, same grey. ===== */
+html[data-skin="ink"][data-theme="dark"]:not([data-ut]):not([data-stage]) { --dim: #959086; }

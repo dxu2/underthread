@@ -33,7 +33,9 @@
       .finally(() => { T.busy = false; T.at = Date.now(); T.ready = true; const p = A().UI.page; if (p === "crew" || p === "review") A().refreshPage(); });
   }
   const order = (a, b) => (a.order ?? 99) - (b.order ?? 99);
-  const isW = a => a.id !== "manager" && a.status === "working";
+  const isW = a => a.id !== "manager" && a.status === "working";   // graph layout only (the manager keeps its own spot)
+  /* t-ui-fix-r6 R6-08: counts use the shared App.isBusy (home header, 此刻在忙), so the manager on a live card counts here too */
+  const isB = a => A().isBusy ? A().isBusy(a) : isW(a);
   function model(upTo) {
     const app = A(), ST = app.ST;
     const ags = Object.values(ST.agents || {}).filter(a => a.enabled !== false).sort(order), by = Object.fromEntries(ags.map(a => [a.id, a]));
@@ -44,7 +46,7 @@
     vis.forEach(e => { const x = edge(e.f, e.to); x.n++; x.last = e; });
     let lit, cur = null;
     if (upTo == null) {
-      lit = new Set(ags.filter(isW).map(a => a.id));
+      lit = new Set(ags.filter(isB).map(a => a.id));   // t-ui-fix-r6: the manager on a live card is lit too
       ags.filter(isW).forEach(a => {   // the live strand: the latest handoff into a working role on the card it is working on now
         const e = [...evs].reverse().find(x => x.to === a.id && (!a.item || x.item === a.item));
         const x = edge(e ? e.f : "manager", a.id); x.live = true; lit.add(x.f);
@@ -55,7 +57,7 @@
     }
     const edges = [...map.values()].filter(x => by[x.f] && by[x.to]);
     edges.forEach(x => x.kind = x.f === "manager" ? "disp" : x.to === "manager" ? "back" : "relay");
-    return { ags, by, evs, vis, edges, lit, cur, work: ags.filter(isW), idle: ags.filter(a => !isW(a) && a.id !== "manager") };
+    return { ags, by, evs, vis, edges, lit, cur, work: ags.filter(isW), busy: ags.filter(isB), idle: ags.filter(a => !isB(a) && a.id !== "manager") };
   }
 
   // ---------- the yarn graph (same drawing as work/t-desk-role-board/graph) ----------
@@ -81,7 +83,9 @@
         <path d="${g.d}" class="tb-yb" style="stroke:${c};stroke-width:${w.toFixed(1)}px"/>
         <path d="${g.d}" class="tb-yd" style="stroke-width:${w.toFixed(1)}px;stroke-dasharray:${da}"/>
         <path d="${g.d}" class="tb-yl" style="stroke-width:${(w * .35).toFixed(1)}px;stroke-dasharray:${da};stroke-dashoffset:${(w * .3).toFixed(1)}"${e.live ? ' data-ip="s"' : ""}/>`;
-      if (e.n) { const [lx, ly] = g.at(.5); s += `<g transform="translate(${lx.toFixed(1)},${ly.toFixed(1)}) scale(${q.toFixed(2)})"><rect class="tb-bd" x="-12" y="-9" width="24" height="18" rx="4"/><text class="tb-bt" text-anchor="middle" dy="4">${e.n}</text></g>`; }
+      if (e.n) { let [lx, ly] = g.at(.5);
+        /* t-ri1110-a P4: a pair of opposite strands put both counts 16px apart at the same spot (read as 「5|2」); push each out along the normal */
+        if (M.edges.some(x => x.f === e.to && x.to === e.f && x.n && pos[x.f] && pos[x.to])) { const [x1, y1] = xy(e.f), [x2, y2] = xy(e.to), L = Math.hypot(x2 - x1, y2 - y1) || 1; lx -= (y2 - y1) / L * 16 * k; ly += (x2 - x1) / L * 16 * k; } s += `<g transform="translate(${lx.toFixed(1)},${ly.toFixed(1)}) scale(${q.toFixed(2)})"><rect class="tb-bd" x="-12" y="-9" width="24" height="18" rx="4"/><text class="tb-bt" text-anchor="middle" dy="4">${e.n}</text></g>`; }
       if (e.live) { const [nx, ny] = g.at(.72), [px, py] = g.at(.74), ang = Math.atan2(py - ny, px - nx) * 180 / Math.PI;
         s += `<g class="tb-needle" transform="translate(${nx.toFixed(1)},${ny.toFixed(1)}) rotate(${ang.toFixed(0)}) scale(${Math.max(k, .6).toFixed(2)})"><circle r="16" style="fill:${c}" opacity=".25"/><path d="M-26,-2 L18,-1 L26,0 L18,1 L-26,2 Z"/><ellipse cx="-20" cy="0" rx="4.5" ry="1"/></g>`; }
       return s + "</g>";
@@ -109,14 +113,14 @@
   }
 
   // ---------- widget (called by widgets.js W.team) ----------
-  const eb = n => `<div class="wg-eb"><span class="wg-dot"></span><b>${L("团队交接", "Team handoffs")}</b>${n != null ? `<span class="n">${n}</span>` : ""}</div>`;
+  const eb = n => `<div class="wg-eb"><span class="wg-dot"></span><b>${L("团队交接", "Team handoffs")}</b>${n != null ? (window.WgNum ? WgNum(n) : `<span class="n">${n}</span>`) : ""}</div>`;
   const oldNote = () => T.err === "old" ? `<div class="tb-note">${L("看板服务重启后才有交接记录", "Handoffs appear after a server restart")}</div>` : "";
   const W = {
     s(M) {   // busy count in the middle, everyone on a ring; working ones lit
       const R = 46, c = 60, ring = M.ags.filter(a => a.id !== "manager").concat(M.by.manager ? [M.by.manager] : []);
-      const ps = ring.map((a, i) => { const t = -Math.PI / 2 + i * 2 * Math.PI / ring.length, x = c + R * Math.cos(t), y = c + R * Math.sin(t), on = isW(a), r = on ? 13 : 10.5;
+      const ps = ring.map((a, i) => { const t = -Math.PI / 2 + i * 2 * Math.PI / ring.length, x = c + R * Math.cos(t), y = c + R * Math.sin(t), on = isB(a), r = on ? 13 : 10.5;
         return `<g class="tb-rp${on ? " on" : ""}">${on ? `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${r + 2}" style="stroke:${tint(a)}" class="tb-rr"/>` : ""}<image href="${esc(A().avatarUrl(a))}" x="${(x - r).toFixed(1)}" y="${(y - r).toFixed(1)}" width="${2 * r}" height="${2 * r}" clip-path="url(#tbcS)" preserveAspectRatio="xMidYMid slice"/></g>`; }).join("");
-      return eb() + `<div class="tb-s" data-go="crew"><svg viewBox="-6 -6 132 132" aria-hidden="true"><defs><clipPath id="tbcS" clipPathUnits="objectBoundingBox"><circle cx=".5" cy=".5" r=".5"/></clipPath></defs><circle cx="60" cy="60" r="46" class="tb-sr"/>${ps}</svg><div class="tb-c"><b>${M.work.length}</b><small>${L("在忙", "busy")}</small></div></div>`;
+      return eb() + `<div class="tb-s"><svg viewBox="-6 -6 132 132" aria-hidden="true"><defs><clipPath id="tbcS" clipPathUnits="objectBoundingBox"><circle cx=".5" cy=".5" r=".5"/></clipPath></defs><circle cx="60" cy="60" r="46" class="tb-sr"/>${ps}</svg><div class="tb-c"><b>${M.busy.length}</b><small>${L("在忙", "busy")}</small></div></div>`;
     },
     m(M) {   // mini graph: manager + working roles + live strands; who does what on the right; idle faces under it
       const n = M.work.length, pos = {}, src = [...new Set(M.edges.filter(e => e.live && e.f !== "manager" && !isW(M.by[e.f])).map(e => e.f))];
@@ -125,16 +129,17 @@
       M.work.slice(0, 3).forEach((a, i) => pos[a.id] = [.8, n === 1 ? .5 : .2 + .6 * i / (Math.min(n, 3) - 1)]);
       const sub = { edges: M.edges.filter(e => e.live && pos[e.f] && pos[e.to]), by: M.by, lit: M.lit, ags: M.ags };
       const g = graph(sub, { W: 300, H: 210, pos, R: 34, k: .9, uid: "M" });
-      const lab = M.work.slice(0, 1).map(a => { const it = A().liveItem(a);
+      const nb = M.busy.length, bl = M.work.length ? M.work : M.busy;   // t-ui-fix-r6 R6-08: text counts = shared busy count; the label prefers a role
+      const lab = bl.slice(0, 1).map(a => { const it = A().liveItem(a);
         return `<div class="tb-ml" style="--c:${tint(a)}"${it ? ` data-item="${esc(it.id)}"` : ""}><b><span>${esc(A().aname(a))}</span><i>${a.since ? ago(a.since) : ""}</i></b><small>${esc((it && it.title) || a.activity || "")}</small></div>`; }).join("");
       const idle = M.idle.slice(0, 8).map(a => `<img class="tb-ia" src="${esc(A().avatarUrl(a))}" alt="" title="${esc(A().aname(a))}">`).join("");
-      return eb(L(`${n} 在忙`, `${n} busy`)) + `<div class="tb-m"><div class="tb-mg" data-go="crew">${g}</div><div class="tb-mr">${n ? lab : `<div class="tb-calm">${L("大家都在待机", "Everyone is idle")}</div>`}<div class="tb-idle">${idle}${n > 1 ? `<em>${L(`+${n - 1} 人在忙`, `+${n - 1} busy`)}</em>` : ""}</div></div></div>`
-        + (oldNote() || `<div class="wg-more"><span data-go="crew">${L(`近 24 小时交接 ${M.evs.length} 次 · 看全图 ›`, `${M.evs.length} handoffs in 24 h · full graph ›`)}</span></div>`);
+      return eb(L(`${nb} 在忙`, `${nb} busy`)) + `<div class="tb-m"><div class="tb-mg">${g}</div><div class="tb-mr">${nb ? lab : `<div class="tb-calm">${L("大家都在待机", "Everyone is idle")}</div>`}<div class="tb-idle">${idle}${nb > 1 ? `<em>${L(`+${nb - 1} 人在忙`, `+${nb - 1} busy`)}</em>` : ""}</div></div></div>`
+        + (oldNote() || `<div class="wg-more"><span>${L(`近 24 小时交接 ${M.evs.length} 次`, `${M.evs.length} handoffs in 24 h`)}</span></div>`)   /* t-drop-team-tab: no 团队 page to open any more */;
     },
     l(M) {   // the whole graph + the last 3 handoffs
       const g = graph(M, { W: 600, H: 280, pos: ring(M, .4, .37), R: 22, k: .58, uid: "L" });
       const last = M.evs.slice(-3).reverse().map(e => `<div class="wg-row tight tb-hr" data-item="${esc(e.item)}"><span class="tb-pr"><img src="${esc(A().avatarUrl(M.by[e.f]))}" alt=""><i>→</i><img src="${esc(A().avatarUrl(M.by[e.to]))}" alt=""></span><div class="t">${esc(e.title || e.item)}<small>${esc(A().aname(M.by[e.f]))} → ${esc(A().aname(M.by[e.to]))}</small></div><time>${hm(e.ms)}</time></div>`).join("");
-      return eb(L(`24 小时 ${M.evs.length} 次`, `${M.evs.length} in 24 h`)) + `<div class="tb-lg" data-go="crew">${g}</div>` + (oldNote() || `<div class="tb-last">${last || `<div class="tb-calm">${L("近 24 小时还没有交接", "No handoffs in the last 24 h")}</div>`}</div>`);
+      return eb(L(`24 小时 ${M.evs.length} 次`, `${M.evs.length} in 24 h`)) + `<div class="tb-lg">${g}</div>` + (oldNote() || `<div class="tb-last">${last || `<div class="tb-calm">${L("近 24 小时还没有交接", "No handoffs in the last 24 h")}</div>`}</div>`);
     },
   };
   function widget(s) { sync(); const M = model(null); return (W[s] || W.m)(M); }
@@ -142,8 +147,8 @@
   // ---------- the 团队 page ----------
   const stTxt = a => a.status === "working" ? L("执行中", "working") : a.status === "sleeping" ? L("休眠", "asleep") : a.status === "offline" ? L("离线", "offline") : L("待机", "idle");
   function qCard(a) {
-    const app = A(), it = isW(a) ? app.liveItem(a) : null, q = app.queueOf ? app.queueOf(a.id) : [];
-    return `<div class="tb-qc${isW(a) ? " on" : ""}" style="--c:${tint(a)}"><div class="tb-qh" data-chat="${esc(a.id)}"><img src="${esc(app.avatarUrl(a))}" alt=""><b>${esc(app.aname(a))}</b><span class="tb-st ${esc(a.status || "idle")}">${stTxt(a)}${isW(a) && a.since ? ` · ${ago(a.since)}` : ""}</span></div>
+    const app = A(), it = isB(a) ? app.liveItem(a) : null, q = app.queueOf ? app.queueOf(a.id) : [];   // t-ui-fix-r6 R6-08
+    return `<div class="tb-qc${isB(a) ? " on" : ""}" style="--c:${tint(a)}"><div class="tb-qh" data-chat="${esc(a.id)}"><img src="${esc(app.avatarUrl(a))}" alt=""><b>${esc(app.aname(a))}</b><span class="tb-st ${esc(a.status || "idle")}">${stTxt(a)}${isB(a) && a.since ? ` · ${ago(a.since)}` : ""}</span></div>
       ${it ? `<div class="tb-qi now" data-item="${esc(it.id)}">▶ ${esc(it.title)}</div>` : ""}
       <div class="tb-qn">${L("排队", "Queued")} ${q.length}</div>
       ${q.length ? q.slice(0, 3).map(i => `<div class="tb-qi" data-item="${esc(i.id)}">· ${esc(i.title)}</div>`).join("") + (q.length > 3 ? `<div class="tb-qi more" data-aq="${esc(a.id)}">${L(`还有 ${q.length - 3} 张 ›`, `${q.length - 3} more ›`)}</div>` : "") : `<div class="tb-qi none">· ${L("空", "empty")}</div>`}</div>`;
@@ -161,20 +166,25 @@
       <button type="button" class="tb-now${T.cursor == null ? " off" : ""}" data-tb-now>${L("回到现在", "Live")}</button></div>`;
   }
   const subOf = a => isW(a) ? (() => { const it = A().liveItem(a); return `<small>${a.since ? ago(a.since) : ""}</small>${it ? `<span class="tb-pill" data-item="${esc(it.id)}" style="--c:${tint(a)}">▶ ${esc(it.title)}</span>` : ""}`; })() : `<small>${a.id === "manager" ? L("管家", "manager") : stTxt(a)}</small>`;
+  /* t-ui-fix-r3 R3-14: in a narrow page (wide chat) the 1000x580 graph scaled down while the HTML labels kept their size, so names sat on
+     each other's avatars; under 640px the graph gets a taller frame (1000x900) so the ring spreads out vertically */
+  const tallG = () => { const b = document.getElementById("pagebody"); return !!b && b.clientWidth > 0 && b.clientWidth < 640; };
+  let tallWas = null;
   function graphBox(M) {
+    tallWas = tallG();
     const live = T.cursor == null, cur = M.cur;
     return `<div class="tb-gh"><span>${L("线越粗 = 交接越多 · 颜色 = 谁递出去的 · 针 = 正在跑的那股", "thicker = more handoffs · colour = who passed it on · needle = the live one")}</span>${live ? "" : `<b class="tb-at">${L("回放", "Replay")} ${hm(T.cursor)}${cur ? ` · ${esc(A().aname(M.by[cur.f]))} → ${esc(A().aname(M.by[cur.to]))}：${esc(cur.title || cur.item)}` : ""}</b>`}</div>`
-      + graph(M, { W: 1000, H: 470, pos: ring(M, .36, .37), R: 38, k: 1, uid: "P", labels: true, sub: live ? subOf : (a => `<small>${M.lit.has(a.id) ? "●" : ""}</small>`) });
+      + graph(M, { W: 1000, H: tallG() ? 900 : 580, pos: ring(M, .38, .38), R: 38, k: 1, uid: "P", labels: true, sub: live ? subOf : (a => `<small>${M.lit.has(a.id) ? "●" : ""}</small>`) });
   }
   function deskPage(head) {
     const M = model(T.cursor), all = model(null);
-    const sum = `<div class="tb-sum"><b>${all.work.length}</b> ${L("在忙", "busy")} · ${all.idle.length} ${L("待机", "idle")} · ${L(`近 24 小时交接 <b>${all.evs.length}</b> 次`, `<b>${all.evs.length}</b> handoffs in 24 h`)}${T.err === "old" ? ` · <span class="tb-warn">${L("看板服务重启后才有交接记录", "restart the server to see handoffs")}</span>` : ""}</div>`;
+    const sum = `<div class="tb-sum"><b>${all.busy.length}</b> ${L("在忙", "busy")} · ${all.idle.length} ${L("待机", "idle")} · ${L(`近 24 小时交接 <b>${all.evs.length}</b> 次`, `<b>${all.evs.length}</b> handoffs in 24 h`)}${T.err === "old" ? ` · <span class="tb-warn">${L("看板服务重启后才有交接记录", "restart the server to see handoffs")}</span>` : ""}</div>`;
     return `${head}<div class="tb-page">${sum}<div class="tb-gbox" data-tb-g>${graphBox(M)}</div>${bar(all)}<div class="tb-q">${all.ags.map(qCard).join("")}</div></div>`;
   }
   function phonePage(head) {
     const M = model(null);
     const rows = M.evs.slice(-15).reverse().map(e => `<div class="tb-pr-row" data-item="${esc(e.item)}"><span class="tb-pr"><img src="${esc(A().avatarUrl(M.by[e.f]))}" alt=""><i>→</i><img src="${esc(A().avatarUrl(M.by[e.to]))}" alt=""></span><div class="t">${esc(e.title || e.item)}<small>${esc(A().aname(M.by[e.f]))} → ${esc(A().aname(M.by[e.to]))}</small></div><time>${hm(e.ms)}</time></div>`).join("");
-    return `${head}<div class="tb-page tb-ph"><div class="tb-sum"><b>${M.work.length}</b> ${L("在忙", "busy")} · ${M.idle.length} ${L("待机", "idle")} · ${L(`近 24 小时交接 <b>${M.evs.length}</b> 次`, `<b>${M.evs.length}</b> handoffs in 24 h`)}</div>
+    return `${head}<div class="tb-page tb-ph"><div class="tb-sum"><b>${M.busy.length}</b> ${L("在忙", "busy")} · ${M.idle.length} ${L("待机", "idle")} · ${L(`近 24 小时交接 <b>${M.evs.length}</b> 次`, `<b>${M.evs.length}</b> handoffs in 24 h`)}</div>
       <h3>${L("最近交接", "Recent handoffs")}</h3><div class="tb-list">${rows || `<div class="tb-calm">${T.err === "old" ? L("看板服务重启后才有交接记录", "Restart the server to see handoffs") : L("近 24 小时还没有交接", "No handoffs in the last 24 h")}</div>`}</div>
       <h3>${L("各人排队", "Queues")}</h3><div class="tb-q">${M.ags.map(qCard).join("")}</div></div>`;
   }
@@ -186,15 +196,30 @@
     const key = A().phaseFree ? A().phaseFree(html) : html;
     if (mine && key === T.pageKey && mine.classList.contains("tb-ph") === MOBQ.matches) return null;
     T.pageKey = key; T.shown = -1;
+    requestAnimationFrame(fitBox);
     return html;
   }
+  /* t-ri1111-a P3: a working node at the bottom hangs name + time + ▶ pill below the graph (26px past the frame onto the replay bar).
+     Grow the frame's bottom padding just enough (+10px); written only when it changes, so polls do not jiggle it. */
+  function fitBox() {
+    const box = document.querySelector("#pagebody .tb-page [data-tb-g]"), gr = box && box.querySelector(".tb-gr"); if (!gr) return;
+    const gb = gr.getBoundingClientRect().bottom; let low = gb;
+    box.querySelectorAll(".tb-lab").forEach(l => { const b = l.getBoundingClientRect().bottom; if (b > low) low = b; });
+    const pb = Math.max(18, Math.ceil(low - gb + 10)) + "px";
+    if (box.style.getPropertyValue("--tb-pb") !== pb) box.style.setProperty("--tb-pb", pb);
+  }
+  addEventListener("resize", () => requestAnimationFrame(() => {
+    const box = document.querySelector("#pagebody .tb-page [data-tb-g]");
+    if (box && tallWas !== null && tallG() !== tallWas && !T.playing && !T.drag) { box.innerHTML = graphBox(model(T.cursor)); T.pageKey = null; }   /* R3-14: re-frame after a chat drag */
+    fitBox();
+  }));
 
   // ---------- replay ----------
   function paint() {   // in place: graph only when the visible step changed, cursor + ticks + labels always
     const box = document.querySelector("#pagebody .tb-page [data-tb-g]"), rp = document.querySelector("#pagebody .tb-page .tb-rp");
     if (!box || !rp) return;
     const M = model(T.cursor), step = T.cursor == null ? -2 : M.vis.length;
-    if (step !== T.shown) { box.innerHTML = graphBox(M); T.shown = step; }
+    if (step !== T.shown) { box.innerHTML = graphBox(M); T.shown = step; fitBox(); }
     const all = model(null), nb = document.createElement("div"); nb.innerHTML = bar(all);
     const fresh = nb.firstElementChild;
     const cur = rp.querySelector(".tb-cur"), fc = fresh.querySelector(".tb-cur");

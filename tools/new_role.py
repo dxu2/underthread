@@ -227,6 +227,7 @@ def build(args, roster):
             tj.pop(k, None)
         e["template"] = args.template   # t-hm-build: the market's 在岗 / 可返聘 badge reads this back from roster.json
         extra["starters"] = tj.pop("starters", None) or []   # t-template-format: shown by the HR interview, not a roster field
+        tj.pop("starters_en", None)   # t-i18n-c: market display only, not a roster field
         tj.setdefault("team", "general")   # t-template-format: template roles get make_agents' neutral opening and hard rules
         e.update({k: v for k, v in tj.items() if v not in ("", None)})
         extra["src"].append(rel(t))

@@ -249,7 +249,10 @@
     const sr = document.createElement("button"); sr.type = "button"; sr.className = "q-search";
     sr.innerHTML = `${SEARCH}<span>${App.t("search_ph")}</span>`; sr.addEventListener("click", () => openSearch());
     const ph = $(".ph", body); ph ? ph.after(sr) : body.prepend(sr); sr.after(seg);
-    const on = $(".seg-i.on", seg); if (on && on.offsetLeft + on.offsetWidth > seg.clientWidth) seg.scrollLeft = on.offsetLeft - 16;   // keep the picked category in view
+    const tr = $(".seg", seg), on = $(".seg-i.on", seg); if (on && on.offsetLeft + on.offsetWidth > tr.clientWidth) tr.scrollLeft = on.offsetLeft - 16;   // keep the picked category in view (t-ri1111-a: the track scrolls, not the wrapper)
+    /* t-ri1111-a P5: edge fades say there is more to swipe; .fl / .fr drop off at each end */
+    const edge = () => { const m = tr.scrollWidth - tr.clientWidth; tr.classList.toggle("fl", tr.scrollLeft > 2); tr.classList.toggle("fr", tr.scrollLeft < m - 2); };
+    tr.addEventListener("scroll", edge, { passive: true }); requestAnimationFrame(edge);
   }
   function strip() {
     const r = $("#right"), msgs = r && $(".ch-msgs", r); if (!msgs) return;
@@ -897,6 +900,8 @@
     document.body.classList.add("msearch"); el.hidden = false;
     $("input", el).placeholder = en() ? "Search items and chats" : "搜索条目和对话";
     searchRender(); renderBar();
+    /* t-ui-fix-p1 P1-2: focus inside the same tap, so the keyboard comes up at once (iOS only raises it from a user gesture, never from a timer) */
+    try { $("input", el).focus({ preventScroll: true }); } catch (e) { }
   }
   document.addEventListener("rt-arch", () => searchRender());
   document.addEventListener("rt-hist", () => searchRender());   /* ri1105-P4: older chat landed */   // t-perf A: archived cards finished loading (App.archAll)
@@ -1062,7 +1067,8 @@
     const ta = find(); if (!ta) return;
     const comp = ta.closest(".ch-comp"), att = document.querySelector("#right .pending-att"); if (!comp) return;
     if (att) { if (mqp.matches && att.parentNode !== comp) comp.appendChild(att); else if (!mqp.matches && att.parentNode === comp) comp.parentNode.insertBefore(att, comp); }
-    if (window.ResizeObserver && roFor !== comp) { if (ro) ro.disconnect(); roFor = comp; ro = new ResizeObserver(sync); ro.observe(comp); }
+    /* t-ui-fix-r2 audit P2-14: sync writes --comp-h, which resizes the pill it observes; in the same frame WebKit threw 「ResizeObserver loop completed…」 on every DM open. One frame later is enough. */
+    if (window.ResizeObserver && roFor !== comp) { if (ro) ro.disconnect(); roFor = comp; let q = 0; ro = new ResizeObserver(() => { if (!q) q = requestAnimationFrame(() => { q = 0; sync(); }); }); ro.observe(comp); }
   };
   document.addEventListener("input", e => { if (e.target.matches && e.target.matches("#right .ch-comp textarea")) fit(e.target); });
   document.addEventListener("focusin", e => { if (e.target.matches && e.target.matches("#right .ch-comp textarea")) { place(); fit(e.target); } });
@@ -1392,7 +1398,7 @@
     let h = document.getElementById("inkhello");
     if (!h) { h = document.createElement("div"); h.id = "inkhello"; h.className = "ink-hello"; }
     if (h.nextSibling !== ob) ob.parentNode.insertBefore(h, ob);
-    const hm = document.documentElement.dataset.home, show = (mq.matches || hm === "app" || hm === "widgets") && App.UI.page === "review" && (!ob.hidden || hm === "widgets");   /* t-home-widgets: the widget home greets too (its #officebox stays hidden) */
+    const hm = document.documentElement.dataset.home, show = (mq.matches || hm === "widgets") && App.UI.page === "review" && (!ob.hidden || hm === "widgets");   /* t-home-widgets: the widget home greets too (its #officebox stays hidden) */
     if (h.hidden === show) h.hidden = !show;   // t-home-applike: the desktop app-style home greets too. t-settings-tab: this line had been swallowed by the // comment above, so 「今天.」 stayed on every phone page after home
     if (!show) return;
     const en = App.UI.lang === "en", busy = Object.values((App.ST && App.ST.agents) || {}).filter(a => a.status === "working" && !(App.mgrOnline && App.mgrOnline(a))).length;   // t-cal-fold: same count as 此刻 (the online-only manager is not busy)

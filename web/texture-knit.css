@@ -32,7 +32,7 @@ html[data-texture="knit2"] {
 }
 
 /* ---- 面板 / 卡片：平针纹叠在原底色上 + 内侧一圈缝线 ---- */
-html[data-texture^="knit"] :is(.d-card, .d-mini, .d-ue, .toc-box, .hd, .ru-card, .dc-none, .dw-dock, .sy-pop, .sy-use) {
+html[data-texture^="knit"] :is(.toc-box, .hd, .ru-card, .dc-none, .dw-dock, .sy-pop, .sy-use) {
   background-image: var(--kn-tex) !important;
   background-size: var(--kn-tex-size) !important;
   background-repeat: repeat !important;
@@ -45,7 +45,7 @@ html[data-texture^="knit"] :is(.toc-box, .dw-dock) { outline-offset: -4px !impor
   html[data-texture^="knit"] #drawer.open { outline: var(--kn-sw) dashed var(--kn-thread) !important; outline-offset: -9px !important; }
 }
 /* 2：卡片底边一条罗纹收边，面板微微鼓起 */
-html[data-texture="knit2"] :is(.d-card, .d-mini, .d-ue, .hd, .ru-card, .dc-none) {
+html[data-texture="knit2"] :is(.hd, .ru-card, .dc-none) {
   background-image: var(--kn-rib), var(--kn-tex) !important;
   background-size: 48px 6px, var(--kn-tex-size) !important;
   background-repeat: repeat-x, repeat !important;
@@ -54,7 +54,7 @@ html[data-texture="knit2"] :is(.d-card, .d-mini, .d-ue, .hd, .ru-card, .dc-none)
 }
 
 /* ---- 按钮：毛毡底 + 内侧缝线 + 一点鼓 ---- */
-html[data-texture^="knit"] :is(.ab, .d-w, .hc-mail, .dw-stamp, .tb-row, .hd-chip, .dw-back, .dw-file, #drawer select, .cm-to, .rq) {
+html[data-texture^="knit"] :is(.ab, .hc-mail, .dw-stamp, .tb-row, .hd-chip, .dw-back, .dw-file, #drawer select, .cm-to, .rq) {
   background-image: var(--kn-felt) !important;
   background-size: var(--kn-felt-size) !important;
   background-repeat: repeat !important;
@@ -64,12 +64,11 @@ html[data-texture^="knit"] :is(.ab, .d-w, .hc-mail, .dw-stamp, .tb-row, .hd-chip
 }
 html[data-texture^="knit"] :is(.dw-back, .dw-file, .cm-to, .rq) { outline: none !important; }   /* 太小的圆钮只要毛毡，不缝 */
 html[data-texture^="knit"] :is(.ab, .dw-stamp, .hd-chip) { outline-color: var(--kn-thread-acc) !important; }
-html[data-texture="knit2"] :is(.ab, .d-w, .hc-mail, .dw-stamp, .tb-row, .hd-chip, #drawer select) { outline-width: 1.5px !important; outline-offset: -4px !important; }
+html[data-texture="knit2"] :is(.ab, .hc-mail, .dw-stamp, .tb-row, .hd-chip, #drawer select) { outline-width: 1.5px !important; outline-offset: -4px !important; }
 /* 首页右侧那列小卡本身就是按钮：同面板处理，但也给鼓起 */
-html[data-texture^="knit"] .d-mini { box-shadow: var(--kn-puff) !important; }
 
 /* ---- 分隔线：实线换成针脚 ---- */
-html[data-texture^="knit"] :is(.d-g, .ft, .sy-row) { border-top-style: dashed !important; border-top-color: var(--kn-thread) !important; }
+html[data-texture^="knit"] :is(.ft, .sy-row) { border-top-style: dashed !important; border-top-color: var(--kn-thread) !important; }
 html[data-texture^="knit"] .ru-q { border-top-style: dashed !important; border-bottom-style: dashed !important; border-top-color: var(--kn-thread) !important; border-bottom-color: var(--kn-thread) !important; }
 html[data-texture^="knit"] .hd-stats { border-top-style: dashed !important; }   /* 这条原本是正文色的粗分隔，只换针脚不换色 */
 html[data-texture^="knit"] #drawer :is(td, th) { border-bottom-style: dashed !important; }
@@ -80,10 +79,7 @@ html[data-texture="knit2"] #top::after { height: 2px !important; }
 html[data-texture^="knit"][data-texture^="knit"] :focus-visible { outline: 2px dashed var(--focus, var(--accent-line, var(--glow))) !important; outline-offset: 3px !important; }
 
 /* ---- 2：时间轴 / 用量条变成纱线，气泡和输入框也缝一圈 ---- */
-html[data-texture="knit2"] #hd2 .d-tl-bar { background: var(--chip) var(--kn-dash) center / 100% 2px no-repeat !important; }
-html[data-texture="knit2"] #hd2 .d-tl-bar .past {
-  background: repeating-linear-gradient(115deg, color-mix(in srgb, var(--ink) 30%, transparent) 0 3px, color-mix(in srgb, var(--ink) 12%, transparent) 3px 6px) !important;
-}
+
 html[data-texture="knit2"] .sy-bar i { background: repeating-linear-gradient(115deg, var(--accent, var(--glow)) 0 3px, color-mix(in srgb, var(--accent, var(--glow)) 70%, var(--panel)) 3px 6px) !important; }
 html[data-texture="knit2"] .nav-pill { outline: 1px dashed var(--kn-thread) !important; outline-offset: -3px !important; }
 html[data-texture="knit2"] .mb { outline: 1px dashed color-mix(in srgb, var(--dim) 40%, transparent) !important; outline-offset: -4px !important; }
@@ -92,21 +88,21 @@ html[data-texture="knit2"] textarea:focus-visible { outline: 2px dashed var(--fo
 
 /* 系统开了「增强对比度」：去掉所有纹理，只留缝线 */
 @media (prefers-contrast: more) {
-  html[data-texture^="knit"] :is(.d-card, .d-mini, .d-ue, .toc-box, .hd, .ru-card, .dc-none, .dw-dock, .sy-pop, .sy-use, .ab, .d-w, .hc-mail, .dw-stamp, .tb-row, .hd-chip, .dw-back, .dw-file, #drawer select, .cm-to, .rq) { background-image: none !important; }
+  html[data-texture^="knit"] :is(.toc-box, .hd, .ru-card, .dc-none, .dw-dock, .sy-pop, .sy-use, .ab, .hc-mail, .dw-stamp, .tb-row, .hd-chip, .dw-back, .dw-file, #drawer select, .cm-to, .rq) { background-image: none !important; }
 }
-
 
 /* ---- t-theme-knit 接入：扩到首页和详情以外的卡片 / 面板（同一套：淡平针纹 + 内侧一圈缝线） ---- */
 /* 审核卡（手机首页 / 电脑 app 式首页）、经典首页 + 委托板 / 分类页的卡、小组件首页的各个小组件、设置分组 */
-html[data-texture^="knit"] :is(.rv-card, .card, .wg, .st-sec) {
+/* t-leather-sched-hire: 定时 rows and 招聘市场 cards were flat here too */
+html[data-texture^="knit"] :is(.rv-card, .card, .wg, .st-sec, .rs-row, .mk-card) {
   background-image: var(--kn-tex) !important;
   background-size: var(--kn-tex-size) !important;
   background-repeat: repeat !important;
   outline: var(--kn-sw) dashed var(--kn-thread) !important;
   outline-offset: var(--kn-in) !important;
 }
-html[data-texture^="knit"] .st-sec { outline-offset: -4px !important; }
-html[data-texture="knit2"] :is(.rv-card, .card, .wg) {
+html[data-texture^="knit"] :is(.st-sec, .rs-row, .mk-card) { outline-offset: -4px !important; }
+html[data-texture="knit2"] :is(.rv-card, .card, .wg, .rs-row, .mk-card) {
   background-image: var(--kn-rib), var(--kn-tex) !important;
   background-size: 48px 6px, var(--kn-tex-size) !important;
   background-repeat: repeat-x, repeat !important;
@@ -115,7 +111,7 @@ html[data-texture="knit2"] :is(.rv-card, .card, .wg) {
 /* 信箱 / 新回复这类平铺的行列表没有面板，不压纹；行与行之间的分隔改成针脚 */
 html[data-texture^="knit"] :is(.act-row + .act-row, .mail-i + .mail-i, .nr-r + .nr-r) { border-top: 1px dashed var(--kn-thread); }
 @media (prefers-contrast: more) {
-  html[data-texture^="knit"] :is(.rv-card, .card, .wg, .st-sec) { background-image: none !important; }
+  html[data-texture^="knit"] :is(.rv-card, .card, .wg, .st-sec, .rs-row, .mk-card) { background-image: none !important; }
 }
 
 /* ---- 2 档的辅助小字：叠了更浓的平针纹后 --dim 最坏掉到 3.4–4.9:1。只在 2 档、按四种配色把 --dim 往正文色靠一点；
@@ -133,3 +129,34 @@ html[data-texture="knit1"][data-theme="white"]:not([data-ut]) { --kn-dim0: #6b6b
 html[data-texture="knit1"][data-theme][data-ut="dark-warm"] { --kn-dim0: #AF9273; --dim: color-mix(in srgb, #AF9273 74%, #F4E1C2); }
 html[data-texture="knit1"][data-theme][data-ut="light-warm"] { --kn-dim0: #7E604A; --dim: color-mix(in srgb, #7E604A 83%, #2B1913); }
 html[data-texture="knit1"][data-theme] { --kn-thread: color-mix(in srgb, var(--kn-dim0, var(--dim)) 50%, transparent); }
+
+/* t-widget-drag: editing the widget home — the stitch line switches to the accent thread; the held tile drops it while lifted */
+html[data-texture^="knit"][data-home="widgets"] #wg.edit .wg { outline-color: var(--kn-thread-acc) !important; }
+html[data-texture^="knit"][data-home="widgets"] #wg .wg.wg-lift { outline-color: transparent !important; }
+
+/* ---- t-phone-working-color（11-11 用户）：手机首页「此刻在忙」大卡（.hd）在针织下也染成电脑「Working now」那块的藏蓝，跟皮革一致（皮革已经在
+   texture-leather.css 里给 .hd 上了 --dye #28426E）。颜色跟板块走、不跟角色走：电脑那块也是固定藏蓝。针织纹是半透明叠在底色上的，
+   所以白天用浅一档的同色线蓝 #86ACEB 混 34% 进 --panel（24% 藏蓝在毛线纹下几乎看不出蓝），夜里藏蓝 52%，和皮革夜里同量。缝线换同色。 ---- */
+html[data-texture^="knit"] .hd { --kn-dye-l: #86ACEB; --kn-dye-d: #28426E; }
+html[data-texture^="knit"][data-theme="white"] .hd, html[data-texture^="knit"][data-theme="light"] .hd {
+  background-color: color-mix(in srgb, var(--kn-dye-l) 34%, var(--panel)) !important;
+  --kn-thread: color-mix(in srgb, color-mix(in srgb, var(--kn-dye-d) 80%, #000) 62%, transparent);
+  --dim: color-mix(in srgb, var(--dim) 60%, var(--ink));
+}
+html[data-texture^="knit"][data-theme="dark"] .hd {
+  background-color: color-mix(in srgb, var(--kn-dye-d) 52%, var(--panel)) !important;
+  --kn-thread: color-mix(in srgb, color-mix(in srgb, var(--kn-dye-l) 70%, #fff) 70%, transparent);
+  --dim: color-mix(in srgb, var(--dim) 60%, var(--ink));
+}
+/* 「最久 N 小时」的强调色在浅蓝底上只有 4.1:1：白天往正文色靠一点到 ≥ 4.5 */
+html[data-texture^="knit"]:is([data-theme="white"], [data-theme="light"]) .hd .hd-stat .hd-old.hot { color: color-mix(in srgb, var(--accent) 72%, var(--ink)); }
+/* ---- t-phone-working-color v2（11-11 用户选「改成按角色变色」）：谁在忙就染谁的颜色。颜色源 = roster.json 的 tint（home.js 把最上面那行在忙角色的
+   App.tintOf 写成 .hd-a2 上的 --hd-role + data-role；手机条、团队毛线用的也是它，不另起色板）。为了每个角色对比度一样，在 OKLCH 里固定亮度、
+   只取角色的色相和（封顶的）彩度：白天 L .76 / 夜里 L .37（≈ v1 藏蓝 #86ACEB / #28426E 的亮度）。没人在忙 = 没有 data-role = 维持 v1 藏蓝。 ---- */
+html[data-texture^="knit"] .hd[data-role] { --kn-dye-l: color-mix(in oklab, var(--hd-role) 62%, #fff); --kn-dye-d: color-mix(in oklab, var(--hd-role) 55%, #000); }
+@supports (color: oklch(from red l c h)) {
+  html[data-texture^="knit"] .hd[data-role] { --kn-dye-l: oklch(from var(--hd-role) .76 min(c, .1) h); --kn-dye-d: oklch(from var(--hd-role) .37 min(c, .09) h); }
+}
+@media (prefers-reduced-motion: no-preference) { html[data-texture^="knit"] .hd.hd-a2 { transition: background-color .6s ease; } }
+/* t-leather-sched-hire: same as texture-leather.css — knit grain under light 招聘市场 cards took --dim to 4.47:1 */
+html[data-texture^="knit"][data-theme="white"] .mk-card { --dim: color-mix(in srgb, var(--ink2) 78%, var(--faint)); }

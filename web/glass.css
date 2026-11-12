@@ -52,6 +52,8 @@ html[data-theme] {
   html[data-theme]:not([data-glass="0"]) .card:active { transform: scale(.985); transition-duration: var(--m-fast); }
   html[data-theme]:not([data-glass="0"]) .card .owner { grid-area: av; flex-direction: column; align-items: center; gap: 6px; font-size: var(--fs-11); color: var(--dim);
     text-align: center; line-height: 1.2; word-break: keep-all; }
+  /* t-ui-fix-r6 R6-04: a column flex only limits the main axis; without a cross-axis cap a long owner name never ellipsized and ran out of the card */
+  html[data-theme]:not([data-glass="0"]) .card .owner > span:not(.av) { max-width: 100%; }
   html[data-theme]:not([data-glass="0"]) .card .owner .av.sm { width: 46px; height: 46px; box-shadow: 0 0 0 2px var(--bg); transition: transform var(--m-base) var(--g-spring); }
   html[data-theme]:not([data-glass="0"]) .card .owner .av.sm.working { --wk-gap: 2px; --wk-w: 2px; }
   html[data-theme]:not([data-glass="0"]) .card .owner .av.sm .aw { display: block; }
@@ -237,7 +239,6 @@ html[data-theme]:not([data-glass="0"]) .dw-toc .toc-bar i { background: linear-g
   html[data-theme]:not([data-glass="0"]) #nav .nav-i.urgent .n:not(.z) { color: var(--urgent); text-shadow: none; }
   html[data-theme]:not([data-glass="0"]) #nav .nav-sep { height: 1px; margin: 6px 12px; background: var(--line2); }
 
-  html[data-theme]:not([data-glass="0"])[data-dense="1"] #cal { display: none; }
   html[data-theme]:not([data-glass="0"]) #cal { background: transparent; box-shadow: none; padding: 0 8px; margin: 8px 0 4px; }
 
   html[data-theme]:not([data-glass="0"]) #team .side-h { margin: 8px 0 2px; padding-left: 12px; }

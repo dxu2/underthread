@@ -20,13 +20,39 @@
     week: ["本周进度", "This week"], ongoing: ["每日", "Dailies"], media: ["最近素材", "Recent media"], team: ["团队交接", "Team handoffs"] };
   const DEF = [["team", "m"], ["usage", "l"], ["review", "l"], ["busy", "l"], ["replies", "l"], ["today", "m"], ["week", "m"], ["ongoing", "m"], ["media", "m"]];
   const KEY = "rt.widgets";
-  const load = () => { try { const v = JSON.parse(localStorage.getItem(KEY) || "null"); if (Array.isArray(v) && v.every(x => SIZES[x[0]])) {
+  const loadLocal = () => { try { const v = JSON.parse(localStorage.getItem(KEY) || "null"); if (Array.isArray(v) && v.every(x => SIZES[x[0]])) {
       // t-home-usage: a layout saved before the usage widget existed gets it once, first (removing it later sticks)
       if (!v.some(x => x[0] === "usage") && !localStorage.getItem("rt.wgUsage")) { v.unshift(["usage", "l"]); localStorage.setItem("rt.wgUsage", "1"); localStorage.setItem(KEY, JSON.stringify(v)); }
       /* t-rb-build: the same once for 团队交接 (P1: a small home card, size M) */
       if (!v.some(x => x[0] === "team") && !localStorage.getItem("rt.wgTeam")) { v.unshift(["team", "m"]); localStorage.setItem("rt.wgTeam", "1"); localStorage.setItem(KEY, JSON.stringify(v)); }
       return v; } } catch { } return DEF.map(x => x.slice()); };
-  const save = L => { try { localStorage.setItem(KEY, JSON.stringify(L)); } catch { } };
+  const saveLocal = L => { try { localStorage.setItem(KEY, JSON.stringify(L)); } catch { } };
+  /* t-widget-drag (11-11, option a): the layout lives on the server (meta.widgets, action widget_layout), so every computer you open it on shows the
+     same home. localStorage stays as this browser's cache. meta.widgets missing = never saved: this browser's old layout is uploaded once.
+     meta.widgets.layout null = 恢复默认. PEND keeps a just-made change on screen until the poll brings it back (a poll in flight would undo it). */
+  let PEND = null;
+  const known = v => Array.isArray(v) ? v.filter(x => Array.isArray(x) && SIZES[x[0]] && SIZES[x[0]].includes(x[1])) : null;
+  const srv = () => { const m = A() && A().ST && A().ST.meta; return m ? m.widgets : undefined; };   // undefined = no state yet, null = never saved
+  const push = L => { PEND = { L: L ? JSON.stringify(L) : null, t: Date.now() };
+    fetch("/api/action", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(L ? { kind: "widget_layout", layout: L } : { kind: "widget_layout", reset: true }) })
+      .then(r => { if (!r.ok) throw new Error(r.status); }).catch(() => { PEND = null; if (A() && A().toast) A().toast(en() ? "Layout not saved on the server" : "布局没存到服务器，只存在了这个浏览器", true); }); };
+  const load = () => {
+    const w = srv(), now = Date.now();
+    if (PEND) {
+      const got = w && (w.layout ? JSON.stringify(w.layout) : null);
+      if (w && got === PEND.L || now - PEND.t > 15000) PEND = null;
+      else return PEND.L ? JSON.parse(PEND.L) : DEF.map(x => x.slice());
+    }
+    if (w && typeof w === "object") { const v = known(w.layout); const L = v && v.length ? v : DEF.map(x => x.slice()); saveLocal(L); return L; }
+    const L = loadLocal();
+    if (w === null || (A() && A().ST && A().ST.meta && !("widgets" in A().ST.meta))) {   // first load against a server that has no layout yet: upload this browser's once
+      let had = null; try { had = localStorage.getItem(KEY); } catch { }
+      if (had && !push.once) { push.once = 1; push(L); }
+    }
+    return L;
+  };
+  const save = L => { saveLocal(L); push(L); };
+  const reset = () => { try { localStorage.removeItem(KEY); } catch { } push(null); };
   const nm = k => NAME[k][en() ? 1 : 0];
   let EDIT = false;
 
@@ -34,7 +60,7 @@
   function data() {
     const app = A(), its = app.items(), ST = app.ST;
     const agents = Object.values(ST.agents || {}).filter(a => a.enabled !== false);
-    const waiting = its.filter(i => app.onYouCard(i) || (app.onYou(i) && app.awaitsUser(i))).sort((a, b) => ms(a.activity || a.updated) - ms(b.activity || b.updated));   // oldest waiting first
+    const waiting = its.filter(i => app.onYouCard(i) || (app.onYou(i) && app.awaitsUser(i))).sort((a, b) => ms(b.activity || b.updated) - ms(a.activity || a.updated));   // t-waiting-sort (user 11-10): latest response first, same as the phone list (App.byAct)
     const busy = agents.map(a => ({ a, it: app.liveItem(a), since: a.since || a.last_seen })).filter(x => x.a.status === "working" && x.it)
       .sort((x, y) => ms(y.since) - ms(x.since));   // newest start takes the big slot
     const nr = app.newReplies(), today = new Date().toDateString();
@@ -50,7 +76,10 @@
     ongoing: ["没有每日的活", "No dailies"], media: ["还没有素材", "No media yet"] })[k][en() ? 1 : 0];
 
   // ---------- widgets ----------
-  const eb = (k, n, dot) => `<div class="wg-eb">${dot ? '<span class="wg-dot"></span>' : ""}<b>${nm(k)}</b>${n != null ? `<span class="n">${n}</span>` : ""}</div>`;
+  /* t-widget-num-b: number + unit split so the desk leather tab (widgets.css .wnb-num) wraps only the digits */
+  const wnb = n => { const m = /^(\d+)\s*(.*)$/.exec(String(n)); return m ? `<span class="n wnb"><span class="wnb-num">${m[1]}</span>${m[2] ? `<span class="wnb-unit">${m[2]}</span>` : ""}</span>` : `<span class="n">${n}</span>`; };
+  window.WgNum = wnb;
+  const eb = (k, n, dot) => `<div class="wg-eb">${dot ? '<span class="wg-dot"></span>' : ""}<b>${nm(k)}</b>${n != null ? wnb(n) : ""}</div>`;
   const kindL = i => i.kind === "plan" ? (en() ? "Plan" : "方案") : i.kind === "question" || (A().openAsks(i).length && i.stage !== "review") ? (en() ? "Question" : "问题") : (en() ? "Review" : "待验收");
   const rowsFit = (s, big, small) => s === "l" ? big : small;
   // t-home-motion: a medium widget holds two rows and nothing else. Two or fewer: both rows, no footer (each row already says how long);
@@ -61,22 +90,28 @@
     usage(s) {   // t-home-usage: tokens per role today + the quota strip; markup shared with the phone card / 系统状态 (App.ruHTML)
       const R = A().roleUsage && A().roleUsage(), all = R && R.rows && R.rows.length;   // t-sync-pill batch 2: 「全部 N 位 ›」 replaces the bottom 「+N more」 line
       return `<div class="wg-eb" data-ru-open><b>${nm("usage")}</b><span>${en() ? "today" : "今天"}</span>${all ? `<span class="n ru-all">${en() ? `all ${all} ›` : `全部 ${all} 位 ›`}</span>` : `<span class="n">token</span>`}</div>`
-        + A().ruHTML(s === "l" ? 7 : 4, { tot: s === "l", quota: true, fit: true });
+        + A().ruHTML(s === "l" ? 7 : 4, { tot: s === "l", quota: true, soul: true, fit: true });   /* t-soul-widget: lower half = Soul rows per model */
     },
     review(s, D) {
       const L = D.waiting, { n, foot } = fitM(s, L.length, 5);
       return eb("review", L.length, true) + L.slice(0, n).map(i => { const a = A().agent(i.owner);
         return `<div class="wg-row" data-item="${esc(i.id)}"><img class="wg-av" src="${A().avatarUrl(a)}" alt=""><div class="t">${A().nrDot ? A().nrDot(i.id) : ""}${esc(i.title)}<small>${esc(A().aname(a))} · ${en() ? "waiting" : "等了"} ${ago(i.activity || i.updated)}</small></div>${i.snoozed ? `<span class="wg-tg snz">${en() ? "Snoozed" : "推迟过"}</span>` : ""}<span class="wg-tg${i.kind === "plan" ? "" : " hot"}">${kindL(i)}</span></div>`; }).join("") +
-        (!foot ? "" : `<div class="wg-more">${L.length > n ? `<span data-go="board">${en() ? `${L.length - n} more ›` : `还有 ${L.length - n} 件 ›`}</span>` : `${en() ? "Oldest waiting" : "最久的已经等了"} ${ago(L[0].activity || L[0].updated)}`}</div>`);
+        (!foot ? "" : `<div class="wg-more">${L.length > n ? `<span data-go="board">${en() ? `${L.length - n} more ›` : `还有 ${L.length - n} 件 ›`}</span>` : `${en() ? "Oldest waiting" : "最久的已经等了"} ${ago(L[L.length - 1].activity || L[L.length - 1].updated)}`}</div>`);
     },
     busy(s, D) {
       const B = D.busy, m = B[0], a = m.a, side = B.slice(1, s === "l" ? 3 : 1), more = B.length - 1 - side.length, multi = B.length > 1;
       const bar = x => Math.min(100, Math.round((Date.now() - ms(x.since)) / 6e4 / 120 * 100));   // elapsed, on a 2-hour scale
-      return `<div class="wg-bg" style="background-image:url('${art(a)}')"></div><div class="wg-sh"></div>
+      /* t-ut-avatar-working: under Underthread the card shows the needle-thread patch (avatars/ut/_s, the 4-frame work sheet when the role has one)
+         instead of the character art; the section is then .utav (a plain card, so leather dyes it), not .hero. Ink keeps the art.
+         data-noidle (fx.js): power saving pauses every loop after 20 s without input or when the window loses focus, which froze this patch while the user
+         was just looking at it (11-11 00:18). This one patch keeps moving; everything else still pauses. */
+      const ut = !!document.documentElement.dataset.ut, ws = ut && A().wsheet ? A().wsheet(a, 320) : "";
+      return (ut ? `<div class="wg-utav" data-noidle><i class="wg-utp${ws ? " ws" : ""}" data-chat="${esc(a.id)}" title="${esc(A().aname(a))}" style="background-image:url('${A().avatarUrl(a, 1)}')${ws}${ws ? `;--wg-fd:-${Date.now() % 4000}ms` : ""}"></i></div>`   /* v4: same phase as App.av (--wp = Date.now() % 4000), so this patch and the Team column show the same frame */
+        : `<div class="wg-bg" style="background-image:url('${art(a)}')"></div><div class="wg-sh"></div>`) + `
         <div class="wg-top">${eb("busy", `${B.length} ${en() ? "" : "人"}`.trim())}</div>
         <div class="wg-in"><h3 data-chat="${esc(a.id)}">${esc(A().aname(a))}<small>${esc(A().atitle(a) || "")}</small>${A().qBadge ? A().qBadge(a.id) : ""}</h3>
         <div class="wg-job" data-item="${esc(m.it.id)}" style="--wg-fd:-${Date.now() % 2400}ms"><span>${esc(m.it.title)}</span><b>${hm(m.since)} ${en() ? "start" : "起"} · ${ago(m.since)} ›</b></div>
-        ${side.length || more > 0 ? `<div class="wg-side">${side.map(x => `<div class="wg-sr" data-item="${esc(x.it.id)}"><img src="${A().avatarUrl(x.a)}" alt="" data-chat="${esc(x.a.id)}"><div class="st"><b>${esc(A().aname(x.a))}${A().qBadge ? A().qBadge(x.a.id) : ""}</b><span>${esc(x.it.title)}</span><i><em style="width:${bar(x)}%"></em></i></div><time>${ago(x.since)}</time></div>`).join("")}${more > 0 ? `<div class="wg-sr plus" data-go="board">${en() ? `+${more} more working ›` : `+${more} 人在忙 · 看全部 ›`}</div>` : ""}</div>` : ""}</div>`;
+        ${side.length || more > 0 ? `<div class="wg-side">${side.map(x => `<div class="wg-sr" data-item="${esc(x.it.id)}"><img src="${A().avatarUrl(x.a)}" alt="" data-chat="${esc(x.a.id)}"><div class="st"><b><span class="wg-nm">${esc(A().aname(x.a))}</span>${A().qBadge ? A().qBadge(x.a.id) : ""}</b><span>${esc(x.it.title)}</span><i><em style="width:${bar(x)}%"></em></i></div><time>${ago(x.since)}</time></div>`).join("")}${more > 0 ? `<div class="wg-sr plus" data-go="board">${en() ? `+${more} more working ›` : `+${more} 人在忙 · 看全部 ›`}</div>` : ""}</div>` : ""}</div>`;
     },
     replies(s, D) {
       const { n } = fitM(s, D.nr.length, 4);
@@ -109,7 +144,7 @@
     },
   };
   const sizeBtns = (k, s) => `<span class="wg-sz">${SIZES[k].map(z => `<button type="button" data-wg-size="${k}:${z}" class="${z === s ? "on" : ""}">${z.toUpperCase()}</button>`).join("")}</span>`;
-  const editBar = (k, s, i, n) => `<span class="wg-x" data-wg-hide="${k}" title="${en() ? "Remove" : "移除"}">−</span>${sizeBtns(k, s)}<span class="wg-mv">${i > 0 ? `<button type="button" data-wg-move="${k}:-1">←</button>` : ""}${i < n - 1 ? `<button type="button" data-wg-move="${k}:1">→</button>` : ""}</span>`;
+  const editBar = (k, s, i, n) => `<i class="wg-eband" aria-hidden="true"></i><button type="button" class="wg-x" data-wg-hide="${k}" title="${en() ? "Remove" : "移除"}" aria-label="${en() ? "Remove widget" : "移除这个小组件"}">−</button>${sizeBtns(k, s)}<span class="wg-mv">${i > 0 ? `<button type="button" data-wg-move="${k}:-1">←</button>` : ""}${i < n - 1 ? `<button type="button" data-wg-move="${k}:1">→</button>` : ""}</span>`;
 
   // t-home-flicker (11-03): the HTML carries wall-clock phases (--wg-fd) so a rebuilt node does not restart the sweep; they are not data,
   // so every compare strips them. Same data: keep the DOM. Changed data (C): replace only the tiles / header / tail / tray whose HTML changed,
@@ -149,7 +184,6 @@
     return true;
   }
   function html(body, tail) {
-    if (A().homeStyle && A().homeStyle() === "dense") return dense(body, tail);   /* t-home-dense */
     const L = load(), D = data(), calm = [], tiles = [];
     const count = { review: D.waiting.length, replies: D.nr.length, today: D.shipped.length };
     L.forEach(([k, s0], i) => {
@@ -157,7 +191,7 @@
       if (!EDIT && isEmpty(k, D)) { calm.push(calmText(k)); return; }
       const inner = EDIT && isEmpty(k, D) ? eb(k) + `<div class="wg-calm-in">${calmText(k)}</div>` : W[k](s, D);
       const multi = k === "busy" && D.busy.length > 1 ? " multi" : "";
-      tiles.push([k, `<section class="wg wg-${k} sz-${s}${k === "busy" && !isEmpty(k, D) ? " hero" + multi : ""}" data-wg="${k}">${inner}${EDIT ? editBar(k, s0, i, L.length) : ""}</section>`]);
+      tiles.push([k, `<section class="wg wg-${k} sz-${s}${k === "busy" && !isEmpty(k, D) ? (document.documentElement.dataset.ut ? " utav" : " hero") + multi : ""}" data-wg="${k}">${inner}${EDIT ? editBar(k, s0, i, L.length) : ""}</section>`]);
     });
     const hidden = Object.keys(SIZES).filter(k => !L.some(x => x[0] === k));
     const P = { edit: EDIT, tiles,
@@ -169,6 +203,7 @@
       ${P.tail}
       ${P.tray}</div>`;
     const key = norm(out), wg = body && body.firstElementChild && body.firstElementChild.id === "wg" ? body.firstElementChild : null;
+    if (wg && DR.d) return null;   // t-widget-drag: a poll while a tile is held keeps the DOM (the drop saves and redraws)
     if (wg && key === last) return null;   // same data: keep the DOM (no flicker, no image reloads)
     const kept = wg && patch(wg, P);
     last = key; PREV = P;
@@ -181,14 +216,99 @@
     e.preventDefault(); e.stopPropagation();
     const L = load();
     if (t.dataset.wgEdit != null) EDIT = !EDIT;
-    else if (t.dataset.wgReset != null) save(DEF.map(x => x.slice()));
-    else if (t.dataset.wgHide) save(L.filter(x => x[0] !== t.dataset.wgHide));
+    else if (t.dataset.wgReset != null) reset();
+    else if (t.dataset.wgHide) { save(L.filter(x => x[0] !== t.dataset.wgHide));   /* t-ui-fix-r5 R5-04: a keyboard remove keeps focus on the next tile's − (or 完成) */
+      if (document.activeElement === t) { const i = [...document.querySelectorAll("[data-wg-hide]")].indexOf(t); setTimeout(() => { const H = document.querySelectorAll("[data-wg-hide]"), n = H[Math.min(i, H.length - 1)] || document.querySelector("[data-wg-edit]"); if (n) n.focus({ preventScroll: true }); }, 80); } }
     else if (t.dataset.wgAdd) { const x = [t.dataset.wgAdd, SIZES[t.dataset.wgAdd].includes("m") ? "m" : SIZES[t.dataset.wgAdd][0]]; if (x[0] === "team") L.unshift(x); else L.push(x); save(L); }   /* t-rb-build: 团队交接 comes back first */
     else if (t.dataset.wgSize) { const [k, z] = t.dataset.wgSize.split(":"); const x = L.find(y => y[0] === k); if (x) x[1] = z; save(L); }
     else if (t.dataset.wgMove) { const [k, d] = t.dataset.wgMove.split(":"); const i = L.findIndex(y => y[0] === k), j = i + +d; if (i >= 0 && j >= 0 && j < L.length) { [L[i], L[j]] = [L[j], L[i]]; save(L); } }
     redraw();
   }, true);
-  document.addEventListener("keydown", e => { if (EDIT && e.key === "Escape" && document.getElementById("wg")) { EDIT = false; redraw(); } });
+  document.addEventListener("keydown", e => { if (EDIT && e.key === "Escape" && document.getElementById("wg")) { if (DR.d) drop(); EDIT = false; redraw(); } });
+
+  // ===== t-widget-drag (11-11): iOS-style drag to reorder. Hold a tile ~0.45 s (or press one while editing) to pick it up: it lifts and follows the
+  // pointer, the others slide out of the way (FLIP, transform only), and on release it settles into its slot. Only the order changes; sizes stay.
+  // Pointer Events, so mouse, trackpad and touch all work. Reduced motion: no lift scale, no slide, no settle (tiles just swap). Keyboard: ← → as before.
+  const DR = { p: null, d: null, eat: 0 };
+  const HOLD = 450;
+  const gridOf = () => document.querySelector('html[data-home="widgets"] #wg .wg-grid');
+  const tileOf = k => { const g = gridOf(); return g && [...g.children].find(t => t.dataset.wg === k); };
+  function lift(k, x, y) {
+    const el = tileOf(k), grid = gridOf(); if (!el || !grid) return;
+    const sc = scroller(grid);
+    DR.d = { k, el, grid, x0: x, y0: y, b0: lay(el), x, y, t: 0, sx: x, sy: y, sc, st0: sc.scrollTop };
+    autoScroll();
+    el.classList.add("wg-lift"); document.documentElement.classList.add("wg-dragging"); try { getSelection().removeAllRanges(); } catch (_) { }
+    if (!RMQ.matches) el.animate([{ scale: "1" }, { scale: "1.04" }], { duration: 160, easing: "cubic-bezier(.2,.8,.2,1)" });
+  }
+  function follow() {
+    const d = DR.d; if (!d) return; const n = lay(d.el);
+    d.el.style.translate = `${d.x - d.x0 + d.b0.left - n.left}px ${d.y - d.y0 + d.b0.top - n.top + d.sc.scrollTop - d.st0}px`;
+  }
+  const scroller = el => { for (let e = el.parentElement; e && e !== document.body; e = e.parentElement) { const o = getComputedStyle(e).overflowY; if ((o === "auto" || o === "scroll") && e.scrollHeight > e.clientHeight) return e; }
+    return document.scrollingElement || document.documentElement; };
+  function autoScroll() {   // held near the top / bottom edge of the scroll box: scroll, faster the closer to the edge (like iOS)
+    const d = DR.d; if (!d) return;
+    const r = d.sc === document.scrollingElement || d.sc === document.documentElement ? { top: 0, bottom: innerHeight } : d.sc.getBoundingClientRect(), E = 64;
+    const v = d.y < r.top + E ? -Math.ceil((r.top + E - d.y) / 4) : d.y > r.bottom - E ? Math.ceil((d.y - (r.bottom - E)) / 4) : 0;
+    if (v) { const b = d.sc.scrollTop; d.sc.scrollTop += Math.max(-18, Math.min(18, v)); if (d.sc.scrollTop !== b) { follow(); d.sy = -1e4; } }   // scrolled: the slot under the pointer counts as new
+    retarget(false);   // every frame, so a pointer that stops on a tile during the cool-down still moves it there
+    requestAnimationFrame(autoScroll);
+  }
+  function retarget(now) {   // swap with the tile under the pointer: not twice within 140 ms and not without the pointer moving 6 px (no flip-flop between unequal tiles)
+    const d = DR.d; if (!d || (!now && performance.now() - d.t < 140) || Math.hypot(d.x - d.sx, d.y - d.sy) <= 6) return;
+    const tg = over(); if (tg) reorder(tg);
+  }
+  function over() {   // the tile under the pointer (layout boxes, so a sliding tile does not flicker the target)
+    const d = DR.d, op = d.el.offsetParent; if (!op) return null;
+    const r = op.getBoundingClientRect(), px = d.x - r.left - op.clientLeft + op.scrollLeft, py = d.y - r.top - op.clientTop + op.scrollTop;
+    return [...d.grid.children].find(t => { if (t === d.el || !t.dataset.wg) return false; const b = lay(t); return px >= b.left && px < b.left + b.width && py >= b.top && py < b.top + b.height; }) || null;
+  }
+  function reorder(tgt) {
+    const d = DR.d, kids = [...d.grid.children], i = kids.indexOf(d.el), j = kids.indexOf(tgt); if (i < 0 || j < 0) return;
+    const before = new Map(kids.filter(t => t !== d.el).map(t => [t, t.getBoundingClientRect()]));   // visual boxes, mid-slide included
+    d.grid.insertBefore(d.el, i < j ? tgt.nextSibling : tgt);
+    d.t = performance.now(); d.sx = d.x; d.sy = d.y;
+    follow();
+    if (RMQ.matches) return;
+    before.forEach((o, t) => { if (t._wgSlide) t._wgSlide.cancel(); const n = t.getBoundingClientRect(), dx = o.left - n.left, dy = o.top - n.top;
+      if (Math.abs(dx) + Math.abs(dy) < 1) return;
+      t._wgSlide = t.animate([{ transform: `translate(${dx}px,${dy}px)` }, { transform: "none" }], { duration: 260, easing: "cubic-bezier(.2,.8,.2,1)" }); });
+  }
+  function drop() {
+    if (!DR.d) return; retarget(true);
+    const d = DR.d; DR.d = null; DR.eat = Date.now();
+    const tr = d.el.style.translate || "0px 0px";
+    d.el.style.translate = ""; d.el.classList.remove("wg-lift"); document.documentElement.classList.remove("wg-dragging");
+    if (!RMQ.matches) d.el.animate([{ translate: tr, scale: "1.04" }, { translate: "0px 0px", scale: "1" }], { duration: 300, easing: "cubic-bezier(.3,1.3,.5,1)" });
+    const order = [...d.grid.children].map(t => t.dataset.wg).filter(Boolean), L = load();
+    const nu = order.map(k => L.find(x => x[0] === k)).filter(Boolean).concat(L.filter(x => !order.includes(x[0])));
+    if (JSON.stringify(nu) !== JSON.stringify(L)) save(nu);
+    redraw();   // the ← → buttons follow the new order; patch() keeps the tile nodes
+  }
+  const cancelPress = () => { if (DR.p) { clearTimeout(DR.p.tm); DR.p = null; } };
+  document.addEventListener("pointerdown", e => {
+    if (e.button || !e.isPrimary || DR.d || document.documentElement.dataset.home !== "widgets" || (A() && A().UI.page !== "review")) return;
+    const t = e.target.closest && e.target.closest("#wg .wg-grid > .wg[data-wg]");
+    if (!t || e.target.closest("[data-wg-hide],[data-wg-size],[data-wg-move],input,textarea,select,video,audio")) return;
+    cancelPress();
+    DR.p = { k: t.dataset.wg, x: e.clientX, y: e.clientY, edit: EDIT, tm: EDIT ? 0 : setTimeout(() => {   // not editing: a hold enters 编辑 and picks the tile up
+      const p = DR.p; if (!p) return; DR.p = null; DR.eat = Date.now();
+      EDIT = true; redraw(); lift(p.k, p.lx ?? p.x, p.ly ?? p.y); }, HOLD) };
+  }, true);
+  window.addEventListener("pointermove", e => {
+    if (DR.d) { if (!e.isPrimary) return; e.preventDefault(); DR.d.x = e.clientX; DR.d.y = e.clientY; follow();
+      retarget(false); return; }
+    const p = DR.p; if (!p) return; p.lx = e.clientX; p.ly = e.clientY;
+    const m = Math.hypot(e.clientX - p.x, e.clientY - p.y);
+    if (p.edit && m > 4) { DR.p = null; lift(p.k, p.x, p.y); DR.d && (DR.d.x = e.clientX, DR.d.y = e.clientY, follow()); }
+    else if (!p.edit && m > 8) cancelPress();   // moved before the hold: a normal click / selection, not a drag
+  }, { passive: false });
+  const end = () => { cancelPress(); if (DR.d) drop(); };
+  window.addEventListener("pointerup", end); window.addEventListener("pointercancel", end); window.addEventListener("blur", end);
+  document.addEventListener("dragstart", e => { if ((DR.p || DR.d) && e.target.closest && e.target.closest("#wg")) e.preventDefault(); }, true);   // thumbnails: no native image drag
+  document.addEventListener("selectstart", e => { if (DR.d) e.preventDefault(); }, true);
+  window.addEventListener("click", e => { if (DR.eat && Date.now() - DR.eat < 600) { DR.eat = 0; e.preventDefault(); e.stopPropagation(); } }, true);   // the click after a hold / drop
   // ===== t-home-motion (tier 中, approved 11-02) + the flow sweep (item 8, asked for explicitly) =====
   // Plays only on events: entering the home page (stagger + numbers from 0), a row arriving (drop + glow) or leaving (ghost slides out),
   // tiles moving or resizing (FLIP glide), numbers changing (roll). A poll that returns the same data keeps the same DOM and plays nothing;
@@ -204,9 +324,10 @@
     MV.nums = new Map([...wg.querySelectorAll(".wg-big, .wg-eb .n")].map(n => [n.closest(".wg").dataset.wg + "|" + n.className, n.textContent]));
   }
   function mvRoll(wg, fromZero) {
-    wg.querySelectorAll(".wg-big, .wg-eb .n").forEach(n => {
+    wg.querySelectorAll(".wg-big, .wg-eb .n").forEach(n0 => {
+      const n = n0.querySelector(".wnb-num") || n0;   /* t-widget-num-b: roll only the digits, keep the tab spans */
       const to = parseInt(n.textContent, 10); if (isNaN(to)) return;
-      const from = fromZero ? 0 : parseInt(MV.nums.get(n.closest(".wg").dataset.wg + "|" + n.className), 10); if (isNaN(from) || from === to) return;
+      const from = fromZero ? 0 : parseInt(MV.nums.get(n0.closest(".wg").dataset.wg + "|" + n0.className), 10); if (isNaN(from) || from === to) return;
       const suf = n.textContent.replace(/^\d+/, ""), t0 = performance.now(), dur = 600;
       const step = t => { if (!n.isConnected) return; const p = Math.min(1, (t - t0) / dur); n.textContent = Math.round(from + (to - from) * (1 - Math.pow(1 - p, 3))) + suf; if (p < 1) requestAnimationFrame(step); };
       requestAnimationFrame(step);
@@ -247,122 +368,6 @@
   }
   const vis = () => document.documentElement.classList.toggle("wg-paused", document.hidden);   // the flow sweep pauses while the page is hidden
   document.addEventListener("visibilitychange", vis); vis();
-  // ===== t-home-dense (approved 11-04 13:52): 紧凑首页 =====
-  // Five sections top to bottom: 时间轴 · 等你拍板 (cards in a row) · 今日目标 (ring + list) · 此刻在忙 (+ 待机 avatars) · small cards.
-  // Solid cards (no backdrop-filter), no infinite animation; press comes from glass.js, hover is a background change.
-  // Same data -> same DOM; changed data -> only the sections whose HTML changed are swapped. Ticking text (elapsed, now marker,
-  // 「N 小时后」) is stripped by norm() and updated in place by the 30 s ticker below.
-  const dkey = d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-  /* t-ri1109-a P1: the timeline label is the part after 「：」 (「晨报：研究员写稿…」 -> 「研究员写稿…」), cut to 5 characters; the full name goes into title */
-  const rtName = r => { const n = A().rtShort(r), t = n.split(/[：:]/).pop().trim() || n; return [...t].length > 6 ? [...t].slice(0, 5).join("") + "…" : t; };
-  const rtFull = r => A().rtFull(r);
-  /* t-ri1109-a P1: place not-yet-run labels without collisions. Width is estimated from the text (CJK 11 px, other 6.3 px at --fs-11) against the
-     bar's current width, so the same data gives the same HTML on every poll. Centred on the tick; clamped to the card's edges; a label that would hit
-     the one before it drops to the next row (up to three, only when nothing has run yet early in the day); with all three taken it shows no text (the tick keeps the title). */
-  const tlEst = s => [...s].reduce((w, ch) => w + (/[\u2e80-\uffff]/.test(ch) ? 11 : 6.3), 0) + 4;
-  function tlPlace(rs) {
-    const bar = document.querySelector("#hd2 .d-tl-bar"), bw = (bar && bar.clientWidth) || 680, end = [-1e9, -1e9, -1e9];
-    return rs.map(r => {
-      if (r.ran) return { row: -1 };
-      const w = tlEst(`${hm(r.t)} ${r.name}`), x = tlX(r.t) / 100 * bw;
-      let l = x - w / 2, al = "";
-      if (l < 0) { l = x; al = "l"; } else if (l + w > bw) { l = x - w; al = "r"; }
-      const row = end.findIndex(e => e + 6 <= l);
-      if (row >= 0) end[row] = l + w;
-      return { row: row < 0 ? -2 : row, al };
-    });
-  }
-  const dayAt = hhmm => { const [h, m] = String(hhmm).split(":").map(Number), d = new Date(); d.setHours(h || 0, m || 0, 0, 0); return d.getTime(); };
-  const inH = t => { const h = (t - Date.now()) / 36e5; return en() ? `in ${h < 1 ? Math.max(1, Math.round(h * 60)) + " min" : (Math.round(h * 10) / 10) + " h"}` : h < 1 ? `${Math.max(1, Math.round(h * 60))} 分钟后` : `${Math.round(h * 10) / 10} 小时后`; };
-  const TL = { h0: 8, h1: 22 };
-  const tlX = t => { const d = new Date(t), h = d.getHours() + d.getMinutes() / 60; return Math.max(0, Math.min(100, (h - TL.h0) / (TL.h1 - TL.h0) * 100)); };
-  const pct = x => Math.round(x * 10) / 10 + "%";
-  function dData() {
-    const app = A(), ST = app.ST, its = app.items(), D = data(), now = Date.now(), td = new Date().toDateString(), tk = dkey(new Date());
-    const isT = t => !!t && new Date(t).toDateString() === td;
-    const meta = ST.meta || {};
-    const rts = (meta.routines || []).filter(r => !r.paused && !r.disabled && r.time).map(r => ({ t: dayAt(r.time), name: rtName(r), full: rtFull(r), ran: r.last === tk, item: r.item }));
-    if (meta.report_time) rts.push({ t: dayAt(meta.report_time), name: en() ? "Daily report" : "日报", full: en() ? "Daily report" : "日报", ran: meta.last_report_date === tk, item: "" });
-    rts.sort((a, b) => a.t - b.t);
-    const cal = (ST.calendar || []).filter(e => e.date === tk);
-    const goals = its.filter(i => !/^r-/.test(i.id) && i.category !== "ongoing" && (i.stage === "done" ? isT(i.closed) : (isT(i.created) || isT(i.activity))));
-    const gOpen = goals.filter(i => i.stage !== "done").sort((a, b) => ms(b.activity) - ms(a.activity)), gDone = goals.filter(i => i.stage === "done").sort((a, b) => ms(b.closed) - ms(a.closed));
-    const agents = Object.values(ST.agents || {}).filter(a => a.enabled !== false).sort((a, b) => (a.order ?? 99) - (b.order ?? 99));
-    const etaMin = id => {   /* median created -> closed for this owner's cards closed in the last 14 days; fewer than 3 -> no estimate */
-      const L = its.filter(i => i.owner === id && i.stage === "done" && i.closed && !/^r-/.test(i.id) && now - ms(i.closed) < 14 * 864e5).map(i => (ms(i.closed) - ms(i.created)) / 6e4).filter(m => m > 3 && m < 600).sort((x, y) => x - y);
-      return L.length >= 3 ? L[Math.floor(L.length / 2)] : null; };
-    const waiting = D.waiting.slice().sort((a, b) => (b.category === "urgent") - (a.category === "urgent"));
-    return { D, now, rts, cal, gOpen, gDone, agents, etaMin, waiting, meta };
-  }
-  const dSecs = X => {
-    const { D, now } = X, zh = !en();
-    // 1 timeline
-    TL.h0 = Math.min(8, new Date(now).getHours()); TL.h1 = Math.max(22, new Date(now).getHours() + 1);
-    const ticks = []; for (let h = TL.h0; h <= TL.h1; h += 2) ticks.push(`<span style="left:${pct((h - TL.h0) / (TL.h1 - TL.h0) * 100)}">${String(h).padStart(2, "0")}:00</span>`);
-    const next = X.rts.find(r => r.t > now && !r.ran), evN = X.cal.length;
-    const pl = tlPlace(X.rts), ranN = X.rts.filter(r => r.ran).length;
-    const tl = `<section class="d-card d-tl" data-sec="tl"><div class="d-tl-ax">${ticks.join("")}</div>
-      <div class="d-tl-bar${(n => n > 0 ? " rows" + (n + 1) : "")(Math.max(0, ...pl.map(x => x.row)))}" style="--now:${pct(tlX(now))}"><i class="past"></i>
-      ${D.shipped.map(i => `<b class="dot" style="left:${pct(tlX(i.closed))}" title="${esc(hm(i.closed) + " " + i.title)}" data-item="${esc(i.id)}"></b>`).join("")}
-      ${X.cal.filter(e => e.time).map(e => `<b class="ev" style="left:${pct(tlX(dayAt(e.time)))}" title="${esc(e.time + " " + (e.title || ""))}"></b>`).join("")}
-      ${X.rts.map((r, i) => `<em class="rt${r.ran ? " ran" : ""}${pl[i].row > 0 ? " lo" + pl[i].row : ""}${pl[i].al ? " " + pl[i].al : ""}" style="left:${pct(tlX(r.t))}"${r.item ? ` data-item="${esc(r.item)}"` : ""} title="${esc(`${hm(r.t)} ${r.full}${r.ran ? (zh ? " · 已跑" : " · ran") : ""}`)}">${pl[i].row >= 0 ? `<u>${hm(r.t)} ${esc(r.name)}</u>` : ""}</em>`).join("")}
-      <span class="now"><u><span class="d-tk" data-now="1">${(zh ? "现在 " : "now ") + hm(now)}</span></u></span></div>
-      <div class="d-tl-ft">${ranN ? (zh ? `已跑 ${ranN} 个 · ` : `${ranN} ran · `) : ""}${zh ? `今天交付 <b>${D.shipped.length}</b> 件 · ${evN ? `${evN} 个日程` : "没有会议"}` : `<b>${D.shipped.length}</b> shipped today · ${evN ? `${evN} events` : "no meetings"}`}${next ? ` · ${zh ? "下一个" : "next"}：${hm(next.t)} ${esc(next.name)}（<span class="d-tk" data-at="${next.t}">${inH(next.t)}</span>）` : ""}${D.nr.length ? ` · <button type="button" class="d-link in" data-go="mail">${zh ? `${D.nr.length} 张卡有新回复 ›` : `${D.nr.length} cards with new replies ›`}</button>` : ""}${A().snzLine ? A().snzLine() : ""}</div></section>`;
-    // 2 等你拍板
-    const W = X.waiting, tag = i => i.category === "urgent" ? `<em class="u">${zh ? "紧急" : "Urgent"}</em>` : `<em>${kindL(i)}</em>`;
-    const needs = `<section class="d-needs${W.length ? "" : " d-needs0"}" data-sec="needs"><div class="d-h"><b>${nm("review")}</b>${W.length ? `<span class="n hot">${W.length}</span>` : ""}${W.length ? "" : `<span class="d-ok">✓ ${calmText("review")}</span>`}<span class="sp"></span>${W.length > 2 ? `<button type="button" class="d-link" data-go="board">${zh ? "全部" : "All"} ${W.length} ›</button>` : ""}</div>
-      ${W.length || !A().utEmpty ? "" : A().utEmpty(calmText("review"), "d-ue")}
-      ${W.length ? `<div class="d-nr">${W.slice(0, 3).map(i => { const a = A().agent(i.owner); return `<button type="button" class="d-n${i.category === "urgent" ? " urgent" : ""}" data-item="${esc(i.id)}"><span class="top"><img src="${A().avatarUrl(a)}" alt="">${tag(i)}</span><span class="t">${esc(i.title)}</span><small>${esc(A().aname(a))} · ${zh ? "等了" : "waiting"} <time class="rel" data-t="${esc(i.activity || i.updated)}" data-rel="ago">${ago(i.activity || i.updated)}</time></small></button>`; }).join("")}</div>` : ""}</section>`;
-    // 3 今日目标
-    const N = X.gOpen.length + X.gDone.length, K = X.gDone.length, R = 46, C = 2 * Math.PI * R;
-    const show = [...X.gOpen, ...X.gDone].slice(0, 12), stg = { todo: zh ? "待办" : "to do", doing: zh ? "进行中" : "doing", review: zh ? "等你看" : "with you", waiting: zh ? "等别人" : "waiting" };
-    const gRow = i => { const ok = i.stage === "done", a = A().agent(i.owner);
-      return `<button type="button" class="d-g${ok ? " ok" : ""}" data-item="${esc(i.id)}"><span class="ck">${ok ? "✓" : ""}</span><span class="t"><span class="tt">${esc(i.title)}</span><small>${ok ? `${hm(i.closed)} ${zh ? "关卡" : "closed"}` : `${esc(A().aname(a))} · ${stg[i.stage] || i.stage}`}</small></span></button>`; };
-    const ring = `<svg class="d-ring" viewBox="0 0 120 120" aria-hidden="true"><circle cx="60" cy="60" r="${R}" class="trk"/>${K ? `<circle cx="60" cy="60" r="${R}" class="val" stroke-dasharray="${(C * K / Math.max(1, N)).toFixed(1)} ${C.toFixed(1)}" transform="rotate(-90 60 60)"/>` : ""}</svg>`;
-    const goals = `<section class="d-card d-goals" data-sec="goals"><div class="d-h" title="${zh ? "今天新建、在做、关掉的卡，关卡自动打勾" : "cards created, worked on or closed today"}"><b>${zh ? "今日目标" : "Today's goals"}</b>${ring}<span class="d-gk"><b>${K}</b>/${N}</span><span class="sp"></span><span class="d-leg"><i class="g"></i>${K} ${zh ? "完成" : "done"}<i></i>${N - K} ${zh ? "剩下" : "left"}</span></div>
-      <div class="d-gl">${N ? show.map(gRow).join("") : `<div class="d-calm">${zh ? "今天还没有卡" : "No cards today yet"}</div>`}</div>
-      ${[[8, "nw"], [12, "wd"]].map(([c, k]) => N > c ? `<button type="button" class="d-more ${k}" data-go="board">${zh ? `还有 ${N - c} 件 ›` : `${N - c} more ›`}</button>` : "").join("")}</section>`;   /* t-home-tight: 8 rows (nw) or 12 in two columns (wd, #hd2 >= 900px); CSS shows the matching 「还有 N 件」 */
-    // 4 此刻在忙 + 待机
-    const B = D.busy, busyIds = new Set(B.map(x => x.a.id)), stand = X.agents.filter(a => !busyIds.has(a.id));
-    const wRow = ({ a, it, since }) => { const m = X.etaMin(a.id), end = m && since ? ms(since) + m * 6e4 : 0;
-      return `<button type="button" class="d-w" data-item="${esc(it.id)}"><img src="${A().avatarUrl(a)}" alt="">${A().toolBadge ? A().toolBadge(a) : ""}<span class="who"><b>${esc(A().aname(a))}</b><small>${esc(A().atitle(a) || "")}</small></span>
-        <span class="job">${esc(it.title)}<small>${esc(a.activity || "")}</small></span>
-        <span class="tm"><b><span class="wk-el" data-fmt="dc" data-since="${esc(since || "")}">${since ? ago(since) : ""}</span></b><small>${since ? `${hm(since)} ${zh ? "开始" : "start"}` : ""}${end > now ? ` · ${zh ? "预计" : "ETA"} ~${hm(end)}` : ""}</small></span></button>`; };
-    const work = `<section class="d-card d-work" data-sec="work"><div class="d-h">${B.length ? '<span class="live"></span>' : ""}<b>${nm("busy")}</b>${B.length ? `<span class="n">${B.length}</span>` : ""}</div>
-      ${B.length ? B.map(wRow).join("") : `<div class="d-calm">${calmText("busy")}</div>`}
-      ${stand.length ? `<div class="d-sb"><span>${zh ? "待机" : "Standby"} · ${stand.length}</span>${stand.map(a => `<button type="button" data-chat="${esc(a.id)}" title="${esc(A().aname(a))}"><img src="${A().avatarUrl(a)}" alt=""></button>`).join("")}${stand.length > 5 ? `<i class="d-sbn">+${stand.length - 5}</i>` : ""}</div>` : ""}</section>`;   /* t-home-tight: under 640px the strip shows 5 faces + this count (CSS) */
-    // 5 small cards
-    const mx = Math.max(1, ...D.days.map(x => x.n)), wk = D.days.reduce((t, x) => t + x.n, 0), UL = A().usage ? A().usage() : {}, rl = (X.meta.routines || []).filter(r => !r.paused && !r.disabled);
-    const ran = X.rts.filter(r => r.ran).length;
-    const minis = `<section class="d-minis" data-sec="minis"><button type="button" class="d-mini" data-go="board"><small>${zh ? "近 7 天交付" : "Shipped · 7 days"}</small><b>${wk}</b><span class="bars">${D.days.map((x, k) => `<i class="${k === 6 ? "on" : ""}" style="height:${Math.max(8, Math.round(x.n / mx * 100))}%"></i>`).join("")}</span></button>
-      <button type="button" class="d-mini" data-go="ongoing"><small>${nm("ongoing")}</small><b>${rl.length}</b><span class="tx">${zh ? `今天已跑 ${ran}` : `${ran} ran today`}${next ? `<br>${zh ? "下个" : "next"} ${hm(next.t)}` : ""}</span></button>
-      <button type="button" class="d-mini" data-ru-open><small>${nm("usage")}</small><b>${UL.left != null ? UL.left + "%" : "—"}</b><span class="tx">${zh ? "5 小时剩余" : "5-hour left"}${UL.week != null ? `<br>${zh ? "本周剩" : "week left"} ${UL.week}%` : ""}</span></button></section>`;
-    return [["tl", tl], ["needs", needs], ["goals", goals], ["side", `<div class="d-side" data-sec="side">${work.replace(' data-sec="work"', "")}${minis.replace(' data-sec="minis"', "")}</div>`]];   /* t-home-tight: work + minis share the right column */
-  };
-  const DZ = { prev: null };
-  function dense(body, tail) {
-    const secs = dSecs(dData()), tl = tail ? `<div class="d-tail" data-sec="tail">${tail}</div>` : "";
-    if (tl) secs.push(["tail", tl]);
-    const box = body && body.firstElementChild && body.firstElementChild.id === "hd2" ? body.firstElementChild : null;
-    if (box && DZ.prev) {
-      const was = new Map(DZ.prev), cur = new Map([...box.children].map(c => [c.dataset.sec, c]));
-      secs.forEach(([k, h], i) => { const el = cur.get(k);
-        if (el && was.has(k) && norm(was.get(k)) === norm(h)) { if (box.children[i] !== el) box.insertBefore(el, box.children[i] || null); return; }
-        const n = frag(h); if (el) el.replaceWith(n); else box.insertBefore(n, box.children[i] || null); });
-      [...box.children].forEach(c => { if (!secs.some(([k]) => k === c.dataset.sec)) c.remove(); });
-      DZ.prev = secs; return null;
-    }
-    DZ.prev = secs;
-    const rm = RMQ.matches;
-    if (!rm) setTimeout(() => { const b = document.getElementById("hd2"); if (b) b.classList.remove("d-enter"); }, 1200);
-    return `<div id="hd2" class="${rm ? "" : "d-enter"}">${secs.map(([, h], i) => h.replace(/^<(section|div) class="/, `<$1 style="--d-i:${i}" class="`)).join("")}</div>`;
-  }
-  setInterval(() => {   /* 30 s: move the now marker, refresh 「现在 HH:MM」 and 「N 小时后」 in place (they are stripped from the compare) */
-    const b = document.getElementById("hd2"); if (!b || document.hidden) return;
-    const bar = b.querySelector(".d-tl-bar"); if (bar) bar.style.setProperty("--now", pct(tlX(Date.now())));
-    b.querySelectorAll(".d-tk[data-now]").forEach(x => { const v = (en() ? "now " : "现在 ") + hm(Date.now()); if (x.textContent !== v) x.textContent = v; });
-    b.querySelectorAll(".d-tk[data-at]").forEach(x => { const v = inH(+x.dataset.at); if (x.textContent !== v) x.textContent = v; });
-  }, 30000);
   window.Widgets = { html, editing: () => EDIT };
   if (A() && A().refreshPage && document.documentElement.dataset.home === "widgets") A().refreshPage();   /* app.js rendered before this file parsed */
 })();

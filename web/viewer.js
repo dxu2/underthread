@@ -25,6 +25,16 @@
   /* pre = { url, ctl, file, size, state: "loading" | "ready" | "big" | "fail" } */
   let pre = null;
   const toast = (m, bad) => { if (window.App && App.toast) App.toast(m, bad); };
+  const en = () => !!(window.App && App.UI && App.UI.lang === "en");
+  const L = (zh, e) => en() ? e : zh;
+  /* t-i18n-a: the frame is built once and kept, so its labels are (re)set on every open to follow the UI language */
+  function relabel() {
+    const set = (sel, txt, aria) => { const el = $(sel, root); if (!el) return; if (txt != null) el.textContent = txt; if (aria != null) el.setAttribute("aria-label", aria); };
+    set(".lb-x", null, L("关闭", "Close")); set(".lb-go", L("去这张卡", "Go to card")); set(".lb-att", L("附到回复…", "Attach to reply…"));
+    set(".lb-zo", null, L("缩小", "Zoom out")); set(".lb-pct", null, L("还原 100%", "Reset to 100%")); set(".lb-zi", null, L("放大", "Zoom in"));
+    set(".lb-new", L("↗ 新标签", "↗ New tab"), L("在新标签打开", "Open in new tab")); set(".lb-dl", null, L("保存", "Save"));
+    set(".lb-prev", null, L("上一张", "Previous")); set(".lb-next", null, L("下一张", "Next"));
+  }
   const canShareFiles = () => { try { return !!(navigator.share && navigator.canShare && navigator.canShare({ files: [new File([""], "x.png", { type: "image/png" })] })); } catch (_) { return false; } };
   const fmtMB = n => n >= 1048576 ? (n / 1048576).toFixed(1) + " MB" : Math.max(1, Math.round(n / 1024)) + " KB";
 
@@ -73,16 +83,20 @@
     $(".lb-next", root).onclick = e => { e.stopPropagation(); go(idx + 1); };
     gestures($(".lb-stage", root));
   }
+  let from = null;   // R4-12: who had focus before the viewer opened; it gets focus back on close
   function open(list, i) {
+    if (!root || !root.classList.contains("on")) from = document.activeElement !== document.body ? document.activeElement : null;
     if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
     items = list; idx = i; chromeOn = true;
     if (!root) build();
+    relabel();
     scrollY0 = window.scrollY;
     document.body.classList.add("lb-open");
     root.classList.remove("out", "hide"); root.classList.add("on");
     const fr = $(".lb-frame", root); fr.style.transform = ""; $(".lb-bg", root).style.opacity = "";
     try { history.pushState({ lb: 1 }, ""); pushed = true; } catch (_) { pushed = false; }
     show();
+    try { $(".lb-x", root).focus({ preventScroll: true }); } catch (_) { }   // R4-12: focus moves into the viewer (Tab is trapped below)
   }
   function stopVideo() { const v = root && $("video", root); if (v) { try { v.pause(); } catch (_) { } v.removeAttribute("src"); v.load(); } }
   function pct() { const p = $(".lb-pct", root); if (p) p.textContent = Math.round(zoom.s * 100) + "%"; }
@@ -101,13 +115,13 @@
     $(".lb-dots", root).innerHTML = items.length > 1 && items.length <= 12 ? items.map((_, k) => `<i class="${k === idx ? "on" : ""}"></i>`).join("") : "";
     if (it.kind === "video") {
       st.innerHTML = `<video class="lb-media" src="${esc(it.url)}" controls playsinline preload="metadata" poster="${thumbOf(it.url, 720)}"></video>
-        <div class="lb-err" hidden>这个格式在手机上播不了 · <a href="${esc(it.url)}" download>下载原文件</a></div>`;
+        <div class="lb-err" hidden>${L("这个格式在手机上播不了", "This format won't play on a phone")} · <a href="${esc(it.url)}" download>${L("下载原文件", "Download the original")}</a></div>`;
       const v = $("video", st);
       v.addEventListener("error", () => { if (!v.isConnected || !v.getAttribute("src")) return; v.hidden = true; $(".lb-err", st).hidden = false; });
     } else if (it.kind === "pdf") {
       if (phone) {   // iOS renders only page 1 of a PDF inside an iframe: show the cover and send the whole file to a new tab
         st.innerHTML = `<div class="lb-pdfc"><img class="lb-cover" src="${thumbOf(it.url, 900)}" alt="${esc(it.name)}" draggable="false" onerror="this.remove()">
-          <a class="lb-pdfgo" href="${esc(it.url)}" target="_blank" rel="noopener">新标签打开 PDF</a></div>`;
+          <a class="lb-pdfgo" href="${esc(it.url)}" target="_blank" rel="noopener">${L("新标签打开 PDF", "Open PDF in new tab")}</a></div>`;
       } else st.innerHTML = `<iframe class="lb-media lb-pdf" src="${esc(it.url)}#view=FitH" title="${esc(it.name)}"></iframe>`;
     } else {
       const alpha = /\.(png|webp|gif|avif|svg)(\?|$)/i.test(it.url) ? " lb-alpha" : "";   // transparent images sit on a light checkerboard
@@ -128,7 +142,7 @@
   function dlLabel() {
     const dl = root && $(".lb-dl", root), it = items[idx]; if (!dl || !it) return;
     const share = phoneQ.matches && it.kind !== "pdf" && canShareFiles();
-    dl.textContent = !share ? (phoneQ.matches ? "⤓ 保存原图" : "⤓ 保存") : pre && pre.state === "loading" ? "准备中…" : "⤓ 保存原图";
+    dl.textContent = !share ? (phoneQ.matches ? L("⤓ 保存原图", "⤓ Save original") : L("⤓ 保存", "⤓ Save")) : pre && pre.state === "loading" ? L("准备中…", "Preparing…") : L("⤓ 保存原图", "⤓ Save original");
     dl.classList.toggle("wait", !!(share && pre && pre.state === "loading"));
   }
   /* fetch the original into a File; resolves to pre (state ready / big / fail) */
@@ -154,7 +168,7 @@
     if (!phone || it.kind === "pdf" || !canShareFiles()) { dlLabel(); return; }
     grab(it, false); dlLabel();
   }
-  function fallbackDL(dl) { dl.dataset.nosh = "1"; dl.click(); delete dl.dataset.nosh; toast("已存到 文件 → 下载"); }
+  function fallbackDL(dl) { dl.dataset.nosh = "1"; dl.click(); delete dl.dataset.nosh; toast(L("已存到 文件 → 下载", "Saved to Files → Downloads")); }
   function doShare(dl, file) {
     let pr; try { pr = navigator.share({ files: [file] }); } catch (e) { pr = Promise.reject(e); }
     return Promise.resolve(pr).catch(e => { if (e && e.name === "AbortError") return; /* user cancelled */ fallbackDL(dl); });
@@ -163,7 +177,7 @@
   function saveClick(e) {
     const dl = e.currentTarget, it = items[idx];
     if (dl.dataset.nosh || !it || !phoneQ.matches || it.kind === "pdf" || !canShareFiles()) {
-      if (phoneQ.matches && !dl.dataset.nosh && it && it.kind !== "pdf") toast("已存到 文件 → 下载");
+      if (phoneQ.matches && !dl.dataset.nosh && it && it.kind !== "pdf") toast(L("已存到 文件 → 下载", "Saved to Files → Downloads"));
       return;
     }
     e.preventDefault(); e.stopPropagation();
@@ -173,17 +187,18 @@
       if (navigator.canShare({ files: [p.file] })) return void doShare(dl, p.file);
       return fallbackDL(dl);
     }
-    if (p && p.state === "loading") { toast("原图还在准备，稍等一下再点"); return; }
+    if (p && p.state === "loading") { toast(L("原图还在准备，稍等一下再点", "The original is still loading, tap again in a moment")); return; }
     if (p && p.state === "fail") return fallbackDL(dl);
     // big file (or no prefetch): fetch now, then try the share; Safari may refuse it without the tap -> download
-    toast("文件较大，取完会再弹分享");
+    toast(L("文件较大，取完会再弹分享", "Large file: the share sheet opens once it's fetched"));
     grab(it, true).then(q => { if (items[idx] !== it || !root.classList.contains("on")) return; if (q.state === "ready" && q.file && navigator.canShare({ files: [q.file] })) doShare(dl, q.file); else fallbackDL(dl); });
   }
   function go(n) { if (n < 0 || n >= items.length || n === idx) return; idx = n; show(); }
   function close(fromPop) {
     if (!root || !root.classList.contains("on")) return;
     stopVideo(); dropPre();
-    const fin = () => { root.classList.remove("on", "out"); $(".lb-stage", root).innerHTML = ""; $(".lb-frame", root).style.transform = ""; $(".lb-bg", root).style.opacity = ""; document.body.classList.remove("lb-open"); window.scrollTo(0, scrollY0); };
+    const fin = () => { root.classList.remove("on", "out"); $(".lb-stage", root).innerHTML = ""; $(".lb-frame", root).style.transform = ""; $(".lb-bg", root).style.opacity = ""; document.body.classList.remove("lb-open"); window.scrollTo(0, scrollY0);
+      const f = from; from = null; if (f && f.isConnected && !root.classList.contains("on")) try { f.focus({ preventScroll: true }); } catch (_) { } };
     if (reduce) fin(); else { root.classList.add("out"); setTimeout(fin, 180); }
     if (pushed && !fromPop) { pushed = false; ignorePop = true; history.back(); }
     pushed = false;
@@ -200,6 +215,11 @@
   addEventListener("keydown", e => {
     if (!root || !root.classList.contains("on") || e.defaultPrevented || e.isComposing) return;
     if (document.body.classList.contains("pal-on")) return;
+    if (e.key === "Tab") {   // R4-12: Tab / Shift+Tab cycle through the viewer's own visible controls only
+      const f = [...root.querySelectorAll("button, a[href], video, iframe")].filter(x => !x.hidden && x.offsetParent !== null);
+      if (f.length) { const k = f.indexOf(document.activeElement), n = k < 0 ? (e.shiftKey ? f.length - 1 : 0) : (k + (e.shiftKey ? -1 : 1) + f.length) % f.length; f[n].focus(); }
+      e.preventDefault(); e.stopImmediatePropagation(); return;
+    }
     if (e.key === "Escape") close(); else if (e.key === "ArrowLeft") go(idx - 1); else if (e.key === "ArrowRight") go(idx + 1);
     else if ((e.key === "+" || e.key === "=") && setZoom && !e.metaKey && !e.ctrlKey) setZoom(zoom.s * 1.25);
     else if (e.key === "-" && setZoom && !e.metaKey && !e.ctrlKey) setZoom(zoom.s / 1.25);

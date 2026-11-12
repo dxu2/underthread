@@ -30,8 +30,13 @@
   function table(lines) {
     const rows = lines.map(l => l.trim().replace(/^\||\|$/g, "").split("|").map(c => c.trim()));
     const head = rows[0], body = rows.slice(2);
-    return `<div class="tbl"><table><thead><tr>${head.map(c => `<th>${inline(c)}</th>`).join("")}</tr></thead><tbody>` +
-      body.map(r => `<tr>${r.map(c => `<td>${inline(c)}</td>`).join("")}</tr>`).join("") + `</tbody></table></div>`;
+    /* t-ui-fix-r7 R7-01: each column gets a width class from its longest cell (CJK counts 2), so auto layout never squeezes a column to
+       one character per line: short columns stay on one line (c-n), medium / long ones keep a floor (c-m / c-l, style.css); a table that
+       needs more room than the card scrolls inside .tbl. */
+    const vw = c => String(c).replace(/\[([^\]]+)\]\([^)]*\)/g, "$1").replace(/[`*]/g, "").replace(/[\u1100-\uffff]/g, "xx").length;
+    const cls = head.map((_, i) => { const m = Math.max(0, ...[head, ...body].map(r => vw(r[i] || ""))); return m <= 12 ? "c-n" : m >= 48 ? "c-l" : "c-m"; });
+    return `<div class="tbl"><table><thead><tr>${head.map((c, i) => `<th class="${cls[i]}">${inline(c)}</th>`).join("")}</tr></thead><tbody>` +
+      body.map(r => `<tr>${r.map((c, i) => `<td class="${cls[i] || "c-m"}">${inline(c)}</td>`).join("")}</tr>`).join("") + `</tbody></table></div>`;
   }
 
   function list(lines) {
@@ -97,4 +102,21 @@
   window.md = md;
   md.refs = refs;   // t-imp29-p5: for already-escaped plain text (timeline log lines)
   window.esc = esc;
+
+  /* t-ui-fix-r7b: a table wider than its card scrolls inside .tbl (R7-01); mark which sides still have more (more-r / more-l) so style.css
+     fades that edge. The mask sits on the scroller's own box, so at either scroll end the fade is gone and never covers cell text.
+     New .tbl nodes are picked up by one rAF-throttled MutationObserver; a ResizeObserver per table re-checks on drawer / chat resizes. */
+  function tblMark(w) {
+    const m = w.scrollWidth - w.clientWidth, x = Math.abs(w.scrollLeft);
+    w.classList.toggle("more-r", m > 1 && x < m - 1); w.classList.toggle("more-l", m > 1 && x > 1);
+  }
+  md.tblMark = tblMark;
+  document.addEventListener("scroll", e => { const t = e.target; if (t && t.classList && t.classList.contains("tbl")) tblMark(t); }, true);
+  if (window.ResizeObserver && window.MutationObserver) {
+    const ro = new ResizeObserver(es => es.forEach(e => tblMark(e.target)));
+    let q = 0;
+    const scan = () => { q = 0; document.querySelectorAll(".tbl:not([data-tw])").forEach(w => { w.dataset.tw = "1"; ro.observe(w); }); };
+    const start = () => { scan(); new MutationObserver(() => { if (!q) q = requestAnimationFrame(scan); }).observe(document.body, { childList: true, subtree: true }); };
+    if (document.body) start(); else document.addEventListener("DOMContentLoaded", start);
+  }
 })();

@@ -30,14 +30,18 @@ html[data-home="widgets"][data-theme] { --glass-bg: var(--glass-solid); --glass-
 @media (prefers-reduced-transparency: reduce) { html[data-home="widgets"][data-theme] { --glass-bg: var(--glass-solid); --glass-bf: none; } }
 
 html[data-home="widgets"] #officebox { display: none !important; }
-html[data-home="widgets"] #wg { --g: 14px; max-width: 760px; margin: 0 auto; padding: 0 0 80px; font-family: var(--f-cjk); color: var(--ink); container-type: inline-size; }
+html[data-home="widgets"] #wg { --g: 14px; max-width: none; margin: 0 auto; padding: 0 0 80px; font-family: var(--f-cjk); color: var(--ink); container-type: inline-size; }
 html[data-home="widgets"] .wg-hd { display: flex; align-items: center; gap: 12px; margin: -4px 2px 12px; min-height: 32px; }
 html[data-home="widgets"] .wg-hd .sp { flex: 1; }
 html[data-home="widgets"] .wg-calm { font-size: var(--fs-13); color: var(--dim); letter-spacing: .02em; }
 html[data-home="widgets"] .wg-btn { font-size: var(--fs-12); color: var(--ink2); padding: 6px 13px; border-radius: 999px; background: var(--glass-lite); border: 0; cursor: pointer; transition: background-color .15s ease; }
 html[data-home="widgets"] .wg-btn:hover { background: color-mix(in srgb, var(--ink) 12%, transparent); }
 html[data-home="widgets"] .wg-btn.on { background: var(--accent); color: var(--accent-ink); }
-html[data-home="widgets"] .wg-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); grid-auto-rows: calc((100cqw - 3 * var(--g)) / 4); grid-auto-flow: row dense; gap: var(--g); }
+html[data-home="widgets"] .wg-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); grid-auto-rows: max(172px, calc((100cqw - 3 * var(--g)) / 4)); grid-auto-flow: row dense; gap: var(--g); }
+/* t-home-width (user 11-11 00:00): the home used to stop at 760px while the quest pages fill the main column; now #wg fills it too (no max-width).
+   So the tiles do not balloon, the grid gains columns as it widens: 4 up to 940px, 6 up to 1400px, 8 above (cells ~150–230px wide; rows never under 172px, the height two rows + eyebrow need — that also fixes Waiting on you clipping at 1440). S/M/L keep their 1/2/2x2 spans. */
+@container (min-width: 940px) { html[data-home="widgets"] .wg-grid { grid-template-columns: repeat(6, minmax(0, 1fr)); grid-auto-rows: max(172px, calc((100cqw - 5 * var(--g)) / 6)); } }
+@container (min-width: 1400px) { html[data-home="widgets"] .wg-grid { grid-template-columns: repeat(8, minmax(0, 1fr)); grid-auto-rows: max(172px, calc((100cqw - 7 * var(--g)) / 8)); } }
 html[data-home="widgets"] .wg { position: relative; overflow: hidden; min-width: 0; display: flex; flex-direction: column; padding: 15px 16px; border-radius: 24px;
   background: var(--glass-bg); -webkit-backdrop-filter: var(--glass-bf); backdrop-filter: var(--glass-bf); box-shadow: var(--glass-rim), var(--glass-shadow); }
 html[data-home="widgets"] .wg.sz-m { grid-column: span 2; } html[data-home="widgets"] .wg.sz-l { grid-column: span 2; grid-row: span 2; }
@@ -103,13 +107,47 @@ html[data-home="widgets"] .hero.multi .wg-side { margin-top: auto; padding-top: 
 html[data-home="widgets"] .hero.multi .wg-sr { background: var(--glass-lite); }
 html[data-home="widgets"] .hero.multi .wg-sr i { background: color-mix(in srgb, var(--ink) 14%, transparent); } html[data-home="widgets"] .hero.multi .wg-sr i em { background: var(--ink); }
 html[data-home="widgets"] .wg-busy.sz-m .wg-side { display: none; }
+/* t-ut-avatar-working: Underthread = the needle-thread patch instead of the art (widgets.js adds .utav, never .hero). A plain card (ink text, leather dyes it);
+   one person at L = patch centred between the eyebrow and the job; several people, or size M = patch in a left column, the rows on the right (same as .hero.multi).
+   The patch is a square image with transparent corners: tilted a little like a sewn-on badge, straight on hover. Working sheet = 4 frames, .8 s (theme-ut.css keyframes). */
+html[data-home="widgets"] .wg-busy.utav { padding: 0; }
+html[data-home="widgets"] .wg-utav { position: relative; flex: 1; min-height: 0; display: grid; place-items: center; container-type: size; }
+html[data-home="widgets"] .wg-utp { display: block; width: min(184px, 100cqmin - 8px); aspect-ratio: 1; border-radius: 50%; background: center / contain no-repeat; cursor: pointer;
+  transform: rotate(-5deg); filter: drop-shadow(0 6px 10px rgba(0,0,0,.30)); transition: transform var(--m-slow, .42s) var(--m-ease-ios, cubic-bezier(.2,.9,.2,1)); }
+html[data-home="widgets"] .wg-utp:hover { transform: rotate(0deg) scale(1.04); }
+/* exactly the Team column's working sprite (theme-ut.css .av.working.wsheet): same sheet art, same ut-wsheet keyframes, .8 s steps(4), same phase (--wg-fd = App.av's --wp).
+   v4 (user 11-11 00:34 「没有按指定动作做」): the v3 rock is gone; it was a second, bigger motion that drowned the role's own action (needles, brush). */
+/* v5 (user 00:44 「咋还不动」): v1-v4 put !important on the whole background shorthand, and an !important declaration beats a CSS animation,
+   so background-position stayed 0 0 and the patch showed frame 1 forever while the animation reported "running". Only the image needs !important (to beat the inline url). */
+html[data-home="widgets"] .wg-utp.ws { background-image: var(--wsheet) !important; background-size: 400% 100%; background-repeat: no-repeat; background-position: 0 0; animation: ut-wsheet .8s steps(4) var(--wg-fd, 0s) infinite; }
+html[data-home="widgets"] .utav .wg-utav { order: 1; } html[data-home="widgets"] .utav .wg-in { order: 2; margin-top: 0; padding: 2px 18px 16px; }   /* markup is patch, eyebrow, text: the eyebrow stays on top */
+html[data-home="widgets"] .utav .wg-job { background: var(--glass-lite); -webkit-backdrop-filter: none; backdrop-filter: none; }
+html[data-home="widgets"] .utav .wg-job:hover { background: color-mix(in srgb, var(--ink) 12%, transparent); }
+html[data-home="widgets"] .utav .wg-job, html[data-home="widgets"] .utav .wg-sr { transition: background-color .15s ease; }
+html[data-home="widgets"] :is(.utav.multi, .utav.sz-m) .wg-utav { position: absolute; left: 0; top: 0; bottom: 0; width: 40%; }
+html[data-home="widgets"] :is(.utav.multi, .utav.sz-m) .wg-utp { width: min(148px, 100cqmin - 18px); }
+html[data-home="widgets"] :is(.utav.multi, .utav.sz-m) .wg-top { margin-left: 40%; padding-left: 4px; }
+html[data-home="widgets"] :is(.utav.multi, .utav.sz-m) .wg-in { margin: 0 0 0 40%; padding: 4px 18px 16px 4px; flex: 1; display: flex; flex-direction: column; }
+html[data-home="widgets"] :is(.utav.multi, .utav.sz-m) .wg-in h3 { font-size: var(--fs-20); }
+html[data-home="widgets"] .utav.multi .wg-job { flex-wrap: wrap; row-gap: 2px; margin-top: 6px; }
+html[data-home="widgets"] .utav.multi .wg-job span { flex-basis: 100%; } html[data-home="widgets"] .utav.multi .wg-job b { font-size: var(--fs-12); }
+html[data-home="widgets"] .utav .wg-side { margin-top: auto; padding-top: 8px; }
+html[data-home="widgets"] .utav .wg-sr { background: var(--glass-lite); }
+html[data-home="widgets"] .utav .wg-sr:hover { background: color-mix(in srgb, var(--ink) 12%, transparent); }
+html[data-home="widgets"] .utav .wg-sr i { background: color-mix(in srgb, var(--ink) 14%, transparent); } html[data-home="widgets"] .utav .wg-sr i em { background: var(--ink); }
+@media (prefers-reduced-motion: reduce) { html[data-home="widgets"] .wg-utp { transition: none; } html[data-home="widgets"] .wg-utp.ws { animation: none; background-position: 0 0 !important; } }
 
-/* edit mode: no wiggle animation (static badges only), remove / size / move controls, tray of hidden widgets */
+/* edit mode: remove / size / move controls, tray of hidden widgets. t-widget-drag: one short settle-in wobble on entry (not endless), tiles can be dragged */
 html[data-home="widgets"] #wg.edit .wg { outline: 1.5px dashed color-mix(in srgb, var(--ink) 25%, transparent); outline-offset: -1.5px; }
 html[data-home="widgets"] #wg.edit .wg > :not(.wg-x):not(.wg-sz):not(.wg-mv) { pointer-events: none; }
 html[data-home="widgets"] .wg-x { position: absolute; left: 8px; top: 8px; z-index: 3; width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center; font-size: var(--fs-17); line-height: 1;
   background: var(--glass-solid); color: var(--ink); box-shadow: 0 2px 8px rgba(0,0,0,.25); cursor: pointer; }
 html[data-home="widgets"] .wg-sz, html[data-home="widgets"] .wg-mv { position: absolute; bottom: 8px; z-index: 3; display: flex; gap: 3px; padding: 3px; border-radius: 999px; background: var(--glass-solid); box-shadow: 0 2px 8px rgba(0,0,0,.2); }
+/* t-ui-fix-r2 audit P2-1: in edit mode the ← → and S/M/L pills sat on the bottom row's text (handoffs / Codex / Oldest waiting); a band fades that strip out under them */
+html[data-home="widgets"] .wg-eband { position: absolute; left: 0; right: 0; bottom: 0; height: 40px; z-index: 2; pointer-events: none; border-radius: 0 0 24px 24px;
+  background: linear-gradient(to bottom, transparent, color-mix(in srgb, var(--glass-solid) 45%, transparent) 70%);
+  -webkit-backdrop-filter: blur(5px); backdrop-filter: blur(5px); -webkit-mask-image: linear-gradient(transparent, #000 55%); mask-image: linear-gradient(transparent, #000 55%); }   /* blur + light veil keeps each tile's own tint (a solid band read as white fog on leather) */
+html[data-home="widgets"] #wg:not(.edit) .wg-eband { display: none; }
 html[data-home="widgets"] .wg-sz { right: 8px; } html[data-home="widgets"] .wg-mv { left: 8px; } html[data-home="widgets"] .wg-mv:empty { display: none; }
 html[data-home="widgets"] .wg-sz button, html[data-home="widgets"] .wg-mv button { font-size: var(--fs-11); min-width: 22px; height: 20px; padding: 0 5px; border: 0; border-radius: 999px; background: transparent; color: var(--dim); cursor: pointer; }
 html[data-home="widgets"] .wg-sz button.on { background: var(--ink); color: var(--glass-solid); }
@@ -123,11 +161,14 @@ html[data-home="widgets"] .wg-chips button:hover { background: color-mix(in srgb
 html[data-home="widgets"] .wg-tail { margin-top: 22px; }
 
 /* the ink greeting (date eyebrow + 「今天.」, mobile.js) above the grid, same as the app-style home */
-html[data-home="widgets"][data-skin="ink"] .ink-hello { display: block; max-width: 760px; margin: 22px auto 10px; padding: 0 2px; }
+/* t-title-pos: the home header now sits exactly where every other page's .ph header does (Main quest is the reference, user 00:39):
+   .ph = margin 26px 0 18px, no side padding, dateline margin-bottom 12px, and in English the title is indented .3em (style.css html[lang=en] .ph h1). */
+html[data-home="widgets"][data-skin="ink"] .ink-hello { display: block; max-width: none; margin: 26px auto 18px; padding: 0; }
 html[data-home="widgets"][data-skin="ink"] .ink-hello[hidden] { display: none; }
-html[data-home="widgets"][data-skin="ink"] .ink-hello .ink-eb { margin: 0 0 4px; }
-html[data-home="widgets"][data-skin="ink"] .ink-hello b { display: block; font: 600 var(--fs-44)/1.05 var(--f-sys); letter-spacing: -.035em; color: var(--ink); }
-html[data-home="widgets"][data-skin="ink"] .ink-hello b::after { content: ""; display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--dot); margin-left: 3px; }
+html[data-home="widgets"][data-skin="ink"] .ink-hello .ink-eb { margin: 0 0 12px; }
+html[lang="en"][data-home="widgets"][data-skin="ink"] .ink-hello b { padding-left: .3em; }
+html[data-home="widgets"][data-skin="ink"] .ink-hello b { display: block; font: 600 var(--pt-fs, 60px)/1.02 var(--f-sys);   /* t-title-align: same as .ph h1 */ letter-spacing: -.035em; color: var(--ink); }
+html[data-home="widgets"][data-skin="ink"] .ink-hello b::after { content: ""; display: inline-block; width: .16em; height: .16em; border-radius: 50%; background: var(--dot); margin-left: .06em; }
 html[data-home="widgets"] #wg.edit .wg-eb { padding-left: 22px; } html[data-home="widgets"] #wg.edit .hero.multi .wg-top .wg-eb { padding-left: 0; }
 
 /* ===== t-home-motion (tier 中 + the flow sweep, approved 11-02). Driven by widgets.js (mvPage): classes appear only on events. Only transform / opacity
@@ -169,182 +210,23 @@ html.wg-paused[data-home="widgets"] .wg-job::after { animation-play-state: pause
 /* t-agent-queue: badges inside 此刻在忙 (white on the art, accent on the split layout) */
 html[data-home="widgets"] .hero .aq { background: rgba(255,255,255,.2); color: #fff; margin-left: 8px; }
 html[data-home="widgets"] .hero.multi .aq { background: color-mix(in srgb, var(--accent) 16%, transparent); color: var(--accent); }
-html[data-home="widgets"] .wg-sr .st b { white-space: nowrap; } html[data-home="widgets"] .wg-sr .aq { height: 15px; padding: 0 5px; font-size: var(--fs-10); margin-left: 6px; }
+/* t-queued-dots: the side row's name + 「Queued N」 pill sat in one nowrap <b> with no min-width, so a long name or a 2-digit count pushed the pill past
+   the card's right edge (user 00:32, 1280 desk with chat open). Now the pill wraps under the name when both do not fit, never shrinks or leaves the card. */
+html[data-home="widgets"] .wg-sr .st b { white-space: nowrap; display: flex; flex-wrap: wrap; align-items: center; gap: 2px 6px; min-width: 0; }
+html[data-home="widgets"] .wg-sr .st b .wg-nm { flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; opacity: 1; }
+html[data-home="widgets"] .wg-sr .st b .aq { flex: none; overflow: visible; opacity: 1; margin-left: 0; }
+/* narrow side rows (sz-l busy card next to the 40% patch, 1280 desk with chat open: ~150 px): the pill drops its word (title keeps it) and the elapsed time hides
+   (the bar under the title already shows it), so name + 「17 ···」 fit without covering anything */
+html[data-home="widgets"] .wg-side { container-type: inline-size; }
+@container (max-width: 250px) { html[data-home="widgets"] .wg-sr time, html[data-home="widgets"] .wg-sr .aq-w { display: none; } }
+html[data-home="widgets"] .wg-sr .st .aq-w { overflow: visible; opacity: 1; } html[data-home="widgets"] .wg-sr .st .aq-d { overflow: visible; opacity: .7; margin: 0 5px 0 8px; } html[data-home="widgets"] .wg-sr .aq { height: 15px; padding: 0 5px; font-size: var(--fs-10); margin-left: 6px; }
 /* t-home-usage: the usage widget (shared .ru-* rules live in style.css) */
 html[data-home="widgets"] .wg-usage .wg-eb { cursor: pointer; }
 html[data-home="widgets"] .wg-usage .wg-eb span:not(.n) { font-size: var(--fs-12); color: var(--dim); }
 html[data-home="widgets"] .wg-usage .ru-list { flex: 1; }
 html[data-home="widgets"] .wg-usage.sz-m .ru-row { padding-top: 2px; padding-bottom: 2px; }
 
-/* ===== t-home-dense (approved 11-04): 紧凑首页 (widgets.js dense()). html[data-dense] is set with data-home="widgets" (desktop review page only).
-   Solid cards, no backdrop-filter, no infinite animation. Press = glass.js; hover = background / border change. ===== */
-html[data-dense] #hd2 { max-width: 760px; margin: 0 auto; padding: 0 0 80px; display: grid; gap: 14px; font-family: var(--f-cjk); color: var(--ink); container-type: inline-size; }
-html[data-dense] #hd2 button { font: inherit; color: inherit; text-align: left; border: 0; background: none; cursor: pointer; transition: background-color .16s ease, border-color .16s ease, color .16s ease; }
-html[data-dense] #hd2 .d-card { background: var(--panel); border: 1px solid var(--line); border-radius: 20px; padding: 14px 18px; box-shadow: 0 1px 2px rgba(0,0,0,.04), 0 6px 18px rgba(0,0,0,.04); min-width: 0; }
-html[data-dense] #hd2 .d-h { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; font-size: var(--fs-12); color: var(--dim); min-width: 0; }
-html[data-dense] #hd2 .d-h b { font-weight: 600; font-size: var(--fs-16); color: var(--ink); white-space: nowrap; }
-html[data-dense] #hd2 .d-h > span:not(.n):not(.live):not(.sp) { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-html[data-dense] #hd2 .d-h .n { background: var(--chip); color: var(--ink2); border-radius: 99px; padding: 1px 8px; font-size: var(--fs-12); }
-html[data-dense] #hd2 .d-h .n.hot { background: var(--urgent); color: #fff; }
-html[data-dense] #hd2 .d-h .sp { flex: 1; }
-html[data-dense] #hd2 .d-h .live { flex: none; width: 8px; height: 8px; border-radius: 50%; background: var(--ok); box-shadow: 0 0 0 3px color-mix(in srgb, var(--ok) 22%, transparent); }
-html[data-dense] #hd2 .d-link { color: var(--dim); font-size: var(--fs-13); padding: 4px 8px; border-radius: 8px; }
-html[data-dense] #hd2 .d-link:hover { background: var(--chip); color: var(--ink); }
-html[data-dense] #hd2 .d-link.in { padding: 1px 6px; margin: 0 -2px; color: var(--ink2); }
-html[data-dense] #hd2 .d-calm { font-size: var(--fs-13); color: var(--dim); padding: 4px 2px 8px; }
-/* 1 timeline */
-html[data-dense] #hd2 .d-tl { padding: 12px 18px; }
-html[data-dense] #hd2 .d-tl-ax { position: relative; height: 16px; font-size: var(--fs-11); color: var(--dim); font-variant-numeric: tabular-nums; }
-html[data-dense] #hd2 .d-tl-ax span { position: absolute; transform: translateX(-50%); }
-html[data-dense] #hd2 .d-tl-ax span:first-child { transform: none; } html[data-dense] #hd2 .d-tl-ax span:last-child { transform: translateX(-100%); }
-html[data-dense] #hd2 .d-tl-bar { position: relative; height: 6px; margin: 10px 0 30px; border-radius: 99px; background: var(--chip); }
-html[data-dense] #hd2 .d-tl-bar .past { position: absolute; inset: 0 auto 0 0; width: var(--now); border-radius: 99px; background: color-mix(in srgb, var(--ink) 18%, transparent); transition: width .6s ease; }
-html[data-dense] #hd2 .d-tl-bar .dot { position: absolute; top: -2px; width: 10px; height: 10px; margin-left: -5px; border-radius: 50%; background: var(--ok); border: 2px solid var(--panel); cursor: pointer; transition: transform .16s ease; }
-html[data-dense] #hd2 .d-tl-bar .dot:hover { transform: scale(1.35); }
-html[data-dense] #hd2 .d-tl-bar .ev { position: absolute; top: -3px; width: 12px; height: 12px; margin-left: -6px; border-radius: 3px; background: var(--accent); border: 2px solid var(--panel); }
-html[data-dense] #hd2 .d-tl-bar .rt { position: absolute; top: -5px; width: 0; height: 16px; border-left: 2px solid var(--ink2); margin-left: -1px; cursor: pointer; }
-html[data-dense] #hd2 .d-tl-bar .rt:not(.ran) { border-left-style: dashed; border-left-color: var(--dim); }
-html[data-dense] #hd2 .d-tl-bar u { position: absolute; top: 18px; left: 0; transform: translateX(-50%); white-space: nowrap; text-decoration: none; font-size: var(--fs-11); color: var(--dim); transition: color .16s ease; }
-html[data-dense] #hd2 .d-tl-bar .rt:hover u { color: var(--ink); }
-html[data-dense] #hd2 .d-tl-bar .now { position: absolute; left: var(--now); top: -7px; width: 2px; height: 20px; margin-left: -1px; background: var(--ink); transition: left .6s ease; }
-html[data-dense] #hd2 .d-tl-bar .now u { top: -21px; color: var(--bg); background: var(--ink); padding: 1px 6px; border-radius: 6px; font-weight: 600; z-index: 1; }
-html[data-dense] #hd2 .d-tl-ft { font-size: var(--fs-13); color: var(--ink2); line-height: 1.6; }
-html[data-dense] #hd2 .d-tl-ft .snz-line { display: inline; }
-html[data-dense] #hd2 .d-tl-bar em, html[data-dense] #hd2 .d-tl-bar u { font-style: normal; }
-html[data-dense] #hd2 .d-tl-ft b { color: var(--ink); font-weight: 600; }
-html[data-dense] #hd2 .d-tl-ft .snz-line { margin: 0 0 0 6px; }
-/* 2 等你拍板 */
-html[data-dense] #hd2 .d-needs { min-width: 0; } html[data-dense] #hd2 .d-needs .d-h { padding: 0 4px; margin-bottom: 8px; }
-html[data-dense] #hd2 .d-nr { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
-html[data-dense] #hd2 .d-n { display: flex; flex-direction: column; gap: 8px; min-height: 132px; min-width: 0; padding: 12px 14px; border-radius: 18px; background: var(--panel); border: 1px solid var(--line); box-shadow: 0 1px 2px rgba(0,0,0,.04); }
-html[data-dense] #hd2 .d-n:hover { border-color: var(--line2); background: color-mix(in srgb, var(--panel) 92%, var(--ink)); }
-html[data-dense] #hd2 .d-n.urgent { border-color: color-mix(in srgb, var(--urgent) 45%, var(--line)); }
-html[data-dense] #hd2 .d-n .top { display: flex; align-items: center; justify-content: space-between; }
-html[data-dense] #hd2 .d-n img { width: 28px; height: 28px; border-radius: 50%; object-fit: cover; }
-html[data-dense] #hd2 .d-n em { font-style: normal; font-size: var(--fs-11); padding: 2px 8px; border-radius: 6px; background: var(--chip); color: var(--ink2); }
-html[data-dense] #hd2 .d-n em.u { background: color-mix(in srgb, var(--urgent) 14%, transparent); color: var(--urgent); font-weight: 600; }
-html[data-dense] #hd2 .d-n .t { flex: 1; font-size: var(--fs-15); font-weight: 600; line-height: 1.35; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; overflow-wrap: anywhere; }
-html[data-dense] #hd2 .d-n small { font-size: var(--fs-12); color: var(--dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-@container (max-width: 600px) {
-  html[data-dense] #hd2 .d-nr { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  html[data-dense] #hd2 .d-n:nth-child(3) { display: none; }
-}
-/* 3 今日目标 */
-html[data-dense] #hd2 .d-goals-in { display: grid; grid-template-columns: 140px minmax(0, 1fr); gap: 18px; align-items: start; }
-html[data-dense] #hd2 .d-ring-w { position: relative; width: 132px; height: 132px; margin-top: 6px; }
-html[data-dense] #hd2 .d-ring { width: 132px; height: 132px; display: block; }
-html[data-dense] #hd2 .d-ring circle { fill: none; stroke-width: 9; } html[data-dense] #hd2 .d-ring .trk { stroke: var(--chip); }
-html[data-dense] #hd2 .d-ring .val { stroke: var(--ok); stroke-linecap: round; transition: stroke-dasharray .6s ease; }
-html[data-dense] #hd2 .d-ring-n { position: absolute; inset: 0; display: flex; flex-wrap: wrap; align-content: center; justify-content: center; }
-html[data-dense] #hd2 .d-ring-n b { font-size: var(--fs-34); font-weight: 600; line-height: 1; font-variant-numeric: tabular-nums; }
-html[data-dense] #hd2 .d-ring-n small { font-size: var(--fs-16); color: var(--dim); align-self: flex-end; margin-left: 2px; }
-html[data-dense] #hd2 .d-ring-n span { flex-basis: 100%; text-align: center; font-size: var(--fs-12); color: var(--dim); margin-top: 4px; }
-html[data-dense] #hd2 .d-leg { display: flex; align-items: center; gap: 6px; font-size: var(--fs-12); color: var(--dim); margin-bottom: 4px; }
-html[data-dense] #hd2 .d-leg i { width: 7px; height: 7px; border-radius: 50%; background: var(--line2); margin-left: 6px; } html[data-dense] #hd2 .d-leg i.g { background: var(--ok); margin-left: 0; }
-html[data-dense] #hd2 .d-g { display: flex; gap: 10px; align-items: flex-start; width: 100%; padding: 7px 6px; border-radius: 10px; border-top: 1px solid var(--line); }
-html[data-dense] #hd2 .d-g:hover { background: var(--chip); }
-html[data-dense] #hd2 .d-g .ck { flex: none; width: 18px; height: 18px; margin-top: 1px; border-radius: 50%; border: 1.5px solid var(--line2); display: grid; place-items: center; font-size: var(--fs-11); color: var(--bg); }
-html[data-dense] #hd2 .d-g.ok .ck { background: var(--ok); border-color: var(--ok); } html[data-dense] #hd2 .d-g.ok .t { color: var(--dim); }
-html[data-dense] #hd2 .d-g .t { font-size: var(--fs-14); line-height: 1.35; min-width: 0; overflow-wrap: anywhere; }
-html[data-dense] #hd2 .d-g small { display: block; font-size: var(--fs-12); color: var(--dim); margin-top: 2px; }
-html[data-dense] #hd2 .d-more { font-size: var(--fs-12); color: var(--dim); padding: 6px; border-radius: 8px; } html[data-dense] #hd2 .d-more:hover { background: var(--chip); color: var(--ink); }
-/* 4 此刻在忙 + 待机 */
-html[data-dense] #hd2 .d-w { display: grid; grid-template-columns: 40px minmax(0, 110px) minmax(0, 1fr) auto; gap: 12px; align-items: center; width: 100%; padding: 10px; border-radius: 14px; background: var(--bg2); margin-bottom: 8px; }
-html[data-dense] #hd2 .d-w:hover { background: var(--chip); }
-html[data-dense] #hd2 .d-w img { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; box-shadow: 0 0 0 2px var(--panel), 0 0 0 3.5px var(--ok); }
-html[data-dense] #hd2 .d-w b { font-weight: 600; font-size: var(--fs-14); }
-html[data-dense] #hd2 .d-w small { display: block; font-size: var(--fs-12); color: var(--dim); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-html[data-dense] #hd2 .d-w .who, html[data-dense] #hd2 .d-w .job { min-width: 0; overflow: hidden; }
-html[data-dense] #hd2 .d-w .job { font-size: var(--fs-14); white-space: nowrap; text-overflow: ellipsis; }
-html[data-dense] #hd2 .d-w .tm { text-align: right; } html[data-dense] #hd2 .d-w .tm b { font-size: var(--fs-17); font-variant-numeric: tabular-nums; white-space: nowrap; }
-html[data-dense] #hd2 .d-sb { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; padding-top: 4px; font-size: var(--fs-12); color: var(--dim); }
-html[data-dense] #hd2 .d-sb > span { margin-right: 6px; }
-html[data-dense] #hd2 .d-sb button { border-radius: 50%; padding: 0; transition: transform .18s cubic-bezier(.2,.8,.2,1); }
-html[data-dense] #hd2 .d-sb button:hover { transform: translateY(-2px); }
-html[data-dense] #hd2 .d-sb img { width: 30px; height: 30px; border-radius: 50%; object-fit: cover; display: block; }
-/* 5 small cards */
-html[data-dense] #hd2 .d-minis { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
-html[data-dense] #hd2 .d-mini { display: grid; grid-template-columns: 1fr auto; grid-template-rows: auto auto; gap: 2px 10px; padding: 12px 14px; border-radius: 16px; background: var(--panel); border: 1px solid var(--line); min-width: 0; }
-html[data-dense] #hd2 .d-mini:hover { border-color: var(--line2); background: color-mix(in srgb, var(--panel) 92%, var(--ink)); }
-html[data-dense] #hd2 .d-mini small { font-size: var(--fs-12); color: var(--dim); white-space: nowrap; }
-html[data-dense] #hd2 .d-mini b { grid-row: 2; font-size: var(--fs-24); font-weight: 600; font-variant-numeric: tabular-nums; }
-html[data-dense] #hd2 .d-mini .bars { grid-row: 1 / 3; grid-column: 2; display: flex; align-items: flex-end; gap: 3px; height: 40px; }
-html[data-dense] #hd2 .d-mini .bars i { width: 6px; border-radius: 2px; background: var(--line2); } html[data-dense] #hd2 .d-mini .bars i.on { background: var(--ink); }
-html[data-dense] #hd2 .d-mini .tx { grid-row: 1 / 3; grid-column: 2; align-self: center; font-size: var(--fs-12); color: var(--dim); text-align: right; line-height: 1.5; }
-html[data-dense] #hd2 .d-tail:empty { display: none; }
-/* entrance: once per visit to 首页 (wg-in, staggered); reduced motion: none */
-html[data-dense] #hd2.d-enter > * { animation: wg-in 420ms cubic-bezier(.2,.8,.2,1) backwards; animation-delay: calc(var(--d-i, 0) * 50ms); }
-@media (prefers-reduced-motion: reduce) { html[data-dense] #hd2 *, html[data-dense] #hd2 { transition: none !important; animation: none !important; } }
-
-/* ===== t-home-tight (approved 11-04 14:20): less padding, two-column middle, five sections on the first screen.
-   #pagebody is the size container so #hd2 itself can be a grid driven by its own width. Spacing lives in --d-* on #hd2. ===== */
-html[data-dense] #pagebody { container-type: inline-size; }
-html[data-dense] #hd2 { --d-gap: 10px; --d-pad: 10px 14px; max-width: 1040px; gap: var(--d-gap); padding-bottom: 40px; align-items: start; }
-html[data-dense] #hd2 .d-card { padding: var(--d-pad); border-radius: var(--r-m); }
-html[data-dense] #hd2 .d-h { margin-bottom: 6px; }
-html[data-dense] #hd2 .d-h b { font-size: var(--fs-15); }
-html[data-dense][data-skin="ink"] .ink-hello { max-width: 1040px; margin: 12px auto 8px; display: flex; align-items: baseline; gap: 14px; }
-html[data-dense][data-skin="ink"] .ink-hello b { order: -1; font-size: var(--fs-28); }
-html[data-dense][data-skin="ink"] .ink-hello .ink-eb { flex: 1; margin: 0; }
-/* timeline */
-html[data-dense] #hd2 .d-tl { padding: 8px 14px 9px; }
-html[data-dense] #hd2 .d-tl-bar { margin: 8px 0 27px; }
-html[data-dense] #hd2 .d-tl-bar .now u { box-shadow: -12px 0 0 var(--panel), 12px 0 0 var(--panel); }   /* the pill masks an hour label it lands next to */
-html[data-dense] #hd2 .d-tl-ft { font-size: var(--fs-12); line-height: 1.5; }
-/* needs: empty = one line; cards shorter, two-line titles */
-html[data-dense] #hd2 .d-needs .d-h { margin-bottom: 6px; }
-html[data-dense] #hd2 .d-needs0 .d-h { margin: 0; padding: 2px 4px; }
-html[data-dense] #hd2 .d-ok { font-size: var(--fs-13); color: var(--dim); white-space: nowrap; }
-html[data-dense] #hd2 .d-nr { gap: var(--d-gap); }
-html[data-dense] #hd2 .d-n { min-height: 0; gap: 6px; padding: 10px 12px; border-radius: var(--r-m); }
-html[data-dense] #hd2 .d-n img { width: 22px; height: 22px; }
-html[data-dense] #hd2 .d-n .t { font-size: var(--fs-14); -webkit-line-clamp: 2; }
-/* goals: ring + count in the header, one-line rows */
-html[data-dense] #hd2 .d-goals .d-h { gap: 8px; }
-html[data-dense] #hd2 .d-goals .d-ring { width: 22px; height: 22px; flex: none; }
-html[data-dense] #hd2 .d-goals .d-ring circle { stroke-width: 16; }
-html[data-dense] #hd2 .d-gk { font-size: var(--fs-13); color: var(--dim); font-variant-numeric: tabular-nums; }
-html[data-dense] #hd2 .d-gk b { font-size: var(--fs-15); color: var(--ink); }
-html[data-dense] #hd2 .d-goals .d-leg { margin: 0; }
-html[data-dense] #hd2 .d-gl { display: grid; grid-template-columns: minmax(0, 1fr); }
-html[data-dense] #hd2 .d-g { align-items: center; padding: 6px 6px; border-radius: var(--r-xs); }
-html[data-dense] #hd2 .d-g .ck { width: 16px; height: 16px; margin: 0; font-size: var(--fs-10); }
-html[data-dense] #hd2 .d-g .t { display: flex; align-items: baseline; gap: 10px; flex: 1; font-size: var(--fs-13); }
-html[data-dense] #hd2 .d-g .tt { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-html[data-dense] #hd2 .d-g small { flex: none; margin: 0; font-size: var(--fs-11); }
-html[data-dense] #hd2 .d-more { margin-top: 2px; padding: 4px 6px; }
-html[data-dense] #hd2 .d-g:nth-child(n+9), html[data-dense] #hd2 .d-more.wd { display: none; }   /* narrow: 8 rows; the wide rule below swaps in 12 */
-html[data-dense] #hd2 .d-sbn { display: none; font-style: normal; font-size: var(--fs-12); color: var(--dim); padding: 0 2px; }
-/* right column: working now (stacked rows), standby, minis as a list */
-html[data-dense] #hd2 .d-side { display: grid; gap: var(--d-gap); min-width: 0; }
-html[data-dense] #hd2 .d-w { grid-template-columns: 32px minmax(0, 1fr) auto; grid-template-areas: "img who tm" "img job job"; gap: 0 10px; padding: 8px; margin-bottom: 6px; border-radius: var(--r-s); }
-html[data-dense] #hd2 .d-w img { grid-area: img; width: 32px; height: 32px; align-self: center; }
-html[data-dense] #hd2 .d-w .who { grid-area: who; } html[data-dense] #hd2 .d-w .who small { display: none; }
-html[data-dense] #hd2 .d-w .job { grid-area: job; font-size: var(--fs-12); color: var(--ink2); }
-html[data-dense] #hd2 .d-w .job small { display: none; }
-html[data-dense] #hd2 .d-w .tm { grid-area: tm; } html[data-dense] #hd2 .d-w .tm b { font-size: var(--fs-13); } html[data-dense] #hd2 .d-w .tm small { display: none; }
-html[data-dense] #hd2 .d-sb { flex-wrap: nowrap; gap: 3px; padding-top: 2px; overflow: hidden; } html[data-dense] #hd2 .d-sb > span { white-space: nowrap; } html[data-dense] #hd2 .d-sb img { width: 22px; height: 22px; }
-html[data-dense] #hd2 .d-minis { grid-template-columns: 1fr; gap: 6px; }
-html[data-dense] #hd2 .d-mini { grid-template-columns: auto 1fr auto; grid-template-rows: auto; align-items: center; gap: 10px; padding: 8px 12px; border-radius: var(--r-s); }
-html[data-dense] #hd2 .d-mini small { grid-row: 1; grid-column: 1; }
-html[data-dense] #hd2 .d-mini b { grid-row: 1; grid-column: 3; font-size: var(--fs-17); text-align: right; }
-html[data-dense] #hd2 .d-mini .bars, html[data-dense] #hd2 .d-mini .tx { grid-row: 1; grid-column: 2; justify-self: end; }
-html[data-dense] #hd2 .d-mini .bars { height: 20px; gap: 2px; } html[data-dense] #hd2 .d-mini .bars i { width: 4px; }
-html[data-dense] #hd2 .d-mini .tx { font-size: var(--fs-11); line-height: 1.3; }
-@container (min-width: 520px) {
-  html[data-dense] #hd2 { grid-template-columns: minmax(0, 1fr) minmax(230px, 36%); grid-template-areas: "tl tl" "needs needs" "goals side" "tail tail"; }
-  html[data-dense] #hd2 > [data-sec="tl"] { grid-area: tl; } html[data-dense] #hd2 > [data-sec="needs"] { grid-area: needs; }
-  html[data-dense] #hd2 > [data-sec="goals"] { grid-area: goals; } html[data-dense] #hd2 > [data-sec="side"] { grid-area: side; }
-  html[data-dense] #hd2 > [data-sec="tail"] { grid-area: tail; }
-}
-@container (min-width: 900px) {
-  html[data-dense] #hd2 .d-gl { grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 14px; }
-  html[data-dense] #hd2 .d-g:nth-child(n+9) { display: flex; } html[data-dense] #hd2 .d-more.wd { display: inline-block; } html[data-dense] #hd2 .d-more.nw { display: none; }
-}
-@container (max-width: 639px) {
-  html[data-dense] #hd2 .d-sb button:nth-of-type(n+6) { display: none; } html[data-dense] #hd2 .d-sbn { display: inline; }
-}
-
+/* t-home-style-trim (11-11): the 紧凑 (dense) home and its t-home-tight rules were removed with the dense / app / classic home styles. */
 /* ===== t-sync-pill batch 2: the usage widget. Wider name column, no bottom divider / 「+N more」 (the header's 「全部 N 位 ›」 opens the list),
    rows that do not fit fold away (app.js ruFit), the quota strip is one line and a stale reading is a warn dot before the age. ===== */
 html[data-home="widgets"] .wg-usage .ru-row { grid-template-columns: 22px minmax(0, 96px) 1fr auto; }
@@ -361,10 +243,118 @@ html[data-home="widgets"] .wg-usage .wg-eb:hover .ru-all { background: color-mix
 @media (prefers-reduced-motion: reduce) { html[data-home="widgets"] .wg-usage .wg-eb .ru-all { transition: none; } }
 /* ===== t-ri1109-a P1 (2026-11-09): timeline labels. widgets.js tlPlace() sets .ran (dot, no label, name in title), .l / .r (label starts / ends
    at the tick so it stays inside the card), .lo1 / .lo2 (second / third row) and .rows2 / .rows3 on the bar (room for those rows). ===== */
-html[data-dense] #hd2 .d-tl-bar .rt.ran { top: -1px; width: 8px; height: 8px; margin-left: -4px; border: 0; border-radius: 50%; background: var(--ink2); transition: transform .16s ease; }
-html[data-dense] #hd2 .d-tl-bar .rt.ran:hover { transform: scale(1.4); }
-html[data-dense] #hd2 .d-tl-bar .rt.l u { transform: none; margin-left: -1px; }
-html[data-dense] #hd2 .d-tl-bar .rt.r u { transform: translateX(-100%); }
-html[data-dense] #hd2 .d-tl-bar .rt.lo1 u { top: 34px; } html[data-dense] #hd2 .d-tl-bar .rt.lo2 u { top: 50px; }   /* the tick stays short: a longer one would cut through the row above */
-html[data-dense] #hd2 .d-tl-bar.rows2 { margin-bottom: 43px; } html[data-dense] #hd2 .d-tl-bar.rows3 { margin-bottom: 59px; }
-@media (prefers-reduced-motion: reduce) { html[data-dense] #hd2 .d-tl-bar .rt.ran { transition: none; } }
+
+    /* the tick stays short: a longer one would cut through the row above */
+
+/* t-widget-num-b: 首页 widget 计数 = 小块深色皮标 + 一圈平针（选 B「皮标」，原型 work/t-home-yarn-concept/src/num.css）。
+   只在桌面 + 皮革质感下生效；手机不变。每块颜色跟着该 widget 的皮色走（--wnb-t 线色 / --wnb-d 皮色）。 */
+html[data-home="widgets"] .wg-review  { --wnb-t:#F2955C; --wnb-d:#B4642A; }
+html[data-home="widgets"] .wg-busy    { --wnb-t:#86ACEB; --wnb-d:#28426E; }
+html[data-home="widgets"] .wg-team    { --wnb-t:#E58AA0; --wnb-d:#7A2438; }
+html[data-home="widgets"] .wg-replies { --wnb-t:#F07A66; --wnb-d:#6A1F1C; }
+html[data-home="widgets"] .wg-today   { --wnb-t:#A6CC8A; --wnb-d:#2E6040; }
+html[data-home="widgets"] .wg-week    { --wnb-t:#E6BE82; --wnb-d:#A57A48; }
+html[data-home="widgets"] .wg-ongoing { --wnb-t:#CDD07A; --wnb-d:#66692E; }
+html[data-home="widgets"] .wg-media   { --wnb-t:#A3BCD6; --wnb-d:#4B5D70; }
+html[data-home="widgets"] .wg-usage   { --wnb-t:#D2C8BC; --wnb-d:#4A4541; }
+@media (min-width: 761px) {
+  html[data-home="widgets"][data-texture^="leather"] .wg-eb .n.wnb { display: inline-flex; align-items: center; gap: 5px; }
+  html[data-home="widgets"][data-texture^="leather"] .wg-eb .wnb-unit { font-size: var(--fs-12); font-weight: 500; opacity: .8; }
+  html[data-home="widgets"][data-texture^="leather"] .wg-eb:has(.wnb-num) { min-height: 42px; }
+  /* t-ui-fix-r2 B05: the 42px leather number badge left a medium 等你拍板 / 新回复 21px short for two rows, so the 2nd row's meta line sat on the border */
+  html[data-home="widgets"][data-texture^="leather"] :is(.wg-review, .wg-replies).sz-m .wg-eb:has(.wnb-num) { margin-bottom: 2px; }
+  html[data-home="widgets"][data-texture^="leather"] :is(.wg-review, .wg-replies).sz-m .wg-row { padding-top: 3px; padding-bottom: 3px; }
+  html[data-home="widgets"][data-texture^="leather"] :is(.wg-review, .wg-replies).sz-m .wg-row .t small { margin-top: 0; }
+  /* t-ui-fix-r3 R3-05: same 42px badge on a large 等你拍板: eyebrow + 5 rows + footer came to 369px in a 343px box, so 「最久的已经等了…」 sat cut on the stitched edge */
+  html[data-home="widgets"][data-texture^="leather"] :is(.wg-review, .wg-replies).sz-l .wg-eb:has(.wnb-num) { margin-bottom: 2px; }
+  html[data-home="widgets"][data-texture^="leather"] :is(.wg-review, .wg-replies).sz-l .wg-row { padding-top: 4px; padding-bottom: 4px; }
+  html[data-home="widgets"][data-texture^="leather"] :is(.wg-review, .wg-replies).sz-l .wg-more { padding-top: 4px; }
+  html[data-home="widgets"][data-texture^="leather"] .wg-eb .wnb-num { position: relative; display: inline-grid; place-items: center; min-width: 46px; height: 38px; padding: 0 10px; box-sizing: border-box; border-radius: 7px;
+    font-size: 23px; font-weight: 600; line-height: 1; color: #FFF1DA; letter-spacing: 0; text-shadow: 0 1px 0 rgba(0,0,0,.45);
+    background: color-mix(in srgb, var(--wnb-d, #4A4541) 78%, #000) url(/static/leather/leather-saddle-d.webp) center/220px; background-blend-mode: multiply;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.12), inset 0 -2px 0 rgba(0,0,0,.35), 0 3px 6px rgba(0,0,0,.4); }
+  html[data-home="widgets"][data-texture^="leather"] .wg-eb .wnb-num::before { content: ""; position: absolute; inset: 4px; border-radius: 4px; border: 1.5px dashed color-mix(in srgb, var(--wnb-t, #D2C8BC) 80%, transparent); pointer-events: none; }
+}
+
+/* t-soul-widget (option B, user 11-11 00:43): Usage widget lower half = 「Soul · quota per model」, one row per model (App.soulHTML); top-bar Soul orb hidden on the widget home.
+   Mock: work/t-soul-widget/src/soul.css (v4-* -> sl-*). Phone keeps its orb and its ru-q strip. */
+html[data-home="widgets"] .wg-usage .sl { flex: none; margin-top: auto; cursor: pointer; }
+html[data-home="widgets"] .wg-usage .ru-list + .sl, html[data-home="widgets"] .wg-usage .ru-wait + .sl { margin-top: auto; }
+html[data-home="widgets"] .wg-usage .ru-wait { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }   /* t-ui-fix-r2 audit P2-9: the error line was cut mid-word with no … */
+html[data-home="widgets"] .sl-sep { display: flex; align-items: center; gap: 8px; margin: 12px 0 8px; color: var(--ink2); font-size: var(--fs-13); font-weight: 600; }
+html[data-home="widgets"] .sl-sep::after { content: ""; flex: 1; border-top: 1px dashed color-mix(in srgb, var(--ink) 18%, transparent); }
+html[data-home="widgets"] .sl-sep span { color: var(--dim); font-weight: 400; font-size: var(--fs-12); }
+html[data-home="widgets"] .sl-ms { display: flex; flex-direction: column; gap: 10px; }
+html[data-home="widgets"] .sl-m { display: grid; grid-template-columns: 30px minmax(0, 1fr) auto; grid-template-rows: auto auto; column-gap: 10px; row-gap: 5px; align-items: center; }
+html[data-home="widgets"] .sl-m + .sl-m { padding-top: 9px; border-top: 1px dashed color-mix(in srgb, var(--ink) 12%, transparent); }
+html[data-home="widgets"] .sl-sw { grid-row: 1 / span 2; width: 30px; height: 36px; }
+html[data-home="widgets"] .sl-sw rect.cl { fill: color-mix(in srgb, #000 28%, transparent); stroke: color-mix(in srgb, #E6BE82 45%, transparent); stroke-width: .8; stroke-dasharray: 2 1.6; }
+html[data-home="widgets"] .sl-sw path { fill: none; stroke-width: 1.6; stroke-linecap: round; }
+html[data-home="widgets"] .sl-sw path.on { stroke: #E9B65A; } html[data-home="widgets"] .sl-sw path.off { stroke: color-mix(in srgb, var(--ink) 18%, transparent); }
+html[data-home="widgets"] .sl-mn { display: flex; align-items: baseline; gap: 7px; min-width: 0; white-space: nowrap; }
+html[data-home="widgets"] .sl-mn b { color: var(--ink); font-weight: 600; font-size: var(--fs-14, 14px); }
+html[data-home="widgets"] .sl-mn small { color: var(--dim); font-size: var(--fs-12); overflow: hidden; text-overflow: ellipsis; }
+html[data-home="widgets"] .sl-full { color: var(--dim); font-size: var(--fs-12); white-space: nowrap; text-align: right; }
+html[data-home="widgets"] .sl-full b { color: var(--ink2); font-weight: 600; font-variant-numeric: tabular-nums; }
+html[data-home="widgets"] .sl-full .sl-old { font-style: normal; color: var(--warn); display: inline-flex; align-items: center; gap: 5px; }
+html[data-home="widgets"] .sl-full .sl-old::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--warn); }
+html[data-home="widgets"] .sl-bars { grid-column: 2 / span 2; display: grid; grid-template-columns: 1fr 1fr; gap: 14px; align-items: center; }
+html[data-home="widgets"] .sl-b { display: grid; grid-template-columns: minmax(0, auto) minmax(0, 1fr) max-content; align-items: center; gap: 7px; font-size: var(--fs-12); color: var(--dim); white-space: nowrap; min-width: 0; }
+html[data-home="widgets"] .sl-b > span { overflow: hidden; text-overflow: ellipsis; }   /* t-ui-fix-r2 B07: the % never clips; the bar, then the label, give way */
+html[data-home="widgets"] .sl-b i { position: relative; height: 6px; min-width: 24px; border-radius: 3px; background: color-mix(in srgb, #000 30%, transparent); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ink) 8%, transparent); overflow: hidden; }
+html[data-home="widgets"] .sl-b i em { position: absolute; inset: 0 auto 0 0; width: calc(var(--w) * 100%); border-radius: 3px; background: repeating-linear-gradient(110deg, #E9B65A 0 4px, #C9963F 4px 6px); }
+html[data-home="widgets"] .sl-b > b { color: var(--ink); font-weight: 600; font-size: var(--fs-14, 14px); font-variant-numeric: tabular-nums; min-width: 34px; text-align: right; }
+html[data-home="widgets"] .sl-b > b small { font-size: var(--fs-10, 10px); color: var(--dim); font-weight: 500; }
+html[data-home="widgets"] .sl-rd { font-size: var(--fs-12); color: var(--dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-align: right; }
+/* old reading (Claude past USAGE_STALE, Codex past 24 h, or never read): the whole row greys out, bars lose their colour */
+/* t-ui-fix-r5 R5-02: no whole-row opacity (2.9–4.2:1); text goes to --dim at full opacity, only the bars / switch art fade */
+html[data-home="widgets"] .sl-m.old :is(.sl-mn b, .sl-b > b, .sl-full b, .sl-b > span) { color: var(--dim); }
+html[data-home="widgets"] .sl-m.old :is(.sl-sw, .sl-b i) { opacity: .55; }
+html[data-home="widgets"] .sl-m.old .sl-b i em { background: color-mix(in srgb, var(--ink) 30%, transparent); }
+html[data-home="widgets"] .sl-m.old .sl-sw path.on { stroke: color-mix(in srgb, var(--ink) 45%, transparent); }
+html[data-home="widgets"] .sl-m.old .sl-full .sl-old { color: var(--dim); } html[data-home="widgets"] .sl-m.old .sl-full .sl-old::before { background: var(--dim); }
+html[data-home="widgets"][data-theme="light"] .sl-sw path.on, html[data-home="widgets"][data-theme="white"] .sl-sw path.on { stroke: #B8862E; }
+@media (min-width: 761px) { html[data-home="widgets"] #stamina { display: none; } html[data-home="widgets"] #hdrctrl { grid-column: -2 / -1; } }   /* hdrctrl keeps the right end without the orb */
+html[data-home="widgets"] .sl-m :is(.sl-sw, .sl-b i) { transition: opacity .3s ease; } html[data-home="widgets"] .sl-m b { transition: color .3s ease; }
+@media (prefers-reduced-motion: reduce) { html[data-home="widgets"] .sl-m :is(.sl-sw, .sl-b i, b) { transition: none; } }
+
+/* ===== t-widget-drag (11-11): iOS-style drag to reorder (widgets.js DR). Editing: the tiles give one short wobble as they come loose (independent
+   rotate, so it never fights the FLIP transform; not endless — the home keeps its no-endless-animation rule), the cursor says grab. The held tile lifts
+   (scale + drop shadow via filter: leather / knit own box-shadow and outline with !important), follows the pointer through `translate`, and its
+   neighbours slide with a WAAPI transform. The empty slot it leaves is the drop target, as on iOS. Reduced motion: no wobble, no lift scale. ===== */
+html[data-home="widgets"] #wg.edit .wg { cursor: grab; touch-action: none; -webkit-user-select: none; user-select: none; animation: wgd-loose 420ms ease-in-out 1; }
+html[data-home="widgets"] #wg.edit.wg-enter .wg { animation: wg-in 420ms cubic-bezier(.2,.8,.2,1) backwards, wgd-loose 420ms ease-in-out 1; animation-delay: calc(var(--wg-i, 0) * 45ms), 0ms; }
+@keyframes wgd-loose { 0%, 100% { rotate: 0deg; } 25% { rotate: -.7deg; } 60% { rotate: .55deg; } 85% { rotate: -.2deg; } }
+html[data-home="widgets"] #wg.edit .wg:nth-child(2n) { animation-delay: 60ms; }
+html[data-home="widgets"] #wg.edit .wg.wg-lift, html[data-home="widgets"] #wg .wg.wg-lift { z-index: 30; scale: 1.04; cursor: grabbing; transition: none; animation: none;
+  filter: drop-shadow(0 18px 26px rgba(0,0,0,.34)) drop-shadow(0 4px 8px rgba(0,0,0,.18)); }
+html.wg-dragging, html.wg-dragging * { cursor: grabbing !important; -webkit-user-select: none !important; user-select: none !important; }
+@media (prefers-reduced-motion: reduce) {
+  html[data-home="widgets"] #wg.edit .wg { animation: none; }
+  html[data-home="widgets"] #wg .wg.wg-lift { scale: 1; }
+}
+
+/* t-ri1111-a P1: in the M tile the two Soul rows (≈50px each) pushed Codex 30px past the bottom edge and squeezed the role list to 0.
+   M = one line per model: small swatch, name, bars; reset time / last read / plan stay in the row's hover title. L keeps two-line rows. */
+html[data-home="widgets"] .wg-usage.sz-m .sl-sep { margin: 6px 0 5px; }
+html[data-home="widgets"] .wg-usage.sz-m .sl-ms { gap: 5px; }
+html[data-home="widgets"] .wg-usage.sz-m .sl-m { grid-template-columns: 14px 58px minmax(0, 1fr); grid-template-rows: auto; row-gap: 0; column-gap: 8px; }
+html[data-home="widgets"] .wg-usage.sz-m .sl-m + .sl-m { padding-top: 5px; }
+html[data-home="widgets"] .wg-usage.sz-m .sl-sw { grid-row: 1; width: 14px; height: 17px; }
+html[data-home="widgets"] .wg-usage.sz-m :is(.sl-full, .sl-mn small, .sl-rd) { display: none; }
+html[data-home="widgets"] .wg-usage.sz-m .sl-bars { grid-column: 3; grid-template-columns: 1fr 1fr; gap: 12px; }
+/* t-ui-fix-r3 R3-03/04: with a wide chat the main column can drop to 460px, and four columns made every widget ~180px wide (team row,
+   job pill and captions spilled). Under 640px the grid has two columns, so M and L widgets run the full width; rows stay 172px. */
+@container (max-width: 639px) { html[data-home="widgets"] .wg-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); grid-auto-rows: 172px; } }
+/* R3-04: in a narrow 此刻在忙 the job pill gave all its room to the time (flex:none) and the title shrank to one glyph; both now share it, time ellipsizes last */
+html[data-home="widgets"] .wg-job span { min-width: 3em; }
+html[data-home="widgets"] .wg-job b { flex: 0 1 auto; min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+/* R3-13: the P2-1 veil alone left the ← → / S M L pills on the last text line (「近 24 小时交接」, the job time). In edit mode each tile
+   keeps a 34px strip at the bottom for them, so footers and bottom-aligned lines move up out from under the pills */
+html[data-home="widgets"] #wg.edit .wg:not(.hero) { padding-bottom: 34px; }
+html[data-home="widgets"] #wg.edit .wg.hero .wg-in { padding-bottom: 38px; }
+html[data-home="widgets"] .wg:not(.hero), html[data-home="widgets"] .wg.hero .wg-in { transition: padding-bottom 260ms cubic-bezier(.2,.8,.2,1); }
+@media (prefers-reduced-motion: reduce) { html[data-home="widgets"] .wg:not(.hero), html[data-home="widgets"] .wg.hero .wg-in { transition: none; } }
+
+/* t-ui-fix-r4 (R4-06): the red 待验收 tag: text leans toward --ink (same red family) so it reads on its own tint in every theme */
+html[data-home="widgets"] .wg-tg.hot { color: color-mix(in srgb, var(--dot) 55%, var(--ink)); }

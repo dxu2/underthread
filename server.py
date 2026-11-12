@@ -412,11 +412,14 @@ def pending_count(st):
     return len(on) + len(nr)
 
 
-def notify(n, only=None):
+def notify(n, only=None, en=None):
     """Queue a notification and wake the subscribed devices (all, or only those whose endpoint is in `only`).
     The device fetches the text from /api/push/latest?endpoint=… (t-imp29-p1: per device, since tiers make devices differ)."""
     n = dict(n, id=n.get("id") or uuid.uuid4().hex[:10], t=S.now())
     n.setdefault("tag", n["id"])
+    if en:   # t-i18n-b: devices whose UI is English get the English twin (same id / tag / url)
+        en = dict(n, **en, lang="en")
+        n.setdefault("lang", "zh")
     with _push["lock"]:
         _push["queue"].append(n)
         del _push["queue"][:-30]
@@ -427,7 +430,7 @@ def notify(n, only=None):
             if only is not None and ep not in only:
                 keep.append(s)
                 continue
-            _push["dev"][ep] = n
+            _push["dev"][ep] = en if en and _row_lang(s) == "en" else n
             code = WP.send(s["sub"], s.get("subject") or "mailto:underthread@example.com")
             codes.append(code)
             _plog(f"send {_ep_short(ep)} -> {code} ({n.get('title', '')[:30]})")
@@ -486,7 +489,7 @@ def in_quiet(p, now=None):
     return (p["from"] <= h < p["to"]) if p["from"] < p["to"] else (h >= p["from"] or h < p["to"])
 
 
-def digest_payload(st, held):
+def digest_payload(st, held, en=False):
     """One push for everything held during quiet hours: 「夜里 N 张卡有进展 · M 件等你拍板」."""
     items, loose = [], 0
     for m in held:
@@ -497,13 +500,17 @@ def digest_payload(st, held):
             loose += 1
     byid = {i["id"]: i for i in st.get("items", [])}
     wait = pending_count(st)
-    head = (f"夜里 {len(items)} 张卡有进展" if items else f"夜里 {len(held)} 条新消息") + (f" · {wait} 件等你拍板" if wait else "")
-    titles = [byid[i]["title"] for i in items if i in byid][:3]
-    body = " · ".join(t[:18] for t in titles) or held[-1]["text"][:60]
+    if en:   # t-i18n-b
+        head = (f"Overnight: {len(items)} card{'s' if len(items) != 1 else ''} moved" if items else f"Overnight: {len(held)} new message{'s' if len(held) != 1 else ''}") \
+            + (f" · {wait} waiting on you" if wait else "")
+    else:
+        head = (f"夜里 {len(items)} 张卡有进展" if items else f"夜里 {len(held)} 条新消息") + (f" · {wait} 件等你拍板" if wait else "")
+    titles = [(en and byid[i].get("title_en")) or byid[i]["title"] for i in items if i in byid][:3]
+    body = " · ".join(t[:28 if en else 18] for t in titles) or (push_text_en(held[-1]["text"]) if en else held[-1]["text"])[:60]
     if loose and items:
-        body += f"（另有 {loose} 条消息）"
+        body += f" (+{loose} more message{'s' if loose != 1 else ''})" if en else f"（另有 {loose} 条消息）"
     nid = uuid.uuid4().hex[:10]
-    return {"id": nid, "title": head, "body": body, "url": f"/#page=mail&push={nid}", "digest": True}
+    return {"id": nid, "title": head, "body": body, "url": f"/#page=mail&push={nid}", "digest": True, "lang": "en" if en else "zh"}
 
 
 def push_history(endpoint, hours=24):
@@ -549,9 +556,37 @@ def _row_update(endpoint, fn):
         return row
 
 
-def _agent_name(st, aid):
+def _agent_name(st, aid, en=False):
     a = (st.get("agents") or {}).get(aid) or {}
-    return a.get("name") or aid or "Underthread"
+    return (en and a.get("name_en")) or a.get("name") or aid or "Underthread"
+
+
+# t-i18n-b: each push_subs.json row carries the device's UI language ("lang": zh|en, sent by push.js on subscribe and on a switch).
+# Mailbox text is stored in Chinese (push_class / _mail_target branch on the prefixes), so English pushes translate the known
+# server-written shapes here; web/app.js srvT() does the same for the page. Anything else (agents' own words) passes through.
+PUSH_EN = [
+    (re.compile(r"^待审核\s*[:：]\s*(.*?)(（(?:(\d+) 天没回复|推迟到点)）)?$", re.S),
+     lambda m: m.group(1) + ((f" (no reply in {m.group(3)} days)" if m.group(3) else " (snooze over)") if m.group(2) else "")),
+    (re.compile(r"^新规则提议 · ([^:\s]+): (.*)$", re.S), lambda m: f"Rule proposal · {m.group(1)}: {m.group(2)}"),
+    (re.compile(r"^管家休眠 · (\d\d:\d\d) 复活。(.*?)；新指令会排队，醒来自动处理。$", re.S),
+     lambda m: f"Manager asleep · back at {m.group(1)}. {'Usage is near the limit' if m.group(2) == '用量快到上限' else m.group(2)}; new orders queue up and run on wake."),
+    (re.compile(r"^⏰ 提醒：(.*?)(?:（晚了 (\d+) 分钟，看板刚恢复）)?$", re.S),
+     lambda m: f"⏰ Reminder: {m.group(1)}" + (f" ({m.group(2)} min late, the dashboard just came back)" if m.group(2) else "")),
+    (re.compile(r"^管家[:：]\s*(.*)$", re.S), lambda m: m.group(1)),
+    (re.compile(r"^日报 · (.*)$", re.S), lambda m: "Daily report · " + re.sub(r"（周([一二三四五六日])）", lambda d: f" ({['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']['一二三四五六日'.index(d.group(1))]})", m.group(1))),
+]
+
+
+def push_text_en(text):
+    for rx, fn in PUSH_EN:
+        m = rx.match(text or "")
+        if m:
+            return fn(m)
+    return text or ""
+
+
+def _row_lang(row):
+    return "en" if (row or {}).get("lang") == "en" else "zh"
 
 
 def _mail_target(st, m):
@@ -571,7 +606,7 @@ def _mail_target(st, m):
     return "page=mail"
 
 
-def push_payload(st, new):
+def push_payload(st, new, en=False):
     """Build the notification for a batch of new mailbox entries. url = /#<target>&mail=<ids>&push=<id>; push= marks it as a push tap (the page routes once, marks those entries read and clears the hash)."""
     nid = uuid.uuid4().hex[:10]
     targets = [_mail_target(st, m) for m in new]
@@ -581,14 +616,20 @@ def push_payload(st, new):
     if len(new) == 1:
         m = new[0]
         review = m["text"].startswith("待审核")
+        if en:   # t-i18n-b
+            it = next((i for i in st.get("items", []) if i.get("id") == m.get("item")), None) if review else None
+            body = (it.get("title_en") or push_text_en(m["text"])) if it and it.get("title_en") else push_text_en(m["text"])
+            return {"id": nid, "title": "For your review" if review else _agent_name(st, m.get("agent"), True), "body": body, "url": url, "lang": "en"}
         return {"id": nid, "title": "待你审核" if review else _agent_name(st, m.get("agent")),
-                "body": m["text"].replace("待审核: ", "", 1) if review else m["text"], "url": url}
+                "body": m["text"].replace("待审核: ", "", 1) if review else m["text"], "url": url, "lang": "zh"}
     who = []
     for m in new:
-        n = _agent_name(st, m.get("agent"))
+        n = _agent_name(st, m.get("agent"), en)
         if n not in who:
             who.append(n)
-    return {"id": nid, "title": f"{len(new)} 条新动态", "body": "、".join(who[:4]) + " · " + new[-1]["text"][:60], "url": url}
+    if en:
+        return {"id": nid, "title": f"{len(new)} new updates", "body": ", ".join(who[:4]) + " · " + push_text_en(new[-1]["text"])[:60], "url": url, "lang": "en"}
+    return {"id": nid, "title": f"{len(new)} 条新动态", "body": "、".join(who[:4]) + " · " + new[-1]["text"][:60], "url": url, "lang": "zh"}
 
 
 def push_loop():
@@ -613,11 +654,13 @@ def push_tick(st, new, now=None):
     """One pass: route `new` mailbox entries per device, and send digests for devices whose quiet hours just ended."""
     now = now or dt.datetime.now()
     plan = {}    # endpoint -> entries to send now
+    langs = {}   # t-i18n-b: endpoint -> "en" | "zh"
     with _push["lock"]:
         subs = _subs()
         dirty = False
         for row in subs:
             ep, p = row["sub"].get("endpoint", ""), push_prefs(row)
+            langs[ep] = _row_lang(row)
             quiet = in_quiet(p, now)
             for m in new:
                 cls, urgent = push_class(st, m)
@@ -648,10 +691,10 @@ def push_tick(st, new, now=None):
     for ep, ms in plan.items():
         if ep in digests:
             byid = {m["id"]: m for m in st.get("mail", [])}
-            n = digest_payload(st, [byid[i] for i in digests[ep]] + ms)
+            n = digest_payload(st, [byid[i] for i in digests[ep]] + ms, langs.get(ep) == "en")
             _plog(f"digest {_ep_short(ep)} {len(digests[ep])} held + {len(ms)} new")
         elif ms:
-            n = push_payload(st, ms)
+            n = push_payload(st, ms, langs.get(ep) == "en")
         else:
             continue
         _plog(f"target {n['url']}")
@@ -788,12 +831,13 @@ def _tpl_list():
             t = json.load(open(p, encoding="utf-8"))
         except ValueError:
             continue
-        vs = [{"key": v.get("key"), "label": v.get("label") or v.get("key"), "tint": v.get("tint") or "#6f7f8f",
-               "style": (v.get("voice") or {}).get("style", ""), "habits": (v.get("voice") or {}).get("habits", [])}
+        vs = [{"key": v.get("key"), "label": v.get("label") or v.get("key"), "label_en": v.get("label_en") or "", "tint": v.get("tint") or "#6f7f8f",
+               "style": (v.get("voice") or {}).get("style", ""), "habits": (v.get("voice") or {}).get("habits", []),
+               "style_en": v.get("style_en") or "", "sample_en": v.get("sample_en") or ""}   # t-i18n-c
               for v in t.get("variants") or [] if v.get("key")]
         out.append({"key": job, "cat": t.get("cat") or "", "job": t.get("job") or t.get("title") or job, "title": t.get("title") or "",
                     "title_en": t.get("title_en") or "", "duty": t.get("duty") or "", "duty_en": t.get("duty_en") or "",
-                    "model": t.get("model") or "", "starters": (t.get("starters") or [])[:3], "variants": vs,
+                    "model": t.get("model") or "", "starters": (t.get("starters") or [])[:3], "starters_en": (t.get("starters_en") or [])[:3], "variants": vs,
                     "avatar": os.path.isfile(os.path.join(TPL_DIR, job, "avatar.png"))})
     return out
 
@@ -924,9 +968,15 @@ def interview(body):
     if not v:
         raise ValueError("no such personality")
     q = load_json(os.path.relpath(HR_Q, ROOT), {})
-    fill = lambda x: str(x).replace("{job}", t["job"]).replace("{variant}", v["label"]).replace("{duty}", t["duty"])
-    opening = fill(q.get("opening") or "这位{job}（{variant}）我先替你把把关。第一件事：你招 TA 主要替你干什么？")
-    opts = [fill(o) for o in (q.get("first_options") or ["{duty}"]) if fill(o).strip()][:3]
+    en = body.get("lang") == "en" and bool(q.get("opening_en"))   # t-i18n-c: the browser sends its UI language; English lines from interview.json
+    if en:
+        fill = lambda x: str(x).replace("{job}", t.get("title_en") or t["job"]).replace("{variant}", v.get("label_en") or v["label"]).replace("{duty}", t.get("duty_en") or t["duty"])
+        opening = fill(q["opening_en"])
+        opts = [fill(o) for o in (q.get("first_options_en") or ["{duty}"]) if fill(o).strip()][:3]
+    else:
+        fill = lambda x: str(x).replace("{job}", t["job"]).replace("{variant}", v["label"]).replace("{duty}", t["duty"])
+        opening = fill(q.get("opening") or "这位{job}（{variant}）我先替你把把关。第一件事：你招 TA 主要替你干什么？")
+        opts = [fill(o) for o in (q.get("first_options") or ["{duty}"]) if fill(o).strip()][:3]
     with S.mutate() as st:
         busy = S.open_interview(st)
         if busy:
@@ -936,7 +986,8 @@ def interview(body):
         while S.find_item(st, cid, restore=False) or S.archive_find(cid):
             cid, n = f"{base}-{n}", n + 1
         it = S.upsert_item(st, {"id": cid, "title": f"面试：{t['job']}（{v['label']}）",
-                                "summary": f"HR 在私聊里和你一问一答，问清五件事后出入职草案。模板 {t['key']} · 性格 {v['key']}。",
+                                "title_en": f"Interview: {t.get('title_en') or t['job']} ({v.get('label_en') or v['label']})",   # t-i18n-b
+                                "summary": f"HR在私聊里和你一问一答，问清五件事后出入职草案。模板 {t['key']} · 性格 {v['key']}。",
                                 "category": "side", "owner": HR_ID, "stage": "doing", "kind": "task"}, who="me")
         it["hire"] = {"job": t["key"], "variant": v["key"], "job_name": t["job"], "variant_label": v["label"], "tint": v["tint"],
                       "status": "asking", "turns": 0, "filled": 0}
@@ -951,7 +1002,11 @@ def interview(body):
         json.dump({"item": cid, "job": t["key"], "job_name": t["job"], "variant": v["key"], "variant_label": v["label"],
                    "duty": t["duty"], "starters": t.get("starters", []), "style": v.get("style", ""),
                    "slots": {x["key"]: None for x in slots if x.get("key")}, "turns": 0, "max_turns": q.get("max_turns", 8),
-                   "opening": opening}, f, ensure_ascii=False, indent=2)
+                   "opening": opening, **({"lang": "en", "lang_note": q.get("lang_note_en") or "", "job_name_en": t.get("title_en") or "",
+                                           "variant_label_en": v.get("label_en") or "", "duty_en": t.get("duty_en") or "",
+                                           "starters_en": t.get("starters_en", []), "style_en": v.get("style_en") or "",
+                                           "asks_en": {x["key"]: x.get("ask_en") or x.get("ask") for x in slots if x.get("key")}} if en else {})},
+                  f, ensure_ascii=False, indent=2)
     return {"ok": True, "item": cid}
 
 
@@ -1065,17 +1120,23 @@ def transfer_start(body):
     r = _role(rid)
     if not r or r.get("enabled") is False:
         raise ValueError("这个角色不在岗")
-    q = (load_json(os.path.relpath(HR_Q, ROOT), {}) or {}).get("transfer") or {}
+    q0 = load_json(os.path.relpath(HR_Q, ROOT), {}) or {}
+    q = q0.get("transfer") or {}
     name = r.get("name") or rid
-    opening = str(q.get("opening") or "{name} 想改哪块？可以多选，也可以直接说想怎么改。").replace("{name}", name)
-    opts = [str(o).replace("{name}", name) for o in (q.get("options") or ["职责", "说话味道", "名字称呼", "工具", "加一条红线"])][:5]
+    en = body.get("lang") == "en" and bool(q.get("opening_en"))   # t-i18n-c
+    if en:
+        opening = str(q["opening_en"]).replace("{name}", r.get("name_en") or name)
+        opts = [str(o).replace("{name}", r.get("name_en") or name) for o in (q.get("options_en") or q.get("options") or [])][:5]
+    else:
+        opening = str(q.get("opening") or "{name} 想改哪块？可以多选，也可以直接说想怎么改。").replace("{name}", name)
+        opts = [str(o).replace("{name}", name) for o in (q.get("options") or ["职责", "说话味道", "名字称呼", "工具", "加一条红线"])][:5]
     with S.mutate() as st:
         busy = S.open_interview(st)
         if busy:
             return {"ok": False, "busy": busy["id"], "title": busy.get("title", ""), "error": _busy_msg(busy)}
         cid = _uniq_id(st, f"xfer-{rid}-{dt.datetime.now().strftime('%m%d-%H%M')}")
-        it = S.upsert_item(st, {"id": cid, "title": f"调岗：{name}",
-                                "summary": f"HR 在私聊里问清改哪块、改成什么（≤{XFER_MAX} 轮），出前后对比草案；你点「批准调岗」才落地。"
+        it = S.upsert_item(st, {"id": cid, "title": f"调岗：{name}", "title_en": f"Transfer: {r.get('name_en') or name}",   # t-i18n-b
+                                "summary": f"HR在私聊里问清改哪块、改成什么（≤{XFER_MAX} 轮），出前后对比草案；你点「批准调岗」才落地。"
                                            "Confirmed rules 不动，新红线变成规则提议。",
                                 "category": "side", "owner": HR_ID, "stage": "doing", "kind": "task"}, who="me")
         it["hire"] = {"mode": "transfer", "target": rid, "job_name": name, "variant_label": r.get("title") or "",
@@ -1095,7 +1156,8 @@ def transfer_start(body):
                               "md_sections": {t: b.strip() for k, (t, b) in enumerate(secs) if t and k not in locked},
                               "locked_sections": [secs[k][0] for k in sorted(locked)]},
                    "after": {"roster": {}, "md_sections": {}, "lessons": []},
-                   "fields": list(NRm.XFER_FIELDS), "turns": 0, "max_turns": XFER_MAX, "opening": opening}, f, ensure_ascii=False, indent=2)
+                   "fields": list(NRm.XFER_FIELDS), "turns": 0, "max_turns": XFER_MAX, "opening": opening,
+                   **({"lang": "en", "lang_note": q0.get("lang_note_en") or ""} if en else {})}, f, ensure_ascii=False, indent=2)
     return {"ok": True, "item": cid}
 
 
@@ -1236,7 +1298,7 @@ def retire_role(body):
                 l["status"], l["parked"] = "parked", S.now()
                 rec["lessons"].append(l["id"])
         rcid = _uniq_id(st, f"retire-{rid}-{dt.datetime.now().strftime('%m%d')}")
-        card = S.upsert_item(st, {"id": rcid, "title": f"退休：{name}", "category": "side", "owner": HR_ID if HR_ID in st["agents"] else "manager",
+        card = S.upsert_item(st, {"id": rcid, "title": f"退休：{name}", "title_en": f"Retired: {(_role(rid) or {}).get('name_en') or name}", "category": "side", "owner": HR_ID if HR_ID in st["agents"] else "manager",
                                   "stage": "done", "kind": "task",
                                   "summary": f"{name}（{rid}）软退休：roles/{rid}.md、记忆、交接单、声音、头像都留着，返聘就回来。"}, who="me")
         card["retire"] = rec
@@ -1550,6 +1612,22 @@ def act(body):
                 if body.get("all") or m["id"] in ids:
                     m["read"] = True
 
+        elif k == "widget_layout":   # t-widget-drag: the desktop widget home's order / sizes, shared by every browser (meta.widgets)
+            if body.get("reset"):
+                st["meta"]["widgets"] = {"layout": None, "at": S.now()}   # explicit default: an old per-browser layout must not re-upload over it
+            else:
+                lay = body.get("layout")
+                if not isinstance(lay, list) or not 0 < len(lay) <= 24:
+                    raise ValueError("bad layout")
+                out, seen = [], set()
+                for x in lay:
+                    if not (isinstance(x, list) and len(x) == 2 and isinstance(x[0], str) and re.fullmatch(r"[a-z]{1,16}", x[0])
+                            and x[1] in ("s", "m", "l") and x[0] not in seen):
+                        raise ValueError("bad layout entry")
+                    seen.add(x[0])
+                    out.append([x[0], x[1]])
+                st["meta"]["widgets"] = {"layout": out, "at": S.now()}
+
         elif k == "stamina":
             st["meta"]["stamina"] = {"pct": int(body["pct"]), "note": body.get("note", "手动"), "at": S.now()}
 
@@ -1630,7 +1708,8 @@ def act(body):
             if k in ("approve", "reject", "done", "comment", "answer", "reopen", "set_stage", "archive"):   # ri1103-P2: you dealt with it
                 it.pop("snooze", None)
                 it.pop("snoozed", None)
-        S.add_log(st, me, f"{k}" + (f" {it['id']}" if it else ""), it["id"] if it else None)
+        if k != "widget_layout":   # t-widget-drag: dragging tiles is not activity worth a log line
+            S.add_log(st, me, f"{k}" + (f" {it['id']}" if it else ""), it["id"] if it else None)
 
     hire_res = None
     if hire_go:
@@ -1920,8 +1999,80 @@ def stage_seats(agents):
     return out
 
 
+# t-soul-widget: Codex quota for the Usage widget's Soul rows. Codex writes a rate_limits snapshot into its session log
+# (~/.codex/sessions/YYYY/MM/DD/rollout-*.jsonl) each time it runs; we read the newest one. Read only the file tail, cache by
+# (path, mtime, size), rescan the folders at most once a minute, and return None on any problem (the row then says "not read").
+_CODEX = {"scan": 0.0, "files": [], "sig": None, "val": None}
+CODEX_SESS = os.path.expanduser("~/.codex/sessions")
+
+
+def _codex_files():
+    out = []
+    try:
+        for y in sorted((d for d in os.listdir(CODEX_SESS) if d.isdigit()), reverse=True):
+            for m in sorted((d for d in os.listdir(os.path.join(CODEX_SESS, y)) if d.isdigit()), reverse=True):
+                for d in sorted((d for d in os.listdir(os.path.join(CODEX_SESS, y, m)) if d.isdigit()), reverse=True):
+                    p = os.path.join(CODEX_SESS, y, m, d)
+                    fs = sorted((f for f in os.listdir(p) if f.startswith("rollout-") and f.endswith(".jsonl")), reverse=True)
+                    out += [os.path.join(p, f) for f in fs]
+                    if len(out) >= 12:
+                        return out
+    except OSError:
+        pass
+    return out
+
+
+def _codex_tail(path):
+    try:
+        with open(path, "rb") as f:
+            f.seek(0, 2)
+            n = f.tell()
+            f.seek(max(0, n - 512 * 1024))
+            lines = f.read().decode("utf-8", "replace").splitlines()
+    except OSError:
+        return None
+    for ln in reversed(lines):
+        if '"rate_limits"' not in ln:
+            continue
+        try:
+            d = json.loads(ln)
+        except ValueError:
+            continue
+        rl = (d.get("payload") or {}).get("rate_limits") if isinstance(d, dict) else None
+        p = (rl or {}).get("primary") if isinstance(rl, dict) else None
+        if not isinstance(p, dict) or p.get("used_percent") is None:
+            continue
+        ra = p.get("resets_at")
+        return {"plan": rl.get("plan_type") or "", "used": round(float(p["used_percent"]), 1),
+                "window_min": p.get("window_minutes"),
+                "resets_at": dt.datetime.fromtimestamp(ra).astimezone().isoformat(timespec="seconds") if isinstance(ra, (int, float)) else None,
+                "at": d.get("timestamp") or dt.datetime.fromtimestamp(os.path.getmtime(path)).astimezone().isoformat(timespec="seconds")}
+    return None
+
+
+def codex_quota():
+    try:
+        now = time.time()
+        if now - _CODEX["scan"] > 60:
+            _CODEX["scan"], _CODEX["files"] = now, _codex_files()
+        fs = _CODEX["files"]
+        sig = tuple((f, os.path.getmtime(f), os.path.getsize(f)) for f in fs[:1] if os.path.exists(f)) + (len(fs),)
+        if sig == _CODEX["sig"]:
+            return _CODEX["val"]
+        val = None
+        for f in fs:
+            val = _codex_tail(f)
+            if val:
+                break
+        _CODEX["sig"], _CODEX["val"] = sig, val
+        return val
+    except Exception as e:   # never take /api/state down over a quota line
+        print("codex_quota:", e, flush=True)
+        return None
+
+
 def public_state_cached(slim):
-    k = (_fsig(S.STATE), _fsig(S.INBOX), _fsig(AVATARS), _fsig(S.ARCHIVE), art_sig(), json.dumps(_comfy, sort_keys=True), dt.datetime.now().strftime("%Y-%m-%d %H:%M"))
+    k = (_fsig(S.STATE), _fsig(S.INBOX), _fsig(AVATARS), _fsig(S.ARCHIVE), art_sig(), json.dumps(_comfy, sort_keys=True), json.dumps(codex_quota()), dt.datetime.now().strftime("%Y-%m-%d %H:%M"))
     with _PSL:
         c = _PSC.get(slim)
         if c and c[0] == k:
@@ -1935,6 +2086,7 @@ def public_state(slim=False):
     st = S.read()
     st["meta"].pop("inbox_acked", None)
     st["meta"]["comfy"] = _comfy
+    st["meta"]["codex"] = codex_quota()   # t-soul-widget
     st["meta"]["owner"] = (CONFIG.get("owner") or {}).get("display_name", "")
     st["meta"]["avatars"] = {f.rsplit(".", 1)[0]: f for f in sorted(os.listdir(AVATARS))
                              if f.lower().endswith((".png", ".jpg", ".jpeg", ".webp", ".gif"))}
@@ -2056,6 +2208,73 @@ _GZC, _GZL, _SV = {}, threading.Lock(), {}   # ri1105-P2: static gzip cache (pat
 def _gz_type(ctype):
     c = (ctype or "").split(";")[0].strip()
     return c.startswith("text/") or c in ("application/json", "application/javascript", "application/manifest+json", "image/svg+xml")
+
+
+# t-csrf-live (OSS audit SM-01/02): who may talk to this server.
+# 1) Host allowlist on every request, against DNS rebinding: a page on attacker.example that re-resolves to 127.0.0.1 sends
+#    Host: attacker.example and gets 421. Allowed: loopback names, this machine's hostname / .local name / LAN and tailnet IPs,
+#    any *.ts.net name (the phone comes in through Tailscale Serve), plus config.allowed_hosts. A missing Host is let through.
+# 2) Browser guard on every POST, against cross-site requests: a request that carries Origin or Sec-Fetch-Site comes from a
+#    browser and must be same-origin AND carry X-Underthread: 1 (a custom header forces a CORS preflight, which this server never
+#    grants). Scripts, curl and the iPhone Shortcut send neither header and are not affected.
+_HOSTS = {"at": 0.0, "names": set()}
+
+
+def local_names():
+    if time.time() - _HOSTS["at"] < 60:
+        return _HOSTS["names"]
+    names = {"127.0.0.1", "localhost", "::1"}
+    try:
+        hn = socket.gethostname().lower().rstrip(".")
+        short = hn.split(".")[0]
+        names |= {hn, short, short + ".local"}
+        for info in socket.getaddrinfo(hn, None):
+            names.add(str(info[4][0]).lower())
+    except OSError:
+        pass
+    try:   # the LAN address of the default route; connect() on UDP sends nothing
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        try:
+            s.connect(("192.0.2.1", 9))
+            names.add(s.getsockname()[0])
+        finally:
+            s.close()
+    except OSError:
+        pass
+    names |= {str(h).lower().rstrip(".") for h in (CONFIG.get("allowed_hosts") or [])}
+    _HOSTS.update(at=time.time(), names=names)
+    return names
+
+
+def host_name(h):
+    """'[::1]:8765' -> '::1', 'Mini.local:8765' -> 'mini.local', 'host' -> 'host'."""
+    h = (h or "").strip().lower()
+    if h.startswith("["):
+        return h[1:h.find("]")] if "]" in h else h[1:]
+    if h.count(":") == 1:
+        h = h.split(":")[0]
+    return h.rstrip(".")
+
+
+def host_ok(h):
+    if not (h or "").strip():
+        return True
+    n = host_name(h)
+    return n in local_names() or n.endswith(".ts.net")
+
+
+_GUARD_LOG = {"at": 0.0, "n": 0}
+
+
+def guard_log(kind, h, path):
+    """One line per refusal, at most 30 a minute, so a probe storm cannot fill server.log."""
+    t = time.time()
+    if t - _GUARD_LOG["at"] > 60:
+        _GUARD_LOG.update(at=t, n=0)
+    _GUARD_LOG["n"] += 1
+    if _GUARD_LOG["n"] <= 30:
+        print(f"[{S.now()}] guard: refused {kind} {h.command} {path[:120]} host={(h.headers.get('Host') or '')[:80]!r} "
+              f"origin={(h.headers.get('Origin') or '')[:80]!r} site={h.headers.get('Sec-Fetch-Site') or ''}", flush=True)
 
 
 class H(BaseHTTPRequestHandler):
@@ -2226,6 +2445,27 @@ class H(BaseHTTPRequestHandler):
         except (BrokenPipeError, ConnectionResetError, ConnectionAbortedError):
             self.close_connection = True
 
+    def _host_guard(self):
+        """t-csrf-live: False (and a 421 already sent) when the Host header is not one of ours."""
+        if host_ok(self.headers.get("Host")):
+            return True
+        guard_log("host", self, self.path)
+        self._send(421, {"error": "unknown host"})
+        return False
+
+    def _browser_ok(self):
+        """t-csrf-live: a POST from a browser must be same-origin and carry X-Underthread: 1; non-browser callers pass."""
+        o, site = self.headers.get("Origin"), (self.headers.get("Sec-Fetch-Site") or "").lower()
+        if o is None and not site:
+            return True
+        if site == "cross-site":
+            return False
+        if o is not None:
+            net = urlparse(o).netloc if o != "null" else ""
+            if not net or not (net == (self.headers.get("Host") or "") or net == self.headers.get("X-Forwarded-Host") or host_ok(net)):
+                return False
+        return self.headers.get("X-Underthread") == "1"
+
     def do_HEAD(self):
         self.do_GET()
 
@@ -2270,6 +2510,8 @@ class H(BaseHTTPRequestHandler):
         return p if p.startswith(os.path.realpath(base) + os.sep) else None
 
     def do_GET(self):
+        if not self._host_guard():
+            return
         u = urlparse(self.path)
         q = parse_qs(u.query)
         try:
@@ -2282,7 +2524,9 @@ class H(BaseHTTPRequestHandler):
             if u.path == "/api/push/latest":
                 pq, ep = _push["queue"], q.get("endpoint", [""])[0]   # t-imp29-p1: sw v5 sends its endpoint; older sw gets the global latest
                 mine = _push["dev"].get(ep) if ep else None
-                n = dict(mine) if mine else dict(pq[-1]) if pq else {"title": "Underthread", "body": "有新动态", "url": "/", "tag": "underthread"}
+                lang = _row_lang(next((x for x in _subs() if x["sub"].get("endpoint") == ep), None)) if ep else "zh"   # t-i18n-b
+                n = dict(mine) if mine else dict(pq[-1]) if pq else {"title": "Underthread", "body": "New activity" if lang == "en" else "有新动态", "url": "/", "tag": "underthread"}
+                n.setdefault("lang", lang)
                 try:
                     n["badge"] = pending_count(S.read())   # t-app-badge: counted when the device asks, so it is current
                 except Exception as e:
@@ -2432,7 +2676,12 @@ class H(BaseHTTPRequestHandler):
             return self._send(500, {"ok": False, "error": "出错了（细节不显示，避免带出令牌）"})
 
     def do_POST(self):
+        if not self._host_guard():
+            return
         u = urlparse(self.path)
+        if not self._browser_ok():   # t-csrf-live: before the body is read; _keep() then closes the connection
+            guard_log("origin", self, u.path)
+            return self._send(403, {"error": "forbidden"})
         try:
             n = int(self.headers.get("Content-Length") or 0)
             if u.path == "/api/memo":   # t-share-memo: one request from the iPhone Shortcut, plain-text answer for its notification
@@ -2480,9 +2729,13 @@ class H(BaseHTTPRequestHandler):
                     dupes = [x for x in allsubs if x["sub"]["endpoint"] != sub["endpoint"] and ua and x.get("ua") == ua]
                     subs = [x for x in allsubs if x["sub"]["endpoint"] != sub["endpoint"] and x not in dupes]
                     row = {"sub": sub, "subject": subject, "ua": ua, "at": S.now()}
+                    if body.get("lang") in ("zh", "en"):   # t-i18n-b
+                        row["lang"] = body["lang"]
                     src = old[0] if old else (sorted(dupes, key=lambda x: x.get("at") or "")[-1] if dupes else None)
                     if src:  # same device re-sent on app open (or re-added): keep its settings, held entries and last send result
                         row.update({k: src[k] for k in ("last_code", "last_at", "prefs", "held") if k in src})
+                        if "lang" not in row and src.get("lang"):
+                            row["lang"] = src["lang"]
                     subs.append(row)
                     _save_subs(subs)
                 for x in dupes:
@@ -2496,11 +2749,13 @@ class H(BaseHTTPRequestHandler):
                     p = push_prefs(row)
                     p.update({k: inc[k] for k in PUSH_DEFAULT if k in inc})
                     row["prefs"] = push_prefs({"prefs": p})
+                    if body.get("lang") in ("zh", "en"):   # t-i18n-b: push.js sends the UI language on a switch
+                        row["lang"] = body["lang"]
                 row = _row_update(ep, setp)
                 if row is None:
                     _plog(f"prefs {_ep_short(ep)} -> unknown device")
                     return self._send(404, {"error": "这台设备还没在服务器登记推送"})
-                _plog(f"prefs {_ep_short(ep)} -> {json.dumps(row['prefs'], ensure_ascii=False)}")
+                _plog(f"prefs {_ep_short(ep)} -> {json.dumps(row['prefs'], ensure_ascii=False)} lang={_row_lang(row)}")
                 return self._send(200, {"ok": True, "prefs": row["prefs"]})
             if u.path == "/api/push/unsubscribe":
                 subs = [x for x in _subs() if x["sub"]["endpoint"] != body.get("endpoint")]
@@ -2513,7 +2768,8 @@ class H(BaseHTTPRequestHandler):
                 _plog("client " + " ".join(parts))
                 return self._send(200, {"ok": True})
             if u.path == "/api/push/test":
-                return self._send(200, notify({"title": "Underthread", "body": body.get("text") or "推送已接通。新的待审核和回复会出现在这里。", "url": "/"}))
+                return self._send(200, notify({"title": "Underthread", "body": body.get("text") or "推送已接通。新的待审核和回复会出现在这里。", "url": "/"},
+                                              en=None if body.get("text") else {"body": "Push is on. New reviews and replies will show up here."}))
             if u.path == "/api/upload":
                 res = save_upload(body)
                 transcribe_async(res["path"])

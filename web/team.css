@@ -28,6 +28,9 @@ html[data-theme="white"] .tb-n:not(.on) image, html[data-theme="light"] .tb-n:no
 .tb-lab b:hover { color: var(--ink); }
 .tb-lab.on b { color: var(--ink); }
 .tb-lab small { font-size: var(--fs-11); color: var(--dim); }
+/* t-ri1110-a P4: names and states sit on a soft backing so strands pass under them instead of through the text */
+.tb-lab b, .tb-lab small { padding: 0 6px; border-radius: 6px; background: color-mix(in srgb, var(--bg) 85%, transparent); }
+.tb-lab small:empty { padding: 0; background: none; }
 .tb-pill { pointer-events: auto; cursor: pointer; margin-top: 3px; max-width: 220px; padding: 2px 9px; border-radius: 999px; font-size: var(--fs-11); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   color: var(--ink); background: color-mix(in srgb, var(--c, var(--accent)) 26%, var(--panel2)); border: 1px solid color-mix(in srgb, var(--c, var(--accent)) 55%, transparent); transition: background-color .15s ease, transform .15s ease; }
 .tb-pill:hover { background: color-mix(in srgb, var(--c, var(--accent)) 40%, var(--panel2)); }
@@ -73,17 +76,17 @@ html[data-home="widgets"] .tb-hr .t small { font-size: var(--fs-11); }
 .tb-sum { font-size: var(--fs-13); color: var(--dim); }
 .tb-sum b { color: var(--ink); font-weight: 600; }
 .tb-warn { color: var(--warn); }
-.tb-gbox { position: relative; border: 1px dashed var(--line2); border-radius: 16px; padding: 10px 14px 18px; background: var(--panel); }
+.tb-gbox { position: relative; border: 1px dashed var(--line2); border-radius: 16px; padding: 10px 14px var(--tb-pb, 18px); background: var(--panel); }   /* t-ri1111-a P3: --tb-pb set by team.js fitBox() when a bottom label hangs below the graph */
 .tb-gh { display: flex; gap: 12px; align-items: baseline; flex-wrap: wrap; font-size: var(--fs-12); color: var(--dim); min-height: 18px; }
 .tb-at { color: var(--ink); font-weight: 600; font-size: var(--fs-12); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
 .tb-gbox .tb-gr { max-width: 980px; margin: 0 auto; }
-.tb-rp { display: flex; align-items: center; gap: 14px; border: 1px dashed var(--line2); border-radius: 14px; padding: 10px 14px; background: var(--panel); }
+.tb-rp { display: flex; align-items: center; gap: 14px; border: 1px dashed var(--line2); border-radius: 14px; padding: 10px 14px; background: var(--panel); flex-wrap: wrap; row-gap: 8px; }
 .tb-play { flex: none; width: 40px; height: 40px; border-radius: 50%; border: 0; display: grid; place-items: center; cursor: pointer; background: var(--accent); color: var(--accent-ink); transition: transform .15s ease, filter .15s ease; }
 .tb-play:hover { filter: brightness(1.08); } .tb-play:active { transform: scale(.92); }
 .tb-play svg { width: 18px; height: 18px; fill: currentColor; stroke: currentColor; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
 .tb-rt { flex: none; display: flex; flex-direction: column; line-height: 1.3; }
 .tb-rt b { font-size: var(--fs-14); color: var(--ink); font-weight: 600; } .tb-rt small { font-size: var(--fs-11); color: var(--dim); }
-.tb-bar { position: relative; flex: 1; min-width: 160px; height: 44px; cursor: pointer; touch-action: none; border-radius: 8px; outline-offset: 3px; }
+.tb-bar { position: relative; flex: 1 1 240px; min-width: 240px;   /* t-ui-fix-r2: at a narrow main column the speed / 回到现在 buttons ran past the panel and the hour labels overlapped; now they wrap to a second line */ height: 44px; cursor: pointer; touch-action: none; border-radius: 8px; outline-offset: 3px; }
 .tb-bar:focus-visible { outline: 2px solid var(--accent-line); }
 .tb-tk { position: absolute; left: 0; right: 0; top: 8px; height: 16px; border-bottom: 1px solid var(--line2); }
 .tb-tk i { position: absolute; bottom: 0; width: 3px; height: 14px; margin-left: -1.5px; border-radius: 1.5px; background: var(--c, var(--dim)); opacity: .28; transition: opacity .2s ease; }
@@ -130,3 +133,13 @@ html[data-ut] .tb-gbox, html[data-ut] .tb-rp { border-color: var(--line3); }
   .tb-y.live .tb-yl { animation: none; }
   .tb-pill, .tb-play, .tb-sp button, .tb-now, .tb-qc, .tb-qi, .tb-tk i, .tb-ml, .tb-lab b, .tb-pr-row { transition: none; }
 }
+/* t-ui-fix-r3 R3-03: narrow 团队交接 widget: the idle avatar row clips inside the card and 「大家都在待机」 ellipsizes instead of wrapping onto the caption */
+html[data-home="widgets"] .tb-idle { min-width: 0; overflow: hidden; }
+html[data-home="widgets"] .tb-idle .tb-ia { flex: none; }
+html[data-home="widgets"] .tb-idle em { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+html[data-home="widgets"] .wg-team .wg-eb .wnb-unit { white-space: nowrap; }
+
+/* t-ui-fix-r4 (R4-07): agent-tinted text (执行中, minutes on the busy row) leans toward --ink so a pale or dark agent colour still reads */
+.tb-st.working, html[data-home="widgets"] .tb-ml b i { color: color-mix(in srgb, var(--c, var(--accent)) 50%, var(--ink)); }
+/* 回到现在 when you are already at now: an off state drawn with the theme tokens (it was opacity .4 = 1.6:1) */
+.tb-now.off { opacity: 1; color: var(--dim); border-color: var(--line); }

@@ -48,7 +48,7 @@
     }
     const nRev = App.items().filter(i => i.stage === "review").length, nDec = App.decisions().length;
     add("go:review", zh ? `回首页 · 等你拍板 ${nRev + nDec}` : `Home · waiting on you ${nRev + nDec}`, zh ? "首页" : "Home page", "home shouye 首页 sy review shenhe 审核 拍板 sh", () => fire("data-go", "review"));
-    for (const p of ["quests", "main", "side", "daily", "urgent", "ongoing", "studio", "pipe", "board", "channels", "assets", "logs", "reports", "docs", "roles"]) {   /* t-nav-shoot: 制作 + its four sub pages */
+    for (const p of ["quests", "main", "side", "daily", "urgent", "ongoing", "market", "studio", "pipe", "board", "channels", "assets", "logs", "reports", "docs", "roles"]) {   /* t-ui-fix-r2 B06: + 团队, 招聘市场 */   /* t-nav-shoot: 制作 + its four sub pages */
       if (p === "quests" && !phone()) continue;
       add("go:" + p, (zh ? "跳到「" : "Go to “") + App.t(p) + (zh ? "」" : "”"), zh ? "页面" : "Page", p + " go 跳 页", () => fire("data-go", p));
     }
@@ -58,12 +58,6 @@
     for (const a of Object.values(App.ST.agents || {}).filter(a => a.enabled !== false).sort((x, y) => (x.order ?? 99) - (y.order ?? 99))) {
       add("dm:" + a.id, a.id === "manager" ? (zh ? `和${App.aname(a)}（管家）对话` : `Chat with ${App.aname(a)}`) : (zh ? `给${App.aname(a)}发私信` : `Message ${App.aname(a)}`),
         App.atitle(a), `dm 私信 chat 对话 ${a.id} ${App.aname(a)} ${a.name_en || ""} ${App.atitle(a)}`, () => fire("data-chat", a.id));
-    }
-    if (!phone() && App.setHome) {   // t-home-applike / t-home-widgets: one command per other style
-      const cur = App.homeStyle(), L = { dense: zh ? "紧凑" : "dense", widgets: zh ? "小组件" : "widgets", app: zh ? "app 式" : "app-like", classic: zh ? "原来的" : "classic" };
-      for (const v of ["dense", "widgets", "app", "classic"].filter(v => v !== cur))
-        add("home:" + v, zh ? `首页样式：换成${L[v]}` : `Home style: ${L[v]}`, zh ? "只在这台电脑生效" : "This computer only",
-          `home 首页 样式 ${v} ${L[v]} 小组件 widget app 经典 classic 原来 紧凑 dense jc sy`, () => { App.setHome(v); App.go ? App.go("review") : fire("data-go", "review"); });
     }
     add("lang", zh ? "Switch to English" : "切换到中文", zh ? "界面语言" : "Language", "lang language english 中文 语言", () => fire("data-lang-set", zh ? "en" : "zh"));   // t-settings-tab: the header EN button is gone
     {   // t-settings-tab: 设置 page + theme mode
@@ -211,6 +205,11 @@
     if (tabsEl) { const cnt = k => k === "all" ? "" : ` <i>${R.n[k] > 30 ? "30+" : R.n[k]}</i>`; const th = q ? TABS.map(k => `<button type="button" class="${k === tab ? "on" : ""}" data-pl-tab="${k}">${tabName(k)}${cnt(k)}</button>`).join("") + `<span class="pl-tk"><kbd>tab</kbd></span>` : ""; if (tabsEl._h !== th) { tabsEl.innerHTML = tabsEl._h = th; } tabsEl.hidden = !q; }
     const row = (ic, title, sub, run, hint) => { const i = P.rows.push(run) - 1; return `<div class="pl-row" data-pl="${i}" role="option">${ic}<span class="pl-m"><b>${title}</b>${sub ? `<span>${sub}</span>` : ""}</span>${hint ? `<em>${hint}</em>` : ""}</div>`; };
     const iCap = q && (R.drafts.length || R.talk.length) ? 4 : 8;   // t-ri1103-p5: leave room for the sentence hits
+    /* t-ui-fix-r2 B06: typing a page or command name (设置, 信箱, 系统状态…) put it under every card hit, so Enter opened a card.
+       An action whose visible name contains the query now goes first; the rest stay in 操作 at the bottom. */
+    const actRow = a => row(`<span class="pl-ic">${a.id.startsWith("approve:") ? "✓" : a.id.startsWith("dm:") ? "@" : a.id.startsWith("theme:") ? "◐" : a.id.startsWith("go:") || a.id === "mail" ? "→" : a.id === "status" ? "♥" : "·"}</span>`, esc(a.label), esc(a.sub), a.run);
+    const named = all && q ? R.actions.filter(a => !a.id.startsWith("approve:") && a.label.toLowerCase().includes(q)).slice(0, 3) : [];
+    if (named.length) html += `<div class="pl-h">${zh ? "页面和操作" : "Pages & actions"}</div>` + named.map(actRow).join("");
     if (all && R.items.length) html += `<div class="pl-h">${P.q ? (zh ? "单子" : "Items") : (zh ? "最近" : "Recent")}</div>` + R.items.slice(0, iCap).map(it =>
       row(`<span class="pl-av">${App.av(App.agent(it.owner), "sm")}</span>`, esc(it.title), `${kindTag(it)} ${esc(App.aname(App.agent(it.owner)))} · ${App.t(it.category)} · ${App.when(it.activity)}`, () => App.openItem(it.id), zh ? "↵ 打开" : "↵ open")).join("");
     const more = (k, n) => all && n > shown[k] ? `<button type="button" class="pl-more" data-pl-tab="${k}">${zh ? `全部 ${n > 30 ? "30+" : n} 条 →` : `All ${n > 30 ? "30+" : n} →`}</button>` : "";
@@ -223,8 +222,8 @@
       row(`<span class="pl-av">${App.av(x.a, "sm")}</span>`, x.hit ? `「${hlAll(around(x.m.text, P.q), P.q)}」` : esc(App.aname(x.a)),
         `${x.m ? (x.m.who === "me" ? (zh ? "你" : "You") : esc(App.aname(App.agent(x.m.who) || x.a))) + " → " + esc(x.m.who === "me" ? App.aname(x.a) : (zh ? "你" : "you")) + " · " + App.when(x.m.t) : esc(App.atitle(x.a))}`,
         () => { fire("data-chat", x.a.id); if (x.hit && App.seekChat) App.seekChat(x.m.t, q); })).join("");
-    if (all && R.actions.length) html += `<div class="pl-h">${zh ? "操作" : "Actions"}</div>` + R.actions.slice(0, P.q ? 12 : 4).map(a =>
-      row(`<span class="pl-ic">${a.id.startsWith("approve:") ? "✓" : a.id.startsWith("dm:") ? "@" : a.id.startsWith("theme:") ? "◐" : a.id.startsWith("go:") || a.id === "mail" ? "→" : a.id === "status" ? "♥" : "·"}</span>`, esc(a.label), esc(a.sub), a.run)).join("");
+    const restA = R.actions.filter(a => !named.includes(a));
+    if (all && restA.length) html += `<div class="pl-h">${zh ? "操作" : "Actions"}</div>` + restA.slice(0, P.q ? 12 : 4).map(actRow).join("");
     if (!P.rows.length && !all) html = plNone(zh ? `「${esc(tabName(tab))}」里没有找到。按 Tab 换一类。` : "Nothing here. Press Tab for another category.");
     if (!P.rows.length && all) html = plNone(zh ? "没有找到。换个词试试，或者输入角色名、页面名。" : "Nothing found. Try a name or a page.");
     const box = $(".pl-res", P.el); if (box._h !== html) { box.innerHTML = box._h = html; }

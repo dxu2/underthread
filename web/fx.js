@@ -172,26 +172,37 @@
     if (live && o.key && live.dataset.key === String(o.key)) return live;   // same completion (double tap / state refresh): do nothing
     if (live) live.remove();
     const own = A.agent(o.owner || "manager"), zh = (A.UI.lang || "zh") !== "en";
+    /* t-ut-avatar-working: under Underthread the splash shows the needle-thread patch (avatars/ut/_s/<id>-512) instead of the character cut-out;
+       a role with no UT file (avatarUrl falls back to its normal avatar) keeps the art. Ink is unchanged. */
+    const utu = document.documentElement.dataset.ut && A.avatarUrl ? A.avatarUrl(own, 1) : "", ut = /\/avatars\/ut\//.test(utu);
     const el = document.createElement("div");
-    el.className = "mc cut"; if (o.key) el.dataset.key = String(o.key);
+    el.className = ut ? "mc uta sti" : "mc cut"; if (o.key) el.dataset.key = String(o.key);
     if (matchMedia("(prefers-reduced-motion: reduce)").matches) el.classList.add("rm");
     el.setAttribute("role", "status");
     const esc = x => String(x == null ? "" : x).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
-    el.innerHTML = `<div class="mc-dim"></div><div class="mc-glow"></div><div class="mc-st"><i></i><i></i><i></i></div>
-      <img class="mc-art" alt="" src="/static/art/cut/${encodeURIComponent(own.id)}.webp?v=1" decoding="async">
+    /* t-victory-stitchin (user 11-11 00:37, A 「缝上」): Underthread gets its own 1.6 s timeline (theme-ut.css .mc.sti): the patch drops in, a needle sews a
+       dashed ring round it, the leather plate is stitched in from the left, a knot is tied at its end; hold 2 s, fade. No glow, no flash. Ink keeps the art splash. */
+    if (ut) el.innerHTML = `<div class="mc-dim"></div>
+      <div class="sti-b"><img class="mc-art" alt="" src="${esc(utu)}" decoding="async"><svg class="sti-ring" viewBox="-170 -170 340 340" aria-hidden="true"><circle r="152"></circle></svg>
+        <div class="sti-orb"><svg class="sti-ndl" viewBox="0 0 70 20" aria-hidden="true"><path d="M4 10 L64 10"></path><ellipse cx="56" cy="10" rx="5" ry="1.8"></ellipse></svg></div></div>
+      <div class="mc-plate"><span class="mc-k">MISSION COMPLETE</span><b class="mc-main">${zh ? "委托完成" : "Mission Complete"}</b><i class="sti-knot"></i></div>
+      <div class="sti-run"><svg class="sti-ndl" viewBox="0 0 70 20" aria-hidden="true"><path d="M4 10 L64 10"></path><ellipse cx="56" cy="10" rx="5" ry="1.8"></ellipse></svg></div>
+      <div class="mc-info"><div class="mc-t">${esc(o.title || "")}</div><div class="mc-by">${A.av(own, "sm")}<span>${esc(A.aname(own))}${o.time ? " · " + esc(o.time) : ""}</span></div></div>`;
+    else el.innerHTML = `<div class="mc-dim"></div><div class="mc-glow"></div><div class="mc-st"><i></i><i></i><i></i></div>
+      <img class="mc-art" alt="" src="${ut ? esc(utu) : `/static/art/cut/${encodeURIComponent(own.id)}.webp?v=1`}" decoding="async">
       <div class="mc-flash"></div>
       <div class="mc-plate"><span class="mc-k">MISSION COMPLETE</span><b class="mc-main">${zh ? "委托完成" : "Mission Complete"}</b></div>
       <div class="mc-info"><div class="mc-t">${esc(o.title || "")}</div><div class="mc-by">${A.av(own, "sm")}<span>${esc(A.aname(own))}${o.time ? " · " + esc(o.time) : ""}</span></div></div>`;
     const img = el.querySelector(".mc-art");
     /* t-mc-halo: cut-out (transparent) art first, halo colour = theme token --mc-glow. A role with no cut-out falls back to its jpg: mask + corner-sampled --bgc as before. */
     img.addEventListener("load", () => {
-      if (el.classList.contains("cut")) return;
+      if (el.classList.contains("cut") || el.classList.contains("uta")) return;
       try { const c = document.createElement("canvas"); c.width = c.height = 1; const x = c.getContext("2d"); x.drawImage(img, 0, 0, 20, 20, 0, 0, 1, 1); const d = x.getImageData(0, 0, 1, 1).data; el.style.setProperty("--bgc", `rgb(${d[0]},${d[1]},${d[2]})`); } catch { }
     });
-    img.addEventListener("error", () => { if (el.classList.contains("cut")) { el.classList.remove("cut"); img.src = `/static/art/${encodeURIComponent(own.id)}.jpg`; } else el.classList.add("noart"); });
+    img.addEventListener("error", () => { if (el.classList.contains("uta")) { el.classList.replace("uta", "cut"); img.src = `/static/art/cut/${encodeURIComponent(own.id)}.webp?v=1`; } else if (el.classList.contains("cut")) { el.classList.remove("cut"); img.src = `/static/art/${encodeURIComponent(own.id)}.jpg`; } else el.classList.add("noart"); });
     let ended = false;
     const finish = () => { if (ended) return; ended = true; clearTimeout(guard); el.remove(); try { o.onEnd && o.onEnd(); } catch { } };
-    const guard = setTimeout(finish, 3400);   // animationend can be skipped (hidden tab, display:none): never leave the overlay behind
+    const guard = setTimeout(finish, el.classList.contains("sti") ? 4600 : 3400);   // sti: 1.6 s sewing + 2 s hold + .45 s fade   // animationend can be skipped (hidden tab, display:none): never leave the overlay behind
     el.addEventListener("click", () => { if (el.classList.contains("bye")) return; el.classList.add("bye"); setTimeout(finish, 260); });
     el.addEventListener("animationend", e => { if (e.target === el && /^mc-life/.test(e.animationName)) finish(); });
     document.body.appendChild(el);

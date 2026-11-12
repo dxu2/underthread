@@ -8,7 +8,7 @@
   };
 
   const UI = {
-    page: (p => p === "home" ? "review" : ["roles", "docs", "logs"].includes(p) ? "settings" : p)(LS.get("page", "review")), setTab: (p => ["roles", "docs", "logs"].includes(p) ? p : LS.get("setTab", "general"))(LS.get("page", "review")),   /* t-settings-tab: 角色 / 文档 / 日志 live under 设置 */ item: null, chat: LS.get("chat", "manager"), home: LS.get("home3", "dense"),   // t-home-applike: desktop 首页 style, "app" | "classic"; t-home-widgets: + "widgets" (default since 11-02, new key so every desktop switches once)
+    page: (p => p === "home" || p === "crew" || p === "team" ? "review" :   /* t-drop-team-tab */ ["roles", "docs", "logs"].includes(p) ? "settings" : p)(LS.get("page", "review")), setTab: (p => ["roles", "docs", "logs"].includes(p) ? p : LS.get("setTab", "general"))(LS.get("page", "review")),   /* t-settings-tab: 角色 / 文档 / 日志 live under 设置 */ item: null, chat: LS.get("chat", "manager"), home: "widgets",   /* t-home-style-trim (11-11): the web home is the widget home only; dense / app / classic and their switches are gone. rt.home3 is rewritten to "widgets" below */
     lang: LS.get("lang", "zh"), theme: LS.get("theme", "dark"), sort: LS.get("sort", "activity"),
     logAgent: "", mailFilter: "all", doc: null, docs: null, docText: "", openRep: null, calForm: false, tick: 0,
     seen: LS.get("seen", {}), chatW: LS.get("chatW", 420), chatFold: LS.get("chatFold", false),
@@ -35,7 +35,7 @@
       owner: "负责", category: "分类", stage: "阶段", platforms: "平台", due: "截止",
       draft: "草稿", confidence: "把握度", evidence: "证据", links: "链接", attachments: "附件", thread: "动态", older: "较早版本",
       copy: "复制", copied: "已复制", send_hint: "⌘/Ctrl+Enter 发送，Enter 换行",
-      composer_ph: "输入 @ 选择发给谁（默认发给负责人）；驳回时写原因。图片和文件可以直接粘贴或拖进来。",
+      composer_ph: "回复，@ 指定谁，写驳回原因",   /* t-ri1111-a P2: one line (the long hint was cut in the 44px box); drop/paste lives in the attach button title */
       chat_ph: "对{n}说……  ⌘/Ctrl+Enter 发送，Enter 换行",
       file: "文件", default_owner: "默认：负责人",
       send_to: "发给", jump_top: "顶部", jump_new: "最新", expand: "展开全文", collapse: "收起", owner_tag: "负责人",
@@ -68,12 +68,12 @@
       pipe: "Pipeline", board: "Board", logs: "Log", reports: "Reports", channels: "Channels", studio: "Studio", market: "Hiring", crew: "Team", docs: "Docs", assets: "Assets", roles: "Roster", mail: "Mailbox",
       today: "Today", meetings: "", team: "TEAM", stamina: "Stamina", updated: "updated",
       todo: "To do", doing: "In progress", review_s: "Your review", waiting: "Waiting", done: "Done",
-      plan: "Decide", deliverable: "Accept", question: "Answer", task: "Task",
+      plan: "Decide", deliverable: "To accept", question: "Answer", task: "Task",
       approve: "Approve", reject: "Reject", complete: "Done", reopen: "Reopen", archive: "Archive",
       owner: "Owner", category: "Category", stage: "Stage", platforms: "Platforms", due: "Due",
       draft: "Draft", confidence: "Confidence", evidence: "Evidence", links: "Links", attachments: "Files", thread: "Thread", older: "Older drafts",
       copy: "Copy", copied: "Copied", send_hint: "⌘/Ctrl+Enter to send",
-      composer_ph: "Type @ to pick who gets it (default: owner). Give a reason when rejecting. Paste or drop images and files.",
+      composer_ph: "Reply, @someone, or why not…",   /* t-ri1111-a P2 */
       chat_ph: "Message {n}…  ⌘/Ctrl+Enter to send",
       file: "File", default_owner: "default: owner",
       send_to: "To", jump_top: "Top", jump_new: "Latest", expand: "Show all", collapse: "Collapse", owner_tag: "owner",
@@ -130,11 +130,17 @@
   const snoozed = i => !!i && !!i.snooze && i.stage !== "done" && snzEnd(i) > Date.now() && !(i.snooze.wait === "reply" && snzReplied(i));
   const onYouCard = i => !!i && i.stage !== "done" && !busy(i) && !snoozed(i) && (i.stage === "review" || (!awaitsUser(i) && openAsks(i).length > 0));
   const onYou = i => onYouCard(i) || (!!i && awaitsUser(i) && !busy(i) && !snoozed(i));
-  // t-agent-queue: a role's queue = its open cards that are to do, or in progress but not the card it is on now. Routine cards (r-…) never count.
+  // t-agent-queue: a role's queue = its open cards that are to do, or in progress but not the card it is on now. Routine cards (r-…) never count (t-queue-count narrows it below).
   // Badge 「排队 N」 (hidden at 0) in the TEAM list, the chat roster, the DM header and the 此刻在忙 widget; a click lists the cards (App.queueOf / qBadge).
-  const queueOf = id => { const a = (ST && ST.agents && ST.agents[id]) || {}; return items().filter(i => i.owner === id && !i.archived && !/^r-/.test(i.id) && (i.stage === "todo" || (i.stage === "doing" && i.id !== a.item)))
+  /* t-queue-count: only cards the role still has to start or continue count. Left out: standing cards (category ongoing, a routine, or the
+     target of a live 定时 schedule), cards on the user (open ask / review / snoozed: waiting on you, not on the role), and the manager's own
+     todo cards (the manager dispatches; a todo it owns is a parked idea until the user says go). */
+  const schedItem = id => (ST.schedules || []).some(s => s && !s.deleted && !s.finished && s.enabled !== false && s.task && s.task.item === id);
+  const standing = i => i.category === "ongoing" || !!routineOf(i) || schedItem(i.id);
+  const queueOf = id => { const a = (ST && ST.agents && ST.agents[id]) || {}; return items().filter(i => i.owner === id && !i.archived && !/^r-/.test(i.id) && (i.stage === "todo" || (i.stage === "doing" && i.id !== a.item))
+      && !standing(i) && !onYou(i) && !snoozed(i) && !(id === "manager" && i.stage === "todo"))
     .sort((x, y) => (Date.parse(x.updated || x.created) || 0) - (Date.parse(y.updated || y.created) || 0)); };
-  const qBadge = (id, small) => { const n = queueOf(id).length; return !n ? "" : small ? `<i class="aq-n" data-aq="${esc(id)}" title="${UI.lang === "en" ? `${n} queued` : `排队 ${n}`}">${n}</i>` : `<span class="aq" data-aq="${esc(id)}">${UI.lang === "en" ? `Queued ${n}` : `排队 ${n}`}</span>`; };
+  const qBadge = (id, small) => { const n = queueOf(id).length; return !n ? "" : small ? `<i class="aq-n" data-aq="${esc(id)}" title="${UI.lang === "en" ? `${n} queued` : `排队 ${n}`}">${n}</i>` : `<span class="aq" data-aq="${esc(id)}" title="${UI.lang === "en" ? `${n} queued` : `排队 ${n}`}"><span class="aq-w">${UI.lang === "en" ? "Queued" : "排队"}</span>${n}<span class="aq-d" aria-hidden="true"></span></span>`; };   /* t-queued-dots: .aq-d = three floating dots (dot + ::before + ::after) */
   const grpOf = i => busy(i) ? "doing" : snoozed(i) ? "todo" : (awaitsUser(i) || onYouCard(i)) ? "review" : idleDoing(i) ? "todo" : i.stage;   // ri1103-P2: a snoozed card waits under 待办
   // t-idle-pause-tag: such a card says 「暂停」 where a row shows its stage, so it stands apart from a real 待办
   const pauseL = () => UI.lang === "en" ? "Paused" : "暂停";
@@ -249,7 +255,11 @@
   const tintOf = a => [a && a.tint, a && a.color].find(c => /^#[0-9a-f]{3,8}$/i.test(c || "")) || "var(--accent)";
   function wsheet(a, sz) { return a && document.documentElement.dataset.ut && hasArt(a, "sheet") && !AVU.bad.has(a.id) ? `;--wsheet:url('/avatars/ut/_s/${encodeURIComponent(a.id)}-work-${sz || 160}.webp?v=1')` : ""; }
   function av(a, cls = "", forItem) {
-    if (a === "me" || a.id === "me") return `<span class="av ${cls}" style="background:var(--ink2)"></span>`;
+    if (a === "me" || a.id === "me") {   // R4-17: avatars/me.* if the user added one, else their initial (same rule as the phone chat, mobile.js meAv)
+      const m = (ST.meta || {}), o = m.owner;
+      if ((m.avatars || {}).me) return `<span class="av av-me img ${cls}" style="background-image:url('${avatarUrl({ id: "me" })}')"></span>`;
+      return `<span class="av av-me ${cls}"><b>${esc(o && !o.startsWith("<") ? [...o.trim()][0] : (UI.lang === "en" ? "M" : "我"))}</b></span>`;
+    }
     // t-working-avatar: ONE place for the "working" look (CSS in style.css). --wp = minus the wall-clock phase of the 4 s cycle, so a node created by a re-render
     // starts exactly where the one it replaces was: polling never restarts the ring. Static (no animation) under prefers-reduced-motion.
     // t-working-item-highlight: inside a row about item X (forItem), the ring stays off when we KNOW the agent is on another item (agents[].item set and different).
@@ -339,6 +349,9 @@
   // the manager with no live card is "online · watching the inbox": no timer, no progress bar, not counted as working.
   const liveItem = a => { const it = a && a.item && (ST.items || []).find(i => i.id === a.item); return it && it.stage !== "done" ? it : null; };
   const mgrOnline = a => !!a && a.id === "manager" && a.status === "working" && !liveItem(a);
+  /* t-ui-fix-r6 R6-08: the one 「在忙」 rule for every count (home header, 此刻在忙, 团队交接, 团队 page, sync pop):
+     working, and not the manager merely online (the manager on a live card counts) */
+  const isBusy = a => !!a && a.enabled !== false && a.status === "working" && !mgrOnline(a);
   // t-typing-fix: the typing dots (desktop renderChat + mobile.js syncTyping). Only while the agent really works on a card (not the manager's
   // online-only heartbeat) and you spoke last, and never more than 10 min after your last message (the minute sweep below drops a stale bubble).
   const TYPING_MAX = 10 * 60e3, lastT = m => Date.parse(m && m.t) || 0;
@@ -369,6 +382,174 @@
     document.querySelectorAll("time.rel[data-t]").forEach(el => { const v = el.dataset.rel === "ago" ? ago(el.dataset.t) : when(el.dataset.t); if (el.textContent !== v) el.textContent = v; });
   }, 20000);   // elapsed ticks between polls (render only runs on a new rev)
   const whoName = w => w === "me" ? (ST.meta.owner && !ST.meta.owner.startsWith("<") ? ST.meta.owner : (UI.lang === "en" ? "You" : "我")) : aname(agent(w));
+  /* t-i18n-b: text the server writes into state in Chinese (card events, mailbox prefixes, HR card titles/summaries, agent
+     activity it sets, API errors). The stored text never changes (server.py branches on 待审核 / 新规则提议, and old state is
+     already Chinese), so English is made here, at display time, from the known shapes. Anything that does not match (user
+     content) passes through untouched; zh returns the input as is. th = a card-thread line (approve / done / event kinds). */
+  const nmEn = n => { if (n === "管家") return "the manager"; const a = Object.values((ST && ST.agents) || {}).find(x => x.name === n || x.id === n); return a ? aname(a) : n; };
+  const SNZ_EN = s => String(s).replace(/^今晚/, "Tonight").replace(/^明早/, "Tomorrow morning").replace(/^早上/, "This morning").replace(/^下周一/, "Next Monday")
+    .replace(/^等(.+)下条回复$/, (_, n) => `until ${nmEn(n)} replies`);
+  const SKIP_EN = s => s.replace(/ · 跳过 (\d+) 个未答问题：([\s\S]*)$/, (_, n, q) => ` · skipped ${n} open question${n > 1 ? "s" : ""}: ${q.replace(/；/g, "; ")}`);
+  const APV_EN = { "批准开工": "Approved · go ahead", "回答": "Answered", "验收 · 关单": "Accepted · closed", "批准调岗": "Transfer approved", "批准入职": "Hire approved",
+    "批准交付": "Delivery approved", "批准计划，开始执行": "Plan approved · go ahead" };   /* the last two: labels before t-btn-names, still in old threads */
+  const SRV_TH = [   /* thread-only shapes (a chat line or mail starting with 回答 must not be touched) */
+    [/^(批准开工|回答|验收 · 关单|批准调岗|批准入职|批准交付|批准计划，开始执行)( · [\s\S]*)?$/, m => APV_EN[m[1]] + SKIP_EN(m[2] || "")],
+    [/^完成 · mission complete([\s\S]*)$/, m => "Done · mission complete" + SKIP_EN(m[1])],
+    [/^驳回 · ([\s\S]*)$/, m => "Rejected · " + m[1]],
+    [/^重开 · reopened$/, () => "Reopened"],
+    [/^改派给 (\S+)$/, m => "Reassigned to " + whoName(m[1])],
+    [/^分类 → (\S+)$/, m => "Category → " + (CATS.includes(m[1]) ? t(m[1]) : m[1])],
+    [/^稍后 · ([\s\S]+)$/, m => "Later · " + SNZ_EN(m[1])],
+    [/^提问 · ([\s\S]*)$/, m => "Asked · " + m[1].replace(/（推荐）/g, " (recommended)")],   /* question + options are the asker's words */
+    [/^撤回问题 · ([\s\S]*)$/, m => "Question withdrawn · " + m[1]],
+    [/^提交审核 · submitted for review$/, () => "Submitted for review"],
+    [/^通话中建卡，已通知管家派单$/, () => "Card made on a call; the manager was told to dispatch it"],
+    [/^角色 (\S+) 已从 roster 移除，转回管家$/, m => `Role ${m[1]} left the roster; back to the manager`],
+    [/^(\d+) 天没等到回复 · 回到等你拍板$/, m => `No reply in ${m[1]} days · back on you`],
+    [/^稍后到点 · 回到等你拍板$/, () => "Snooze over · back on you"],
+    [/^有新回复 · 推迟结束，回到等你拍板$/, () => "New reply · snooze ended, back on you"],
+    [/^取消推迟 · 回到等你拍板$/, () => "Snooze cancelled · back on you"],
+    [/^暂停常驻 · 管家不再做这张卡$/, () => "Standing card paused · the manager stops working on it"],
+    [/^恢复常驻 · 管家照常做这张卡$/, () => "Standing card resumed · the manager works on it again"],
+    [/^停止常驻任务 · 定时器已停，不会再开新的子卡$/, () => "Routine stopped · the timer is off; no new child cards"],
+    [/^恢复常驻任务 · 每天 (\S+)$/, m => `Routine resumed · daily ${m[1]}`],
+    [/^放弃面试$/, () => "Interview dropped"],
+    [/^开场白已发到私聊：([\s\S]*)$/, m => "Opening line sent in the DM: " + m[1]],
+    [/^已调岗 · ([\s\S]+?)：改了 ([\s\S]+?)。备份 (\S+)；10 分钟内可在卡上「撤回调岗」$/, m => `Transferred · ${nmEn(m[1])}: changed ${m[2] === "无" ? "nothing" : m[2].replace(/、/g, ", ")}. Backup ${m[3]}; undo it on this card within 10 minutes`],
+    [/^(\d+) 条新红线变成了规则提议，在「审核」页点头才生效$/, m => `${m[1]} new red line${m[1] > 1 ? "s" : ""} became rule proposals; they apply once you approve them on the Review page`],
+    [/^已入职 · ([\s\S]+)（(\S+)）出现在团队里$/, m => `Hired · ${nmEn(m[2]) !== m[2] ? nmEn(m[2]) : m[1]} (${m[2]}) joined the team`],
+    [/^(调岗|入职)没办成：([\s\S]*)$/, m => `${m[1] === "调岗" ? "Transfer" : "Hire"} failed: ${srvT(m[2])}`],
+    [/^搁置 · (.+) 退休，返聘时可以一键拿回$/, m => `Parked · ${nmEn(m[1])} retired; rehiring brings it back in one tap`],
+    [/^交接自 (.+)（退休），接手前先读 (\S+)$/, m => `Handed over from ${nmEn(m[1])} (retired); read ${m[2]} before picking it up`],
+    [/^交接清单：\n([\s\S]*)$/, m => "Handover:\n" + m[1].split("\n").map(l => l
+      .replace(/^- 手上没有没完成的单子$/, "- No open cards")
+      .replace(/^- 定时：(.*)$/, (_, x) => "- Schedules: " + x.replace(/ → 转管家/g, " → to the manager").replace(/ → 暂停/g, " → paused").replace(/；/g, "; "))
+      .replace(/^- 规则提议 (\d+) 条挂起，返聘时放回$/, (_, n) => `- ${n} rule proposal${n > 1 ? "s" : ""} parked; they come back on rehire`)
+      .replace(/ → 搁置$/, " → parked")).join("\n")],
+    [/^撤销退休 · 单子回到 (.+)$/, m => `Retirement undone · card back to ${nmEn(m[1])}`],
+    [/^已撤销退休 · 回来 (\d+) 张单子(?:，(\d+) 张新主人已经动过，留在原处)?$/, m => `Retirement undone · ${m[1]} card${m[1] > 1 ? "s" : ""} back` + (m[2] ? `, ${m[2]} already touched by their new owner stay put` : "")],
+    [/^拿回搁置的单子 · 回到 (.+)$/, m => `Parked card taken back · back to ${nmEn(m[1])}`],
+    [/^已撤回调岗 · roster 和 roles 文件按备份改回$/, () => "Transfer undone · roster and roles files restored from the backup"],
+  ];
+  const SRV_ANY = [   /* mailbox, logs, agent activity, toasts / errors */
+    [/^待审核\s*[:：]\s*([\s\S]*?)(（(?:(\d+) 天没回复|推迟到点)）)?$/, m => "For review: " + titleEn(m[1]) + (m[2] ? (m[3] ? ` (no reply in ${m[3]} days)` : " (snooze over)") : "")],
+    [/^日报 · ([\s\S]*)$/, m => "Daily report · " + m[1].replace(/（周([一二三四五六日])）/g, (_, d) => ` (${["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]["一二三四五六日".indexOf(d)]})`)],
+    [/^新规则提议 · ([^:\s]+): ([\s\S]*)$/, m => `Rule proposal · ${nmEn(m[1])}: ${m[2]}`],
+    [/^管家休眠 · (\d\d:\d\d) 复活。([\s\S]*?)；新指令会排队，醒来自动处理。$/, m => `Manager asleep · back at ${m[1]}. ${m[2] === "用量快到上限" ? "Usage is near the limit" : m[2]}; new orders queue up and run on wake.`],
+    [/^休眠：([\s\S]*)，(\d\d:\d\d) 复活$/, m => `Asleep: ${m[1] === "用量快到上限" ? "usage is near the limit" : m[1]}, back at ${m[2]}`],
+    [/^休眠中 · (\d\d:\d\d) 复活$/, m => `Asleep · back at ${m[1]}`],
+    [/^面试中 · 在想$/, () => "Interviewing · thinking"],
+    [/^调岗中 · 在想$/, () => "Transfer · thinking"],
+    [/^⏰ 提醒：([\s\S]*?)(?:（晚了 (\d+) 分钟，看板刚恢复）)?$/, m => `⏰ Reminder: ${m[1]}` + (m[2] ? ` (${m[2]} min late, the dashboard just came back)` : "")],
+    [/^还有 (\d+) 个问题没回答。刷新页面后在单子里点选，或者选择跳过。$/, m => `${m[1]} question${m[1] > 1 ? "s" : ""} still unanswered. Refresh, pick an option on the card, or choose skip.`],
+    [/^已经过了今晚 20:00，选明早或自己选时间$/, () => "It's past 20:00 tonight; pick tomorrow morning or your own time"],
+    [/^时间格式不对$/, () => "Bad time format"],
+    [/^选一个 1 分钟以后、60 天以内的时间$/, () => "Pick a time between 1 minute and 60 days from now"],
+    [/^这张卡现在不在等你拍板，不用推迟$/, () => "This card isn't waiting on you; nothing to snooze"],
+    [/^这张卡已经处理过了$/, () => "This card was already handled"],
+    [/^(.+)不能退休$/, m => { const x = m[1].split("、").map(nmEn).join(", "); return x[0].toUpperCase() + x.slice(1) + " can't retire"; }],
+    [/^id 要小写字母开头，只用 a-z 0-9 -，2–16 个字$/, () => "The id starts with a lowercase letter and uses only a-z 0-9 -, 2–16 characters"],
+    [/^名字 1–20 个字$/, () => "Name: 1–20 characters"],
+    [/^颜色要 #rrggbb$/, () => "Colour must be #rrggbb"],
+    [/^不是面试卡$/, () => "Not an interview card"],
+    [/^不是调岗卡$/, () => "Not a transfer card"],
+    [/^(\S+)还没上岗$/, m => `${nmEn(m[1])} isn't on the team yet`],
+    [/^(\S+)正在给「([\s\S]*)」调岗，先聊完或放弃$/, m => `${nmEn(m[1])} is mid-transfer for "${nmEn(m[2])}"; finish or drop that first`],
+    [/^(\S+)正在面试「([\s\S]*)」，先聊完或放弃$/, m => `${nmEn(m[1])} is interviewing for "${m[2]}"; finish or drop that first`],
+    [/^管家不能调岗（manager\.md 归她自己，改它走规则提议）$/, () => "The manager can't be transferred (manager.md is hers; change it through a rule proposal)"],
+    [/^这个角色不在岗$/, () => "This role isn't on the team"],
+    [/^已经退休了$/, () => "Already retired"],
+    [/^她在做「([\s\S]*)」，交回后再退$/, m => `She's working on "${m[1] === "手上的事" ? "her current task" : m[1]}"; retire her after she hands it in`],
+    [/^没有可撤销的退休记录$/, () => "No retirement to undo"],
+    [/^不在 roster 里（硬归档的用 new_role\.py rehire --from-archive）$/, () => "Not in the roster (for a hard-archived role use new_role.py rehire --from-archive)"],
+    [/^先返聘$/, () => "Rehire first"],
+    [/^创始成员只能软退休，不能归档$/, () => "Founding members can only soft-retire, not be archived"],
+    [/^归档要二次确认$/, () => "Archiving needs a second confirmation"],
+    [/^先软退休，再归档$/, () => "Soft-retire first, then archive"],
+    [/^这张卡没有可撤回的调岗$/, () => "This card has no transfer to undo"],
+    [/^超过 10 分钟了，撤回要找(\S+)按备份手动改回$/, m => `More than 10 minutes have passed; ask ${nmEn(m[1])} to restore it from the backup by hand`],
+    [/^这个问题已经撤回了$/, () => "This question was withdrawn"],
+    [/^不是这个问题的选项$/, () => "Not an option for this question"],
+    [/^一次性的已经跑过了，不能再开；要再提醒就新建一条$/, () => "A one-off has already run and can't be turned back on; add a new one"],
+    [/^读状态失败$/, () => "Couldn't read the state"],
+    [/^需要确认$/, () => "Needs confirmation"],
+    [/^出错了（细节不显示，避免带出令牌）$/, () => "Something went wrong (details hidden so the token can't leak)"],
+    [/^这台设备还没在服务器登记推送$/, () => "This device isn't registered for push on the server yet"],
+    [/^没找到会话记录目录$/, () => "transcript folder not found"],
+    [/^发送失败：([\s\S]*)$/, m => "Send failed: " + srvT(m[1])],
+  ];
+  function srvT(s, th) {
+    s = String(s ?? "");
+    if (UI.lang !== "en" || !/[\u3400-\u9fff]/.test(s)) return s;
+    for (const [re, fn] of th ? SRV_TH.concat(SRV_ANY) : SRV_ANY) { const m = re.exec(s); if (m) return fn(m); }
+    return s;
+  }
+  /* HR-flow card titles / summaries: new cards carry title_en (server.py); older ones get their prefix translated. */
+  /* t-i18n-c: template English names (title_en / label_en from GET /api/templates, fetched once, English only; market.js seeds it too)
+     for interview cards made before title_en existed and for the hr-iv bar. tplEn(job, variant) -> {job, variant} | null; zh names work too. */
+  const TPLN = { m: null, zh: null, p: null };
+  function tplSeed(d) {
+    const m = {}, zh = {};
+    for (const t of (d && d.templates) || []) {
+      const vs = {};
+      for (const v of t.variants || []) { vs[v.key] = v.label_en || ""; if (v.label && v.label_en) zh[v.label] = v.label_en; }
+      m[t.key] = { job: t.title_en || "", v: vs };
+      if (t.job && t.title_en) zh[t.job] = t.title_en;
+    }
+    TPLN.m = m; TPLN.zh = zh;
+  }
+  function tplEn(job, variant) {
+    if (!TPLN.m) {
+      if (!TPLN.p && UI.lang === "en") TPLN.p = fetch("/api/templates").then(r => r.ok ? r.json() : null)
+        .then(d => { if (d && !TPLN.m) { tplSeed(d); srvLocal(); render(); } }, () => {});
+      return null;
+    }
+    const t = TPLN.m[job];
+    if (t) return { job: t.job, variant: t.v[variant] || "" };
+    return job && TPLN.zh[job] ? { job: TPLN.zh[job], variant: TPLN.zh[variant] || "" } : null;
+  }
+  function titleEn(s, it) {
+    if (it && it.title_en) return it.title_en;
+    const h = it && it.hire;
+    if (h && h.mode !== "transfer" && h.job) { const x = tplEn(h.job, h.variant); if (x && x.job) return `Interview: ${x.job} (${x.variant || h.variant_label || h.variant})`; }   /* t-i18n-c */
+    s = String(s || ""); let m;
+    if ((m = /^面试：([\s\S]+?)（([^（）]*)）$/.exec(s))) { const x = tplEn(m[1], m[2]); return `Interview: ${(x && x.job) || m[1]} (${(x && x.variant) || m[2]})`; }   /* t-i18n-c: archived titles have no card */
+    if ((m = /^面试：([\s\S]+)$/.exec(s))) return "Interview: " + m[1].replace(/（([^（）]*)）$/, " ($1)");
+    if ((m = /^调岗：([\s\S]+)$/.exec(s))) return "Transfer: " + nmEn(m[1]);
+    if ((m = /^退休：([\s\S]+)$/.exec(s))) return "Retired: " + nmEn(m[1]);
+    return s;
+  }
+  function summaryEn(s) {
+    s = String(s || ""); let m;
+    if ((m = /^(\S+)在私聊里和你一问一答，问清五件事后出入职草案。模板 (\S+) · 性格 (\S+)。$/.exec(s))) return `${nmEn(m[1])} asks you one question at a time in the DM, then drafts the hire once five things are clear. Template ${m[2]} · personality ${m[3]}.`;
+    if ((m = /^(\S+)在私聊里问清改哪块、改成什么（≤(\d+) 轮），出前后对比草案；你点「批准调岗」才落地。Confirmed rules 不动，新红线变成规则提议。$/.exec(s))) return `${nmEn(m[1])} asks in the DM what to change and how (≤${m[2]} turns), then drafts a before/after; nothing lands until you click Approve transfer. Confirmed rules stay; new red lines become rule proposals.`;
+    if ((m = /^(.+)（(\S+)）软退休：roles\/\S+\.md、记忆、交接单、声音、头像都留着，返聘就回来。$/.exec(s))) return `${nmEn(m[2]) !== m[2] ? nmEn(m[2]) : m[1]} (${m[2]}) soft-retired: roles/${m[2]}.md, memory, handoff, voice and avatar all stay; rehire brings them back.`;
+    return s;
+  }
+  /* Called after every new ST (poll, snapshot, full-item fetch) and on a language switch: swap the shown title / summary /
+     activity in place, keeping the stored text in _tz / _sz / _az so switching back restores it exactly. */
+  function srvLocal() {
+    if (!ST) return;
+    const en = UI.lang === "en";
+    for (const it of ST.items || []) {
+      if (it._tz == null) { it._tz = it.title; it._sz = it.summary; }
+      const tt = en ? titleEn(it._tz, it) : it._tz, ss = en && it.summary_en ? it.summary_en : en && it.hire || en && it.retire ? summaryEn(it._sz) : it._sz;
+      if (it.title !== tt) it.title = tt;
+      if (it.summary !== ss) it.summary = ss;
+      /* t-i18n-c: cards that ship English beside the stored Chinese (state.example.json's sample cards): draft until a real version lands */
+      for (const k of ["draft", "confidence_note", "evidence", "tags"]) {
+        if (it[k + "_en"] == null || (k === "draft" && (it.versions || []).length)) continue;
+        if (!("_z_" + k in it)) it["_z_" + k] = it[k];
+        it[k] = en ? it[k + "_en"] : it["_z_" + k];
+      }
+      for (const x of it.thread || []) if (x.text_en) { if (x._xz == null) x._xz = x.text; x.text = en ? x.text_en : x._xz; }
+    }
+    for (const a of Object.values(ST.agents || {})) {
+      if (a._az == null) a._az = a.activity;
+      const v = en ? srvT(a._az) : a._az;
+      if (a.activity !== v) a.activity = v;
+    }
+  }
   const items = () => (ST.items || []).filter(i => !i.archived);
   const byAct = (a, b) => (b.activity || b.updated || "").localeCompare(a.activity || a.updated || "");
   const byCreated = (a, b) => (b.created || "").localeCompare(a.created || "");
@@ -382,7 +563,7 @@
     return `<div class="${cls} ue">${UE_ART}<b class="ue-h">${h || (zh ? "线头都收好了" : "All threads tied off")}</b><span class="ue-t">${text}</span></div>`;
   }
   function toast(msg, err) {
-    const el = $("#toast"); el.textContent = msg; el.className = err ? "err" : ""; el.hidden = false;
+    const el = $("#toast"); el.textContent = srvT(msg); el.className = err ? "err" : ""; el.hidden = false;
     clearTimeout(toast._t); toast._t = setTimeout(() => el.hidden = true, 2600);
   }
   async function postAct(kind, body = {}) {   // t-perf C: the bare POST (no toast, no poll); api() and the optimistic chat send share it
@@ -404,6 +585,8 @@
       const x = new XMLHttpRequest();
       x.open("POST", "/api/upload/raw?name=" + encodeURIComponent(file.name || "paste.png"));
       x.setRequestHeader("Content-Type", "application/octet-stream");
+      /* t-csrf-live: server.py refuses browser POSTs without X-Underthread */
+      x.setRequestHeader("X-Underthread", "1");
       x.upload.onprogress = e => { if (e.lengthComputable && onProgress) onProgress(e.loaded / e.total); };
       x.onload = () => {
         let j = {}; try { j = JSON.parse(x.responseText); } catch { }
@@ -678,6 +861,7 @@
       if (f.updated !== it.updated) { delete FULL[it.id]; continue; }
       it.draft = f.draft; it.versions = f.versions; delete it.slim;
     }
+    srvLocal();   /* t-i18n-b */
   }
   function fullItem(id) {
     return FULLP[id] || (FULLP[id] = fetch("/api/item?id=" + encodeURIComponent(id)).then(r => r.ok ? r.json() : null)
@@ -691,12 +875,13 @@
   const ARCH = { got: {}, pend: {}, miss: {}, all: null, v: null, p: null };
   const archIx = () => (ST && ST.meta && ST.meta.archive && ST.meta.archive.ix) || [];
   const archKnown = id => archIx().some(x => x[0] === id);
-  const archTitle = id => { const x = archIx().find(x => x[0] === id); return x ? x[1] : ""; };
+  const archTitle = id => { const x = archIx().find(x => x[0] === id); return x ? (UI.lang === "en" ? titleEn(x[1]) : x[1]) : ""; };
   const archFlag = x => Object.assign(x, { archived: true, _arch: 1 });
   function archMerge() {
     const real = new Set(), mine = new Set();
     for (const i of ST.items || []) (i._arch ? mine : real).add(i.id);
     for (const id of Object.keys(ARCH.got)) { if (real.has(id)) { delete ARCH.got[id]; continue; } if (!mine.has(id)) ST.items.push(ARCH.got[id]); }   // back on the server = the server's copy wins
+    srvLocal();   /* t-i18n-b: archived cards pushed back in */
   }
   function archItem(id) {
     if (ARCH.pend[id]) return ARCH.pend[id];
@@ -877,7 +1062,16 @@
   // ---------- header ----------
   function nextEvent() {
     const now = new Date();
-    const ev = (ST.calendar || []).map(c => ({ ...c, d: new Date(`${c.date}T${c.time || "00:00"}`) })).filter(c => c.d > now).sort((a, b) => a.d - b.d)[0];
+    /* t-ui-fix-r7 R7-04: today's 定时 runs that are still to come (meta.routines, 定时-page schedules, the 日报) count too, like the 今日日程 rail */
+    const today = dayKey(now), at = tm => new Date(`${today}T${tm}`), rep = ST.meta && ST.meta.report_time;
+    const runs = [...((ST.meta && ST.meta.routines) || []).filter(r => !r.paused && !r.disabled && r.time && r.last !== today).map(r => ({ time: r.time, title: rtShort(r) })),
+      ...schToday().filter(r => !r.ran && r.time).map(r => ({ time: r.time, title: rtShort(r) })),
+      ...(rep && ST.meta.last_report_date !== today ? [{ time: rep, title: UI.lang === "en" ? "Daily report" : "日报" }] : [])].map(r => ({ ...r, d: at(r.time) }));
+    /* r-improve-1112 P4: a run whose time has passed but that has not been sent yet is 「到点」 in the 今日日程 rail (rtRow); it goes first here too,
+       because those minutes are exactly when the user wants to know what is pending. Earliest due one wins; calendar events are not "due". */
+    const due = runs.filter(r => r.d <= now && !isNaN(r.d)).sort((a, b) => a.d - b.d)[0];
+    if (due) return `<b class="sy-due">${UI.lang === "en" ? "Due, not sent" : "到点未派"} · ${esc(due.time)} ${esc(due.title)}</b>`;
+    const ev = [...(ST.calendar || []).map(c => ({ ...c, d: new Date(`${c.date}T${c.time || "00:00"}`) })), ...runs].filter(c => c.d > now && !isNaN(c.d)).sort((a, b) => a.d - b.d)[0];
     if (!ev) return "";   // t-cal-fold: no upcoming event -> the header leaves the NEXT segment out
     const lbl = dayKey(ev.d) === dayKey(now) ? t("today_w") : dayKey(ev.d) === dayKey(new Date(Date.now() + 864e5)) ? t("tomorrow") : `${ev.d.getMonth() + 1}/${ev.d.getDate()}`;
     return `<b>${lbl} ${esc(ev.time || "")} ${esc(ev.title)}</b>`;
@@ -1005,20 +1199,48 @@
       + (compact ? `<span class="ru-age${U.stale ? " old" : ""}" title="${U.stale ? (en ? "may be out of date" : "可能已过期") : ""}">${age}</span></div>`
         : `<span class="ru-age">${U.stale ? `<em>${age} · ${en ? "may be out of date" : "可能已过期"}</em>` : age}</span></div>`);
   }
+  // t-soul-widget (user 11-11 00:43, option B): the desk Usage widget's lower half = 「Soul · quota per model」, one row per model; the top-bar Soul orb is hidden there.
+  // Claude = the same usage() as the orb (what is LEFT). Codex = meta.codex, the rate_limits snapshot server.py reads from the newest ~/.codex/sessions log
+  // (weekly window only); it only moves when Codex runs, so the row says when it was read and greys out past 24 h.
+  function soulSw(left) {   /* 3 x 4 knit V stitches, filled from the bottom = what is left */
+    const on = left == null ? 0 : Math.round(Math.max(0, Math.min(100, left)) / 100 * 12); let s = `<svg class="sl-sw" viewBox="0 0 30 36" aria-hidden="true"><rect class="cl" x="1" y="1" width="28" height="34" rx="4"></rect>`, n = 0;
+    for (let r = 3; r >= 0; r--) for (let c = 0; c < 3; c++) { const x = 5 + c * 7.2, y = 5 + r * 7.4; s += `<path class="${n++ < on ? "on" : "off"}" d="M${x.toFixed(1)} ${y.toFixed(1)}Q${(x + 1.2).toFixed(1)} ${(y + 4.6).toFixed(1)} ${(x + 3.3).toFixed(1)} ${(y + 5.4).toFixed(1)}Q${(x + 5.4).toFixed(1)} ${(y + 4.6).toFixed(1)} ${(x + 6.6).toFixed(1)} ${y.toFixed(1)}"></path>`; }
+    return s + "</svg>"; }
+  function soulHTML() {
+    const en = UI.lang === "en", U = usage(), C = ST.meta.codex;
+    const bar = (l, v, est) => `<div class="sl-b"><span>${l}</span><i><em style="--w:${v == null ? 0 : (Math.max(0, Math.min(100, v)) / 100).toFixed(3)}"></em></i><b>${v == null ? "—" : `${est ? "≈" : ""}${v}<small>%</small>`}</b></div>`;
+    const cAge = U.at ? relH("ago", U.at, ago(U.at)) : "";
+    const cRight = U.none ? (en ? "not connected" : "未接入") : U.stale ? `<em class="sl-old">${cAge}</em>` : U.sub ? (en ? U.sub.replace(/^full at /, "full at <b>") + (/^full at /.test(U.sub) ? "</b>" : "") : U.sub) : "";
+    const claude = `<div class="sl-m${U.stale ? " old" : ""}" title="${esc(U.tip)}">${soulSw(U.left)}<div class="sl-mn"><b>Claude</b></div><div class="sl-full">${cRight}</div>`
+      + `<div class="sl-bars">${bar(en ? "5-hour" : "5 小时", U.left, U.approx)}${bar(en ? "Week" : "本周", U.week, U.approxW)}</div></div>`;
+    let codex;
+    if (!C || C.used == null) codex = `<div class="sl-m old">${soulSw(null)}<div class="sl-mn"><b>Codex</b><small>${en ? "not read yet" : "还没读到"}</small></div><div class="sl-full"></div><div class="sl-bars">${bar(en ? "Week" : "本周", null)}</div></div>`;
+    else {
+      const at = D(C.at), old = !at || Date.now() - at > 864e5, rs = C.resets_at && D(C.resets_at), reset = !!rs && rs <= Date.now();
+      const left = reset ? 100 : Math.round(100 - C.used), plan = C.plan ? C.plan[0].toUpperCase() + C.plan.slice(1) : "";
+      const read = (en ? "last read · " : "上次读到 · ") + relH("ago", C.at, ago(C.at));
+      const right = reset ? (en ? "reset since" : "之后已重置") : rs ? (en ? `resets <b>${clock(C.resets_at)}</b>` : `<b>${clock(C.resets_at)}</b> 重置`) : "";
+      const tip = (en ? `Codex ${plan} · weekly ${Math.round(C.used)}% used` : `Codex ${plan} · 本周已用 ${Math.round(C.used)}%`) + (rs ? (en ? ` · resets ${clock(C.resets_at)}` : ` · ${clock(C.resets_at)} 重置`) : "")
+        + (en ? `\nRead from the newest Codex session log at ${hm(C.at)}; it only updates when Codex runs` : `\n${hm(C.at)} 从最新的 Codex 会话日志读到；Codex 跑过才会更新`);
+      codex = `<div class="sl-m${old ? " old" : ""}" title="${esc(tip)}">${soulSw(left)}<div class="sl-mn"><b>Codex</b>${plan ? `<small>${esc(plan)}</small>` : ""}</div><div class="sl-full">${right}</div>`
+        + `<div class="sl-bars">${bar(en ? "Week" : "本周", left, reset)}<span class="sl-rd">${read}</span></div></div>`;
+    }
+    return `<div class="sl" data-ru-open><div class="sl-sep">${en ? "Soul <span>quota per model</span>" : "体力 <span>· 每个模型的额度</span>"}</div><div class="sl-ms">${claude}${codex}</div></div>`;
+  }
   // n: rows to list; o.tot: the big total line; o.quota: the strip
   function ruHTML(n, o = {}) {
     const R = roleUsage(), en = UI.lang === "en";
-    if (!R) return `<div class="ru-wait">${en ? "Counting…" : "正在统计…"}</div>` + (o.quota ? ruQuota() : "");
+    if (!R) return `<div class="ru-wait">${en ? "Counting…" : "正在统计…"}</div>` + (o.soul ? soulHTML() : o.quota ? ruQuota() : "");
     const rows = R.rows, max = rows.length ? rows[0].new : 1, more = rows.length - n;
     const list = rows.length ? rows.slice(0, n).map((r, i) => `<div class="ru-row${r.a ? "" : " nd"}"${r.a ? ` data-chat="${esc(r.id)}"` : ""} title="${esc(ruTip(r))}" style="--ru-i:${i}">`
         + (r.a ? `<img class="ru-av" src="${avatarUrl(r.a)}" alt="">` : `<span class="ru-av"></span>`)
         + `<span class="ru-n"><span class="t">${esc(ruName(r))}</span>${r.a && r.a.status === "working" ? `<i class="ru-on" title="${en ? "working" : "工作中"}"></i>` : ""}</span>`
         + `<i class="ru-bar"><em data-ru="${esc(r.id)}" style="--ru-w:${Math.max(0.02, r.new / max).toFixed(3)}"></em></i><b data-ru-v="${r.new}">${fmtTok(r.new)}</b></div>`).join("")
-      : `<div class="ru-wait">${R.error ? (en ? `Could not read the transcripts (${esc(R.error)})` : `读不到会话记录（${esc(R.error)}）`) : (en ? "No tokens used yet today" : "今天还没用过")}</div>`;
+      : `<div class="ru-wait">${R.error ? (en ? `Could not read the transcripts (${esc(srvT(R.error))})` : `读不到会话记录（${esc(R.error)}）`) : (en ? "No tokens used yet today" : "今天还没用过")}</div>`;
     const tot = o.tot ? `<div class="ru-tot" data-ru-open><b data-ru-v="${R.total}" data-ru-k="tot">${fmtTok(R.total)}</b><span>${en ? `new tokens · plus ${fmtTok(R.cache_read)} cache reads` : `新 token · 另读缓存 ${fmtTok(R.cache_read)}`}</span></div>` : "";
     requestAnimationFrame(ruSettle);
     if (o.fit) requestAnimationFrame(ruFit);
-    return tot + `<div class="ru-list">${list}${more > 0 && o.more ? `<div class="ru-more" data-ru-open>${en ? `+${more} more ›` : `还有 ${more} 个 ›`}</div>` : ""}</div>` + (o.quota ? ruQuota(o.fit) : "");
+    return tot + `<div class="ru-list">${list}${more > 0 && o.more ? `<div class="ru-more" data-ru-open>${en ? `+${more} more ›` : `还有 ${more} 个 ›`}</div>` : ""}</div>` + (o.soul ? soulHTML() : o.quota ? ruQuota(o.fit) : "");
   }
   // Motion (11-04 rule): a bar grows from 0 the first time it is shown and glides from its previous length when the data changes;
   // numbers count up. Rebuilt DOM with the same data does nothing. prefers-reduced-motion: no transition (CSS) and no count.
@@ -1090,10 +1312,11 @@
     const okAt = UI.lastOk ? new Date(UI.lastOk).toTimeString().slice(0, 8) : "—";
     set('[data-v="c"]', down ? (en ? `offline · last answer ${okAt}` : `断线 · 最后一次连上 ${okAt}`) : (en ? `live · last checked ${okAt}` : `正常 · 最后确认 ${okAt}`));
     sy.querySelector('[data-v="c"]').className = down ? "bad" : "ok";
-    const M = (ST && ST.meta) || {}, c = M.comfy || {}, ag = ST ? agents().filter(a => a.enabled !== false && a.id !== "manager") : [];
+    const M = (ST && ST.meta) || {}, c = M.comfy || {}, ag = ST ? agents().filter(a => a.enabled !== false) : [];   /* t-ui-fix-r7 R7-03: the manager counts in the total too, since isBusy counts it when it is on a card */
     set('[data-v="d"]', M.updated ? `${hm(M.updated)} · ${ago(M.updated)}` : "—");
     set('[data-v="n"]', (ST && nextEvent()) || "—", true);
-    set('[data-v="t"]', en ? `${ag.length} · ${ag.filter(a => a.status === "working").length} working` : `${ag.length} 位 · ${ag.filter(a => a.status === "working").length} 位在忙`);
+    const nBusy = ag.filter(isBusy).length;   // t-ui-fix-r6 R6-08: same busy count as the home header
+    set('[data-v="t"]', en ? `${ag.length} · ${nBusy} working` : `${ag.length} 位 · ${nBusy} 位在忙`);
     set('[data-v="g"]', c.online ? (en ? "online" : "在线") : (en ? "not linked" : "未连"));
     set('[data-v="i"]', en ? `${M.inbox_unacked || 0} unhandled` : `${M.inbox_unacked || 0} 条没处理`);
     set(".sy-pop .ft", en ? "Click for System status · the manager's state is in the left rail" : "点一下打开系统状态 · 管家在线看左栏");
@@ -1144,7 +1367,8 @@
     const c = ST.meta.comfy || {};
     syncPaint();
     const U = usage();
-    const sta = $("#stamina");
+    const sta = $("#stamina");   /* t-topbar-soul-off: index.html no longer has it; the block below only runs if an old cached page still does */
+    if (sta) {
     sta.className = "stamina" + (U.stale ? " stale" : "") + (U.lost5 ? " lost" : "") + (U.approx ? " est" : "");
     sta.title = U.tip;
     // Build the soul vessel once so its waves keep flowing; later renders only move the level.
@@ -1173,12 +1397,14 @@
     sta.querySelector(".pct > small").textContent = MOBQ.matches ? U.subPh : U.sub;
     sta.querySelector(".focus").hidden = U.week == null;
     sta.querySelector(".focus i").style.width = (U.week ?? 0) + "%";
+    }
     const unread = mailUnread();   /* ri1105-P4: the server's count (a poll no longer carries every letter) */
     /* t-hdr-trim ①: the top bar keeps only 聊天 (narrow desktop). 舞台 / 主题 and 刷新用量 live in 设置, 报告 is a nav row.
        t-mailbox-top: 信箱 is back as a pill at the right end (desktop only; the rail row is hidden by CSS, the phone keeps it in 更多).
+       t-mailbox-icon (user 00:26): icon only; the word lives in title (hover tip) + aria-label, the unread count is a corner badge (none at 0).
        The SVG is written in its serialized form (explicit closing tags) so the innerHTML compare below stays equal and the pill is not rebuilt every poll. */
     const mlab = UI.lang === "en" ? "Mailbox" : "信箱", mn = unread > 99 ? "99+" : String(unread);
-    const hc = `<button data-h="mail" class="hc-mail" aria-label="${mlab}${unread ? " " + mn : ""}"><svg viewBox="0 0 16 16" aria-hidden="true"><rect x="1.8" y="3.2" width="12.4" height="9.6" rx="2"></rect><path class="ums-flap" d="M2.5 4.5 8 8.6l5.5-4.1"></path>${MAIL_X}</svg><span>${mlab}</span>${unread ? `<span class="n">${YARN}${mn}</span>` : ""}</button>`
+    const hc = `<button data-h="mail" class="hc-mail" title="${mlab}" aria-label="${mlab}${unread ? " " + mn : ""}"><svg viewBox="0 0 16 16" aria-hidden="true"><rect x="1.8" y="3.2" width="12.4" height="9.6" rx="2"></rect><path class="ums-flap" d="M2.5 4.5 8 8.6l5.5-4.1"></path>${MAIL_X}</svg>${unread ? `<span class="n">${YARN}${mn}</span>` : ""}</button>`
       + `<button data-h="chat" class="hc-chat" aria-expanded="${document.body.classList.contains("chat-pop")}">${UI.lang === "en" ? "Chat" : "聊天"}</button>`;
     if ($("#hdrctrl").innerHTML.trim() !== hc) $("#hdrctrl").innerHTML = hc;
   }
@@ -1186,22 +1412,24 @@
     const h = e.target.closest("[data-h]"); if (!h) return;
     const k = h.dataset.h;
     if (k === "theme") { UI.theme = { dark: "light", light: "white" }[UI.theme] || "dark"; LS.set("theme", UI.theme); render(); }   // D2: legacy cycle; the header picker uses [data-theme-set] (handled in mobile.js, same rt.theme key as the phone menu)
-    if (k === "lang") { UI.lang = UI.lang === "zh" ? "en" : "zh"; LS.set("lang", UI.lang); render(); }
+    if (k === "lang") { UI.lang = UI.lang === "zh" ? "en" : "zh"; LS.set("lang", UI.lang); srvLocal(); window.Push && Push.lang && Push.lang(UI.lang); render(); }
     if (k === "mail") { MB.open ? closeMailbox() : openMailbox(); }
     if (k === "chat") chatPop(!document.body.classList.contains("chat-pop"));
     if (k === "report") go("reports");
     if (k === "ping") api("ping", { note: "刷新用量" }).then(() => toast(UI.lang === "en" ? "Asked the manager to refresh usage" : "已让管家刷新用量"));   // t-settings-tab: same ping, with the note; 唤醒管家 moved to 设置 · 系统
-    if (k === "wake") api("ping").then(() => toast("ping → inbox"));
+    if (k === "wake") api("ping").then(() => toast(UI.lang === "en" ? "Manager pinged" : "已叫醒管家"));   // t-ui-fix-r6 R6-07: was the English-only 「ping → inbox」
   });
   $("#brand").addEventListener("click", () => go("review"));
-  $("#stamina").addEventListener("click", () => modalStatus());
+  { const sta = $("#stamina"); if (sta) sta.addEventListener("click", () => modalStatus()); }   /* t-topbar-soul-off: gone from index.html */
   $("#sync").addEventListener("click", e => { if (!e.target.closest("a,button")) modalStatus(); });
+  /* t-ui-fix-r6 R6-06: the pill is role=button + tabindex 0, so Enter / Space do what a click does */
+  $("#sync").addEventListener("keydown", e => { if ((e.key === "Enter" || e.key === " ") && e.target.id === "sync" && !e.repeat) { e.preventDefault(); modalStatus(); } });
 
   // ---------- ticker ----------
   function tickerItems() {
     const out = [];
     const now = Date.now();
-    for (const n of ST.notices || []) if (!n.until || new Date(n.until) > now) out.push({ text: n.text, level: n.level, id: n.id });
+    for (const n of ST.notices || []) if (!n.until || new Date(n.until) > now) out.push({ text: UI.lang === "en" && n.text_en || n.text, level: n.level, id: n.id });   /* t-i18n-c: text_en */
     const m = mgrState();
     if (m.sleep) out.unshift({ text: m.back ? t("mgr_sleep", { t: m.back, n: ST.meta.inbox_unacked || 0 }) : t("mgr_waking"), level: "info" });
     else if (!m.on && ST.meta.inbox_unacked) out.unshift({ text: t("mgr_offline", { n: ST.meta.inbox_unacked }), level: "urgent" });
@@ -1243,9 +1471,21 @@
      rtFull keeps the whole label minus the item id, for title tooltips. */
   function rtShort(r) { return String(r.label || r.id).replace(/[（(][^）)]*[）)]/g, "").replace(/^.*?每日\s*(\d+\s*个\s*)?(一条|打磨)?/, "").replace(/^app\s*/i, "").trim() || r.id; }
   function rtFull(r) { return String(r.label || r.id).replace(/[（(][^）)]*[）)]/g, "").trim() || r.id; }
+  /* t-ri1110-a P2: schedules made on the 定时 page (state.schedules without a `routine`; imported routines already come as meta.routines) that run
+     today: it ran today (last) or its next run is today. The 18:00 管家日报 entry is skipped when meta.report_time already gives the 日报 row.
+     -> [{ time "HH:MM", label, ran, who, item }] in the meta.routines shape, so the rail and the home timeline treat both alike. */
+  function schToday() {
+    const today = dayKey(new Date()), dk = t => t ? dayKey(new Date(t)) : "", rep = ST.meta && ST.meta.report_time;
+    return (ST.schedules || []).filter(s => s && !s.deleted && !s.routine && s.rule).filter(s => {
+      const at = String(s.rule.at || ""), tm = at.includes("T") ? at.split("T")[1] : at;
+      if (rep && tm === rep && /日报/.test(s.title || "") && (s.task || {}).agent === "manager") return false;
+      return dk(s.last) === today || (s.enabled && !s.paused && dk(s.next) === today);
+    }).map(s => { const at = String(s.rule.at || ""), t = s.task || {};
+      return { id: s.id, time: (at.includes("T") ? at.split("T")[1] : at).slice(0, 5), label: s.title || s.id, ran: dk(s.last) === today, who: t.agent || null, item: t.item || null }; });
+  }
   function renderLeft() {
     const c = counts();
-    const navs = ["review", ...CATS, "sep", "crew", "market", "studio", "reports", "mail", "settings"];   /* t-nav-shoot (11-05): 制作线 / 委托板 / 频道 / 素材 are one 制作 row; the pages keep their own ids */   /* t-hdr-trim ①: 信箱 moved here from the top bar (phone: same row in 更多) */   // t-settings-tab: 日志 / 文档 / 角色 moved into 设置
+    const navs = ["review", ...CATS, "sep", "market",   /* t-drop-team-tab (11-12): 团队 row removed; the 团队交接 widget stays (web/team.js) */ "studio", "reports", "mail", "settings"];   /* t-nav-shoot (11-05): 制作线 / 委托板 / 频道 / 素材 are one 制作 row; the pages keep their own ids */   /* t-hdr-trim ①: 信箱 moved here from the top bar (phone: same row in 更多) */   // t-settings-tab: 日志 / 文档 / 角色 moved into 设置
     const selK = STU.includes(UI.page) ? "studio" : UI.page, sew = UI.navSew !== selK; UI.navSew = selK;   /* t-thread-motif ②: the thread sews in only when the selection changes, not on every poll rebuild */
     $("#nav").innerHTML = navs.map(k => k === "sep" ? `<div class="nav-sep"></div>` :
       `<button class="nav-i ${selK === k ? "on" : ""} ${k === "urgent" && c.urgent ? "urgent" : ""}" data-go="${k}"><span>${NAV_IC[k] ? `<i class="nv-ic" aria-hidden="true"><svg viewBox="0 0 24 24">${NAV_IC[k]}</svg></i>` : ""}<span class="nv-t">${t(k)}${selK === k ? `<svg class="nv-ul${sew ? " sew" : ""}" viewBox="0 0 100 6" preserveAspectRatio="none" aria-hidden="true"><path pathLength="1" d="M1 3.6C20 2.2 40 4.4 60 3.2S88 2.6 96 3.4"/></svg><i class="nv-knot${sew ? " sew" : ""}" aria-hidden="true"></i>` : ""}</span></span>${k === "mail" ? (c.mail ? `<span class="n mb">${YARN}${c.mail > 99 ? "99+" : c.mail}</span>` : `<span class="n z"></span>`) : `<span class="n${c[k] === 0 ? " z" : ""}">${c[k] ?? ""}</span>`}</button>`).join("");
@@ -1268,12 +1508,13 @@
     const rtLive = rts.filter(r => !r.paused && !r.disabled && r.time), rtOff = rts.filter(r => r.paused || r.disabled);
     const sent = UI.lang === "en" ? "sent" : "已派";
     const rtRows = rtLive.map(r => rtRow(r.time, itemOwner(r.item), rtName(r), r.last === today ? sent : "", r.item, rtFull(r)));
+    for (const r of schToday()) rtRows.push(rtRow(r.time, (r.item && itemOwner(r.item)) || r.who, rtName(r), r.ran ? sent : "", r.item, rtFull(r)));   /* t-ri1110-a P2 */
     if (ST.meta) rtRows.push(rtRow(ST.meta.report_time || "", "manager", UI.lang === "en" ? "Daily report" : "日报", ST.meta.last_report_date === today ? (UI.lang === "en" ? "sent" : "已发") : "", ""));
     const nowHM = `${pad(new Date().getHours())}:${pad(new Date().getMinutes())}`;
     $("#cal").classList.toggle("cal-empty", !evs.length && !rtRows.length && !UI.calForm);   // t-cal-fold: nothing today or tomorrow -> one faint row, "+" still there
     if (!evs.length && !rtRows.length && !UI.calForm) $("#cal").innerHTML = `<div class="side-h"><span>${t("today")} · ${UI.lang === "en" ? "none" : "无"}</span><button data-cal-add>+</button></div>`;
     else $("#cal").innerHTML = `<div class="side-h"><span>${t("today")} <span class="dim" style="font-weight:400">${evs.filter(e => e.date === today).length + rtRows.length} ${t("meetings")}</span></span><button data-cal-add>${UI.calForm ? "−" : "+"}</button></div>
-      ${UI.calForm ? `<form class="cal-form" id="calf"><input type="date" name="date" value="${today}"><input type="time" name="time"><input name="title" placeholder="…" required style="flex:1"><button class="btn-s">${t("add")}</button></form>` : ""}
+      ${UI.calForm ? `<form class="cal-form" id="calf"><input name="title" placeholder="${UI.lang === "en" ? "What…" : "做什么…"}" required><input type="date" name="date" value="${today}"><input type="time" name="time"><button class="btn-s">${t("add")}</button></form>` : ""}
       ${[...evs.map(e => ({ k: (e.date === tmr ? "1" : "0") + (e.time || "99"), h: `<div class="cal-i ${e.date === today && e.time && e.time < nowHM ? "past" : ""}"><span class="tm">${e.date === tmr ? "+1 " : ""}${esc(e.time || "—")}</span><span>${esc(e.title)}</span><button class="x" data-cal-del="${e.id}">✕</button></div>` })), ...rtRows].sort((x, y) => x.k < y.k ? -1 : x.k > y.k ? 1 : 0).map(x => x.h).join("")}
       ${rtOff.length ? `<div class="cal-off" title="${esc(rtOff.map(rtName).join("、"))}">${UI.lang === "en" ? "Paused" : "暂停"} ${rtOff.length}${UI.lang === "en" ? "" : " 项"} · ${esc(rtOff.map(rtName).join("、"))}</div>` : ""}
       <div class="cal-now">${nowHM}</div>`;
@@ -1322,7 +1563,7 @@
     const en = UI.lang === "en";
     return `<div class="st-tabs stu-tabs"><div class="seg" data-seg="stutab" role="tablist">${STU.map(x => `<button type="button" class="seg-i ${x === k ? "on" : ""}" role="tab" aria-selected="${x === k}" data-stutab="${x}">${STU_L[x][en ? 1 : 0]}</button>`).join("")}</div></div>`;
   }
-  const pageAlias = p => { if (p === "studio") { const l = LS.get("stuTab", "pipe"); return STU.includes(l) ? l : "pipe"; } if (["roles", "docs", "logs"].includes(p)) { UI.setTab = p; LS.set("setTab", p); return "settings"; } return p === "home" ? "review" : p === "team" ? "crew" : p; };   // t-settings-tab: old pages = 设置 tabs   // r-improve-1102 P5: #page=home (the phone 首页 tab's name) = the 首页 page, key "review"
+  const pageAlias = p => { if (p === "studio") { const l = LS.get("stuTab", "pipe"); return STU.includes(l) ? l : "pipe"; } if (["roles", "docs", "logs"].includes(p)) { UI.setTab = p; LS.set("setTab", p); return "settings"; } return p === "home" || p === "team" || p === "crew" ? "review" : p; };   /* t-drop-team-tab: old 团队 links land on 首页 */   // t-settings-tab: old pages = 设置 tabs   // r-improve-1102 P5: #page=home (the phone 首页 tab's name) = the 首页 page, key "review"
   function go(p) {
     p = pageAlias(p);
     // the "new" group on the review page compares against when you last left it
@@ -1342,6 +1583,9 @@
     if (STU.includes(k)) return `<div class="ph ph-studio ph-${k}">${inkEb("Underthread")}<h1>${t("studio")}</h1>${UI.lang === "zh" ? `<div class="en">${EN_SUB.studio}</div>` : ""}${orn()}</div>${stuTabs(k)}${extra}`;   // t-nav-shoot
     return `<div class="ph ph-${k}">${inkEb("Underthread")}<h1>${t(k)}</h1>${UI.lang === "zh" ? `<div class="en">${EN_SUB[k] || ""}</div>` : ""}${orn()}</div>${extra}`;
   }
+
+
+  /* t-card-fn-fix: restored from app.js.bak-hstrim1; t-home-style-trim dropped it, but stageGroups / catPage / the board still draw .card with it */
   function card(it) {
     const a = agent(it.owner), ws = workersOf(it.id);
     const kind = it.stage === "review" || awaitsUser(it) ? (it.kind === "task" ? "deliverable" : it.kind) : null;
@@ -1495,7 +1739,7 @@
   function askRow(it) {   // list cards: the first open question with its options, answerable in place
     const oa = openAsks(it); if (!oa.length) return "";
     const zh = UI.lang !== "en", a = oa[0];
-    return `<div class="ask-row"><div class="ask-rt"><i></i><b>${zh ? `${oa.length} 个问题要你选` : `${oa.length} question${oa.length > 1 ? "s" : ""} for you`}</b><span> · ${esc(a.q)}</span></div>${askChips(it, a, " sm")}${oa.length > 1 ? `<span class="ask-more">+${oa.length - 1}</span>` : ""}</div>`;
+    return `<div class="ask-row"><div class="ask-rt"><i></i><b>${zh ? `${oa.length} 个问题要你选` : `${oa.length} question${oa.length > 1 ? "s" : ""} for you`}</b><span><span class="ask-sep"> · </span>${esc(a.q)}</span></div>${askChips(it, a, " sm")}${oa.length > 1 ? `<span class="ask-more">+${oa.length - 1}</span>` : ""}</div>`;
   }
   // t-m-ask-sheet: the dock's question bar is one line (● n 个问题 · question ⌄) until tapped. A question shown here for the first time opens it;
   // after that it stays as the user left it while the card is open (ab._open lives on the bar, which is rebuilt each time a card opens).
@@ -1700,7 +1944,7 @@
     return out.join("\n");
   }
   function mailPv(s, a) {   // t-chat-table: phones use it too now (mail rows + 动态 rows)
-    s = tablePv(s).replace(/!?\[([^\]]*)\]\([^)]*\)/g, "$1").replace(/\*\*(.+?)\*\*/g, "$1").replace(/__(.+?)__/g, "$1").replace(/`([^`]+)`/g, "$1")
+    s = tablePv(srvT(s)).replace(/!?\[([^\]]*)\]\([^)]*\)/g, "$1").replace(/\*\*(.+?)\*\*/g, "$1").replace(/__(.+?)__/g, "$1").replace(/`([^`]+)`/g, "$1")
       .replace(/^\s{0,3}(#{1,6}\s+|>\s?|[-*+]\s+)/gm, "").replace(/\*\*/g, "").replace(/\s+/g, " ").trim();   /* t-ri1108-a P1: a cut-off bold leaves a lone ** */
     for (const n of ["管家", "manager", a && aname(a), a && a.id].filter(Boolean)) {
       const re = new RegExp("^" + n.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + "\\s*[:：]\\s*");
@@ -1709,7 +1953,13 @@
     return s;
   }
   // t-web-audit 11: runs of manager heartbeats fold into one dim row; bare "agent <id>" lines are hidden
+  /* t-ui-fix-r2 audit P2-5: the zh log showed raw action words (reply on t-…, upsert t-… [doing] …, mail_read). Display-time only; stored text is unchanged. */
+  const LOG_ZH = [[/^reply on \S+$/, () => "在卡上回复"], [/^upsert \S+ \[(\w+)\] (.*)$/, m => `更新卡片 · ${stageLabel(m[1])} · ${m[2]}`], [/^mail_read$/, () => "读了信"],
+    [/^answer \S+$/, () => "回答了问题"], [/^approve \S+$/, () => "批准"], [/^comment \S+$/, () => "评论"], [/^ask \w+: (.*)$/, m => `提问：${m[1]}`], [/^ask-close \w+$/, () => "问题已关闭"],
+    [/^lesson$/, () => "规则提议"], [/^chat$/, () => "发消息"], [/^done \S+$/, () => "关单"], [/^dm$/, () => "私信"]];
+  function logText(s) { s = String(s ?? ""); if (UI.lang === "en") return srvT(s); for (const [re, fn] of LOG_ZH) { const m = re.exec(s); if (m) return fn(m); } return s; }
   function logRows(list) {
+    if (!UI.logAgent) list = list.filter(l => l.text !== "mail_read");   /* t-ui-fix-r2 audit P2-5: 全部 hides the ~half of rows that were 「我 · mail_read」; the 我 filter still lists them */
     if (MOBQ.matches) return list.map(l => ({ l }));   // desktop only for now
     const HB = /^(Online: watching the inbox|在线：盯收件箱)/, AID = /^agent [0-9a-f]{12,}$/, out = [];
     for (const l of list) {
@@ -1728,7 +1978,7 @@
     const x = th[th.length - 1];
     if (!x) return it.stage === "done" ? (en ? "Closed" : "已关单") : it.stage === "review" ? (en ? "Waiting for your review" : "等你验收") : stageLabel(it.stage);
     const who = x.who === "me" ? (en ? "You" : "你") : x.who ? aname(agent(x.who)) : "";
-    let s = mailPv(x.text, x.who && x.who !== "me" ? agent(x.who) : null);
+    let s = mailPv(x.kind && x.kind !== "msg" ? srvT(x.text, true) : x.text, x.who && x.who !== "me" ? agent(x.who) : null);   /* t-i18n-b: 驳回 · … lines */
     if ([...s].length > 60) s = [...s].slice(0, 60).join("") + "…";
     return who && !(rowA && x.who === rowA.id) ? who + (en ? ": " : "：") + s : s;
   }
@@ -1751,7 +2001,7 @@
     ongoing() { return Array.isArray(ST.schedules) ? schedPage() : ongoingPage(); },   /* t-ri1104-p3; t-schedule-ui: 定时 page when the server sends state.schedules */
     review() {
       if (widgetHome()) return window.Widgets ? Widgets.html($("#pagebody"), rulesBlock()) : rulesBlock();   // t-home-widgets: null = keep the current DOM
-      const phoneLike = MOBQ.matches || appHome();   // t-home-applike: the desktop app-style home renders the phone home
+      const phoneLike = MOBQ.matches;   /* t-home-style-trim: on a desktop the 首页 is always the widget home above, so below here is the phone home */
       const hf = phoneLike ? (UI.hf || "review") : "review", wkc = wkFrom();   /* ri1107-P3: same 7 calendar days as the count */   // hf: set by the phone home strip's stat row
       const list = items().filter(i => i.id !== RV.pending && (hf === "week" ? (i.stage === "done" && i.closed && new Date(i.closed) > wkc) : hf === "review" ? onYouCard(i) : grpOf(i) === hf)).sort(UI.sort === "created" ? byCreated : byAct);
       const dec = hf === "review" ? decisions() : [];   // t-imp-p1
@@ -1767,7 +2017,7 @@
       const seen = UI.seen.review || "";
       const fresh = list.filter(i => (i.activity || "") > seen);
       let html = pageHead("review", bar) + sz;
-      const mob = phoneLike, rowf = i => mob ? reviewRow(i, !!seen && fresh.includes(i)) : card(i), wrap = h => mob ? `<div class="act-list">${h}</div>` : h;
+      const mob = phoneLike, rowf = i => reviewRow(i, !!seen && fresh.includes(i)), wrap = h => `<div class="act-list">${h}</div>`;
       if (mob && hf === "review") {   // P5: one flat column of review cards (new first, then by category), no group headers; the category sits in each card's meta line
         const rest = seen ? list.filter(i => !fresh.includes(i)) : list, cats = ["urgent", "main", "side", "daily", "ongoing"];
         const ord = (seen ? fresh : []).concat(cats.flatMap(c => rest.filter(i => i.category === c)), rest.filter(i => !cats.includes(i.category)));
@@ -1796,14 +2046,17 @@
       const got = logsFor(UI.logAgent), list = (got || []).slice(-400).reverse();   /* ri1105-P4: logs come from /api/history while this tab is open */
       return pageHead("logs") + `<div class="filters"><div class="seg" data-seg="logs">${ids.map(id => `<button class="seg-i ${UI.logAgent === id ? "on" : ""}" data-logf="${id}">${id ? esc(whoName(id)) : t("all")}</button>`).join("")}</div></div>` +
         (list.length ? logRows(list).map(({ l, hb, n }) => hb ? `<div class="log-i hb"><span class="tm">${whenH(l.t)}</span>${av(agent(l.agent), "sm")}<span>${esc(whoName(l.agent))}</span><span>${UI.lang === "en" ? "Heartbeat" : "在线心跳"}${n > 1 ? ` × ${n}` : ""}</span></div>` : `<div class="log-i"><span class="tm">${whenH(l.t)}</span>${l.agent === "me" ? av("me", "sm") : av(agent(l.agent), "sm")}<span>${esc(whoName(l.agent))}</span>
-          <span>${l.item ? `<span class="it" data-item="${l.item}">${esc(l.item)}</span> ` : ""}${esc(l.text)}</span></div>`).join("") : got ? `<div class="empty">${t("empty")}</div>` : `<div class="empty">${UI.lang === "en" ? "Loading…" : "载入中…"}</div>`);
+          <span>${l.item ? `<span class="it" data-item="${l.item}">${esc(l.item)}</span> ` : ""}${esc(logText(l.text))}</span></div>`).join("") : got ? `<div class="empty">${t("empty")}</div>` : `<div class="empty">${UI.lang === "en" ? "Loading…" : "载入中…"}</div>`);
     },
     reports() {
       const list = (ST.reports || []).slice().reverse();
       const open = UI.openRep || (list[0] && list[0].id);
       return pageHead("reports", `<div class="ph-bar"><button class="btn-s" data-repreq>${t("report_req")}</button></div>`) +
-        (list.length ? list.map(r => `<div class="rep"><div class="rep-h" data-rep="${r.id}"><b>${esc(r.title)} · ${esc(r.date)}</b><span class="dim">${whenH(r.t)}</span></div>
-          ${r.id === open ? `<div class="md" style="margin-top:10px">${md(r.body)}</div>` : ""}</div>`).join("") : `<div class="empty">${t("reports_empty", { t: "18:00" })}</div>`);
+        (list.length ? list.map(r => {
+          /* t-ri1110-a P5: a body that opens with its own 「# 日报 …」 line said the title twice; that line becomes the row title (keeps the weekday) */
+          const m = /^#\s+(日报[^\n]*)\n*/.exec(r.body || ""), head = m ? m[1].trim() : `${r.title} · ${r.date}`, body = m ? r.body.slice(m[0].length) : r.body;
+          return `<div class="rep"><div class="rep-h" data-rep="${r.id}"><b>${esc(head)}</b><span class="dim">${whenH(r.t)}</span></div>
+          ${r.id === open ? `<div class="md" style="margin-top:10px">${md(body)}</div>` : ""}</div>`; }).join("") : `<div class="empty">${t("reports_empty", { t: "18:00" })}</div>`);
     },
     channels() {
       const its = items().filter(i => i.stage !== "done" || new Date(i.closed || i.updated) > Date.now() - 14 * 864e5);
@@ -1816,9 +2069,12 @@
     docs() {
       if (!UI.docs) { fetch("/api/docs").then(r => r.json()).then(d => { UI.docs = d; renderPage(); }); return pageHead("docs"); }
       const groups = {}; for (const d of UI.docs) (groups[d.group] = groups[d.group] || []).push(d);
-      return pageHead("docs") + `<div class="docs"><div class="dl">${Object.entries(groups).map(([g, ds]) => `<div class="g">${esc(g)}</div>` +
-        ds.map(d => `<button class="${UI.doc === d.path ? "on" : ""}" data-doc="${esc(d.path)}" title="${esc(d.path)}">${esc(d.path.split("/").pop())}</button>`).join("")).join("")}</div>
-        <div class="md">${UI.doc ? md(UI.docText) : `<div class="empty">${t("docs_pick")}</div>`}</div></div>`;
+      /* t-phone-docs: phones stack the panes, so the text landed under the long list. .has-doc hides the list there (mobile.css) and
+         .doc-back returns to it; on desk the back button is hidden and both panes stay. */
+      const en = UI.lang === "en", back = UI.doc ? `<button type="button" class="doc-back" data-doc-back>‹ ${en ? "All docs" : "全部文档"}<span>${esc(UI.doc.split("/").pop())}</span></button>` : "";
+      return pageHead("docs") + `<div class="docs${UI.doc ? " has-doc" : ""}"><div class="dl">${Object.entries(groups).map(([g, ds]) => `<div class="g">${esc(g)}</div>` +
+        ds.map(d => `<button class="${(UI.doc || UI.docLast) === d.path ? "on" : ""}" data-doc="${esc(d.path)}" title="${esc(d.path)}">${esc(d.path.split("/").pop())}</button>`).join("")).join("")}</div>
+        <div class="md">${back}${UI.doc ? (UI.docText ? md(UI.docText) : `<div class="empty">${en ? "Loading…" : "加载中…"}</div>`) : `<div class="empty">${t("docs_pick")}</div>`}</div></div>`;
     },
     roles() {
       const ls = ST.lessons || [];
@@ -1894,7 +2150,7 @@
       const link = it ? `<a href="#" class="rl-src" data-item="${esc(it.id)}">${esc(it.title)}</a>` : "";
       const dim = [it ? it.title : "", l.t ? l.t.slice(0, 10) : ""].filter(Boolean).join(" · ");
       return `<div class="rl-row ${common ? "common" : ""}">${who}<div class="rl-main"><div class="rl-top"><span class="rl-tag">${common ? (en ? "Team" : "全员") : (en ? "Rule" : "规则")}</span>${common ? `<span class="rl-tag">${en ? "Rule" : "规则"}</span>` : ""}<b class="rl-nm">${esc(nm)}</b>${link}</div>
-        <div class="rl-tx">${esc(l.text)}</div><div class="rl-dim dim">${esc(dim)}</div></div>
+        <div class="rl-tx">${esc(srvT(l.text))}</div><div class="rl-dim dim">${esc(dim)}</div></div>
         <div class="rl-bt"><button class="btn-s" data-lesson="${l.id}" data-d="adopt">${t("adopt")}</button><button class="btn-s" data-lesson="${l.id}" data-d="drop">${t("drop")}</button></div></div>`;
     }).join("");
     return `<div class="rl-block"><div class="grp-h"><b>${en ? "Rules awaiting your call" : "待确认的规则"}</b> · ${ls.length}</div>${rows}</div>`;
@@ -1988,7 +2244,6 @@
       + (ut => { const st = ut ? stageSaved() : !!R.dataset.stage; return stRow(en ? "Stage background" : "舞台背景", stageSub(en, ut), stSw(st), `data-stage-tog aria-pressed="${st}"` + (ut ? ' aria-disabled="true"' : ""), "button").replace('class="st-row"', `class="st-row${ut ? " st-dis" : ""}"`); })(!!R.dataset.ut)
       + stRow(en ? "Power saving" : "省电模式", psSub(psNow()), stSw(psNow()), `data-power-tog aria-pressed="${psNow()}"`)
       + spRow(en)
-      + (MOBQ.matches ? "" : stRow(en ? "Home style" : "首页样式", en ? "This computer only" : "只在这台电脑生效", stSeg("homestyle", [["dense", "紧凑", "Dense"], ["widgets", "小组件", "Widgets"], ["app", "app 式", "App"], ["classic", "原来的", "Classic"]], UI.home, "data-home-set"), "", "div"))
       + stRow(en ? "Language" : "界面语言", "", stSeg("lang", [["zh", "中文", "中文"], ["en", "English", "English"]], UI.lang, "data-lang-set"), "", "div");
     const P = window.Push ? Push.status() : null;
     const push = P ? stRow(en ? "Notifications" : "推送通知", esc(P.label) + (P.diag ? `<span class="st-diag">${esc(P.diag)}</span>` : ""), stSw(P.on), `data-set="push" aria-pressed="${!!P.on}"`)
@@ -2003,7 +2258,7 @@
     loadRoleUsage();
     const rows = stRow(en ? "System status" : "系统状态", `<span class="sy-sum-t ${SY.lv}">${esc(SY.txt)}</span>`, `<em class="st-go">›</em>`, `data-set="status"`)
       + (typeof ghOpen === "function" ? stRow(en ? "GitHub push token" : "GitHub 推送令牌", esc(ghLabel()), `<em class="st-go">›</em>`, `data-set="ghtok"`) : "")
-      + stRow(en ? "Wake the manager" : "唤醒管家", en ? "Drops a ping in the inbox; use it when the manager is asleep or offline" : "往收件箱发一条 ping，管家休眠或离线时用", `<em class="st-go">›</em>`, `data-h="wake"`);
+      + stRow(en ? "Wake the manager" : "唤醒管家", en ? "Drops a ping in the inbox; use it when the manager is asleep or offline" : "往收件箱发一条 ping，管家休眠或离线时用", `<em class="st-act" aria-hidden="true">${en ? "Ping" : "叫醒"}</em>`, `data-h="wake"`);   /* t-ui-fix-r6 R6-07: acts at once, so an action pill instead of the 「›」 that the dialog rows use */
     return stSec(en ? "System" : "系统", rows) + `<section class="st-sec st-ru"><h4>${en ? "Usage by role · today" : "各角色用量 · 今天"}</h4>${ruHTML(99, { tot: true, quota: true })}</section>`;
   }
   /* t-power-toggle: 省电模式 (rt.powerSave, kept by fx.js). The click flips the switch in place (no re-render) so the knob slide and the caption fade are seen. */
@@ -2071,7 +2326,7 @@
     return pageHead("settings") + tabs + `<div class="st-pane st-p-${k}${UI.stDir ? " st-in-" + UI.stDir : ""}" role="tabpanel">${body || ""}</div>`;
   };
   document.addEventListener("click", e => {
-    const l = e.target.closest("[data-lang-set]"); if (l && l.dataset.langSet !== UI.lang) { UI.lang = l.dataset.langSet; LS.set("lang", UI.lang); render(); }
+    const l = e.target.closest("[data-lang-set]"); if (l && l.dataset.langSet !== UI.lang) { UI.lang = l.dataset.langSet; LS.set("lang", UI.lang); srvLocal(); window.Push && Push.lang && Push.lang(UI.lang); render(); }
   });
   PAGES.pipe = function () {
     const en = UI.lang === "en", all = items().filter(i => i.stage !== "done" && ["main", "side"].includes(i.category));
@@ -2089,7 +2344,8 @@
     }).join("");
     /* t-ri1108-a P5: one line + 「展开 ›」; the list opens one card per line. RI8.skip keeps it open across poll rebuilds; the click flips the class in place. */
     const skip = skipped.length ? `<div class="pl-skip${RI8.skip ? " ri8-open" : ""}"><div class="ri8-skip-h"><span>${en ? `${skipped.length} more main/side card(s) are not in the pipeline (no platform, no pipe tag, owner not in the content group)` : `另有 ${skipped.length} 张主线/支线卡没放进制作线（没平台、没 pipe 标签、负责人不在内容组）`}</span><button type="button" class="ri8-skip-t" data-ri8-skip aria-expanded="${RI8.skip}">${RI8.skip ? (en ? "Hide ‹" : "收起 ‹") : (en ? "Show ›" : "展开 ›")}</button></div><div class="ri8-skip-l"><div>${skipped.map(i => `<a href="#" data-item="${i.id}">${esc(i.title)}</a>`).join("")}</div></div></div>` : "";
-    return pageHead("pipe", bar) + wk.html + empty + `<div class="pl-board">${cols}</div>` + skip;
+    /* t-ui-fix-r2 audit P2-10: at 1100 the last columns sit past the edge behind a faint fade only; a line under the board says so (shown only while .more) and scrolls on click */
+    return pageHead("pipe", bar) + wk.html + empty + `<div class="pl-board">${cols}</div><button type="button" class="pl-more-h" data-pl-next>${en ? "More stages to the right · scroll →" : "右边还有阶段 · 横向滚动 →"}</button>` + skip;
   };
   const RI8 = { skip: false };
   document.addEventListener("click", e => {
@@ -2110,10 +2366,11 @@
   });
   document.addEventListener("scroll", e => { const el = e.target; if (el.classList && (el.classList.contains("pl-board") || el.classList.contains("pl-week"))) { plSL[el.classList[0]] = el.scrollLeft; plFade(el); } }, true);
   window.addEventListener("resize", () => { if (UI.page === "pipe") document.querySelectorAll(".pl-week, .pl-board").forEach(plFade); });
+  document.addEventListener("click", e => { const b = e.target.closest("[data-pl-next]"), el = b && b.previousElementSibling; if (el && el.classList.contains("pl-board")) el.scrollBy({ left: Math.round(el.clientWidth * .8), behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" }); });
   document.addEventListener("click", e => {
     const a = e.target.closest("[data-pl-add]"); if (!a) return;
     UI.calForm = true; renderLeft();
-    const f = $("#calf"); if (f) { f.date.value = a.dataset.plAdd; f.title.focus(); if (!f.title.placeholder || f.title.placeholder === "…") f.title.placeholder = UI.lang === "en" ? "e.g. Bilibili · EP1" : "例：B站 · EP1"; }
+    const f = $("#calf"); if (f) { f.date.value = a.dataset.plAdd; f.title.focus(); if (!f.title.dataset.ex) f.title.dataset.ex = 1, f.title.placeholder = UI.lang === "en" ? "e.g. Bilibili · EP1" : "例：B站 · EP1"; }
   });
   document.addEventListener("dragstart", e => { const d = e.target.closest("[data-pdrag]"); if (d) e.dataTransfer.setData("text/pipe", d.dataset.pdrag); });
   document.addEventListener("dragover", e => { const c = e.target.closest("[data-pdrop]"); if (c && e.dataTransfer.types.includes("text/pipe")) { e.preventDefault(); c.classList.add("over"); } });
@@ -2176,6 +2433,8 @@
     const { box, sc } = mailboxEls(); box.classList.remove("open"); sc.classList.remove("open"); document.body.classList.remove("mailopen");
     clearTimeout(MB.ct); MB.ct = setTimeout(() => { if (MB.open) return; box.hidden = true; sc.hidden = true; box.innerHTML = ""; }, 200);
   }
+  /* t-ui-fix-r2 B11: any modal (系统状态, 关单, role files, voice…) closes the mailbox drop-down first, so they never stack and one Esc is enough */
+  { const mo = document.getElementById("modal"); if (mo) new MutationObserver(() => { if (!mo.hidden && MB.open) closeMailbox(); }).observe(mo, { attributes: true, attributeFilter: ["hidden"] }); }
   document.addEventListener("click", e => {
     if (e.target.closest("[data-mbfull]")) { closeMailbox(); go("mail"); return; }
     if (MB.open && e.target.closest("#mailbox [data-mail]")) setTimeout(closeMailbox, 0);
@@ -2422,7 +2681,7 @@
     const fireSub = s.kind === "remind" ? (zh ? "现在就发一条提醒" : "Send the reminder now") : (zh ? "现在就交给管家派活" : "Hand it to the manager now");
     const pop = snzOpen(`<div class="snz-h"><b>${esc(schName(s, schWho(s)))}</b><small>${esc(schRule(s.rule))}</small></div>` +
       (fin ? "" : `<button type="button" class="snz-o" role="menuitem" data-sc-fire><b>${zh ? "立即运行" : "Run now"}</b><span>${fireSub}</span></button>`) +
-      `<button type="button" class="snz-o sc-del" role="menuitem" data-sc-del><b>${zh ? "删除" : "Delete"}</b><span>${zh ? "5 秒内可撤销" : "undo within 5 s"}</span></button>`, b);
+      `<button type="button" class="snz-o sc-del" role="menuitem" data-sc-del><b>${zh ? "删除" : "Delete"}</b><span>${zh ? "5 秒内可撤销" : "undo within 5 s"}</span></button>`, b, null, true);
     pop.addEventListener("click", e => {
       if (e.target.closest("[data-sc-fire]")) {
         pop.classList.add("busy");
@@ -2730,19 +2989,6 @@
     return { review: rev.length + its.filter(i => awaitsUser(i) && !busy(i) && !snoozed(i)).length + newReplies().length, doing: its.filter(i => grpOf(i) === "doing").length, todo: its.filter(i => grpOf(i) === "todo").length,
       week: its.filter(i => i.stage === "done" && i.closed && new Date(i.closed) > wk).length, oldest: rev.length ? Math.min(...rev.map(i => new Date(i.activity || i.updated))) : null };
   }
-  // t-visual-stage: pins on the terrace picture (positions are fractions of the hero image; a new role without a seat is skipped)
-  /* t-hr-registry: seat = roster "seat" ([x, y] in 0-1; null = off the stage), else a spare seat the server hands out (meta.seats) */
-  const seatOf = a => a.enabled === false ? null : Array.isArray(a.seat) ? a.seat : a.seat === null ? null : (ST.meta.seats || {})[a.id] || null;
-  function stageHero(ob) {
-    if (ob.dataset.hv !== "stage") { ob.dataset.hv = "stage"; ob.innerHTML = ""; ob._stg = ""; }
-    const en = UI.lang === "en", A = agents(), busy = A.filter(a => a.status === "working" && !mgrOnline(a)), c = homeCounts();
-    const pins = A.filter(a => seatOf(a)).map(a => { const [x, y] = seatOf(a), w = a.status === "working" && !mgrOnline(a), it = w ? liveItem(a) : null;
-      const pos = `left:${x * 100}%;top:${y * 100}%`;
-      return `<span role="button" tabindex="0" class="stg-pin${w ? " w" : ""}" style="${pos};background-image:url('${avatarUrl(a)}')"${it ? ` data-item="${it.id}"` : ""} title="${esc(aname(a))}${it ? " · " + esc(it.title) : ""}" aria-label="${esc(aname(a))}"></span>`
-        + (it ? `<span class="stg-tag" style="${pos}">${esc(aname(a))} · ${esc(it.title)}</span>` : ""); }).join("");
-    const html = pins + `<div class="stg-cap"><span><i class="${c.review ? "" : "z"}"></i>${c.review} ${en ? "on you" : "等你拍板"}</span><span>${busy.length} ${en ? "busy" : "在忙"} · ${A.length - busy.length} ${en ? "idle" : "待机"}</span></div>`;
-    if (ob._stg !== html) { ob.innerHTML = html; ob._stg = html; const d = `-${(Date.now() % 2000) / 1000}s`; ob.querySelectorAll(".stg-pin.w").forEach(p => p.style.setProperty("--d", d)); }
-  }
   // ===== t-home-newreplies: 「新回复」 = the server's reply mail (kind "reply", written for every msg / reply an agent posts on a card; log lines and events
   // are not mailed) that is still unread, grouped by card. Read flags live on the server (mail_read), so phone and desktop agree.
   // Opening a card marks its replies read; the first unread reply is where the detail opens.
@@ -2784,14 +3030,11 @@
   }
   function nrRead(ids) { if (!ids.length) return; let k = 0; (ST.mail || []).forEach(m => { if (ids.includes(m.id)) { if (!m.read) k++; m.read = true; } }); if (k && ST.meta && ST.meta.mail_unread != null) ST.meta.mail_unread = Math.max(0, ST.meta.mail_unread - k); api("mail_read", { ids }).catch(() => { }); }   /* ri1105-P4: the pill count drops at once too */
 
-  // t-home-applike: the desktop 首页 (review page) in the phone app's shape, switchable back to the classic stage home (stored per device).
-  const appHome = () => !MOBQ.matches && UI.home === "app" && UI.page === "review";
-  const widgetHome = () => !MOBQ.matches && (UI.home === "widgets" || UI.home === "dense") && UI.page === "review";   // t-home-widgets (web/widgets.js + widgets.css)
-  const homeSwitch = () => MOBQ.matches ? "" : `<button class="home-sw" data-home-set="${UI.home === "classic" ? "app" : "classic"}">${UI.lang === "en" ? (UI.home === "classic" ? "App-style home" : "Classic home") : (UI.home === "classic" ? "换成 app 式首页" : "切回原来的首页")}</button>`;
-  function setHome(v) { UI.home = ["classic", "app", "widgets"].includes(v) ? v : "dense"; LS.set("home3", UI.home); UI.hf = "review"; renderPage(true); }
+  /* t-home-style-trim (11-11, user): the desktop 首页 is the widget home only (web/widgets.js + widgets.css); phones keep their own home */
+  const widgetHome = () => !MOBQ.matches && UI.page === "review";
   const phaseFree = h => h.replace(/--wp:-?[\d.]+s|animation-delay:-\d+ms|--wg-fd:-\d+ms| tl-(?:in|out)/g, "").replace(/(<time class="(?:wk-el|rel)"[^>]*>)[^<]*/g, "$1");   // t-home-flicker
   function renderPage(scrollTop) {
-    document.documentElement.dataset.home = appHome() ? "app" : widgetHome() ? "widgets" : "classic"; if (widgetHome() && UI.home === "dense") document.documentElement.dataset.dense = "1"; else delete document.documentElement.dataset.dense;   // t-home-applike: scopes home-app.css
+    document.documentElement.dataset.home = widgetHome() ? "widgets" : "classic"; delete document.documentElement.dataset.dense;   /* t-home-style-trim: "widgets" on the desktop 首页, "classic" everywhere else (phones, other pages); data-dense is cleared for pages that still carry it */
     autoFold();
     const page = $("#page");
     let body = $("#pagebody", page);
@@ -2799,11 +3042,9 @@
     const ob = $("#officebox", page);
     if (UI.page === "review" && !widgetHome()) {
       ob.hidden = false;
-      if ((MOBQ.matches || appHome()) && window.HomeD) {   /* t-home-applike: the desktop app-style home uses the same strip. t-office-d1-s12: phones get the D1 character strip */
+      if (window.HomeD) {   /* t-office-d1-s12: phones get the D1 / A2 strip (a desktop 首页 is always the widget home, t-home-style-trim) */
         HomeD.render(ob, { agents: agents(), counts: homeCounts() });
-      } else if (!MOBQ.matches && document.documentElement.dataset.stage) {   /* t-visual-stage: desktop 舞台 theme shows the terrace picture with avatar pins */
-        stageHero(ob);
-      } else { ob.hidden = true; ob.dataset.hv = ""; ob.innerHTML = ""; }   /* t-rm-pixel-office: the classic desktop home had the pixel office here; now nothing */
+      } else { ob.hidden = true; ob.dataset.hv = ""; ob.innerHTML = ""; }
     } else { ob.hidden = true; ob.innerHTML = ""; }
     const html = (PAGES[UI.page] || (() => catPage(UI.page)))();
     if (html != null) {   // t-imp29-p4: a page may return null to keep its DOM (the asset library keeps scroll, focus and loaded thumbs across polls)
@@ -2819,9 +3060,10 @@
   MOBQ.addEventListener("change", () => { if (ST) renderHeader(); if (UI.page === "review" || UI.page === "mail") renderPage(); });   // t-stamina-stale: the stamina subtitle differs on phones
   window.addEventListener("beforeunload", () => { if (UI.page === "review") { UI.seen.review = new Date().toISOString(); LS.set("seen", UI.seen); } });
 
+  /* t-phone-docs: on a phone the opened text replaces the list, so bring the top of the docs block into view */
+  const docTop = () => { if (!matchMedia("(max-width: 760px)").matches) return; requestAnimationFrame(() => { const d = document.querySelector(".docs"); if (d) d.scrollIntoView({ block: "start" }); }); };
   document.addEventListener("click", e => {
     const s = e.target.closest("[data-sort]"); if (s) { UI.sort = s.dataset.sort; LS.set("sort", UI.sort); renderPage(); }
-    const hs = e.target.closest("[data-home-set]"); if (hs) setHome(hs.dataset.homeSet);   // t-home-applike
     const nr = e.target.closest("[data-nr]"); if (nr) { openItem(nr.dataset.nr); return; }   // t-home-newreplies
     if (e.target.closest("[data-nr-all]")) { nrRead(newReplies().flatMap(g => g.ms.map(m => m.id))); renderPage(); renderLeft(); }
     if (e.target.closest("[data-board-all]")) { UI.boardAll = true; renderPage(); }
@@ -2829,7 +3071,10 @@
     const lf = e.target.closest("[data-logf]"); if (lf) { UI.logAgent = lf.dataset.logf; renderPage(); }
     if (e.target.closest("[data-repreq]")) api("report_request").then(() => toast("→ inbox"));
     const rp = e.target.closest("[data-rep]"); if (rp) { UI.openRep = UI.openRep === rp.dataset.rep ? "-" : rp.dataset.rep; renderPage(); }
-    const dc = e.target.closest("[data-doc]"); if (dc) { UI.doc = dc.dataset.doc; fetch("/api/doc?path=" + encodeURIComponent(UI.doc)).then(r => r.json()).then(j => { UI.docText = j.text || j.error; renderPage(); }); }
+    const dc = e.target.closest("[data-doc]"); if (dc) { const path = dc.dataset.doc; UI.doc = path; UI.docText = ""; renderPage(); docTop();   /* t-phone-docs: show 加载中 + jump to the text at once */
+      fetch("/api/doc?path=" + encodeURIComponent(path)).then(r => r.json()).then(j => { if (UI.doc !== path) return; UI.docText = j.text || j.error; renderPage(); }); }
+    if (e.target.closest("[data-doc-back]")) { const was = UI.doc; UI.docLast = was; UI.doc = null; UI.docText = ""; renderPage();   /* t-phone-docs: back to the list, the doc just read in view */
+      requestAnimationFrame(() => { const b = was && [...document.querySelectorAll(".docs [data-doc]")].find(x => x.dataset.doc === was); if (b) b.scrollIntoView({ block: "center" }); }); }
     const ls = e.target.closest("[data-lesson]"); if (ls) api("lesson", { id: ls.dataset.lesson, decision: ls.dataset.d });
     const mf = e.target.closest("[data-mailf]"); if (mf) { UI.mailFilter = mf.dataset.mailf; renderPage(); renderMailbox(); }
     if (e.target.closest("[data-mailall]")) api("mail_read", { all: true });
@@ -3042,7 +3287,7 @@
   // Desktop: open by default when the detail is at least 680px wide; 收起 / 展开 is remembered (localStorage rt.toc). Phone (mobile.css): a small
   // 「目录」 pill above the reply box, a tap opens the same list as a bottom sheet. The nav lives outside .dw-scroll, so a poll re-render only rebuilds
   // its list when the headings change. It only scrolls on a tap, so it never fights the open-at-newest pin (t-detail-jump).
-  const TOC = { hs: [], card: null, key: "", item: null, open: false, cur: null, raf: 0 };
+  const TOC = { hs: [], card: null, key: "", item: null, open: false, cur: null, raf: 0, auto: false, off: null };   /* auto / off: t-ri1110-a P1 */
   const tocOff = sc => PHONE.matches ? (parseFloat(getComputedStyle(sc).paddingTop) || 0) : 0;
   function tocMode() {
     const nav = $("#drawer .dw-toc"); if (!nav) return;
@@ -3056,7 +3301,7 @@
     TOC.hs = hs; TOC.card = card;
     if (hs.length < 4) { if (!nav.hidden) { nav.hidden = true; nav.innerHTML = ""; } TOC.key = ""; return; }
     const zh = UI.lang !== "en", key = UI.item + "|" + UI.lang + "|" + hs.map(h => h.tagName + h.textContent).join("\n");
-    if (TOC.item !== UI.item) { TOC.item = UI.item; let pref = ""; try { pref = localStorage.getItem("rt.toc") || ""; } catch { } TOC.open = PHONE.matches ? false : pref ? pref === "open" : dw.clientWidth >= 680; }
+    if (TOC.item !== UI.item) { TOC.item = UI.item; TOC.auto = false; TOC.off = null; let pref = ""; try { pref = localStorage.getItem("rt.toc") || ""; } catch { } TOC.open = PHONE.matches ? false : pref ? pref === "open" : dw.clientWidth >= 680; }
     if (key !== TOC.key) {
       TOC.key = key; TOC.cur = null;
       nav.setAttribute("aria-label", zh ? "目录" : "Contents");
@@ -3073,7 +3318,19 @@
     const sr = sc.getBoundingClientRect(), mr = m.getBoundingClientRect(), line = sr.top + tocOff(sc) + 40;
     let cur = -1; TOC.hs.forEach((h, i) => { if (h.getBoundingClientRect().top <= line) cur = i; });
     const pc = mr.height ? Math.round(Math.max(0, Math.min(1, (sr.bottom - mr.top) / mr.height)) * 100) : 0;
-    nav.classList.toggle("away", PHONE.matches && !TOC.open && TOC.card.getBoundingClientRect().bottom < sr.top + tocOff(sc));   /* t-ri1109-a P2: phone pill fades once the draft has scrolled off the top */
+    /* t-ri1109-a P2 + t-ri1110-a P3: the draft is "off" once its text (.md, or the card when that ends first) is above the view; the 24px
+       slack lets the card's own 收起 strip stay peeking under the phone top bar. Phone: the pill fades. t-ri1110-a P1, desk: an open panel
+       folds to its header line while the draft is off (it sat on the right-aligned 我 replies) and opens again when the draft comes back,
+       unless the user toggled it meanwhile (TOC.auto); the auto fold is not written to rt.toc. */
+    const off = Math.min(mr.bottom, TOC.card.getBoundingClientRect().bottom) < sr.top + tocOff(sc) + 24;
+    if (!PHONE.matches && off !== TOC.off) {   /* only on a change, so a panel the user opens down in the thread stays open */
+      TOC.off = off;
+      if (off && TOC.open) { TOC.open = false; TOC.auto = true; tocMode(); }
+      else if (!off && TOC.auto) { TOC.auto = false; TOC.open = true; tocMode(); }
+    }
+    /* t-ri1111-a P4: at the very bottom the pill would sit on the last thread line (scrolling cannot clear it), so it steps aside there too */
+    const atEnd = sc.scrollHeight - sc.scrollTop - sc.clientHeight < 8;
+    nav.classList.toggle("away", !TOC.open && (off || (PHONE.matches && atEnd)));   /* t-ui-fix-r3 R3-08: desk too: the folded pill sat on the first thread bubble once the draft was read */
     if (TOC.cur !== cur) {
       TOC.cur = cur; $$("[data-toc]", nav).forEach((b, i) => b.classList.toggle("on", i === cur));
       if (window.Glass) Glass.toc(nav);   /* t-toc-glass: slide the indicator to the lit line */
@@ -3184,7 +3441,7 @@
     const t0 = base.t || "", t1 = it.draft_at || it.updated || "";   // what the user said between the two drafts (usually the reject reason): the newest one
     const said = (it.thread || []).filter(x => x.who === "me" && x.kind !== "event" && x.t > t0 && x.t <= t1).pop();
     return `<div class="vd${st.open ? " open" : ""}"><button type="button" class="vd-h" data-vd-toggle aria-expanded="${st.open}"><b>${zh ? "这一版改了什么" : "What changed"}</b><span class="vd-n"><i class="a">+${r.add}</i><i class="d">−${r.del}</i></span><span class="sp"></span><span class="vd-tg">${st.open ? (zh ? "收起" : "Hide") : (zh ? "看改动" : "Show")}</span></button>
-      ${st.open ? `<div class="vd-sub">${zh ? "对比" : "Base"} ${sel}<span>→ ${zh ? "当前这一版" : "current"}</span></div>${said ? `<div class="vd-said"><span>${zh ? "你说过" : "You said"}</span>${esc(String(said.text || "").slice(0, 160))}</div>` : ""}
+      ${st.open ? `<div class="vd-sub">${zh ? "对比" : "Base"} ${sel}<span>→ ${zh ? "当前这一版" : "current"}</span></div>${said ? `<div class="vd-said"><span>${zh ? "你说过" : "You said"}</span>${esc(String(srvT(said.text, said.kind !== "msg") || "").slice(0, 160))}</div>` : ""}
       <div class="vd-body">${r.add + r.del ? r.html : `<div class="vd-l vd-gap">${zh ? "和这一版内容一样" : "Same text"}</div>`}</div>` : ""}</div>`;
   }
   function entryHTML(e, it) {
@@ -3195,7 +3452,7 @@
       const conf = !e.old && it.confidence ? `<div class="conf">${t("confidence")} <b>${esc(it.confidence)}</b>${it.confidence_note ? ": " + esc(it.confidence_note) : ""}</div>` : "";
       return `<div class="cs-card draftc ${e.dkind === "deliverable" ? "deliverable" : ""} ${e.old ? "old" : ""} ${open ? "" : "folded"}" data-vkey="${e.vkey}">
         <div class="cs-h">${av(agent(e.who), "sm")}<span class="nm">${esc(whoName(e.who))}</span><span class="at">@${esc(whoName("me"))}</span><span class="tm">· ${hm(e.t)}</span>
-          ${dk ? `<span class="dtag">${esc(dk)}</span>` : ""}${e.label ? `<span class="dlabel">${esc(e.label)}</span>` : ""}<span class="sp"></span><button data-copy-v="${e.vkey}">${t("copy")}</button></div>
+          ${e.old ? `<span class="dtag dold">${UI.lang === "en" ? "Older" : "旧版"}</span>` : ""}${dk ? `<span class="dtag">${esc(dk)}</span>` : ""}${e.label ? `<span class="dlabel">${esc(e.label)}</span>` : ""}<span class="sp"></span><button data-copy-v="${e.vkey}">${t("copy")}</button></div>
         ${conf}${e.vkey === "cur" ? vdBlock(it) + (window.HT ? HT.diffBlock(it) : "") : ""}<div class="md">${md(e.text)}</div>${(e.atts || []).length ? `<div class="vatt">${attHTML(e.atts)}</div>` : ""}<button class="cs-more" data-fold="${e.vkey}">${open ? t("collapse") + " ▴" : t("expand") + " ▾"}</button></div>`;
     }
     if (e.kind === "msg" && e.who === "me") {
@@ -3209,13 +3466,18 @@
       return `<div class="cs-card" data-t="${esc(e.t)}" data-ti="${e._i}" style="--acc:${esc(acc)}"><div class="cs-h">${av(agent(e.who), "sm")}<span class="nm">${esc(whoName(e.who))}</span><span class="at">@${esc(whoName(e.to || "me"))}</span><span class="tm">· ${hm(e.t)}</span></div>
         <div class="md">${md(e.text)}</div>${attHTML(e.attachments)}</div>`;
     }
-    return `<div class="cs-line ${esc(e.kind || "")}" data-ti="${e._i}"><div class="in"><span class="tm">${hm(e.t)}</span>${e.who === "me" ? av("me", "sm") : av(agent(e.who), "sm")}<span class="nm">${esc(whoName(e.who))}</span><span class="tx">${md.refs(esc(e.kind === "event" ? evText(e.text) : e.text))}${attHTML(e.attachments)}</span></div></div>`;
+    return `<div class="cs-line ${esc(e.kind || "")}" data-ti="${e._i}"><div class="in"><span class="tm">${hm(e.t)}</span>${e.who === "me" ? av("me", "sm") : av(agent(e.who), "sm")}<span class="nm">${esc(whoName(e.who))}</span><span class="tx">${md.refs(esc(e.kind === "event" ? evText(e.text) : srvT(e.text, true)))}${attHTML(e.attachments)}</span></div></div>`;
   }
   // t-event-zh: system lines in a card's 动态 read in Chinese (display only; state keeps the original text).
   // "stage todo → doing" -> 「开工 · 待办 → 进行中」 (verb by the target stage), "created · X" -> 「建卡 · X」. English UI keeps the original.
   const EV_VERB = { doing: "开工", done: "关单", todo: "放回待办", review: "交审", waiting: "转为等别人" };
+  const EV_VERB_EN = { doing: "Started", done: "Closed", todo: "Back to to-do", review: "Sent for review", waiting: "Now waiting on others" };   /* t-i18n-a */
   function evText(x) {
-    x = String(x || ""); if (UI.lang === "en") return x;
+    x = String(x || "");
+    if (UI.lang === "en") {
+      const e = x.match(/^stage (\S+) → (\S+)(.*)$/s);
+      return e ? `${e[1] === "done" && e[2] !== "done" ? "Reopened" : EV_VERB_EN[e[2]] || "Stage changed"} · ${stageLabel(e[1])} → ${stageLabel(e[2])}${e[3]}` : srvT(x, true);   /* t-i18n-b */
+    }
     let m = x.match(/^stage (\S+) → (\S+)(.*)$/s);
     if (m) return `${m[1] === "done" && m[2] !== "done" ? "重开" : EV_VERB[m[2]] || "改阶段"} · ${stageLabel(m[1])} → ${stageLabel(m[2])}${m[3]}`;
     m = x.match(/^created( · .*)?$/s); if (m) return "建卡" + (m[1] || "");
@@ -3236,8 +3498,9 @@
   function dwSave(w) { try { if (w == null) localStorage.removeItem(DW_KEY); else localStorage.setItem(DW_KEY, String(Math.round(w))); } catch (e) {} }
   function dwGrip(dw) {
     let g = $("#dw-grip", dw);
-    if (g) return g;
-    g = document.createElement("div"); g.id = "dw-grip"; g.title = "拖动调宽 · 双击恢复默认"; dw.appendChild(g);
+    const gt = UI.lang === "en" ? "Drag to resize · double-click to reset" : "拖动调宽 · 双击恢复默认";
+    if (g) { g.title = gt; return g; }
+    g = document.createElement("div"); g.id = "dw-grip"; g.title = gt; dw.appendChild(g);
     let sx = 0, sw = 0, id = null;
     g.addEventListener("pointerdown", e => {
       if (e.button != null && e.button > 0) return;
@@ -3427,7 +3690,7 @@
       else if (!ok && UI.item === it.id) { const s = $("#drawer .dw-scroll [data-sk]"); if (s) s.outerHTML = `<div class="sk-fail">${UI.lang === "en" ? "Drafts did not load · close and reopen the card to retry" : "草稿没加载出来 · 关掉再打开这张卡重试"}</div>`; } }); if (!first) return; }   // t-mobile-crash-state: draft + versions arrive a moment later
     const opts = (list, cur) => list.map(([v, n]) => `<option value="${v}" ${v === cur ? "selected" : ""}>${esc(n)}</option>`).join("");
     const ownerOpts = opts(agents().map(a => [a.id, `${aname(a)} · ${atitle(a)}`]), it.owner);
-    $(".dw-top", dw).innerHTML = `<div class="dw-lead"><button class="dw-back" data-close aria-label="${UI.lang === "en" ? "Back" : "返回"}"><svg viewBox="0 0 12 20" width="12" height="20" aria-hidden="true"><path d="M10 2 2 10l8 8" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg><span>${UI.lang === "en" ? "Back" : "返回"}</span></button><span class="tag ${it.stage === "review" || awaitsUser(it) ? it.kind : ""}"><span class="gl" aria-hidden="true">◆</span>${it.stage === "review" || awaitsUser(it) ? t(it.kind === "task" ? "deliverable" : it.kind) : stageLabel(it.stage)}</span> <button type="button" class="mono dim dw-id" data-copy-id="${esc(it.id)}" title="${UI.lang === "en" ? "Copy card id" : "复制卡号"}"><span>${esc(it.id)}</span><svg viewBox="0 0 16 16" width="11" height="11" aria-hidden="true"><rect x="5" y="5" width="8.5" height="8.5" rx="1.6" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M10.5 3.2V3a1.5 1.5 0 0 0-1.5-1.5H3A1.5 1.5 0 0 0 1.5 3v6A1.5 1.5 0 0 0 3 10.5h.2" fill="none" stroke="currentColor" stroke-width="1.4"/></svg></button>${wkTag(workersOf(it.id), "dw-wk")}</div>
+    $(".dw-top", dw).innerHTML = `<div class="dw-lead"><button class="dw-back" data-close aria-label="${UI.lang === "en" ? "Back" : "返回"}"><svg viewBox="0 0 12 20" width="12" height="20" aria-hidden="true"><path d="M10 2 2 10l8 8" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg><span>${UI.lang === "en" ? "Back" : "返回"}</span></button><span class="tag ${it.stage === "review" || awaitsUser(it) ? it.kind : ""}" title="${esc(it.stage === "review" || awaitsUser(it) ? t(it.kind === "task" ? "deliverable" : it.kind) : stageLabel(it.stage))}"><span class="gl" aria-hidden="true">◆</span>${it.stage === "review" || awaitsUser(it) ? t(it.kind === "task" ? "deliverable" : it.kind) : stageLabel(it.stage)}</span> <button type="button" class="mono dim dw-id" data-copy-id="${esc(it.id)}" title="${UI.lang === "en" ? "Copy card id" : "复制卡号"}"><span>${esc(it.id)}</span><svg viewBox="0 0 16 16" width="11" height="11" aria-hidden="true"><rect x="5" y="5" width="8.5" height="8.5" rx="1.6" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M10.5 3.2V3a1.5 1.5 0 0 0-1.5-1.5H3A1.5 1.5 0 0 0 1.5 3v6A1.5 1.5 0 0 0 3 10.5h.2" fill="none" stroke="currentColor" stroke-width="1.4"/></svg></button>${wkTag(workersOf(it.id), "dw-wk")}</div>
       <div class="r"><select data-f="category">${opts(CATS.map(c => [c, t(c)]), it.category)}</select><button data-close title="close">✕</button></div>`;
     const sc = $(".dw-scroll", dw); const keep = sc.scrollTop;
     let lastDay = "";
@@ -3517,13 +3780,21 @@
     const en = UI.lang === "en", f = L[0], back = f.snooze.wait === "reply" ? snzText(f) : (en ? `back ${snzText(f)}` : `${snzText(f)} 回来`);
     return `<button type="button" class="snz-line" data-snz-list>${SNZ_IC}<span>${en ? `${L.length} snoozed · ${esc(back)}` : `推迟了 ${L.length} 张 · ${esc(back)}`}</span><i aria-hidden="true">›</i></button>`;
   }
-  const SNZ = { el: null, done: null };
+  const SNZ = { el: null, done: null, ret: null };
+  /* t-ui-fix-r5 R5-03: keyboard — focus goes into the menu on open, ↑↓/Home/End move between items, Tab stays inside (the 自己选时间 form
+     lives there too), Esc / closing returns focus to the trigger (found again by its data-* attribute if a poll rebuilt it) */
+  const snzItems = pop => [...pop.querySelectorAll("button:not([disabled]), input:not([disabled])")].filter(b => b.offsetParent && !b.closest("[hidden]"));
+  function snzRet(r) {
+    if (!r) return; let b = r.el;
+    if (!b || !b.isConnected) b = r.sel ? document.querySelector(r.sel) : null;
+    if (b && b.offsetParent) b.focus({ preventScroll: true });
+  }
   function snzClose(ok) {
-    const el = SNZ.el, d = SNZ.done; SNZ.el = SNZ.done = null;
-    if (el) { el.classList.add("out"); setTimeout(() => el.remove(), 160); }
+    const el = SNZ.el, d = SNZ.done, ret = SNZ.ret; SNZ.el = SNZ.done = SNZ.ret = null;
+    if (el) { const a = document.activeElement, back = !a || a === document.body || el.contains(a); el.classList.add("out"); setTimeout(() => el.remove(), 160); if (back) snzRet(ret); }
     if (d) d(!!ok);
   }
-  function snzOpen(html, anchor, done) {
+  function snzOpen(html, anchor, done, below) {   /* below: open under the anchor when it fits (t-ui-fix-r3 R3-11, 定时 ··· menu) */
     snzClose(false);
     const el = document.createElement("div"), sheet = MOBQ.matches || !anchor;
     el.className = "snz-wrap" + (sheet ? " sheet" : "");
@@ -3532,10 +3803,25 @@
     const pop = el.firstElementChild;
     if (!sheet) {
       const r = anchor.getBoundingClientRect(), w = pop.offsetWidth, h = pop.offsetHeight;
-      const left = Math.max(12, Math.min(innerWidth - w - 12, r.left + r.width / 2 - w / 2)), top = r.top - h - 10 >= 8 ? r.top - h - 10 : r.bottom + 10;
+      /* t-ui-fix-r3 R3-11: keep the menu inside the anchor's own column (drawer / main / chat) when it is wide enough, so it does not spill over the chat avatars */
+      const col = anchor.closest("#drawer, #main, #right, #left"), cr = col && col.getBoundingClientRect();
+      const lo = cr && cr.width >= w + 24 ? cr.left + 12 : 12, hi = cr && cr.width >= w + 24 ? cr.right - w - 12 : innerWidth - w - 12;
+      const up = r.top - h - 10 >= 8, down = r.bottom + 10 + h <= innerHeight - 8;
+      const left = Math.max(lo, Math.min(hi, r.left + r.width / 2 - w / 2)), top = (below ? down || !up : !up) ? r.bottom + 10 : r.top - h - 10;
       Object.assign(pop.style, { left: left + "px", top: top + "px" });
     }
     el.addEventListener("click", e => { if (e.target === el) snzClose(false); });
+    if (anchor) { const at = [...anchor.attributes].find(a => a.name.startsWith("data-")); SNZ.ret = { el: anchor, sel: at ? (anchor.closest("#drawer") ? "#drawer " : "") + `[${at.name}${at.value ? `="${CSS.escape(at.value)}"` : ""}]` : "" }; }
+    pop.addEventListener("keydown", e => {
+      const k = e.key; if (!["ArrowDown", "ArrowUp", "Home", "End", "Tab"].includes(k)) return;
+      if (k !== "Tab" && e.target.matches("input")) return;
+      const all = snzItems(pop), L = k === "Tab" ? all : all.filter(b => b.matches(".snz-o, .snz-x, [role=menuitem]")); if (!L.length) return;
+      const i = L.indexOf(document.activeElement), n = L.length;
+      const j = k === "Home" ? 0 : k === "End" ? n - 1 : (k === "ArrowUp" || (k === "Tab" && e.shiftKey)) ? (i <= 0 ? n - 1 : i - 1) : (i + 1) % n;
+      e.preventDefault(); L[j].focus();
+    });
+    const first = snzItems(pop).find(b => b.matches(".snz-o, [role=menuitem]")) || snzItems(pop)[0];
+    if (first) first.focus({ preventScroll: true });
     return pop;
   }
   function snzMenu(id, anchor, done) {
@@ -3657,7 +3943,7 @@
   $("#drawer").addEventListener("click", e => {
     if (e.target.closest(".dw-back[data-close]")) return backItem();
     { // t-ri1103-p4: 目录
-      if (e.target.closest("[data-toc-tg]")) { TOC.open = !TOC.open; if (!PHONE.matches) try { localStorage.setItem("rt.toc", TOC.open ? "open" : "min"); } catch { } tocMode(); TOC.cur = null; tocSync(); return; }   // cur reset: the opened list scrolls its lit line into view
+      if (e.target.closest("[data-toc-tg]")) { TOC.open = !TOC.open; TOC.auto = false; if (!PHONE.matches) try { localStorage.setItem("rt.toc", TOC.open ? "open" : "min"); } catch { } tocMode(); TOC.cur = null; tocSync(); return; }   // cur reset: the opened list scrolls its lit line into view
       if (e.target.closest("[data-toc-close]")) { TOC.open = false; tocMode(); return; }
       const tc = e.target.closest("[data-toc]"); if (tc) { tocGo(+tc.dataset.toc); return; } }   // t-parent-links: back = previous card if you came from one, else close
     if (e.target.closest("[data-close]")) return closeItem();
@@ -3712,10 +3998,11 @@
 
   // ---------- chat (right) ----------
   const chatAtt = [];
-  let chatBuilt = false, chatRenderedFor = null, chatCount = 0;
+  let chatBuilt = false, chatRenderedFor = null, chatCount = 0, chatLang = null;
   const CHN = { for: null, t: "", on: false };   // r-improve-1102 P4: 「以下 N 条是新消息」 — where you had read up to when this thread was opened
   // t-mobile-crash B: a thread renders only from chatFrom on (the newest CHAT_N when it opens; 「加载更早的消息」 moves it back by CHAT_N).
   // chatFrom stays put while new messages arrive (so the phone still sees the count grow and plays m-new); it re-anchors on a chat switch or past CHAT_N + 60.
+  const CP = { ro: null, until: 0 };   /* t-ui-fix-p1: chatPinWatch state (declared up here: applyChatW can run before the function below) */
   const CHAT_N = 20; let chatFrom = 0, chatHold = false, chatBottom = false, chatMore = false;   // chatBottom: you just sent, so the next render lands on the newest message (t-perf C)   // chatHold: a ↩ quote jumped far back (t-option-quote); keep that range until the thread changes
   function setChat(id) { UI.chat = id; LS.set("chat", id); chatRenderedFor = null; CHN.for = null; renderLeft(); renderChat(); chatDraftLoad(); $("#right textarea") && $("#right textarea").focus(); }
   function chatDraftLoad() {   // t-draft-keep: the DM box shows this partner's own draft (never the previous partner's text)
@@ -3723,11 +4010,58 @@
     if (ta.value === v) return; ta.value = v; ta.style.height = ""; ta._dmLoad = true; ta.dispatchEvent(new Event("input", { bubbles: true })); ta._dmLoad = false;
   }
   function chatList(id) { return id === "manager" ? (HIST.chat.list.length ? HIST.chat.list.concat(ST.chat || []) : (ST.chat || [])) : ((ST.dms || {})[id] || []); }   /* ri1105-P4: + what slid out of / was fetched before the poll window */
+  /* t-avatar-strip-scroll: the desktop open-column roster is a horizontal strip (style.css .crs-*). Edge classes drive the fades and arrows;
+     a vertical wheel scrolls it sideways with snap switched off while it moves, then we glide to the nearest avatar ourselves (a snap-type flip
+     would jump). Phone (MOBQ) and the folded rail are left alone. */
+  const CRS = { on: null };
+  const crsLive = () => !MOBQ.matches && !document.body.classList.contains("chat-folded");
+  function crsEdges(ro) {
+    const w = ro && ro.parentNode; if (!w || !w.classList.contains("crs-wrap")) return;
+    const max = ro.scrollWidth - ro.clientWidth, live = crsLive() && max > 1;
+    w.classList.toggle("crs-l", live && ro.scrollLeft > 2); w.classList.toggle("crs-r", live && ro.scrollLeft < max - 2);
+  }
+  function crsStops(ro) { const pad = parseFloat(getComputedStyle(ro).scrollPaddingLeft) || 0, max = ro.scrollWidth - ro.clientWidth; return Array.from(ro.children).map(b => Math.min(max, Math.max(0, b.offsetLeft - pad))).concat([max]); }
+  function crsGlide(ro, to) {
+    ro.classList.add("crs-free"); ro._crsTo = to; ro.scrollTo({ left: to, behavior: "smooth" });
+    clearTimeout(ro._crsR); ro._crsR = setTimeout(() => { ro.classList.remove("crs-free"); ro._crsTo = null; }, 520);
+  }
+  function crsSnap(ro) { const at = ro._crsTo != null ? ro._crsTo : ro.scrollLeft; let best = at, d = 1e9; crsStops(ro).forEach(x => { if (Math.abs(x - at) < d) { d = Math.abs(x - at); best = x; } }); crsGlide(ro, best); }
+  function crsShow(ro, smooth) {
+    const b = ro.querySelector("button.on"); if (!b || !crsLive() || !ro.clientWidth) return false;
+    const m = 36, x = b.offsetLeft, w = b.offsetWidth, max = ro.scrollWidth - ro.clientWidth; let to = ro.scrollLeft;
+    if (x - m < to) to = x - m; else if (x + w + m > to + ro.clientWidth) to = x + w + m - ro.clientWidth;
+    to = Math.max(0, Math.min(max, to));
+    if (Math.abs(to - ro.scrollLeft) > 1) { if (smooth) crsGlide(ro, to); else ro.scrollLeft = to; }
+    return true;
+  }
+  function crsAfter(ro) { if (!ro) return; if (CRS.on !== UI.chat && crsShow(ro, CRS.on !== null)) CRS.on = UI.chat; crsEdges(ro); }
+  function crsWire(ro) {
+    if (!ro) return; CRS.on = null;
+    const w = ro.parentNode;
+    ro.addEventListener("scroll", () => { if (!ro._crsF) ro._crsF = requestAnimationFrame(() => { ro._crsF = 0; crsEdges(ro); }); }, { passive: true });
+    ro.addEventListener("wheel", e => {
+      if (!crsLive() || e.ctrlKey || Math.abs(e.deltaY) <= Math.abs(e.deltaX)) return;   // sideways trackpad swipes stay native (and snap natively)
+      const max = ro.scrollWidth - ro.clientWidth; if (max <= 1) return;
+      const dy = e.deltaY * (e.deltaMode === 1 ? 32 : e.deltaMode === 2 ? ro.clientWidth : 1);
+      const base = ro._crsTo != null ? ro._crsTo : ro.scrollLeft, to = Math.max(0, Math.min(max, base + dy));
+      if ((dy < 0 && base <= 0) || (dy > 0 && base >= max)) return;   // at the end: let the page scroll on
+      e.preventDefault(); clearTimeout(ro._crsT); clearTimeout(ro._crsR); ro.classList.add("crs-free");
+      if (e.deltaMode || Math.abs(dy) >= 60) { ro._crsTo = to; ro.scrollTo({ left: to, behavior: "smooth" }); ro._crsT = setTimeout(() => crsSnap(ro), 240); }   // mouse notch: glide
+      else { ro._crsTo = null; ro.scrollLeft = to; ro._crsT = setTimeout(() => crsSnap(ro), 140); }   // trackpad: follow the finger
+    }, { passive: false });
+    w.addEventListener("click", e => {
+      const a = e.target.closest(".crs-a"); if (!a) return;
+      const dir = a.classList.contains("crs-prev") ? -1 : 1, from = ro._crsTo != null ? ro._crsTo : ro.scrollLeft, aim = from + dir * ro.clientWidth * 0.7;
+      const st = crsStops(ro); let best = aim, d = 1e9; st.forEach(x => { if (Math.abs(x - aim) < d) { d = Math.abs(x - aim); best = x; } });
+      crsGlide(ro, best);
+    });
+    if (window.ResizeObserver) new ResizeObserver(() => crsAfter(ro)).observe(ro);
+  }
   function buildChat() {
     const r = $("#right");
     r.innerHTML = `<div class="ch-grip" title="${UI.lang === "en" ? "Drag to resize" : "拖动调整宽度"}"></div>
       <button class="ch-fold" title="${UI.lang === "en" ? "Collapse" : "收起 / 展开"}"><span></span></button>
-      <div class="ch-head"><div class="ch-who"></div>${orn(160)}<div class="ch-roster"></div></div><div class="ch-msgs"></div>
+      <div class="ch-head"><div class="ch-who"></div>${orn(160)}<div class="crs-wrap"><div class="ch-roster"></div><button type="button" class="crs-a crs-prev" tabindex="-1" aria-label="${UI.lang === "en" ? "Scroll left" : "向左"}"><span></span></button><button type="button" class="crs-a crs-next" tabindex="-1" aria-label="${UI.lang === "en" ? "Scroll right" : "向右"}"><span></span></button></div></div><div class="ch-msgs"></div>
       <div class="pending-att" style="padding:0 16px"></div>
       <div class="ch-comp"><button type="button" class="att" title="${attTitle()}" aria-label="${UI.lang === "en" ? "Attach" : "添加附件"}">${ATT_IC}</button><input type="file" multiple hidden><textarea rows="1"></textarea><span class="ch-kb" aria-hidden="true">${UI.lang === "en" ? "⌘/Ctrl ↵ send · ↵ new line" : "⌘/Ctrl ↵ 发送 · ↵ 换行"}</span></div>`;
     const ta = $("textarea", r), fi = $("input[type=file]", r);
@@ -3747,6 +4081,7 @@
     });
     // t-rail-tip: folded rail (one column of avatars) → our own name tip, to the LEFT of the avatar and vertically centred, on <body> with position:fixed
     // so the rail's overflow never clips it. The native title tooltip (OS-placed, landed on the next avatar) is dropped from the rail on hover.
+    crsWire($(".ch-roster", r));
     let rtip = null;
     const railTip = btn => {
       if (!btn || !document.body.classList.contains("chat-folded") || MOBQ.matches) return railHide();
@@ -3776,7 +4111,7 @@
     grip.addEventListener("pointerdown", e => {
       if (UI.chatFold) return;
       e.preventDefault(); grip.setPointerCapture(e.pointerId); document.body.classList.add("resizing");
-      const move = ev => { UI.chatW = Math.max(300, Math.min(760, window.innerWidth - ev.clientX)); applyChatW(); };
+      const move = ev => { UI.chatW = Math.max(300, Math.min(chatCap(), window.innerWidth - ev.clientX)); applyChatW(); };
       const up = () => { grip.removeEventListener("pointermove", move); document.body.classList.remove("resizing"); LS.set("chatW", UI.chatW); dispatchEvent(new Event("resize")); };
       grip.addEventListener("pointermove", move); grip.addEventListener("pointerup", up, { once: true });
     });
@@ -3808,8 +4143,20 @@
     chatPop(false);
   }, true);
   NARROWQ.addEventListener("change", () => { if (!NARROWQ.matches) chatPop(false); });
+  /* t-ui-fix-r3 R3-01: the chat column never pushes the page wider than the window. #layout is left rail + main (min 460) + chat,
+     so the widest chat is the window minus the rail and 460 (at most 760). The saved width is kept; only what is shown is capped. */
+  function chatCap() {
+    const L = $("#layout"), lw = L ? parseFloat(getComputedStyle(L).getPropertyValue("--left-w")) || 250 : 250;
+    return Math.max(300, Math.min(760, document.documentElement.clientWidth - lw - 460));
+  }
+  addEventListener("resize", () => { if (chatBuilt && !UI.chatFold) applyChatW(); });
   function applyChatW() {
-    document.documentElement.style.setProperty("--chat-w", UI.chatFold ? "80px" : UI.chatW + "px");   // t-rail-width: 64 -> 80, so avatars get ~14px either side and the unread badge / online dot sit inside
+    /* t-ui-fix-p1 P1-1: the folded column hides .ch-msgs (display:none), which drops its scroll position in Chromium, so unfolding after 制作
+       showed the middle of the thread. Remember whether you were at the bottom when it folded; unfolding puts you back there. */
+    const box = $("#right .ch-msgs"), was = document.body.classList.contains("chat-folded");
+    if (box && !was && UI.chatFold && box.clientHeight) UI.foldGap = box.scrollHeight - box.scrollTop - box.clientHeight;
+    if (box && was && !UI.chatFold) { const g = UI.foldGap; UI.foldGap = null; if (g == null || g < 80) requestAnimationFrame(() => chatPinWatch(box)); }
+    document.documentElement.style.setProperty("--chat-w", UI.chatFold ? "80px" : Math.min(UI.chatW, chatCap()) + "px");   // t-rail-width: 64 -> 80, so avatars get ~14px either side and the unread badge / online dot sit inside
     document.body.classList.toggle("chat-folded", UI.chatFold);
   }
   function foldChat(on) {
@@ -3987,6 +4334,9 @@
   function renderChat() {
     const firstBuild = !chatBuilt; if (!chatBuilt) buildChat();
     const r = $("#right");
+    /* t-ui-fix-r2 B04: switching 界面语言 without a reload left sender names and the ⌘/Ctrl hint in the old language (the message cache kept the old HTML) */
+    if (chatLang !== UI.lang) { if (chatLang) { chatRenderedFor = null; const kb = $(".ch-kb", r); if (kb) kb.textContent = UI.lang === "en" ? "⌘/Ctrl ↵ send · ↵ new line" : "⌘/Ctrl ↵ 发送 · ↵ 换行";
+      const at = $(".ch-comp .att", r); if (at) { at.title = attTitle(); at.setAttribute("aria-label", UI.lang === "en" ? "Attach" : "添加附件"); } } chatLang = UI.lang; }
     if (!ST.agents[UI.chat]) UI.chat = "manager";
     if (firstBuild) chatDraftLoad();   // t-draft-keep: restore this partner's unsent text after a reload
     const a = agent(UI.chat);
@@ -3999,7 +4349,8 @@
       const un = x.id !== UI.chat ? unreadOf(x.id) : 0;   /* t-ri1104-p2: a count from unreadOf (was: a dot when the last message was theirs) */
       return `<button data-pick="${x.id}" class="${x.id === UI.chat ? "on" : ""}">${av(x)}<span>${esc(aname(x))}</span>${un ? `<i class="unread n">${unreadTag(un)}</i>` : ""}${qBadge(x.id, true)}</button>`;
     }).join("").replace(UI.chatFold && !MOBQ.matches ? / title="[^"]*"/g : /$^/, ""));   // t-rail-tip: folded rail shows #rail-tip, never the OS tooltip
-    $("textarea", r).placeholder = MOBQ.matches ? t("chat_ph", { n: aname(a) }) : (UI.lang === "en" ? `Message ${aname(a)}…` : `对${aname(a)}说……`);   // t-web-dm: desktop moves the shortcut hint below the field
+    crsAfter($(".ch-roster", r));   /* t-avatar-strip-scroll: keep the open chat's avatar in view + refresh the edge fades */
+    $("textarea", r).placeholder = UI.lang === "en" ? `Message ${aname(a)}…` : `对${aname(a)}说……`;   // t-web-dm: desktop moves the shortcut hint below the field; t-ui-fix-r2 audit P2-12: a phone has no ⌘ key, so no hint there at all
     pendSync();
     const real = chatList(UI.chat), pl = pendOf(UI.chat), list = pl.length ? real.concat(pl) : real;   // t-perf C: local bubbles ride at the end
     const sig = olderN(UI.chat) + "/" + list.length + (pl.length ? "|" + pl.map(p => p.pend + p.st).join(",") : "");
@@ -4046,11 +4397,26 @@
     chatRenderedFor = UI.chat; chatCount = sig;
     decorateDesk(box, list);
     newSepPlace(box, opened);
+    if (nearBottom && !(opened && $("[data-newsep]", box) && box.scrollHeight - box.scrollTop - box.clientHeight > 80)) chatPinWatch(box);   /* t-ui-fix-p1 P2-6: late thumbnails / chips no longer leave a just-opened thread short of the bottom */
     if (real.length && (!document.body.dataset.mtab || (document.body.dataset.mtab === "chat" && document.body.dataset.cv === "thread"))) { UI.seen["chat." + UI.chat] = real[real.length - 1].t; LS.set("seen", UI.seen); chatMailRead(UI.chat, real[real.length - 1].t); }   /* t-perf C: read marks only from server messages */  // phones: only an open thread counts as read; P3: and the mailbox copies
   }
 
   // r-improve-1102 P4: on the desktop, opening a thread with more than a screen of new messages lands on the divider (the phone keeps
   // t-dm-scroll: a thread always opens on the newest message; it only shows the divider). Reaching the bottom or sending clears it.
+  /* t-ui-fix-p1 (P1-1 + P2-6): keep the desktop thread on its newest message while it settles. Opening a DM pinned it, then a late thumbnail
+     grew a message and left it ~48 px (up to ~220 px) short. Same idea as dwPinWatch: for 1.5 s any message that changes height re-pins, until you
+     scroll, click or type in the list yourself. The phone keeps its own pin (mobile.js, user-scroll-only unpin). */
+  function chatPinWatch(box) {
+    try {
+      if (CP.ro) CP.ro.disconnect(); CP.ro = null;
+      if (MOBQ.matches || !box || !box.isConnected || !box.clientHeight) return;
+      CP.until = Date.now() + 1500; box.scrollTop = box.scrollHeight;
+      if (!box._cpu) { box._cpu = 1; const stop = () => { CP.until = 0; }; ["wheel", "touchstart", "mousedown", "keydown"].forEach(t => box.addEventListener(t, stop, { passive: true })); }
+      const ro = CP.ro = new ResizeObserver(() => { if (Date.now() > CP.until) { ro.disconnect(); return; } box.scrollTop = box.scrollHeight; });
+      ro.observe(box); [...box.children].forEach(c => ro.observe(c));
+      setTimeout(() => { if (Date.now() >= CP.until) ro.disconnect(); }, 1600);
+    } catch { }
+  }
   function newSepPlace(box, opened) {
     const r = $("#right"), sep = $("[data-newsep]", box); let pill = r && $(".new-pill", r);
     if (!sep) { if (pill) pill.remove(); return; }
@@ -4058,7 +4424,7 @@
     if (!opened || MOBQ.matches) return;
     const below = box.getBoundingClientRect().bottom - sep.getBoundingClientRect().top + (box.scrollHeight - box.scrollTop - box.clientHeight);
     if (below <= box.clientHeight + 40) return;   // fits on one screen: stay at the bottom as before
-    box.scrollTop += sep.getBoundingClientRect().top - box.getBoundingClientRect().top - 12;
+    box.scrollTop += sep.getBoundingClientRect().top - box.getBoundingClientRect().top - 12; CP.until = 0;
     setTimeout(() => { box._nsepArm = 1; }, 300);   // only a scroll by you back down to the bottom clears it
     if (!pill && r) { r.insertAdjacentHTML("beforeend", `<button type="button" class="new-pill">${UI.lang === "en" ? "↓ Latest" : "↓ 回到最新"}</button>`); pill = $(".new-pill", r);
       pill.addEventListener("click", () => { box.scrollTo({ top: box.scrollHeight, behavior: "smooth" }); }); }
@@ -4083,8 +4449,29 @@
   window.addEventListener("scroll", aqClose, { capture: true, passive: true });
 
   // ---------- modals ----------
-  function openModal(html, onMount) { const m = $("#modal"); m.innerHTML = `<div class="mdl frame">${html}</div>`; m.hidden = false; onMount && onMount($(".mdl", m)); }
-  function closeModal() { $("#modal").hidden = true; $("#modal").innerHTML = ""; }
+  // R4-11: the modal keeps keyboard focus inside it (Tab / Shift+Tab wrap) and hands it back to whatever opened it on close
+  const MODAL = { from: null, sel: "" };
+  const FOCUSABLE = 'a[href], button:not([disabled]), input:not([disabled]), textarea:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])';
+  function focusTrap(box, e) {
+    if (e.key !== "Tab") return;
+    const f = [...box.querySelectorAll(FOCUSABLE)].filter(x => x.offsetParent !== null || x === document.activeElement);
+    if (!f.length) { e.preventDefault(); return; }
+    const first = f[0], last = f[f.length - 1], cur = document.activeElement;
+    if (!box.contains(cur)) { e.preventDefault(); first.focus(); }
+    else if (e.shiftKey && cur === first) { e.preventDefault(); last.focus(); }
+    else if (!e.shiftKey && cur === last) { e.preventDefault(); first.focus(); }
+  }
+  /* t-ui-fix-r6 R6-05: the opener is also remembered by its first data-* attribute (like R5-03), because the page behind a dialog can
+     re-render (设置 → 系统 repaints on loadHealth) and leave the saved node detached; closeModal then finds the new row */
+  const refSel = el => { const a = el && el.attributes ? [...el.attributes].find(x => x.name.startsWith("data-")) : null; return el && el.id ? "#" + CSS.escape(el.id) : a ? `[${a.name}${a.value ? `="${CSS.escape(a.value)}"` : ""}]` : ""; };
+  function openModal(html, onMount) { const m = $("#modal"); if (m.hidden) { MODAL.from = document.activeElement !== document.body ? document.activeElement : null; MODAL.sel = refSel(MODAL.from); }
+    m.innerHTML = `<div class="mdl frame" role="dialog" aria-modal="true">${html}</div>`; m.hidden = false; onMount && onMount($(".mdl", m));
+    const box = $(".mdl", m); if (box && !box.contains(document.activeElement)) { const f = box.querySelector(FOCUSABLE); if (f) f.focus(); else { box.tabIndex = -1; box.focus(); } } }
+  function closeModal() { $("#modal").hidden = true; $("#modal").innerHTML = "";
+    let f = MODAL.from; const sel = MODAL.sel; MODAL.from = MODAL.sel = null;
+    if ((!f || !f.isConnected) && sel) f = [...document.querySelectorAll(sel)].find(x => x.offsetParent) || null;
+    if (f && f.isConnected && typeof f.focus === "function") try { f.focus({ preventScroll: true }); } catch (_) { } }
+  $("#modal").addEventListener("keydown", e => { if (!$("#modal").hidden) focusTrap($("#modal"), e); });
   $("#modal").addEventListener("mousedown", e => { if (e.target.id === "modal") closeModal(); });
   // t-close-bottom: 关单 from the detail's bottom bar, any kind / stage. One confirm; the optional reason goes into the card's thread as your message
   // (so the owner sees it), then the card is closed. Open questions do not block it (they are listed and closed with the card).
@@ -4211,7 +4598,11 @@
   function modalStatus() {
     openModal(statusHTML(), m => {
       m.classList.remove("frame"); m.classList.add("sys");
-      const paint = () => { if (!m.isConnected) return; const h = statusHTML(); if (m._html === h) return; const st = m.scrollTop, g = $("#gt", m); m.innerHTML = m._html = h; if (g) $("#gt", m).replaceWith(g); m.scrollTop = st; };   // t-dash-token: keep the #gt node (a half-typed token)
+      const paint = () => { if (!m.isConnected) return; const h = statusHTML(); if (m._html === h) return;
+        const st = m.scrollTop, g = $("#gt", m), a = document.activeElement, had = m === a || m.contains(a), key = had && a !== m ? refSel(a) : "";
+        m.innerHTML = m._html = h; if (g) $("#gt", m).replaceWith(g); m.scrollTop = st;
+        /* t-ui-fix-r6 R6-05: the swap dropped focus to BODY (right after open, and every 15 s); put it back on the same control, else the first one */
+        if (had && !m.contains(document.activeElement)) { const t = (a && m.contains(a) && a) || (key && $(key, m)) || m.querySelector(FOCUSABLE); try { if (t) t.focus({ preventScroll: true }); else { m.tabIndex = -1; m.focus({ preventScroll: true }); } } catch (_) { } } };   // t-dash-token: keep the #gt node (a half-typed token)
       m.addEventListener("click", e => {
         if (e.target.closest("[data-x]")) return closeModal();
         const b = e.target.closest("[data-sy]"); if (!b) return;
@@ -4229,6 +4620,7 @@
   // The page sends the token once (POST /api/secret/github, own header X-Underthread) and never gets it back: the API returns status only.
   // The block is a node of its own (#gt) that modalStatus's 15 s repaint keeps, so a half-typed token is never wiped. =====
   const GT = { st: null, old: false, busy: false, msg: "", lv: "", replace: false, confirmFile: false, loading: null };
+  const gz = (zh, e) => UI.lang === "en" ? e : zh;   /* t-i18n-a: zh text unchanged */
   async function ghLoad() {
     if (GT.loading) return GT.loading;
     GT.loading = (async () => {
@@ -4259,6 +4651,13 @@
   function ghProbeLine(pr) {
     if (!pr) return "";
     const t = ghWhenT(pr.at), code = pr.code ? `（${pr.code}）` : "";
+    if (UI.lang === "en") {
+      const c = pr.code ? ` (${pr.code})` : "";
+      if (pr.verdict === "ok") return `<p class="gt-pr ok">● Keychain works: the dashboard server can write, read and delete (checked ${t})</p>`;
+      if (pr.verdict === "locked") return `<p class="gt-pr bad">● Keychain is locked${c}: the dashboard server runs in the background and can't store into it. Fix: on the Mac open Keychain Access, set the "login" keychain password to your login password, then check again; or use a local file instead. (checked ${t})</p>`;
+      if (pr.verdict === "nohelper") return `<p class="gt-pr bad">● git's keychain helper (git-credential-osxkeychain) is missing (checked ${t})</p>`;
+      return `<p class="gt-pr bad">● Keychain test failed${c}: write ${pr.write ? "✓" : "✗"} · read ${pr.read ? "✓" : "✗"} · delete ${pr.erase ? "✓" : "✗"} (checked ${t})</p>`;
+    }
     if (pr.verdict === "ok") return `<p class="gt-pr ok">● 钥匙串可用：看板服务器能写、能读、能删（${t} 检测）</p>`;
     if (pr.verdict === "locked") return `<p class="gt-pr bad">● 钥匙串锁着${code}：看板服务器在后台，存不进去。办法：在 Mac 上打开「钥匙串访问」，把「登录」钥匙串的密码改成和开机密码一样，再点一次检测；或者改用本机文件。（${t} 检测）</p>`;
     if (pr.verdict === "nohelper") return `<p class="gt-pr bad">● 找不到 git 的钥匙串助手（git-credential-osxkeychain）（${t} 检测）</p>`;
@@ -4267,27 +4666,29 @@
   function ghHTML() {
     const en = UI.lang === "en", S = GT.st, B = (k, l, c) => `<button type="button" class="gt-b ${c || ""}" data-gt="${k}"${GT.busy ? " disabled" : ""}>${l}</button>`;
     const head = (tag, cls) => `<h4>${en ? "GitHub push token" : "GitHub 推送令牌"} <em class="${cls || ""}">${tag}</em></h4>`;
-    if (GT.old) return head("要重启", "warn") + `<p>看板服务器重启以后才能用（新接口还没加载）。</p>`;
-    if (!S) return head("…") + `<p>读取中…</p>`;
+    if (GT.old) return head(gz("要重启", "Restart needed"), "warn") + `<p>${gz("看板服务器重启以后才能用（新接口还没加载）。", "Works after the dashboard server restarts (the new API isn't loaded yet).")}</p>`;
+    if (!S) return head("…") + `<p>${gz("读取中…", "Loading…")}</p>`;
     const file = S.method === "file", repo = esc(S.repo || "owner/underthread"), pr = S.probe;
     const msg = GT.msg ? `<p class="gt-msg ${GT.lv}">${esc(GT.msg)}</p>` : "";
-    const where = file ? "本机文件（明文，600）" : "钥匙串";
-    if (GT.confirmFile) return head("改用本机文件？", "warn")
-      + `<p>令牌会明文存在 <code>~/.config/underthread/git-credentials</code>，权限 600，只有你的账号能读；但以你的身份运行的任何程序也都能读到。只对 github.com 生效，git 的全局配置里会加两行。</p>`
-      + `<div class="gt-r">${B("file_yes", "确定改用本机文件", "pri")}${B("file_no", "算了")}</div>`;
+    const where = file ? gz("本机文件（明文，600）", "a local file (plain text, 600)") : gz("钥匙串", "the keychain");
+    if (GT.confirmFile) return head(gz("改用本机文件？", "Use a local file?"), "warn")
+      + (en ? `<p>The token will be stored in plain text in <code>~/.config/underthread/git-credentials</code>, mode 600, readable only by your account; but any program running as you can read it too. It applies to github.com only, and adds two lines to git's global config.</p>` : `<p>令牌会明文存在 <code>~/.config/underthread/git-credentials</code>，权限 600，只有你的账号能读；但以你的身份运行的任何程序也都能读到。只对 github.com 生效，git 的全局配置里会加两行。</p>`)
+      + `<div class="gt-r">${B("file_yes", gz("确定改用本机文件", "Yes, use a local file"), "pri")}${B("file_no", gz("算了", "Never mind"))}</div>`;
     if (!S.configured || GT.replace) {
-      const offer = pr && pr.verdict !== "ok" && !file ? B("file", "改用本机文件…") : "";
-      return head(S.configured ? "换一个" : "未配置")
-        + `<p>配好以后，管家推送 ${repo} 不用你再输令牌。令牌只存在这台 Mac 上（${file ? "本机文件" : "钥匙串"}），看板和手机都拿不回来。</p>`
+      const offer = pr && pr.verdict !== "ok" && !file ? B("file", gz("改用本机文件…", "Use a local file…")) : "";
+      return head(S.configured ? gz("换一个", "Replace") : gz("未配置", "Not set"))
+        + (en ? `<p>Once set, the manager can push ${repo} without asking you for a token. The token stays on this Mac only (${file ? "local file" : "keychain"}); neither the dashboard nor the phone can read it back.</p>` : `<p>配好以后，管家推送 ${repo} 不用你再输令牌。令牌只存在这台 Mac 上（${file ? "本机文件" : "钥匙串"}），看板和手机都拿不回来。</p>`)
         + (file ? "" : ghProbeLine(pr))
-        + `<div class="gt-r"><input type="password" class="gt-in" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="粘贴 github_pat_…（只用一次）" aria-label="GitHub 令牌"${GT.busy ? " disabled" : ""}>${B("set", GT.busy ? "验证中…" : "保存并验证", "pri")}</div>`
-        + `<div class="gt-r">${file ? B("keychain", "改回钥匙串") : B("probe", pr ? "再检测一次" : "检测钥匙串")}${offer}${GT.replace ? B("cancel", "取消") : ""}</div>`
-        + msg + `<small>建议：细粒度令牌，只勾 ${repo} 的 Contents 读写，90 天到期</small>`;
+        + `<div class="gt-r"><input type="password" class="gt-in" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="${gz("粘贴 github_pat_…（只用一次）", "Paste github_pat_… (used once)")}" aria-label="${gz("GitHub 令牌", "GitHub token")}"${GT.busy ? " disabled" : ""}>${B("set", GT.busy ? gz("验证中…", "Checking…") : gz("保存并验证", "Save and verify"), "pri")}</div>`
+        + `<div class="gt-r">${file ? B("keychain", gz("改回钥匙串", "Back to keychain")) : B("probe", pr ? gz("再检测一次", "Check again") : gz("检测钥匙串", "Check keychain"))}${offer}${GT.replace ? B("cancel", gz("取消", "Cancel")) : ""}</div>`
+        + msg + `<small>${en ? `Tip: a fine-grained token with only Contents read/write on ${repo}, expiring in 90 days` : `建议：细粒度令牌，只勾 ${repo} 的 Contents 读写，90 天到期`}</small>`;
     }
-    const st = S.ok === true ? `<span class="ok">● 可用</span>` : S.ok === false ? `<span class="bad">● 失效${S.note ? "：" + esc(S.note) : ""}</span>` : `<span class="warn">● 没验证${S.note ? "：" + esc(S.note) : ""}</span>`;
-    const bits = [st, S.user ? `账号 ${esc(S.user)}` : "", `存在${where}`, S.set_at ? `${ghWhenT(S.set_at)} 配置` : "", S.expires ? `${ghWhen(S.expires)} 到期` : ""].filter(Boolean).join(" · ");
-    return head("已配置", S.ok === false ? "bad" : ghSoon(S) ? "warn" : "ok") + `<p>${bits}</p>` + (file ? "" : ghProbeLine(pr))
-      + `<div class="gt-r">${B("replace", "换一个")}${B("test", "测试推送权限")}${file ? B("keychain", "改回钥匙串") : B("probe", "检测钥匙串")}${B("erase", "删除", "dn")}</div>` + msg;
+    const nt = S.note ? gz("：", ": ") + esc(S.note) : "";
+    const st = S.ok === true ? `<span class="ok">● ${gz("可用", "Working")}</span>` : S.ok === false ? `<span class="bad">● ${gz("失效", "Not working")}${nt}</span>` : `<span class="warn">● ${gz("没验证", "Not verified")}${nt}</span>`;
+    const bits = (en ? [st, S.user ? `account ${esc(S.user)}` : "", `stored in ${where}`, S.set_at ? `set ${ghWhenT(S.set_at)}` : "", S.expires ? `expires ${ghWhen(S.expires)}` : ""]
+      : [st, S.user ? `账号 ${esc(S.user)}` : "", `存在${where}`, S.set_at ? `${ghWhenT(S.set_at)} 配置` : "", S.expires ? `${ghWhen(S.expires)} 到期` : ""]).filter(Boolean).join(" · ");
+    return head(gz("已配置", "Set"), S.ok === false ? "bad" : ghSoon(S) ? "warn" : "ok") + `<p>${bits}</p>` + (file ? "" : ghProbeLine(pr))
+      + `<div class="gt-r">${B("replace", gz("换一个", "Replace"))}${B("test", gz("测试推送权限", "Test push access"))}${file ? B("keychain", gz("改回钥匙串", "Back to keychain")) : B("probe", gz("检测钥匙串", "Check keychain"))}${B("erase", gz("删除", "Delete"), "dn")}</div>` + msg;
   }
   function ghPaint() { const el = $("#modal #gt"); if (el) el.innerHTML = ghHTML(); document.dispatchEvent(new Event("gh:status")); }   // the phone 设置 row re-reads its label
   async function ghDo(k, el) {
@@ -4296,11 +4697,11 @@
     if (k === "replace") { GT.replace = true; say(""); ghPaint(); const i = $("#modal #gt .gt-in"); if (i) i.focus(); return; }
     if (k === "file") { GT.confirmFile = true; return ghPaint(); }
     if (k === "file_no") { GT.confirmFile = false; return ghPaint(); }
-    if (k === "erase" && !confirm("删除存好的 GitHub 令牌？之后推送又要你输令牌。")) return;
+    if (k === "erase" && !confirm(gz("删除存好的 GitHub 令牌？之后推送又要你输令牌。", "Delete the stored GitHub token? Pushes will ask you for a token again."))) return;
     let tok = null;
     if (k === "set") {
       const i = el.closest("#gt").querySelector(".gt-in"); tok = i ? i.value.trim() : ""; if (i) i.value = "";
-      if (!tok) { say("先把令牌粘贴进框里", "bad"); return ghPaint(); }
+      if (!tok) { say(gz("先把令牌粘贴进框里", "Paste the token into the box first"), "bad"); return ghPaint(); }
     }
     GT.busy = true; say(""); ghPaint();
     const op = k === "file_yes" ? "use_file" : k === "keychain" ? "use_keychain" : k;
@@ -4308,13 +4709,13 @@
     tok = null; GT.busy = false;
     if (k === "file_yes") GT.confirmFile = false;
     if (r.ok) {
-      if (k === "set") { GT.replace = false; say(GT.st && GT.st.ok === false ? "存好了，但 GitHub 说：" + (GT.st.note || "不能推送") : "存好了，管家以后推送不用你再输令牌", GT.st && GT.st.ok === false ? "bad" : "ok"); }
+      if (k === "set") { GT.replace = false; say(GT.st && GT.st.ok === false ? gz("存好了，但 GitHub 说：", "Saved, but GitHub says: ") + (GT.st.note || gz("不能推送", "can't push")) : gz("存好了，管家以后推送不用你再输令牌", "Saved. The manager can push without asking you for a token now"), GT.st && GT.st.ok === false ? "bad" : "ok"); }
       else if (k === "probe") say("");
-      else if (k === "test") say(GT.st && GT.st.ok ? "能推送 ✓" : "不能推送：" + ((GT.st && GT.st.note) || ""), GT.st && GT.st.ok ? "ok" : "bad");
-      else if (k === "erase") say("删掉了", "ok");
-      else if (k === "file_yes") say("改用本机文件了，把令牌粘贴进来保存", "");
-      else if (k === "keychain") say("改回钥匙串了，本机文件已删除；把令牌重新粘贴进来", "");
-    } else say((r.j && r.j.error) || "没成功", "bad");
+      else if (k === "test") say(GT.st && GT.st.ok ? gz("能推送 ✓", "Can push ✓") : gz("不能推送：", "Can't push: ") + ((GT.st && GT.st.note) || ""), GT.st && GT.st.ok ? "ok" : "bad");
+      else if (k === "erase") say(gz("删掉了", "Deleted"), "ok");
+      else if (k === "file_yes") say(gz("改用本机文件了，把令牌粘贴进来保存", "Switched to a local file; paste the token to save it"), "");
+      else if (k === "keychain") say(gz("改回钥匙串了，本机文件已删除；把令牌重新粘贴进来", "Back to the keychain, local file deleted; paste the token again"), "");
+    } else say(srvT((r.j && r.j.error) || gz("没成功", "Didn't work")), "bad");
     if (!r.j || !r.j.status) await ghLoad();
     ghPaint();
   }
@@ -4387,7 +4788,7 @@
   // ---------- API for the mobile layer (mobile.js) ----------
   window.App = {
     okLabel, okDone, askLeft, openAsks: it => openAsks(it),   // t-btn-names
-    rtShort, rtFull,   /* t-ri1109-a: routine names, shared with widgets.js */
+    rtShort, rtFull, schToday,   /* t-ri1109-a: routine names, shared with widgets.js; t-ri1110-a P2: schToday */
     utEmpty: (text, cls, h) => utEmpty(text, cls, h),   /* t-thread-motif ④ (widgets.js, palette.js, mobile.js) */
     rvApprove: id => rvApprove(id, null), rvCanApprove: it => rvCanApprove(it), awaitsUser: it => awaitsUser(it), busy: it => busy(it), onYou: it => onYou(it), onYouCard: it => onYouCard(it), grpOf: it => grpOf(it), newReplies: () => newReplies(), nrDot: id => nrDot(id), decisions: () => decisions(),   // t-imp-p5 (palette)
     /* t-chrome-badge (home.js .hd-tool) */
@@ -4398,13 +4799,14 @@
     refresh: async () => { await poll(true); return !UI.down; },   // t-m2-c ④ pull-to-refresh: a forced full fetch; false = the server did not answer
     tablePv: s => tablePv(s),   // t-chat-table (mobile.js chat list preview)
     mailPv: (s, a) => mailPv(s, a),   /* t-ri1108-a P1 (widgets.js 新回复 rows) */
+    srvT: (s, th) => srvT(s, th), titleEn: (s, it) => titleEn(s, it), tplSeed: d => tplSeed(d), tplEn: (j, v) => tplEn(j, v),   /* t-i18n-c (market.js) */   /* t-i18n-b: server-written zh -> en at display (transfer.js, market.js) */
     verCheck: () => verCheck(true), attachPick: p => attachPick(p),   // t-lib-attach (viewer.js)   // t-new-ver (tests)
-    setHome: v => setHome(v), homeStyle: () => UI.home, queueOf: id => queueOf(id), qBadge: (id, small) => qBadge(id, small),   /* t-agent-queue */ seenOf: id => seenOf(id), unreadOf: id => unreadOf(id),   /* t-ri1104-p2 */ chatMailRead: (id, t) => chatMailRead(id, t),   /* r-improve-1102 P3 (was swallowed by a // comment until 11-04) */   /* t-home-applike (palette) */
-    draft: k => DRAFT.get(k), liveItem: a => liveItem(a), mgrOnline: a => mgrOnline(a), typingOn: (a, l) => typingOn(a, l), typingUntil: l => typingUntil(l),   // t-now-closed (home.js hero, office.js bubble)   // t-draft-keep (mobile.js chat list marks [草稿])
+    queueOf: id => queueOf(id), qBadge: (id, small) => qBadge(id, small),   /* t-agent-queue */ seenOf: id => seenOf(id), unreadOf: id => unreadOf(id),   /* t-ri1104-p2 */ chatMailRead: (id, t) => chatMailRead(id, t),   /* r-improve-1102 P3 (was swallowed by a // comment until 11-04) */   /* t-home-applike (palette) */
+    draft: k => DRAFT.get(k), liveItem: a => liveItem(a), mgrOnline: a => mgrOnline(a), isBusy: a => isBusy(a), /* t-ui-fix-r6 R6-08 */ typingOn: (a, l) => typingOn(a, l), typingUntil: l => typingUntil(l),   // t-now-closed (home.js hero, office.js bubble)   // t-draft-keep (mobile.js chat list marks [草稿])
     go: p => go(p), openModal: (h, f) => openModal(h, f), closeModal: () => closeModal(), renderPage: () => renderPage(),   /* t-hm-build */ openItem: id => openItem(id), seekItem: (id, sp) => seekItem(id, sp), seekChat: (t, q) => seekChat(t, q),   /* t-ri1103-p5 */ closeItem: () => closeItem(), backItem: () => backItem(), setChat: id => setChat(id), api: (k, b) => api(k, b), toast: (m, e) => toast(m, e),
     rejectItem(id) { openItem(id); modalReject(); }, on: fn => hooks.push(fn), inkEb, route: (P, via) => route(P, via),
     snoozed: it => snoozed(it), snzMenu: (id, anchor, done) => snzMenu(id, anchor, done), snzLine: () => snzLine(), snzText: it => snzText(it),   /* ri1103-P2 */
-    usage: () => usage(), roleUsage: () => roleUsage(), ruHTML: (n, o) => ruHTML(n, o), fmtTok,   /* t-home-usage */
+    usage: () => usage(), roleUsage: () => roleUsage(), ruHTML: (n, o) => ruHTML(n, o), soulHTML: () => soulHTML(), fmtTok,   /* t-home-usage */
     themeMode: () => themeMode(), setTab: k => setTab(k),   /* t-settings-tab */
     stageSub: (en, ut) => stageSub(en, ut),   /* t-theme-ut */
     textures: () => TEXTURES.map(x => x[0]),   /* t-theme-knit (mobile.js texSet) */
@@ -4445,11 +4847,12 @@
   if (H.get("page")) UI.page = pageAlias(H.get("page"));
   if (H.get("tab") && SET_TABS.includes(H.get("tab"))) UI.setTab = H.get("tab");   // t-settings-tab: #page=settings&tab=system
   if (H.get("theme")) UI.theme = H.get("theme");
-  if (H.get("home")) UI.home = ["classic", "app", "widgets"].includes(H.get("home")) ? H.get("home") : "dense";   // t-home-applike: #home=classic / #home=app, this load only
+  LS.set("home3", "widgets");   /* t-home-style-trim: old saved dense / app / classic land on widgets; #home= links are ignored */
   if (H.get("lang")) UI.lang = H.get("lang");
   if (H.get("fold")) UI.chatFold = H.get("fold") === "1";
   document.documentElement.dataset.theme = UI.theme;
-  // t-visual-ink: empty-state line art slot (--es-<key> + html.es-art). The open-source build ships no art, so the empty states stay typographic.
+  /* t-ui-fix-r3 R3-07: the t-visual-ink empty-state art probe (/work/t-visual-art/empty-*.png) is gone: the art was never made, so every fresh browser got 4 x 404. Empty states stay typographic; skin-ink.css keeps its unused --es-* slot. */
+  try { localStorage.removeItem("rt.esMiss"); } catch (_) { }
   snapBoot();
   poll(true).then(() => {
     if (!poll.entered) window.FX && FX.enter($("#pagebody"));

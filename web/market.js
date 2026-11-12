@@ -16,7 +16,11 @@
   const catL = c => en() ? (CAT_EN[c] || c) : c;
   const avUrl = (t, v) => `/api/tpl-av?job=${encodeURIComponent(t.key)}&v=${encodeURIComponent(v.key)}`;
   const vOf = t => t.variants[Math.min(MK.pick[t.key] || 0, t.variants.length - 1)] || t.variants[0];
-  const sample = v => ((v.habits || []).find(h => /^示例/.test(h)) || "").replace(/^示例[:：]?\s*/, "");
+  const sample = v => en() && v.sample_en || ((v.habits || []).find(h => /^示例/.test(h)) || "").replace(/^示例[:：]?\s*/, "");
+  /* t-i18n-c: template.json carries label_en / style_en / sample_en per personality and starters_en per job; a missing one falls back to Chinese */
+  const vLabel = v => en() && v.label_en || v.label;
+  const vStyle = v => en() && v.style_en || v.style;
+  const starters = t => (t.starters || []).map((s, i) => en() && (t.starters_en || [])[i] || s);
 
   async function load(force) {
     if (MK.busy || (!force && MK.data && Date.now() - MK.at < 60e3)) return;
@@ -26,6 +30,7 @@
       if (r.status === 404) throw new Error(L("看板服务还没重启：招聘市场的接口要重启一次才有。", "The dashboard server needs one restart before the market works."));
       if (!r.ok) throw new Error("HTTP " + r.status);
       MK.data = await r.json(); MK.err = "";
+      if (App.tplSeed) App.tplSeed(MK.data);   /* t-i18n-c: English job names for old interview cards */
     } catch (e) { MK.err = String(e.message || e); }
     MK.busy = false; MK.at = Date.now();
     if (App.UI.page === "market") App.renderPage();
@@ -63,7 +68,8 @@
       : h.status === "failed" ? (xf ? L("调岗没办成，看卡上的原因", "Transfer failed, see the card") : L("入职没办成，看卡上的原因", "Onboarding failed, see the card"))
       : xf ? L(`第 ${h.turns || 0}/${h.max_turns || 5} 轮`, `turn ${h.turns || 0}/${h.max_turns || 5}`)
       : L(`已问清 ${h.filled || 0}/5 · 第 ${h.turns || 0}/8 轮`, `${h.filled || 0}/5 settled · turn ${h.turns || 0}/8`);
-    const html = `<span class="hr-iv-t"><b>${xf ? `${L("调岗", "Transfer")}：${esc(h.job_name || h.target)}` : `${L("面试", "Interview")}：${esc(h.job_name || h.job)}（${esc(h.variant_label || h.variant)}）`}</b><small>${esc(prog)}</small></span>`
+    const xe = en() && !xf && App.tplEn ? App.tplEn(h.job, h.variant) : null;   /* t-i18n-c */
+    const html = `<span class="hr-iv-t"><b>${xf ? `${L("调岗", "Transfer")}${L("：", ": ")}${esc(h.job_name || h.target)}` : en() ? `Interview: ${esc((xe && xe.job) || h.job_name || h.job)} (${esc((xe && xe.variant) || h.variant_label || h.variant)})` : `面试：${esc(h.job_name || h.job)}（${esc(h.variant_label || h.variant)}）`}</b><small>${esc(prog)}</small></span>`
       + `<button type="button" class="hr-iv-b${draft ? " go" : ""}" data-hr-card="${esc(it.id)}">${draft ? L("去批", "Review") : L("看卡", "Card")}</button>`
       + (busy ? "" : `<button type="button" class="hr-iv-b ghost" data-hr-quit="${esc(it.id)}">${L("放弃", "Drop")}</button>`);
     if (!bar) { bar = document.createElement("div"); bar.className = "hr-iv"; bar.setAttribute("role", "status"); const m = r.querySelector(".ch-msgs"); if (!m) return; m.before(bar); }
@@ -82,7 +88,7 @@
   async function startIv(t, b) {
     b.disabled = true;
     try {
-      const j = await ivApi({ op: "start", job: t.key, variant: vOf(t).key });
+      const j = await ivApi({ op: "start", job: t.key, variant: vOf(t).key, lang: App.UI.lang });   /* t-i18n-c: English opening for an English UI */
       if (!j.ok) App.toast(j.error || "?", true);
       openDm(HR);
     } catch (x) { App.toast(String(x.message || x), true); }
@@ -99,7 +105,7 @@
   function sw(t, cls = "") {
     const cur = vOf(t);
     return `<div class="mk-sw ${cls}" role="radiogroup" aria-label="${L("性格", "Personality")}">${t.variants.map((v, i) =>
-      `<button type="button" role="radio" aria-checked="${v.key === cur.key}" class="${v.key === cur.key ? "on" : ""}" data-mk-v="${i}" style="--t:${esc(v.tint)}"><i></i>${esc(v.label)}</button>`).join("")}</div>`;
+      `<button type="button" role="radio" aria-checked="${v.key === cur.key}" class="${v.key === cur.key ? "on" : ""}" data-mk-v="${i}" style="--t:${esc(v.tint)}"><i></i><span data-t="${esc(vLabel(v))}">${esc(vLabel(v))}</span></button>`).join("")}</div>`;   /* t-i18n-chips: data-t reserves the bold width in English (style.css) */
   }
   function btns(t) {
     const h = hiredOf(t), on = h.filter(x => x.on), off = h.filter(x => !x.on);
@@ -115,8 +121,8 @@
     return `<article class="mk-card${on ? " hired" : ""}" data-mk="${esc(t.key)}" data-cat="${esc(t.cat)}" style="--t:${esc(v.tint)}">
       <div class="mk-top"><img class="mk-av" alt="" src="${avUrl(t, v)}" loading="lazy"><div class="mk-id"><b>${esc(en() ? t.title_en || t.job : t.job)}</b><small>${esc(en() ? t.job : t.title_en)}${t.cat ? " · " + esc(catL(t.cat)) : ""}</small></div>${badge(t)}</div>
       <p class="mk-duty">${esc(en() ? t.duty_en || t.duty : t.duty)}</p>
-      ${sw(t)}<p class="mk-style">${esc(v.style)}</p>
-      <div class="mk-st-h">${L("派活可以这样说", "Try asking")}</div>${(t.starters || []).slice(0, 2).map(s => `<div class="mk-q" title="${esc(s)}">「${esc(s)}」</div>`).join("")}
+      ${sw(t)}<p class="mk-style">${esc(vStyle(v))}</p>
+      <div class="mk-st-h">${L("派活可以这样说", "Try asking")}</div>${starters(t).slice(0, 2).map(s => `<div class="mk-q" title="${esc(s)}">${en() ? `“${esc(s)}”` : `「${esc(s)}」`}</div>`).join("")}
       ${btns(t)}</article>`;
   }
   function chips() {
@@ -150,8 +156,8 @@
     const v0 = t.variants[st.vi];
     App.openModal(`<h2>${L("雇一个", "Hire a")} ${esc(en() ? t.title_en || t.job : t.job)}</h2>
       <div class="mk-sh">
-        <div class="mk-sh-top"><img class="mk-av xl" alt="" src="${avUrl(t, v0)}"><div class="mk-sh-pv"><b data-pv-name></b><small>${esc(t.job)} · <span data-pv-v></span></small><p class="mk-say" data-pv-say></p></div></div>
-        <label>${L("性格", "Personality")}</label><div class="mk-sw big" role="radiogroup">${t.variants.map((v, i) => `<button type="button" role="radio" aria-checked="${i === st.vi}" class="${i === st.vi ? "on" : ""}" data-sh-v="${i}" style="--t:${esc(v.tint)}"><i></i>${esc(v.label)}</button>`).join("")}</div>
+        <div class="mk-sh-top"><img class="mk-av xl" alt="" src="${avUrl(t, v0)}"><div class="mk-sh-pv"><b data-pv-name></b><small>${esc(en() ? t.title_en || t.job : t.job)} · <span data-pv-v></span></small><p class="mk-say" data-pv-say></p></div></div>
+        <label>${L("性格", "Personality")}</label><div class="mk-sw big" role="radiogroup">${t.variants.map((v, i) => `<button type="button" role="radio" aria-checked="${i === st.vi}" class="${i === st.vi ? "on" : ""}" data-sh-v="${i}" style="--t:${esc(v.tint)}"><i></i><span data-t="${esc(vLabel(v))}">${esc(vLabel(v))}</span></button>`).join("")}</div>
         <div class="mk-sh-row">
           <div><label for="mk-name">${L("名字", "Name")}</label><input type="text" id="mk-name" maxlength="20" value="${esc(freeName(t.job))}"></div>
           <div><label for="mk-id">id <small>${L("小写字母，雇后不能改", "lowercase, fixed after hiring")}</small></label><input type="text" id="mk-id" maxlength="16" value="${esc(freeId(t.key, ids))}"></div>
@@ -165,7 +171,7 @@
       m.classList.add("mk-mdl");
       const name = $("#mk-name", m), id = $("#mk-id", m), tint = $("#mk-tint", m), ok = $("[data-ok]", m), plan = $("[data-plan]", m);
       const cur = () => t.variants[st.vi];
-      const fill = () => { const v = cur(); $("[data-pv-name]", m).textContent = name.value || t.job; $("[data-pv-v]", m).textContent = v.label; $("[data-pv-say]", m).textContent = sample(v) || v.style;
+      const fill = () => { const v = cur(); $("[data-pv-name]", m).textContent = name.value || t.job; $("[data-pv-v]", m).textContent = vLabel(v); $("[data-pv-say]", m).textContent = sample(v) || vStyle(v);
         if (!st.tintSet) tint.value = v.tint; $(".mk-av", m).src = avUrl(t, v); m.style.setProperty("--t", tint.value); };
       let tm = 0;
       const dry = () => { clearTimeout(tm); ok.disabled = true; plan.classList.remove("bad"); plan.textContent = "…"; const my = ++st.seq;
@@ -229,7 +235,7 @@
       MK.pick[t.key] = +vb.dataset.mkV; const v = vOf(t);
       cd.querySelectorAll("[data-mk-v]").forEach(b => { const on = b === vb; b.classList.toggle("on", on); b.setAttribute("aria-checked", on); });
       cd.style.setProperty("--t", v.tint); $(".mk-av", cd).src = avUrl(t, v);
-      const st = $(".mk-style", cd); st.classList.remove("in"); st.textContent = v.style; void st.offsetWidth; st.classList.add("in");
+      const st = $(".mk-style", cd); st.classList.remove("in"); st.textContent = vStyle(v); void st.offsetWidth; st.classList.add("in");
       return;
     }
     const ivb = e.target.closest("[data-mk-iv]");

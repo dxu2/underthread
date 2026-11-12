@@ -1,6 +1,7 @@
 <!doctype html>
 <html lang="zh" data-theme="dark">
 <head>
+<script>/* t-csrf-live: every same-origin non-GET fetch carries X-Underthread: 1 (server.py refuses browser POSTs without it) */(function(){var f=window.fetch;if(!f||f.__xr)return;var w=function(i,o){try{var m=String((o&&o.method)||(i&&typeof i==="object"&&i.method)||"GET").toUpperCase();var u=new URL(typeof i==="string"?i:(i&&i.url)||String(i),location.href);if(m!=="GET"&&m!=="HEAD"&&u.origin===location.origin){var h=new Headers((o&&o.headers)||(i&&typeof i==="object"&&i.headers)||undefined);h.set("X-Underthread","1");o=Object.assign({},o,{headers:h});}}catch(e){}return f.call(this,i,o);};w.__xr=1;window.fetch=w;})();</script>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -38,16 +39,15 @@ d.dataset.splash="1";d.style.setProperty("--ut-guard",t==="white"?"#ffffff":t===
 <link rel="stylesheet" href="/static/splash.css?v=1">
 <script src="/static/splash.js?v=1" defer></script>
 <!-- ri1106-P1: no Google Fonts request any more; Cinzel (latin) is self-hosted in web/fonts, see style.css @font-face -->
-<link rel="stylesheet" href="/static/style.css?v=167">
-<link rel="stylesheet" href="/static/mobile.css?v=135" media="(max-width: 760px)">
-<link rel="stylesheet" href="/static/home-app.css?v=9">   <!-- t-home-applike: desktop app-style 首页 (scoped to html[data-home=app]) -->
-<link rel="stylesheet" href="/static/team.css?v=1">   <!-- t-rb-build -->
-<link rel="stylesheet" href="/static/widgets.css?v=10">   <!-- t-home-widgets: desktop widget 首页 (scoped to html[data-home=widgets]) -->
-<link rel="stylesheet" href="/static/skin-ink.css?v=8">   <!-- t-visual-ink: 墨刊 skin, every rule scoped to html[data-skin="ink"] -->
-<link rel="stylesheet" href="/static/glass.css?v=9">   <!-- t-glass-system: shared glass + motion tokens; card / rail / TOC glass. <html data-glass="0"> turns it off -->
-<link rel="stylesheet" href="/static/theme-ut.css?v=9">   <!-- t-theme-ut: Underthread 特典配色, only under html[data-ut] -->
-<link rel="stylesheet" href="/static/texture-knit.css?v=1">   <!-- t-theme-knit: 质感「针织」, only under html[data-texture^=knit] (rt.texture, 设置 → 外观 → 质感) -->
-<link rel="stylesheet" href="/static/texture-leather.css?v=1">   <!-- t-theme-leather: 质感「皮革」, only under html[data-texture^=leather] (leather1 软皮 / leather2 马鞍) -->
+<link rel="stylesheet" href="/static/style.css?v=186">
+<link rel="stylesheet" href="/static/mobile.css?v=145" media="(max-width: 760px)">
+<link rel="stylesheet" href="/static/team.css?v=6">   <!-- t-rb-build -->
+<link rel="stylesheet" href="/static/widgets.css?v=27">   <!-- t-home-widgets: desktop widget 首页 (scoped to html[data-home=widgets]) -->
+<link rel="stylesheet" href="/static/skin-ink.css?v=10">   <!-- t-visual-ink: 墨刊 skin, every rule scoped to html[data-skin="ink"] -->
+<link rel="stylesheet" href="/static/glass.css?v=11">   <!-- t-glass-system: shared glass + motion tokens; card / rail / TOC glass. <html data-glass="0"> turns it off -->
+<link rel="stylesheet" href="/static/theme-ut.css?v=20">   <!-- t-theme-ut: Underthread 特典配色, only under html[data-ut] -->
+<link rel="stylesheet" href="/static/texture-knit.css?v=6">   <!-- t-theme-knit: 质感「针织」, only under html[data-texture^=knit] (rt.texture, 设置 → 外观 → 质感) -->
+<link rel="stylesheet" href="/static/texture-leather.css?v=7">   <!-- t-theme-leather: 质感「皮革」, only under html[data-texture^=leather] (leather1 软皮 / leather2 马鞍) -->
 <link rel="stylesheet" href="/static/oss.css?v=6">   <!-- open-source build: text wordmark, hides switches for parts not shipped (stage art, voice) -->
 </head>
 <body>
@@ -55,7 +55,7 @@ d.dataset.splash="1";d.style.setProperty("--ut-guard",t==="white"?"#ffffff":t===
   <div class="brand" id="brand" role="link" aria-label="Underthread"><img class="wm-d" src="/static/brand/wordmark-on-dark@2x.png?v=4" srcset="/static/brand/wordmark-on-dark@2x.png?v=4 2x, /static/brand/wordmark-on-dark@3x.png?v=4 3x" alt="Underthread" width="180" height="32" decoding="async"><img class="wm-l" src="/static/brand/wordmark-on-light@2x.png?v=4" srcset="/static/brand/wordmark-on-light@2x.png?v=4 2x, /static/brand/wordmark-on-light@3x.png?v=4 3x" alt="" aria-hidden="true" width="180" height="32" decoding="async"></div>
   <div class="sync" id="sync"></div>
   <div class="toolbar" id="toolbar"></div>
-  <div class="stamina" id="stamina"></div>
+  <!-- t-topbar-soul-off: the usage orb is gone from the top bar; quota lives in the home Usage widget and the phone usage card -->
   <div class="hdr-ctrl" id="hdrctrl"></div>
 </header>
 <div id="ticker"></div>
@@ -72,23 +72,25 @@ d.dataset.splash="1";d.style.setProperty("--ut-guard",t==="white"?"#ffffff":t===
   <aside id="right"></aside>
 </div>
 <div id="boot-sk" class="sk boot-sk" aria-busy="true" aria-label="加载中"><div class="sk-st"><b></b><b></b><b></b><b></b></div><div class="sk-c"><i style="width:30%"></i><i></i><i style="width:72%"></i></div><div class="sk-c"><i style="width:42%"></i><i style="width:88%"></i><i style="width:60%"></i></div><div class="sk-c"><i style="width:36%"></i><i></i><i style="width:50%"></i></div></div>
+<script>try{if(/[#&]lang=en\b/.test(location.hash)||JSON.parse(localStorage.getItem("rt.lang"))==="en")document.getElementById("boot-sk").setAttribute("aria-label","Loading");}catch(e){}</script>
 <div id="modal" hidden></div>
 <div id="toast" hidden></div>
-<script src="/static/md.js?v=3"></script>
-<script src="/static/fx.js?v=11"></script>
+<script src="/static/md.js?v=5"></script>
+<script src="/static/fx.js?v=13"></script>
 <script src="/static/diff.js?v=1"></script>
-<script src="/static/app.js?v=202"></script>
-<script src="/static/market.js?v=4"></script>
-<script src="/static/transfer.js?v=1"></script>   <!-- t-ht-build: 调岗 / 退休 -->
+<script src="/static/app.js?v=227"></script>
+<script src="/static/market.js?v=6"></script>
+<script src="/static/transfer.js?v=3"></script>   <!-- t-ht-build: 调岗 / 退休 -->
 <script src="/static/preview.js?v=1"></script>
-<script src="/static/palette.js?v=15"></script>
-<script src="/static/home.js?v=25"></script>
-<script src="/static/team.js?v=1"></script>   <!-- t-rb-build: 团队交接 widget + 团队 page -->
-<script src="/static/widgets.js?v=20"></script>   <!-- t-home-widgets -->
+<script src="/static/palette.js?v=18"></script>
+<script src="/static/home.js?v=26"></script>
+<script src="/static/team.js?v=7"></script>   <!-- t-rb-build: 团队交接 widget + 团队 page -->
+<script src="/static/widgets.js?v=32"></script>   <!-- t-home-widgets -->
+<script src="/static/toast.js?v=1"></script>   <!-- t-web-toast: desktop in-app notice -->
 <script src="/static/rolefiles.js?v=3"></script>
-<script src="/static/viewer.js?v=7"></script>
+<script src="/static/viewer.js?v=9"></script>
 <script src="/static/glass.js?v=3"></script>   <!-- t-glass-system: sliding nav pill, TOC indicator / close animation -->
-<script src="/static/mobile.js?v=99"></script>
-<script src="/static/push.js?v=4"></script>
+<script src="/static/mobile.js?v=103"></script>
+<script src="/static/push.js?v=5"></script>
 </body>
 </html>

@@ -174,7 +174,6 @@ html[data-theme="white"][data-ut][data-ut="light-warm"] #right .msg .mb, html[da
 html[data-theme="white"][data-ut][data-ut="light-warm"] #right .msg:not(.me) > .mb::before, html[data-theme="white"][data-ut][data-ut="light-warm"] .m-typing .mb::before { background: var(--bub); }
 html[data-theme="white"][data-ut][data-ut="light-warm"] #right .msg.me .mb { background: var(--bub-me); color: var(--ink); }
 
-
 /* ---- 3. 接入修正：写死的白 / 灰底、渐变、分段指示块 ---- */
 html[data-ut] body, html[data-ut] #layout, html[data-ut] body #right, html[data-ut] #right { background: var(--bg) !important; }
 html[data-ut] body #right .ch-comp textarea, html[data-ut] #right .ch-comp textarea, html[data-ut] .ui2-panel button b { background: var(--panel2); color: var(--ink); }
@@ -193,7 +192,7 @@ html[data-ut] .st-row.st-dis b, html[data-ut] .st-row.st-dis .sw { opacity: .45;
 
 /* ---- 4. t-thread-motif 针线（11-05）：只把本来就是「线」的地方换成针线。左栏部分（分组线 / TEAM 线 / 选中穿线 / icon）跟 t-nav-shoot 一起另上。
    颜色只用 tokens；针 = 一张 mask 图，颜色走 background（--ink）。 ---- */
-.ue-art, .ue-h, .d-ue { display: none; }   /* App.utEmpty 的线轴图和标题：不开特典时不出现，文字照旧 */
+.ue-art, .ue-h { display: none; }   /* App.utEmpty 的线轴图和标题：不开特典时不出现，文字照旧 */
 html[data-ut] {
   --stitch: repeating-linear-gradient(90deg, var(--line3) 0 5px, transparent 5px 9px);
   --needle-v: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 6 22'%3E%3Cpath fill-rule='evenodd' d='M3 .4c1.3 0 2.1 1 2.1 2.5v3.6L3.5 21.6h-1L.9 6.5V2.9C.9 1.4 1.7.4 3 .4zm0 1.4c-.4 0-.7.5-.7 1.1v2.2c0 .6.3 1 .7 1s.7-.4.7-1V2.9c0-.6-.3-1.1-.7-1.1z'/%3E%3C/svg%3E");
@@ -206,12 +205,6 @@ html[data-ut] .cs-card.draftc .md h1, html[data-ut] .cs-card.draftc .md h2 { bac
 html[data-ut] .md hr { border: 0; height: 1px; background: var(--stitch); }
 html[data-ut] .dw-acts::before { background: var(--stitch); }
 html[data-ut][data-skin="ink"] .dc-h, html[data-ut][data-skin="ink"] .sec-h { border-top: 0; background: var(--stitch) left top / 100% 1px no-repeat; }
-/* ③ 首页时间轴：已过 = 缝好的针脚，「现在」= 一根针，往后 = 还没缝的细线 */
-html[data-ut][data-dense] #hd2 .d-tl-bar { border-radius: 0; background: linear-gradient(var(--line2), var(--line2)) 0 50% / 100% 1px no-repeat; }
-html[data-ut][data-dense] #hd2 .d-tl-bar .past { inset: 2px auto auto 0; height: 2px; border-radius: 0; background: repeating-linear-gradient(90deg, var(--accent) 0 6px, transparent 6px 10px); }
-html[data-ut][data-dense] #hd2 .d-tl-bar .now { top: -12px; width: 6px; height: 22px; margin-left: -3px; background: none; }
-html[data-ut][data-dense] #hd2 .d-tl-bar .now::before { content: ""; position: absolute; inset: 0; background: var(--ink); -webkit-mask: var(--needle-v) center / 6px 22px no-repeat; mask: var(--needle-v) center / 6px 22px no-repeat; }
-html[data-ut][data-dense] #hd2 .d-tl-bar .now u { top: -21px; left: 3px; }
 /* ④ 空状态：线轴 + 收好的线（等你拍板 / 信箱 / 搜索无结果） */
 html[data-ut] .ue::before { display: none; }
 html[data-ut] .ue { display: flex; flex-direction: column; align-items: center; text-align: center; gap: 4px; }
@@ -225,12 +218,7 @@ html[data-ut] .dc-none.ue { padding: 28px 0 22px; }
 html[data-ut] #pagebody .dc-none.dc-ok.ue { flex-direction: column; gap: 4px; padding: 20px 14px 18px; color: var(--dim); background: var(--panel); box-shadow: inset 0 0 0 1px var(--line); }
 html[data-ut] .dc-ok.ue > i { display: none; }
 html[data-ut] .pl-none.ue { padding: 22px 14px 26px; }
-html[data-ut][data-dense] #hd2 .d-needs0 .d-ok { display: none; }
-html[data-ut][data-dense] #hd2 .d-ue { display: grid; grid-template-columns: auto 1fr; grid-template-rows: auto auto; column-gap: 14px; row-gap: 2px; align-items: center; justify-items: start; text-align: left;
-  margin-top: 6px; padding: 8px 16px; border-radius: var(--r-m); background: var(--panel); border: 1px solid var(--line); }
-html[data-ut][data-dense] #hd2 .d-ue .ue-art { grid-row: 1 / 3; width: 64px; height: 48px; margin: 0; }
-html[data-ut][data-dense] #hd2 .d-ue .ue-h { align-self: end; }
-html[data-ut][data-dense] #hd2 .d-ue .ue-t { align-self: start; }
+
 /* ⑤ 体力 / 用量条：用掉的是线，头上是一根针；「此刻」在做的那条细条：一针一针缝过去再重来 */
 html[data-ut] .stamina .focus { height: 6px; bottom: -5px; overflow: visible; border-radius: 0; background: linear-gradient(var(--line2), var(--line2)) 0 50% / 100% 1px no-repeat; }
 html[data-ut] .stamina .focus i { position: relative; height: 2px; margin-top: 2px; background: var(--accent); }
@@ -279,6 +267,11 @@ html[data-theme][data-ut] #tabbar .tb-sel { background: var(--accent-soft); box-
 html[data-theme][data-ut] #tabbar .tb-tip { background: var(--panel); }
 /* t-avatar-style: the needle-thread avatars are smooth art, not pixel art; .av's pixelated (old pixel heads) turns the stitches into jaggies at 22-50 px */
 html[data-ut] .av { image-rendering: auto; }
+/* t-avatar-white-ring: the needle-thread avatars are embroidered patches with their own merrowed edge; the generic .av frame
+   (1px --line3 border + --bg gap + --line hairline ring, built for square character art) drew a pale ring around every patch. Under 特典 the patch is the frame:
+   no border, no resting ring, no chip fill peeking at the anti-aliased rim. State rings (working, selected roster avatar) keep their own rules. */
+html[data-ut] .av, html[data-ut] .cal-rt .av.cal-av { border-width: 0; background-color: transparent; box-shadow: none; }
+/* the selected chat-roster avatar keeps its cream --ink2 ring (style.css .ch-roster button.on .av): a state cue, the user chose to keep it (ask 6c88eb, 11-11) */
 /* ri1106-P4: home D1 strip (home.js panel(), phone home + desktop app home) shows the needle-thread avatar instead of the panel art under 特典.
    .dp-uti = avatarUrl(a, 1), i.e. avatars/ut/_s/<id>-512.webp (falls back to the normal avatar if the UT set has no file); avSweep() swaps its URL on theme change.
    .dp-img (the art) is display:none here, so the art is not downloaded and its breathing animation does not run. Outside 特典 .dp-uti is hidden and nothing changes. */
@@ -305,6 +298,15 @@ html[data-ut] .dp-strip .dp.w .dp-utw { display: block; position: absolute; widt
   background: var(--wsheet) 0 0 / 400% 100% no-repeat; animation: ut-wsheet .8s steps(4) infinite;
   transition: width var(--m-slow) var(--m-ease-ios), height var(--m-slow) var(--m-ease-ios), top var(--m-slow) var(--m-ease-ios), left var(--m-slow) var(--m-ease-ios); }
 html[data-ut] .dp-strip .dp.w.act .dp-utw { width: 84px; height: 84px; left: calc((100% - 84px) * .5); top: 4px; }
+/* t-ut-avatar-working: 委托完成 splash (fx.js .mc.uta) shows the needle-thread patch (avatars/ut/_s/<id>-512) instead of the character cut-out.
+   Same slot and timeline as the art; the patch is round, so no edge mask, a soft drop shadow, and it lands with a small spin like a badge being pinned on. */
+/* v2 (user 11-10 23:56 「为啥会有这后面的炫光」): no halo (.mc-glow), no light streaks, no white flash under Underthread; just the dimmed page, the patch and the plate. */
+.mc.uta .mc-glow, .mc.uta .mc-st, .mc.uta .mc-flash { display: none; }
+.mc.uta .mc-art { -webkit-mask-image: none; mask-image: none; height: auto; width: min(72vw, 46vh, 360px); right: 12vw; top: calc(env(safe-area-inset-top, 0px) + 9vh);
+  border-radius: 50%; filter: drop-shadow(0 8px 14px rgba(0,0,0,.30)); animation: mc-ut-in .72s .04s cubic-bezier(.16,1,.3,1) both, mc-art-drift 2.6s linear both; }
+@media (min-width: 761px) { .mc.uta .mc-art { width: min(50vh, 420px); right: 18vw; top: 9vh; } }
+@keyframes mc-ut-in { from { transform: translateX(48vw) rotate(70deg) scale(.82); opacity: 0; } 35% { opacity: 1; } to { transform: rotate(-6deg); } }
+@media (prefers-reduced-motion: reduce) { .mc.uta .mc-art { transform: rotate(-6deg); } }
 /* reduced motion: hold frame 1 (the prop stays, so "busy" still reads); the ring has its own rule in style.css */
 @media (prefers-reduced-motion: reduce) {
   html[data-ut] .av.working.wsheet, html[data-ut] .hd-mini.working.wsheet, html[data-ut] .dp-strip .dp.w .dp-utw { animation: none; background-position: 0 0; transition: none; } }
@@ -321,6 +323,11 @@ html[data-ut] .hc-mail .ums-x { display: inline; stroke: var(--accent); stroke-w
 html[data-ut] .hc-mail .n, html[data-ut][data-theme] #nav .nav-i .n.mb:not(.z) { position: relative; z-index: 0; background: none; text-shadow: 0 0 2px var(--dot), 0 0 1px var(--dot); }
 html[data-ut] .hdr-ctrl .hc-mail .n { height: 21px; min-width: 21px; padding: 0 5px; margin-left: 1px; font-size: var(--fs-11); }
 html[data-ut][data-theme] #nav .nav-i .n.mb:not(.z) { height: 21px; min-width: 21px; line-height: 21px; padding: 0 5px; margin-right: 4px; }
+/* t-mailbox-icon: icon-only under 特典 too: round panel button, the stitched envelope (dashed running stitch round the body + the cross-stitched flap), the yarn-ball count pinned top-right */
+html[data-ut] .hdr-ctrl .hc-mail { padding: 0; }
+html[data-ut] .hdr-ctrl .hc-mail > svg { width: 19px; height: 19px; }
+html[data-ut] .hc-mail > svg rect { stroke-dasharray: 2.1 1.3; stroke-width: 1.4; }
+html[data-ut] .hdr-ctrl .hc-mail .n { position: absolute; top: -5px; right: -7px; height: 19px; min-width: 19px; padding: 0 4px; margin: 0; font-size: var(--fs-10); box-shadow: none; }
 html[data-ut] .hc-mail .n .ums-yarn, html[data-ut] .nav-i .n .ums-yarn { display: block; position: absolute; inset: 0; width: 100%; height: 100%; z-index: -1; overflow: visible; stroke: none; fill: none; }
 html[data-ut] .n .ums-yarn .ums-b0 { fill: var(--dot); }
 html[data-ut] .n .ums-yarn .ums-bw { stroke: color-mix(in srgb, var(--dot), #000 30%); stroke-width: 1; vector-effect: non-scaling-stroke; opacity: .75; }   /* a shade of --dot, not a new hue */
@@ -348,3 +355,78 @@ html[data-ut] .orb .ums-sw { display: block; }
 html[data-ut] .stamina.stale .orb .ums-sw .ums-ndi { animation-play-state: paused; }
 @keyframes ums-knit { 0%, 100% { transform: translateX(0); } 50% { transform: translateX(1.6px); } }
 @keyframes ums-tail { 0%, 100% { transform: rotate(0); } 50% { transform: rotate(8deg); } }
+
+/* ===== t-ut-no-hover-glow (user 11-10 23:53): the signature theme has no glare. The widget home's pointer-following light (.wg::before) and rim shine (.wg::after,
+   widgets.css t-hover-glass) are off under Underthread; hover feedback stays as the 3px lift + deeper shadow (widgets.css), rows / buttons keep their background change.
+   Ink keeps the glow. widgets.js still writes --mx/--my; nothing reads them here. ===== */
+html[data-ut][data-home="widgets"] .wg::before, html[data-ut][data-home="widgets"] .wg::after { display: none; }
+
+/* t-detail-bubble-color (user 01:13): in a card's thread my comments (.cs-me, already right-aligned with the 20/6/20/20 tail corner) had the same faint ink tint
+   as the agents' cards. 替用户定了: same warm fill as my DM bubbles on the right (--bub-me), so "me" reads the same in both places. Agents' cards unchanged. */
+html[data-ut] #drawer .cs-me { background: var(--bub-me); border-color: transparent; }
+
+/* t-victory-stitchin (user 11-11 00:37 chose A 「缝上 Stitch-in」, board work/t-ut-victory-anim/out/board-A.png, timings from out/gif/A.html):
+   0–.35 s page dims, the patch drops 12 px and settles · .35–.95 s a needle sews a dashed ring clockwise round it ·
+   .95–1.35 s the leather plate is stitched in left to right (both stitch rows come with it), a needle runs along it ·
+   1.35–1.6 s a knot is tied at the plate's end, the subtitle fades in · hold 2 s · whole overlay fades .45 s. Only movement and line drawing: no glow, no flash.
+   Sizes follow the mock (1440 × 900: patch 260 px at 34 vh, ring r 152, plate 100 px at 55.5 vh); --u = one mock pixel of the patch. */
+@property --sti-a { syntax: "<angle>"; inherits: false; initial-value: 0deg; }
+.mc.sti { animation: mc-life-sti 4.05s linear both; --sti-S: min(29vh, 260px, 62vw); --u: calc(var(--sti-S) / 260); --sti-gold: #EFAF40; --sti-ink: #2B1913; --sti-thread: #E8C88E; }
+@keyframes mc-life-sti { 0% { opacity: 1; } 88.9% { opacity: 1; } 100% { opacity: 0; } }
+.mc.sti .mc-dim { background: rgba(12,6,3,.66); animation: mc-fade .35s ease-out both; }
+html[data-ut="light-warm"] .mc.sti .mc-dim { background: color-mix(in srgb, var(--bg) 93%, transparent); }   /* r-improve-1112 P5: 82% let the rail and widget text read through */
+.mc.sti .sti-b { left: 50%; top: 34vh; width: var(--sti-S); height: var(--sti-S); margin: calc(var(--sti-S) / -2) 0 0 calc(var(--sti-S) / -2); }
+.mc.sti .sti-b > * { position: absolute; }
+.mc.uta.sti .mc-art { inset: 0; right: auto; top: 0; width: 100%; height: 100%; max-width: none; object-fit: cover; border-radius: 50%; background: #F4E1C2; filter: none;
+  box-shadow: 0 14px 34px rgba(0,0,0,.55); -webkit-mask-image: none; mask-image: none; transform: none; translate: none;
+  animation: sti-drop .35s cubic-bezier(.2,.7,.3,1) both; }
+@keyframes sti-drop { from { opacity: 0; transform: translateY(calc(var(--u) * -26)); } to { opacity: 1; transform: none; } }
+/* the ring: dashed thread, revealed clockwise from 12 o'clock by a conic mask (@property angle) */
+.mc.sti .sti-ring { left: calc(var(--u) * -40); top: calc(var(--u) * -40); width: calc(var(--u) * 340); height: calc(var(--u) * 340); overflow: visible;
+  -webkit-mask-image: conic-gradient(#000 var(--sti-a), transparent 0); mask-image: conic-gradient(#000 var(--sti-a), transparent 0);
+  animation: sti-sew .6s linear .35s both; }
+.mc.sti .sti-ring circle { fill: none; stroke: var(--sti-thread); stroke-width: 4.5; stroke-dasharray: 13 10; stroke-linecap: round; }
+@keyframes sti-sew { from { --sti-a: 0deg; } to { --sti-a: 360deg; } }
+.mc.sti .sti-orb { left: 50%; top: 50%; width: 0; height: 0; animation: sti-orbit .6s linear .35s both, sti-show .6s linear .35s; }
+@keyframes sti-orbit { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+@keyframes sti-show { from, to { visibility: visible; } }   /* no fill: the needle is visible only while it sews */
+.mc.sti .sti-orb .sti-ndl { position: absolute; left: calc(var(--u) * -10); top: calc(var(--u) * -170); width: calc(var(--u) * 70); height: calc(var(--u) * 20); transform: rotate(8deg); transform-origin: 10% 50%; }
+.mc.sti .sti-ndl path { stroke: #D9D2C4; stroke-width: 4; stroke-linecap: round; fill: none; }
+.mc.sti .sti-ndl ellipse { fill: #1F110D; }
+.mc.sti .sti-orb { visibility: hidden; }
+/* the plate */
+.mc.sti .mc-plate { left: 0; right: 0; top: 55.5vh; bottom: auto; height: clamp(72px, 11vh, 100px); clip-path: none; padding: 0 0 0 max(24px, 14.6vw); box-sizing: border-box; justify-content: center;
+  background: var(--sti-gold); color: var(--sti-ink); box-shadow: 0 8px 20px rgba(0,0,0,.45); animation: sti-wipe .4s cubic-bezier(.4,0,.2,1) .95s both; overflow: visible; }
+.mc.sti .mc-plate::before { content: ""; position: absolute; left: 10px; right: 10px; top: 9px; bottom: 9px; border-top: 2.5px dashed rgba(43,25,19,.5); border-bottom: 2.5px dashed rgba(43,25,19,.5); pointer-events: none; }
+@keyframes sti-wipe { from { clip-path: inset(-40px 100% -40px 0); } to { clip-path: inset(-40px 0 -40px 0); } }   /* -40px top/bottom: keep the MISSION COMPLETE eyebrow and the shadow */
+.mc.sti .mc-k { position: absolute; left: max(26px, 14.7vw); top: -22px; margin: 0; font: 700 var(--fs-13) var(--f-cjk); letter-spacing: .4em; color: var(--sti-gold); opacity: 1; animation: none; }
+.mc.sti .mc-main { font: 600 max(22px, min(6.6vh, 60px, 6.4vw))/1 var(--f-cjk); letter-spacing: .12em; padding-right: 52px; overflow: hidden; text-overflow: clip; max-width: 100%; box-sizing: border-box; color: var(--sti-ink); animation: none; white-space: nowrap; }
+.mc.sti .sti-knot { position: absolute; right: 28px; top: 50%; width: 16px; height: 16px; margin-top: -8px; border-radius: 50%; background: #5A3A22; box-shadow: inset 0 -2px 0 rgba(0,0,0,.35);
+  animation: sti-pop .25s ease-out 1.35s both; }
+@keyframes sti-pop { 0% { transform: scale(0); } 70% { transform: scale(1.3); } 100% { transform: scale(1); } }
+/* the needle running along the plate */
+.mc.sti .sti-run { left: 20px; top: calc(55.5vh + clamp(72px, 11vh, 100px) / 2 - 10px); width: calc(100vw - 100px); height: 20px; visibility: hidden;
+  animation: sti-show .4s linear .95s; }
+.mc.sti .sti-run .sti-ndl { position: absolute; left: 0; top: 0; width: 70px; height: 20px; animation: sti-sweep .4s cubic-bezier(.4,0,.2,1) .95s both; }
+.mc.sti .sti-run .sti-ndl path { stroke: #3A2416; } .mc.sti .sti-run .sti-ndl ellipse { fill: var(--sti-gold); }
+@keyframes sti-sweep { from { transform: translateX(0); } to { transform: translateX(calc(100vw - 110px)); } }
+/* subtitle under the plate */
+.mc.sti .mc-info { left: max(26px, 14.7vw); right: 8vw; top: calc(55.5vh + clamp(72px, 11vh, 100px) + 26px); bottom: auto; animation: mc-fade .25s ease-out 1.35s both; }
+.mc.sti .mc-t { color: #F4E1C2; text-shadow: none; font-size: clamp(var(--fs-16), 2.4vh, 22px); }
+.mc.sti .mc-by { color: #DCC5A2; text-shadow: none; }
+html[data-ut="light-warm"] .mc.sti .mc-t { color: var(--ink); } html[data-ut="light-warm"] .mc.sti .mc-by { color: var(--ink2); }
+html[data-ut="light-warm"] .mc.sti .mc-k { color: #B4642A; }
+/* reduced motion: the finished frame, faded in and out (no drop, no sewing, no wipe, no needles) */
+@keyframes mc-life-sti-rm { 0% { opacity: 0; } 10% { opacity: 1; } 85% { opacity: 1; } 100% { opacity: 0; } }
+@media (prefers-reduced-motion: reduce) {
+  .mc.sti { animation: mc-life-sti-rm 2.4s linear both !important; }
+  .mc.sti .mc-dim, .mc.uta.sti .mc-art, .mc.sti .mc-plate, .mc.sti .sti-knot, .mc.sti .mc-info { animation: none !important; }
+  .mc.sti .sti-ring { animation: none !important; -webkit-mask-image: none; mask-image: none; }
+  .mc.sti .sti-orb, .mc.sti .sti-run { display: none; }
+}
+
+/* ===== t-ui-fix-r4 contrast (2026-11-12): lightness nudges only, same hues. Measured with work/t-ui-explore-r4/scripts/contrast.js.
+   深：未读红底白字 3.09 → ≥3.5（--dot 稍压暗）。浅：强调色当文字用时（排队、面试、下次运行）在奶油/皮纹上 2.8–4.0 → 压暗一点；
+   --warn（过期提示、待你看）和 --ok（在线）同理。 */
+html[data-theme="dark"][data-ut][data-ut="dark-warm"] { --dot: #F5493A; }
+html[data-theme="white"][data-ut][data-ut="light-warm"] { --accent: #84490A; --glow: #84490A; --selc: #84490A; --dotc: #84490A; --focus: #9A5A0E; --warn: #8A3D07; --warn-rgb: 138,61,7; --ok: #32632C; }

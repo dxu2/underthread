@@ -266,6 +266,10 @@
       if (rows.children[i] !== el) rows.insertBefore(el, rows.children[i] || null);
     });
     setA(rows, "data-n", Math.min(show.length, 4));   // avatar size steps with the head count (user 20:14: show the chibi generously)
+    /* t-phone-working-color v2 (user 11-11: 按角色变色): the card is dyed with the TOP working row's roster tint (App.tintOf, same source as the strip / team yarn).
+       CSS (texture-knit.css / texture-leather.css) derives the light / dark dye from it at a fixed OKLCH lightness; nobody working = no data-role = old look. */
+    const lead = show.find(a => isW(a) && !S2.mc[a.id]); setA(root, "data-role", lead ? lead.id : null);
+    const rc = lead ? A().tintOf(lead) : ""; if (root.style.getPropertyValue("--hd-role") !== rc) { if (rc) root.style.setProperty("--hd-role", rc); else root.style.removeProperty("--hd-role"); }
     show.forEach(a => {
       const el = $(`.a2-r[data-a2="${a.id}"]`, rows); if (!el) return;
       const tg = $(".a2-tg", el), tk = isW(a) ? a.tool || "" : ""; setT(tg, tk ? toolTag(tk) : ""); if (tg.hidden === !!tk) tg.hidden = !tk;

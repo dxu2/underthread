@@ -43,7 +43,7 @@
     if (b.getAttribute("aria-disabled") === "true") { App.toast(L("HR 还没上岗", "HR is not on the team"), true); return; }
     b.disabled = true;
     try {
-      const j = await post("/api/interview", { op: "start", mode: "transfer", target: id });
+      const j = await post("/api/interview", { op: "start", mode: "transfer", target: id, lang: App.UI.lang });   /* t-i18n-c */
       if (!j.ok) App.toast(j.error || "?", true);
       openDm(HR);
     } catch (x) { App.toast(String(x.message || x), true); }
@@ -71,7 +71,7 @@
     document.querySelectorAll(`.ht-diff[data-ht-item="${CSS.escape(id)}"]`).forEach(el => { el.innerHTML = it ? diffHTML(it, j) : ""; });
   }
   function diffHTML(it, j) {
-    if (!j.ok) return `<div class="ht-d-err" role="alert">${esc(L("草案过不了：", "Draft refused: ") + (j.error || "?"))}</div>`;
+    if (!j.ok) return `<div class="ht-d-err" role="alert">${esc(L("草案过不了：", "Draft refused: ") + (App.srvT ? App.srvT(j.error || "?") : j.error || "?"))}</div>`;
     const zh = !en(), h = it.hire;
     const blocks = (j.changes || []).map(c => {
       const r = window.VDiff ? VDiff.html(c.before || "", c.after || "", zh) : { html: esc(c.after), add: 0, del: 0 };
