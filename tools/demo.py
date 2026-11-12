@@ -4,6 +4,7 @@
     python3 server.py --demo          # same as: python3 tools/demo.py
     PORT=8766 python3 tools/demo.py   # another port
     python3 tools/demo.py --fast      # shorter pauses (used by the smoke test)
+    python3 tools/demo.py --lang zh   # the steward's chat lines in Chinese (default: from $LANG)
 
 What it does:
   1. Builds a separate runtime folder, .demo/ (git-ignored): the Python files are copied, web/, avatars/, templates/ and
@@ -33,6 +34,21 @@ PORT = int(os.environ.get("PORT") or 8765)
 FAST = "--fast" in sys.argv
 PY = sys.executable
 PAUSE = (0.6, 1.2) if FAST else (3.0, 6.0)
+_la = sys.argv[sys.argv.index("--lang") + 1] if "--lang" in sys.argv[:-1] else (os.environ.get("LC_ALL") or os.environ.get("LANG") or "")
+ZH = _la.lower().startswith("zh")
+
+
+def L(zh, en):
+    """The real steward answers in the user's language; the demo guesses it from --lang or the locale."""
+    return zh if ZH else en
+
+
+def who(rid):
+    try:
+        with open(os.path.join(ROOT, "roster.example.json"), encoding="utf-8") as f:
+            return next((a.get("name") or rid for a in json.load(f).get("roles", []) if a.get("id") == rid), rid)
+    except (OSError, ValueError, AttributeError):
+        return rid
 
 COPY = ["server.py", "stateutil.py", "schedules.py", "usage_roll.py", "make_agents.py", "team.md", "policy.md", "manager.md"]
 LINK = ["web", "avatars", "templates", "tools"]
@@ -147,7 +163,7 @@ class Player:
         owner, kind, cat, zh, en, summary, steps, draft = job
         S("upsert-item", "--id", cid, "--who", "manager", "--title", zh, "--summary", summary, "--category", cat,
           "--stage", "todo", "--kind", kind, "--owner", owner, "--json", json.dumps({"title_en": en, "summary_en": summary}))
-        S("say-mgr", f"New card {cid}: {en}. Sending it to {owner}.")
+        S("say-mgr", L(f"新卡片 {cid}，交给 {who(owner)}。", f"New card {cid}. Sending it to {who(owner)}."))
         return owner, kind, steps, draft
 
     def run_job(self, job, cid):
@@ -168,7 +184,8 @@ class Player:
             args += ["--ask", f"{job[4]} :: Paris, Berlin, Lisbon* | Tokyo, Seoul | Let me type my own"]
         S(*args, draft=draft)
         S("set-agent", owner, "--status", "idle")
-        S("say-mgr", f"{cid} is waiting on you." if kind != "question" else f"{owner} has a question on {cid}.")
+        S("say-mgr", L(f"{cid} 等你拍板。", f"{cid} is waiting on you.") if kind != "question"
+          else L(f"{who(owner)} 在 {cid} 上有个问题想问你。", f"{who(owner)} has a question on {cid}."))
 
     def inbox(self):
         """Answer what the user did on the page since the last look."""
@@ -189,36 +206,40 @@ class Player:
                 lang = "zh" if any("一" <= ch <= "鿿" for ch in str(e.get("text", ""))) else "en"
                 S("say-mgr", CHAT[lang])
             elif k == "approve":
-                S("say-mgr", f"Approved {it}. (Demo) The steward would now close it out or start the approved plan.")
+                S("say-mgr", L(f"已批准 {it}。（演示）真实的管家这时会收尾，或者按批准的方案开工。",
+                               f"Approved {it}. (Demo) The steward would now close it out or start the approved plan."))
             elif k == "reject":
-                S("reply", it, "manager", "(Demo) Got the reason. A real teammate would revise the draft and the steward would "
-                  "offer your reason as a rule for next time.")
+                S("reply", it, "manager", L("（演示）收到理由。真实的队员会改稿，管家会把你的理由提成以后的规则。",
+                                            "(Demo) Got the reason. A real teammate would revise the draft and the steward would "
+                                            "offer your reason as a rule for next time."))
             elif k == "comment":
-                S("reply", it, e.get("to") or "manager", "(Demo) Noted. A real teammate would answer your comment here.")
+                S("reply", it, e.get("to") or "manager", L("（演示）记下了。真实的队员会在这里回复你的评论。", "(Demo) Noted. A real teammate would answer your comment here."))
             elif k == "answer":
-                S("reply", it, e.get("to") or "manager", f"(Demo) Thanks, going with: {e.get('opt', '')}.")
+                S("reply", it, e.get("to") or "manager", L(f"（演示）好的，按「{e.get('opt', '')}」来。", f"(Demo) Thanks, going with: {e.get('opt', '')}."))
             elif k == "new_task":
-                S("reply", it, "manager", "(Demo) The steward would triage this card and dispatch it to the right teammate.")
+                S("reply", it, "manager", L("（演示）真实的管家会给这张卡分类，派给合适的队员。",
+                                            "(Demo) The steward would triage this card and dispatch it to the right teammate."))
             elif k == "dm":
-                S("dm", e.get("agent") or "scout", "(Demo) A real teammate would answer your message here.")
+                S("dm", e.get("agent") or "scout", L("（演示）真实的队员会在这里回你。", "(Demo) A real teammate would answer your message here."))
             elif k == "ping":
-                S("say-mgr", "(Demo) Here.")
+                S("say-mgr", L("（演示）在。", "(Demo) Here."))
             if e.get("id"):
                 done.append(e["id"])
         if done:
             S("inbox-ack", *done)
 
     def loop(self):
-        S("set-agent", "manager", "--status", "working", "--activity", "Online: watching the inbox")
-        S("say-mgr", "Demo mode is on. Cards will move on their own; approve, reject or comment to see the loop.")
+        S("set-agent", "manager", "--status", "working", "--activity", L("在线：盯着收件箱", "Online: watching the inbox"))
+        S("say-mgr", L("演示模式已开。卡片会自己推进；批准、驳回或评论，看看整个流程。",
+                       "Demo mode is on. Cards will move on their own; approve, reject or comment to see the loop."))
         order = list(range(len(JOBS)))
         while True:
             for i in order:
                 cid = f"demo-{self.n % 9 + 1}"
                 self.n += 1
-                S("set-agent", "manager", "--status", "working", "--activity", "Dispatching " + cid)
+                S("set-agent", "manager", "--status", "working", "--activity", L("派单 ", "Dispatching ") + cid)
                 self.run_job(JOBS[i], cid)
-                S("set-agent", "manager", "--status", "working", "--activity", "Online: watching the inbox")
+                S("set-agent", "manager", "--status", "working", "--activity", L("在线：盯着收件箱", "Online: watching the inbox"))
                 for _ in range(2):
                     nap()
                     self.inbox()
