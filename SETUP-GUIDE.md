@@ -1,230 +1,231 @@
-# Underthread: a personal AI agent team + local review dashboard
+# Underthread setup guide
 
-One long-running Claude Code **manager** session takes your instructions from a local dashboard, sends the work to
-specialist **subagents**, and leaves you only to review and approve. It works around the clock on whatever you hand it:
-research, writing, small fixes, planning, recurring chores. There are no Slack or email collectors: you give the orders.
+The long version of the README's [Try it in 5 minutes](README.md#try-it-in-5-minutes). Read that first; come here when you want to change something or something needs explaining.
 
-> Items marked **(example)** are choices you can change: roles, categories, paths.
->
-> **Bundled preset.** The framework is general. The files that ship with it (`manager.md`, `policy.md`, `roles/*.md`,
-> `roster.example.json`, `config.example.json`) are one ready-made example preset: a content-creator team
-> (Bilibili / YouTube / Xiaohongshu). For another workflow, rewrite those files and re-run `make_agents.py`; see section 3.
+Words used here:
+- **Steward**: the long-running Claude Code session that runs the team. Its id in files and commands is `manager`.
+- **Teammate**: a Claude Code subagent generated from one entry in `roster.json`.
+- **Card**: one piece of work on the dashboard (called an *item* in `state.json` and `stateutil.py`).
+- `S` below is short for `python3 stateutil.py`.
 
----
-
-## 1. What it is and why
-
-| Problem | How the setup handles it |
-|---|---|
-| Too many open tasks to keep in your head | Every request becomes a card with a category, an owner and a stage |
-| Context switching between research, writing, fixes and planning | The manager routes each card to a specialist and you review one queue |
-| Fear of agents acting on your behalf | Agents produce **drafts, plans and files only**. You decide what goes out. Big work needs an approved plan first |
-| Agents repeat the same mistakes | A rejection becomes a one-line rule you adopt. Agents read their rules on every dispatch |
-
-What you do all day: open the dashboard, read the review queue, then approve, reject with a reason, or take a draft and use it.
+How the pieces fit together is in [docs/architecture.md](docs/architecture.md). Problems: [docs/troubleshooting.md](docs/troubleshooting.md).
 
 ---
 
-## 2. Architecture
-
-```mermaid
-flowchart LR
-  subgraph Local["Local machine (127.0.0.1 only)"]
-    UI[Browser UI<br/>web/index.html · app.js · style.css · office.js]
-    SRV[server.py<br/>dashboard + JSON API]
-    SU[stateutil.py<br/>file-locked CLI]
-    ST[(state.json)]
-    IN[(inbox.jsonl)]
-  end
-  MGR[Manager session<br/>Claude Code, long-running]
-  AG[Specialist subagents<br/>.claude/agents/underthread-*.md]
-  GPU[Optional GPU box · ComfyUI<br/>via SSH tunnel]
-
-  UI <-->|/api/state, /api/action| SRV
-  SRV --> SU --> ST
-  SRV -->|your clicks| IN
-  IN -->|tail -n0 -F via Monitor| MGR
-  MGR -->|Agent tool| AG
-  MGR & AG -->|S upsert-item / log / reply| SU
-  AG -->|tools/comfy.py| GPU
-```
-
-### Components
-
-| File | Role | Notes |
-|---|---|---|
-| `server.py` | Local HTTP server for the UI and JSON API. Also runs the daily-report timer, ComfyUI probe and roster sync as threads | Binds `127.0.0.1` only. Env: `PORT` (default 8765), `NO_LOOPS=1` |
-| `stateutil.py` (`S`) | File-locked CLI every writer uses: `upsert-item`, `show`, `items`, `set-agent`, `log`, `reply`, `dm`, `say-mgr`, `inbox-pending`, `inbox-ack`, `lesson`, `notice`, `report`, `set-stamina` | Run with no args for usage |
-| `state.json` | Single source of truth: items, agents, logs, lessons, reports, calendar, chat, DMs, mail, notices | **Never hand-edit.** Only through `stateutil.py` |
-| `inbox.jsonl` | Append-only queue of your dashboard actions (`new_task`, `manager`, `dm`, `comment`, `approve`, `reject`, `done`, `reopen`, `dispatch`, `lesson`, `report_due`, `report_request`, `ping`) | The manager watches it. Never rewrite or truncate it |
-| `manager.md` | The manager's startup instructions: triage, inbox handling, dispatch template, close-out review, daily report | Start the manager with a prompt pointing at it |
-| `policy.md` | Dispatch table: which situations go to which role, which ask you first, priority, change log | The manager re-reads it on every triage |
-| `team.md` | Principles, roles, pipeline | Human-readable overview |
-| `roster.json` | One entry per role: names, title, duty, specialties, skills, role notes, agent file name, optional voice | Input to `make_agents.py` and to the dashboard |
-| `make_agents.py` | Writes `.claude/agents/<agent_name>.md` (one subagent per role) from `roster.json` + shared hard rules, and refreshes the dispatch table in `manager.md` | Re-run after any roster change |
-| `roles/*.md` | Role notes: `common.md` + one per role, each ending in `## Confirmed rules` | Agents read them every dispatch. Adopted rules are appended here |
-| `tools/comfy.py` | ComfyUI client: `tunnel`, `ping`, `nodes`, `run` | Optional, for an image-generation role |
-
-### Memory layers
-
-| Layer | Location | Who writes it |
-|---|---|---|
-| Your main Claude memory | `~/.claude/projects/<this folder>/memory/` | You (via the manager). Agents only suggest |
-| Per-agent memory | `.claude/agent-memory/<agent>/` (from `memory: project` in the agent file) | Each agent maintains its own |
-| Role notes | `roles/<id>.md` | You (or adopted lessons). Agents never edit directly |
-| Dispatch rules | `policy.md` | You or the manager, with a change-log line |
-
----
-
-## 3. Roles (by function)
-
-Each role is a custom subagent generated from `roster.json`. The example roster ships one manager and six specialists with
-placeholder names; rename them, change what they do, add or remove roles. The ids below are the ones in `roster.example.json`.
-In the bundled content-creator preset their role notes (`roles/*.md`) are written for that job (topic research, scripts,
-storyboards, covers, publishing calendar); the table below is the general shape. To repurpose a role, rewrite its file in
-`roles/` and its entry in `roster.json`.
-
-| Role (example) | Id | Responsibility |
-|---|---|---|
-| Manager | `manager` | The long-running main session. Triage, dispatch, relay, schedule, daily report. Not a subagent |
-| Researcher | `scout` | Looks things up, compares options, fact-checks, with a source for every claim |
-| Writer | `writer` | Drafts documents, reports, messages and any other text |
-| Planner | `director` | Breaks a bigger job into steps, plans and checklists; can run local tools on your files |
-| Designer | `artist` | Images and visuals (optionally via your own ComfyUI box) |
-| Coordinator | `ops` | Follow-ups, schedules, recurring chores, summaries of what happened |
-| Tooling keeper | `smith` | The dashboard, scripts and small fixes. First responder when a tool breaks |
-
-Roles are by **function**, not by project: the category is a property of the card. That way every correction about one kind
-of work accumulates as rules on one role.
-
-### Categories
-
-Five, all renamable in the UI strings: `main` 主线 (your current big project), `side` 支线 (smaller ongoing work),
-`daily` 日常委托 (one-offs), `urgent` 紧急活动 (today's deadline, something broken), `ongoing` 常驻活动 (recurring; lowest priority).
-
----
-
-## 4. Dashboard UI tour
-
-The UI toggles between Chinese and English, and between dark and light.
-
-| Area | What it shows / does |
-|---|---|
-| **Home** (default page) | On the desktop a grid of widgets: waiting on you, working now, new replies, shipped today, this week, routines, recent media. Edit mode lets you remove, resize, reorder and add widgets. The phone shows the team strip and the review cards |
-| **Category pages** | 主线 / 支线 / 日常委托 / 紧急活动 / 常驻活动, grouped by stage |
-| **委托板 Board** | Kanban: to do / in progress / your review / waiting / done. Drag to change stage |
-| **Item detail** (click a card) | Summary, owner / category / stage selectors, the **draft** with a copy button and older versions, **confidence**, evidence, files, the **thread**; a composer (`@agent`, paste images); **批准 Approve**, **驳回 Reject** (with a reason), **完成 Mission complete**, **重开 Reopen** |
-| **Chat panel** (right) | Direct channel to the manager, plus a DM thread per agent (relayed by the manager). Quick-reply buttons when the manager offers options; answered ones fold to one line |
-| **TEAM** (left) | Each agent's status and current activity. Click to open their DM |
-| **Ticker** | Rotating notices: manager offline with pending instructions, unowned urgent items, long waits, notices the manager pinned |
-| **Stamina** | Click to set your monthly budget %. The thin bar under it is the manager's context use (`S set-stamina --focus`) |
-| **WATCH** | Shipped this week, first-pass rate, 7-day sparkline, queue counts |
-| **今日日程** | Your schedule for today and tomorrow (add with +). The manager plans the daily report around it |
-| **日志 / 报告 / 频道 / 文档 / 角色 / 信箱** | Work log; daily reports; per-channel view; role notes and agent files; roster with stats and pending rule proposals (Adopt / Drop); mailbox of replies and updates |
-| **Header** | Manager online state, next event, team count, ComfyUI tunnel state, unprocessed inbox count, theme / language, mailbox, report, ping manager |
-
----
-
-## 5. Guardrails
-
-| Guardrail | How it is enforced |
-|---|---|
-| **Drafts only** | Every agent file says it: never publish, post, upload or send anything to an outside service. You take the draft and act on it yourself |
-| **Plan-first** | Big work (>30 min, >20 generations, files outside `work/<item>/`) → plan → you approve → execute only what the plan lists |
-| **Your files are safe** | Agents write under `work/<item-id>/` only. Never overwrite `uploads/` or your own files |
-| **Close-out review → rules** | On every done or reject, the manager proposes at most 2 one-line rules. You adopt or drop. Adopted rules go to the role notes |
-| **Rights** | Only assets and models you are allowed to use. Sources and seeds are recorded in evidence |
-| **Local only** | The dashboard binds to 127.0.0.1. Never publish or deploy it |
-
----
-
-## 6. Setup steps
-
-### 6.1 Prerequisites
+## 1. Prerequisites
 
 | Need | Check |
 |---|---|
-| Claude Code | `claude --version` |
-| Python 3 (stdlib only) and a browser | `python3 --version` |
-| Optional: ffmpeg, if a role works on audio or video | `ffmpeg -version` |
-| Optional: SSH access to a GPU box running ComfyUI, for image generation | `ssh <host> nvidia-smi` |
+| macOS or Linux | Windows is untested |
+| Python 3.10 or newer (standard library only) | `python3 --version` |
+| Claude Code, signed in to a paid Claude plan | `claude --version` |
+| A Claude Code version that has the **Monitor** tool (the steward watches its inbox with it) | Ask Claude Code "do you have the Monitor tool?" |
+| A browser | Any recent one; Safari on iPhone for the phone app |
+| Optional: ffmpeg, if a teammate works on audio or video | `ffmpeg -version` |
+| Optional: SSH access to a machine running ComfyUI, for images | `ssh <host> nvidia-smi` |
+| Optional: whisper.cpp, for voice memo transcription | see `tools/transcribe.py` |
+| Optional: Tailscale, to use the dashboard from your phone | `tailscale status` |
 
-### 6.2 Copy and adapt the files
+**What it costs.** Underthread itself is free. All the work runs in Claude Code and uses your Claude plan. The steward stays online and every card a teammate works on spends usage. See [section 7](#7-usage-and-the-brakes) for how the steward slows down near your limit.
 
-1. On first start, `server.py` copies the templates to their live names if they are missing:
+---
 
-| Template | Live name | What to fill in |
+## 2. Your config files
+
+On first start, `server.py` copies each template to its live name if the live file is missing. The live files are ignored by git; never commit them.
+
+| Template | Live file | What to fill in |
 |---|---|---|
-| `config.example.json` | `config.json` | `owner.display_name`, `report_time`, optional links, `comfy.ssh_host` / ports |
-| `roster.example.json` | `roster.json` | Your roles (names, duties, specialties, voice). `"enabled": false` hides a role |
+| `config.example.json` | `config.json` | See the table below |
+| `roster.example.json` | `roster.json` | Your teammates. See [docs/custom-crew.md](docs/custom-crew.md) |
 | `state.example.json` | `state.json` | Nothing. It seeds four example cards you can archive |
 
-2. Optional: copy `claude-settings.example.json` to `.claude/settings.json` so the team can run `stateutil.py`, `comfy.py` and ffmpeg without a prompt each time.
+`config.json` keys (`config.example.json` holds only the first four; add the others when you need them):
 
-### 6.3 Define the roles
+| Key | Default | What it does |
+|---|---|---|
+| `owner.display_name` | `<your name>` | How the dashboard and the steward refer to you |
+| `port` | `8765` | Dashboard port. The `PORT` environment variable overrides it |
+| `report_time` | `18:00` | When the server asks the steward for the daily report |
+| `routines` | `[]` | **Read once.** On first start any routine listed here is imported into Schedules; after that, edit schedules on the Schedules page or with `S schedule`, not here |
+| `platforms` | not set | Your channels' names and home links, shown on cards. Only the content-zh preset adds it (B站 / YouTube / 小红书, [section 8](#presets)) |
+| `comfy` (optional): `ssh_host`, `remote_port`, `local_port`, `default_workflow` | not set | Only for image generation through ComfyUI ([section 9](#9-comfyui-optional)). Without it the dashboard shows no ComfyUI status at all |
+| `allowed_hosts` | not set | Extra host names the dashboard accepts, besides `localhost`, this machine's names and any `*.ts.net` (Tailscale) name |
 
-1. Edit `roster.json`. Per role: `id`, `name` / `name_en`, `title` / `title_en`, `duty` / `duty_en` (dashboard), `duty_long` and `specialties` (agent prompt), `notebooks` (role-note files), `agent_name` (subagent file name), `room` (`lead` / `script` / `signal` / `studio` / `art` / `tools`), `color`, optional `voice`, `model`, `tools`.
-2. Generate the agent files:
+Environment variables for `server.py`: `PORT` (default 8765), `NO_LOOPS=1` (no timers, for test copies), `VERBOSE=1` (log every request).
+
+---
+
+## 3. Permissions for Claude Code
+
+`.claude/settings.json` ships with the repository; there is no example file to copy over it. It does two things:
+- lets the steward and teammates run `stateutil.py`, `tools/comfy.py`, `tools/ensure_server.py`, `ffmpeg`, `ffprobe` and the inbox `tail` without asking you each time;
+- sets `tools/statusline.py` as Claude Code's status line, which feeds your plan usage to the dashboard.
+
+Leave it as it is. Put your own extra permissions in `.claude/settings.local.json`: git ignores it and Claude Code applies it on top of `settings.json`.
+
+---
+
+## 4. Create the agents
 
 ```bash
 python3 make_agents.py
 ```
 
-3. That also refreshes the dispatch table in `manager.md`. Add a line to `policy.md` for the new role.
+**Required before the first start of the steward**, and again after any change to `roster.json`. It:
+- writes `.claude/agents/<agent_name>.md` for every enabled role, combining the roster entry, the shared hard rules and the role notes in `roles/<id>.md`;
+- removes agent files for roles that were disabled or deleted;
+- refreshes the dispatch table in `manager.md` (between the `DISPATCH:BEGIN` / `DISPATCH:END` markers).
 
-### 6.4 Start the dashboard server
+Expected output: `from roster.json: wrote N agents → …` and `restart the manager session to pick them up`, plus `updated dispatch table in manager.md` when the table changed. Then restart the steward so it sees the new agents.
+
+---
+
+## 5. Start the dashboard
 
 ```bash
 python3 server.py
 ```
 
-Open http://127.0.0.1:8765. Keep it in its own terminal tab.
-For UI testing, run a scratch copy with `PORT=8799 NO_LOOPS=1 python3 server.py` from a copied folder, so the real `state.json` is never touched.
+Open <http://127.0.0.1:8765>. If the port is taken, the server says so in one line and exits; pick another with `PORT=8766 python3 server.py` or `port` in `config.json`.
 
-### 6.5 Start the manager session
+Keep it in its own terminal tab, or let it run in the background:
 
-From this folder:
+| Tool | What it does |
+|---|---|
+| `bash tools/keepalive.sh` | Runs the dashboard and restarts it if it exits. Works on macOS and Linux; on Linux this is the way to keep it running |
+| `bash tools/install_service.sh` | **macOS only.** Installs the dashboard as a LaunchAgent (starts at login). It changes your login items, so run it yourself. On Linux it stops and points you to `keepalive.sh` |
+| `python3 tools/ensure_server.py` | Starts the dashboard if it isn't answering (through launchd when the LaunchAgent is installed, otherwise `keepalive.sh`). The steward runs it at startup |
+
+The server log is `logs/server.log`.
+
+**Just looking?** `python3 server.py --demo` (same as `python3 tools/demo.py`) shows the dashboard with a crew at work, without Claude Code. It runs in a separate `.demo/` folder that is rebuilt on every start and never touches your `state.json`, `inbox.jsonl`, `work/` or `uploads/`. `PORT=8766` picks another port, `--lang zh|en` sets the language of the steward's chat lines (default: from `$LANG`), Ctrl-C stops it.
+
+**Testing a change to the dashboard?** Copy the folder and run `PORT=8799 NO_LOOPS=1 python3 server.py` in the copy, so your real `state.json` is never touched. See [CONTRIBUTING.md](CONTRIBUTING.md).
+
+---
+
+## 6. Start the steward
+
+From the project folder:
 
 ```bash
 claude "Start the manager per manager.md"
 ```
 
-On startup the manager reads `team.md`, `policy.md`, `roles/common.md` and its handoff file, sets itself online, starts a Monitor on `tail -n0 -F inbox.jsonl` **before** reading the backlog, then works through `S inbox-pending`. The dashboard shows "管家 在线" once that first step runs.
+On startup the steward (all of this is `manager.md` section 1):
+1. makes sure the dashboard is up (`tools/ensure_server.py`);
+2. picks up the usage feed and decides how much work it may start ([section 7](#7-usage-and-the-brakes));
+3. reads `team.md`, `policy.md`, `roles/common.md`, `roles/manager.md` and, if it exists, `manager-handoff.md`;
+4. marks itself online (`S set-agent manager --status working`);
+5. starts a Monitor on `tail -n0 -F inbox.jsonl` **before** reading the backlog, so nothing slips through;
+6. works through `S inbox-pending`, acking each entry;
+7. says hello in the dashboard chat.
 
-### 6.6 ComfyUI (optional)
+The steward's status in the header turns to online once step 4 runs. Leave this terminal open; you talk to the steward through the dashboard, not here.
 
-1. Set `comfy.ssh_host` in `config.json`.
-2. `python3 tools/comfy.py tunnel`, then `python3 tools/comfy.py ping`. The header shows the GPU box as online within a minute.
-3. In ComfyUI, export your workflows with **Save (API)** into `tools/workflows/`. `python3 tools/comfy.py nodes <wf>.json` lists which node inputs an agent can `--set`.
-
-### 6.7 Restart notes
-
-| You changed | Needed |
-|---|---|
-| `app.js` / `style.css` / other web files | Bump `?v=N` in `web/index.html`, then reload the tab |
-| `server.py`, `stateutil.py` | Restart `server.py` |
-| `roster.json` | `python3 make_agents.py`, then restart the manager session (the dashboard updates by itself) |
-| `manager.md` | Restart the manager session |
-| `policy.md`, `roles/*.md` | Nothing. Read on every triage or dispatch |
-
-Before restarting the manager, make sure it has written `manager-handoff.md` (≤30 lines: priorities, open questions, running agents).
+**Monitors expire** after about 30 minutes; the steward re-arms them. If the header shows the steward offline while you have unread requests, see [troubleshooting](docs/troubleshooting.md).
 
 ---
 
-## 7. Skins and art
+## 7. Usage and the brakes
 
-The kit ships a dark and a light skin, with no character art. Agents show a generated
-pixel face until you add your own image as `avatars/<id>.png`. The pixel office is drawn in code (`web/office.js`):
-rooms come from each role's `room`, colours from `color`. Use only art you are allowed to use.
+The dashboard's usage widget shows how much of your Claude plan is left in the 5-hour and weekly windows. It gets the numbers one of two ways (`manager.md` section 1, step 2):
 
-## 8. Never copy someone else's data
+| Where the steward runs | How usage arrives |
+|---|---|
+| Claude Code in a terminal | `.claude/settings.json` runs `tools/statusline.py` as the status line. Claude Code passes it the plan's rate limits (Pro and Max plans) and it stores them. Nothing to do |
+| The Claude desktop app | The steward calls the app's usage tool after each inbox entry (at most every 10 minutes) and writes it with `S set-usage` |
 
-If you share this kit, share code and templates only. Never `state.json`, `inbox.jsonl`, `uploads/`, `work/`,
-`config.json`, `manager-handoff.md`, agent memories or role notes with personal rules.
+The steward reads the higher of the two windows (`manager.md` section 1, step 3):
+- **below 85%**: normal;
+- **85% or more**: keeps answering you, but queues new work instead of dispatching it (urgent cards still go out);
+- **95% or more**: writes its handoff (`manager.md` section 7), sleeps until the window resets (`S sleep`), and the server wakes it about a minute after the reset.
 
-## 9. Known gotchas
+With no usage feed at all, the widget says "no usage data" and these brakes cannot work.
 
-- Subagents do not persist between dispatches. Context lives in the item thread, `work/<item-id>/` and role notes. That is why agents call `S show` first.
-- If the manager session dies, your clicks still queue in `inbox.jsonl`. The ticker warns you, and the next manager handles the backlog.
-- `inbox-ack` is what stops the manager re-handling an entry after a restart. An entry that was handled but not acked gets handled twice.
-- Approving a **plan** moves the card to "in progress". Approving a **deliverable** closes it.
+---
+
+## 8. Phone, push, schedules, archive
+
+### Phone and push
+The dashboard works as a home-screen app on iPhone and Android, with push notifications. That needs https, which the easiest way to get is Tailscale Serve. Step by step: [docs/phone-and-push.md](docs/phone-and-push.md).
+
+### Schedules
+Tell the steward in one sentence: "remind me tomorrow at 9 to call the bank", "every weekday at 9, ask Scout for trends". It checks the parse with a dry run, confirms recurring ones with you, and creates the schedule. The **Schedules** page lists every schedule with on/off switches, the next runs and a week of history. A reminder pushes a notification; a task schedule opens a card for the right teammate.
+
+From the command line: `S schedule add|list|show|pause|resume|rm|fire|edit` (run `S schedule add -h` for the options). A server restart never fires a schedule twice.
+
+### Archive
+Finished cards that haven't moved for 3 days are moved from `state.json` to `archive.json` once an hour, so every poll stays small. Search still finds them. `S archive list` shows them; `S archive unarchive-all` puts everything back. Environment variables: `ARCHIVE_DAYS` (default 3), `ARCHIVE_OFF=1` to stop archiving.
+
+### Hiring market, transfer, retire
+See [docs/custom-crew.md](docs/custom-crew.md).
+
+### Presets
+A preset swaps in a whole team. `presets/content-zh/` is a Chinese content-creator team (B站 / YouTube / 小红书).
+
+```bash
+python3 tools/preset.py list
+python3 tools/preset.py apply content-zh --dry   # optional: show what would change
+python3 tools/preset.py apply content-zh
+python3 make_agents.py
+```
+
+Then restart the steward. `apply` replaces `roster.json`, `team.md`, `policy.md` and `roles/*.md`, and adds `platforms` and a placeholder `comfy` block to `config.json` (your port, owner and times stay). Every file it replaces is first copied to `<file>.bak-preset-<time>`; to undo, copy those back and run `make_agents.py` again.
+
+---
+
+## 9. ComfyUI (optional)
+
+For a teammate that makes images on your own GPU machine:
+
+1. Add a `comfy` block to `config.json`: `ssh_host` (for example `you@gpu-box`), `remote_port`, `local_port` (both usually `8188`) and `default_workflow`. Restart `server.py`; the ComfyUI line in the status popover and in System status only appears once this block exists.
+2. `python3 tools/comfy.py tunnel`, then `python3 tools/comfy.py ping`. Within a minute ComfyUI shows as online.
+3. In ComfyUI, export each workflow with **Save (API)** into `tools/workflows/`. `python3 tools/comfy.py nodes <wf>.json` lists the node inputs a teammate can change with `--set`.
+
+---
+
+## 10. Other tools
+
+| Tool | What it does |
+|---|---|
+| `tools/new_role.py` | Hire, retire, re-hire or update a teammate from the command line |
+| `tools/avatar_sizes.py` | Makes the small avatar copies the lists use (needs `cwebp`) |
+| `tools/statusline.py` | Claude Code status line that feeds plan usage to the dashboard |
+| `tools/webpush.py` | Standard-library Web Push. `python3 tools/webpush.py selftest` checks signing (needs `openssl`) |
+| `tools/transcribe.py` | Optional voice memo transcription with whisper.cpp |
+| `tools/ghcred.py` | Optional: store a GitHub push token once (mode 600) |
+| `usage_roll.py` | Tokens per role per day, read from Claude Code's local transcripts |
+
+`S` itself: run `python3 stateutil.py` with no arguments for the full command list (cards, chat, questions, lessons, reports, schedules, archive, usage, handoffs).
+
+---
+
+## 11. What to restart after a change
+
+| You changed | Needed |
+|---|---|
+| Files in `web/` | Bump the `?v=N` on that file's tag in `web/index.html`, then reload the tab |
+| `server.py`, `stateutil.py`, `schedules.py` | Restart `server.py` (the server imports `stateutil.py`) |
+| `roster.json` | The dashboard updates by itself. Run `python3 make_agents.py`, then restart the steward |
+| `manager.md` | Restart the steward |
+| `policy.md`, `roles/*.md`, `team.md` | Nothing. They are read on every triage or dispatch |
+
+**Before restarting the steward**, make sure it has written `manager-handoff.md` (30 lines or fewer: priorities, open questions, which teammates are running; see `manager.md` section 7). Ask it to in chat if in doubt. The next session reads it on startup.
+
+---
+
+## 12. Sharing your setup
+
+If you share a copy, share code and templates only. Never share `state.json`, `archive.json`, `inbox.jsonl`, `uploads/`, `work/`, `logs/`, `config.json`, `vapid.json`, `push_subs.json`, `manager-handoff.md`, `.claude/agent-memory/` or role notes that hold personal rules. `.gitignore` already keeps all of them out of git.
+
+---
+
+## 13. Known gotchas
+
+- Teammates don't remember between jobs on their own. Context lives in the card thread, `work/<card-id>/`, their role notes and their memory folder. That's why every teammate starts with `S show <card>`.
+- If the steward dies, your clicks still queue in `inbox.jsonl`. The dashboard warns you, and the next steward session handles the backlog.
+- `S inbox-ack` is what stops the steward handling an entry twice after a restart.
+- Approving a **plan** moves the card to in progress. Approving a **deliverable** closes it.
+- More in [docs/troubleshooting.md](docs/troubleshooting.md).
