@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Troubleshooting and FAQ
+    url: https://github.com/dxu2/underthread/blob/main/docs/troubleshooting.md
+    about: Common problems and answers. Please look here first.
+  - name: Security problem
+    url: https://github.com/dxu2/underthread/security/advisories/new
+    about: Report vulnerabilities privately, not as a public issue.

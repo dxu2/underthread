@@ -1,0 +1,73 @@
+# Contributing to Underthread
+
+Thanks for wanting to help. Underthread is a small project run by one person, so short, focused changes land fastest.
+
+## Before you start
+
+- **Bug?** Open an issue with the bug template. Include your OS, `python3 --version`, `claude --version` and the last 80 lines of `logs/server.log` (remove anything private).
+- **Bigger idea or new feature?** Open an issue first and say what problem it solves. That saves you writing code that doesn't fit.
+- **Security problem?** Don't open a public issue. See [SECURITY.md](SECURITY.md).
+
+## Set up a safe copy
+
+Never develop against your real cards. Work in a copy with timers off:
+
+```bash
+git clone https://github.com/<you>/underthread.git underthread-dev && cd underthread-dev
+PORT=8799 NO_LOOPS=1 python3 server.py      # http://127.0.0.1:8799
+```
+
+`NO_LOOPS=1` turns off the daily report, schedules, archive sweep and other timers, so a test copy never pings your steward or fires your schedules. If you need a steward in the copy, start Claude Code from that folder.
+
+## How the code is laid out
+
+Read [docs/architecture.md](docs/architecture.md) first. In short:
+
+| Where | What |
+|---|---|
+| `server.py` | HTTP server, JSON API, timers. Standard library only |
+| `stateutil.py` | The only writer of `state.json` (file lock). Also the CLI the agents use |
+| `schedules.py` | Schedule parsing and next-run maths |
+| `make_agents.py` | `roster.json` → `.claude/agents/*.md` |
+| `web/` | Plain HTML, CSS and JavaScript. No framework, no build step |
+| `tools/` | Helper scripts |
+| `manager.md`, `policy.md`, `roles/`, `team.md` | Prompts and notes for the steward and teammates |
+
+## Ground rules for code
+
+- **Python standard library only.** No `pip install` for the core. An optional tool may need an external program (ffmpeg, cwebp, whisper.cpp); say so at the top of the file and fail with a clear message when it's missing.
+- **No build step** for `web/`. When you change a file in `web/`, bump its `?v=N` in `web/index.html` so browsers fetch the new copy.
+- **All state goes through `stateutil.py`.** Never write `state.json` directly, and never rewrite or truncate `inbox.jsonl`.
+- **Both languages.** Every user-facing string needs English and Chinese (look for the `en() ? "…" : "…"` pattern and the string tables in `web/app.js`).
+- **Desktop and phone.** Check a UI change at desktop width and at about 390px wide, in light and dark.
+- **Local only.** Don't add anything that binds to `0.0.0.0`, calls out to a third-party service by default, or sends data off the machine.
+- Keep comments about *why*, not *what*.
+
+## Changing prompts
+
+`manager.md`, `policy.md`, `roles/*.md` and the hard rules in `make_agents.py` are instructions that real agents follow. Keep them generic (no personal names, private card ids or dates), in the second person, and test them by running a steward against a copy for a few cards.
+
+## Tests
+
+Both are standard library only and need no Claude Code:
+
+```bash
+python3 tests/smoke.py          # about 15 seconds
+python3 tests/scan.py           # leak scan of tracked files; --staged checks only what you are about to commit
+```
+
+- `tests/smoke.py` runs in a temporary copy of your checkout, so your own cards are safe. It checks that Python compiles and `web/*.js` parses (with `node`, if installed), the JSON files parse, `make_agents.py` and the content-zh preset work, a fresh server serves the page and its assets, the request guard holds, `stateutil.py` writes reach the API, demo mode runs, and `keepalive.sh` is valid bash.
+- `tests/scan.py` flags home-folder paths, private and tailnet addresses, token-looking strings and real-looking email addresses. Put your own words to catch (your name, your machine's name) in `tests/scan-words.txt`, one per line; git ignores that file.
+
+CI (`.github/workflows/ci.yml`) runs both on Ubuntu and macOS with Python 3.10 and 3.12.
+
+## Pull requests
+
+1. Fork, branch from `main`, keep one topic per PR.
+2. Fill in the PR template: what changed, why, how you tested it, screenshots for UI changes.
+3. Run `python3 tests/smoke.py` and `python3 tests/scan.py`; both must pass.
+4. Add a line under **Unreleased** in [CHANGELOG.md](CHANGELOG.md) for anything a user would notice.
+5. Make sure no personal data slipped in: no `state.json`, `config.json`, `roster.json`, `work/`, `uploads/`, logs, keys or tokens.
+
+
+By contributing you agree that your contribution is licensed under the [MIT License](LICENSE), and you agree to follow the [Code of Conduct](CODE_OF_CONDUCT.md).
