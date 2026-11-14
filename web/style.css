@@ -3186,3 +3186,38 @@ html[data-texture^="leather"] #wtoasts .wt { --dim: color-mix(in srgb, var(--lt-
 .pl-col.none .pl-d { opacity: 1; color: var(--dim); }
 .ask-o { border-radius: 16px; }   /* R4-01: a wrapped option stays a rounded box (still a full pill when it is one line) */
 .mk-chips button.on b { opacity: .85; }   /* t-ui-fix-r4: the count on the selected chip (was .65 = 3.9–4.3:1) */
+/* t-ri1113-a P3: 等你拍板 group row = the same sweep question on 3+ cards (app.js askGroups / grpHTML; widget home .wg, phone home .rv) */
+.ri13-grp { border: 1px dashed var(--line3); border-radius: 16px; padding: 10px 12px; background: var(--accent-soft); transition: background-color .2s, opacity .2s; }
+.ri13-grp.pend { opacity: .72; }
+.ri13-hd { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.ri13-n { flex: none; display: inline-grid; place-items: center; min-width: 26px; height: 26px; padding: 0 6px; border-radius: 13px; background: var(--accent); color: var(--accent-ink); font-size: var(--fs-13); font-weight: 600; font-variant-numeric: tabular-nums; }
+.ri13-t { flex: 1; min-width: 0; }
+.ri13-t b { display: block; font-size: var(--fs-14); font-weight: 600; line-height: 1.35; color: var(--ink); overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+.ri13-t small { display: block; margin-top: 2px; font-size: var(--fs-12); color: var(--dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ri13-acts { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0 0 36px; align-items: center; }
+.ri13-o, .ri13-x { border: 1px solid var(--line3); border-radius: 999px; padding: 4px 11px; font: inherit; font-size: var(--fs-13); line-height: 1.3; color: var(--ink); background: transparent; cursor: pointer; transition: background-color .2s, color .2s, border-color .2s, transform 90ms ease-out; }
+.ri13-o:hover, .ri13-x:hover { border-color: var(--ink2); }
+.ri13-o:active, .ri13-x:active { transform: scale(.97); }
+.ri13-o.rec { border-color: var(--accent); box-shadow: inset 0 0 0 .5px var(--accent); }
+.ri13-o .rec-b { font-style: normal; margin-left: 6px; padding: 1px 5px; border-radius: 6px; font-size: var(--fs-11); line-height: 1.3; background: var(--accent); color: var(--accent-ink); vertical-align: 1px; }
+.ri13-x { border-style: dashed; color: var(--ink2); }
+.ri13-pend { font-size: var(--fs-13); color: var(--dim); }
+.ri13-grp.open { border-style: solid; }
+@media (prefers-reduced-motion: reduce) { .ri13-grp, .ri13-o, .ri13-x { transition: none; } }
+/* t-ri1113-a P2: the dock's question bar folds away while the same question is on screen above (app.js askDup) */
+.dw-askbar { display: grid; grid-template-rows: minmax(0, 1fr); overflow: hidden; transition: grid-template-rows var(--m-base, .28s) var(--m-ease, ease), padding var(--m-base, .28s) var(--m-ease, ease), margin var(--m-base, .28s) var(--m-ease, ease), opacity .2s ease; }
+.dw-askbar > * { min-height: 0; }
+.dw-askbar.dup { grid-template-rows: minmax(0, 0fr); padding-top: 0; padding-bottom: 0; opacity: 0; pointer-events: none; }
+@media (max-width: 760px) { #drawer .dw-askbar.dup { margin-bottom: -10px; } }   /* the dock's 10px gap goes with it */
+@media (prefers-reduced-motion: reduce) { .dw-askbar { transition: none; } }
+/* t-ri1113-a P4: 今日日程 — today's dispatched routines folded into one row (app.js calFold) */
+.cal-pf .cal-avs { display: inline-flex; flex: none; }
+.cal-pf .cal-avs .av.cal-av + .av.cal-av { margin-left: -10px; }
+.cal-pf .cal-avs .av.cal-av { box-shadow: 0 0 0 1.5px var(--bg, transparent); }
+.cal-pf .cal-pf-cv { display: inline-block; font-style: normal; margin-left: 2px; transition: rotate var(--m-base, .28s) var(--m-ease, ease); }
+.cal-pf.open .cal-pf-cv { rotate: 90deg; }
+.cal-pf:hover .cal-nm, .cal-pf:focus-visible .cal-nm { color: var(--ink); }
+.cal-pf:active { opacity: .7; }
+.cal-i.cal-pf-in { animation: cal-pf-in var(--m-base, .28s) var(--m-ease, ease) both; }
+@keyframes cal-pf-in { from { opacity: 0; translate: 0 -4px; } }
+@media (prefers-reduced-motion: reduce) { .cal-pf .cal-pf-cv { transition: none; } .cal-i.cal-pf-in { animation: none; } }

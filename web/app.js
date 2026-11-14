@@ -1060,13 +1060,17 @@
   function renderChrome() { renderHeader(); renderTool(); renderTicker(); }
 
   // ---------- header ----------
+  /* today's 定时 runs not sent yet (meta.routines, 定时-page schedules, the 日报), by time; shared by the header's NEXT and the rail's 定时 badge (t-ri1113-a P5) */
+  function runsLeft(now = new Date()) {
+    const today = dayKey(now), at = tm => new Date(`${today}T${tm}`), rep = ST.meta && ST.meta.report_time;
+    return [...((ST.meta && ST.meta.routines) || []).filter(r => !r.paused && !r.disabled && r.time && r.last !== today).map(r => ({ time: r.time, title: rtShort(r) })),
+      ...schToday().filter(r => !r.ran && r.time).map(r => ({ time: r.time, title: rtShort(r) })),
+      ...(rep && ST.meta.last_report_date !== today ? [{ time: rep, title: UI.lang === "en" ? "Daily report" : "日报" }] : [])].map(r => ({ ...r, d: at(r.time) })).sort((a, b) => a.d - b.d);
+  }
   function nextEvent() {
     const now = new Date();
     /* t-ui-fix-r7 R7-04: today's 定时 runs that are still to come (meta.routines, 定时-page schedules, the 日报) count too, like the 今日日程 rail */
-    const today = dayKey(now), at = tm => new Date(`${today}T${tm}`), rep = ST.meta && ST.meta.report_time;
-    const runs = [...((ST.meta && ST.meta.routines) || []).filter(r => !r.paused && !r.disabled && r.time && r.last !== today).map(r => ({ time: r.time, title: rtShort(r) })),
-      ...schToday().filter(r => !r.ran && r.time).map(r => ({ time: r.time, title: rtShort(r) })),
-      ...(rep && ST.meta.last_report_date !== today ? [{ time: rep, title: UI.lang === "en" ? "Daily report" : "日报" }] : [])].map(r => ({ ...r, d: at(r.time) }));
+    const runs = runsLeft(now);
     /* r-improve-1112 P4: a run whose time has passed but that has not been sent yet is 「到点」 in the 今日日程 rail (rtRow); it goes first here too,
        because those minutes are exactly when the user wants to know what is pending. Earliest due one wins; calendar events are not "due". */
     const due = runs.filter(r => r.d <= now && !isNaN(r.d)).sort((a, b) => a.d - b.d)[0];
@@ -1484,12 +1488,33 @@
     }).map(s => { const at = String(s.rule.at || ""), t = s.task || {};
       return { id: s.id, time: (at.includes("T") ? at.split("T")[1] : at).slice(0, 5), label: s.title || s.id, ran: dk(s.last) === today, who: t.agent || null, item: t.item || null }; });
   }
+  /* t-ri1113-a P4: the routines already dispatched today fold into one row at the first one's place (「06:00 ●●● 已跑 6 个 ✓ ›」); a click opens
+     them (kept in this browser: rt.calPast). Rows still to come, 到点未派 and the user's own events stay one per line. Two or more to fold. */
+  const CALPF = { at: 0 };
+  function calFold(rows) {
+    const done = rows.filter(r => r.done); if (done.length < 2) return rows.map(r => r.h).join("");
+    const open = !!LS.get("calPast", false), zh = UI.lang !== "en", anim = Date.now() - CALPF.at < 600;
+    const avs = [...new Map(done.filter(r => r.a).map(r => [r.a.id, r.a])).values()].slice(0, 3);
+    const head = `<div class="cal-i cal-rt past cal-pf${open ? " open" : ""}" role="button" tabindex="0" data-cal-pf aria-expanded="${open}" title="${esc(done.map(r => r.tip).join("\n"))}"><span class="tm">${esc(done[0].tm || "—")}</span><span class="cal-avs">${avs.map(a => av(a, "cal-av")).join("")}</span><span class="cal-nm">${zh ? `已跑 ${done.length} 个` : `${done.length} done`}</span><span class="cal-st">✓ <i class="cal-pf-cv" aria-hidden="true">›</i></span></div>`;
+    let out = "", put = false;
+    for (const r of rows) {
+      if (!r.done) { out += r.h; continue; }
+      if (!put) { put = true; out += head; }
+      if (open) out += anim ? r.h.replace('class="cal-i cal-rt past', 'class="cal-i cal-rt past cal-pf-in') : r.h;
+    }
+    return out;
+  }
+  document.addEventListener("click", e => { const f = e.target.closest && e.target.closest("[data-cal-pf]"); if (!f) return; LS.set("calPast", !LS.get("calPast", false)); CALPF.at = Date.now(); renderLeft(); });
+  document.addEventListener("keydown", e => { const f = (e.key === "Enter" || e.key === " ") && e.target.closest && e.target.closest("[data-cal-pf]"); if (!f) return; e.preventDefault(); f.click(); });
   function renderLeft() {
     const c = counts();
+    /* t-ri1113-a P5: the 定时 row counts today's runs not sent yet (the page itself lists schedules, the rail's 今日日程 the runs); other rows still count cards */
+    const rl = runsLeft(), rlNext = rl.find(r => r.d > new Date()) || rl[0]; c.ongoing = rl.length;
+    const ogTip = !rl.length ? (UI.lang === "en" ? "All of today's runs are done" : "今天的定时都跑完了") : UI.lang === "en" ? `${rl.length} run${rl.length > 1 ? "s" : ""} left today · next ${rlNext.time} ${rlNext.title}` : `今天还有 ${rl.length} 个没跑 · 下一个 ${rlNext.time} ${rlNext.title}`;
     const navs = ["review", ...CATS, "sep", "market",   /* t-drop-team-tab (11-12): 团队 row removed; the 团队交接 widget stays (web/team.js) */ "studio", "reports", "mail", "settings"];   /* t-nav-shoot (11-05): 制作线 / 委托板 / 频道 / 素材 are one 制作 row; the pages keep their own ids */   /* t-hdr-trim ①: 信箱 moved here from the top bar (phone: same row in 更多) */   // t-settings-tab: 日志 / 文档 / 角色 moved into 设置
     const selK = STU.includes(UI.page) ? "studio" : UI.page, sew = UI.navSew !== selK; UI.navSew = selK;   /* t-thread-motif ②: the thread sews in only when the selection changes, not on every poll rebuild */
     $("#nav").innerHTML = navs.map(k => k === "sep" ? `<div class="nav-sep"></div>` :
-      `<button class="nav-i ${selK === k ? "on" : ""} ${k === "urgent" && c.urgent ? "urgent" : ""}" data-go="${k}"><span>${NAV_IC[k] ? `<i class="nv-ic" aria-hidden="true"><svg viewBox="0 0 24 24">${NAV_IC[k]}</svg></i>` : ""}<span class="nv-t">${t(k)}${selK === k ? `<svg class="nv-ul${sew ? " sew" : ""}" viewBox="0 0 100 6" preserveAspectRatio="none" aria-hidden="true"><path pathLength="1" d="M1 3.6C20 2.2 40 4.4 60 3.2S88 2.6 96 3.4"/></svg><i class="nv-knot${sew ? " sew" : ""}" aria-hidden="true"></i>` : ""}</span></span>${k === "mail" ? (c.mail ? `<span class="n mb">${YARN}${c.mail > 99 ? "99+" : c.mail}</span>` : `<span class="n z"></span>`) : `<span class="n${c[k] === 0 ? " z" : ""}">${c[k] ?? ""}</span>`}</button>`).join("");
+      `<button class="nav-i ${selK === k ? "on" : ""} ${k === "urgent" && c.urgent ? "urgent" : ""}" data-go="${k}"${k === "ongoing" ? ` title="${esc(ogTip)}"` : ""}><span>${NAV_IC[k] ? `<i class="nv-ic" aria-hidden="true"><svg viewBox="0 0 24 24">${NAV_IC[k]}</svg></i>` : ""}<span class="nv-t">${t(k)}${selK === k ? `<svg class="nv-ul${sew ? " sew" : ""}" viewBox="0 0 100 6" preserveAspectRatio="none" aria-hidden="true"><path pathLength="1" d="M1 3.6C20 2.2 40 4.4 60 3.2S88 2.6 96 3.4"/></svg><i class="nv-knot${sew ? " sew" : ""}" aria-hidden="true"></i>` : ""}</span></span>${k === "mail" ? (c.mail ? `<span class="n mb">${YARN}${c.mail > 99 ? "99+" : c.mail}</span>` : `<span class="n z"></span>`) : `<span class="n${c[k] === 0 ? " z" : ""}">${c[k] ?? ""}</span>`}</button>`).join("");
 
     // calendar
     const today = dayKey(new Date()), tmr = dayKey(new Date(Date.now() + 864e5));
@@ -1503,7 +1528,7 @@
       const left = !done && tm && rtLeft(tm), a = who && agent(who);
       const st = done ? "✓" : left || (tm ? (UI.lang === "en" ? "due" : "到点") : (UI.lang === "en" ? "tonight" : "今晚"));
       const tip = `${tm ? tm + " " : ""}${full || name} · ${done || st}`;
-      return { k: "0" + (tm || "99"), h: `<div class="cal-i cal-rt ${done ? "past" : ""}"${itemId ? ` data-item="${esc(itemId)}"` : ""} title="${esc(tip)}"><span class="tm">${esc(tm || "—")}</span>${a ? av(a, "cal-av") : ""}<span class="cal-nm">${esc(name)}</span><span class="cal-st${left ? " soon" : ""}">${esc(st)}</span></div>` };
+      return { k: "0" + (tm || "99"), done: !!done, a, tm, tip, h: `<div class="cal-i cal-rt ${done ? "past" : ""}"${itemId ? ` data-item="${esc(itemId)}"` : ""} title="${esc(tip)}"><span class="tm">${esc(tm || "—")}</span>${a ? av(a, "cal-av") : ""}<span class="cal-nm">${esc(name)}</span><span class="cal-st${left ? " soon" : ""}">${esc(st)}</span></div>` };
     };
     const itemOwner = id => { const it = (ST.items || []).find(x => x.id === id); return it && it.owner; };
     const rtLive = rts.filter(r => !r.paused && !r.disabled && r.time), rtOff = rts.filter(r => r.paused || r.disabled);
@@ -1516,7 +1541,7 @@
     if (!evs.length && !rtRows.length && !UI.calForm) $("#cal").innerHTML = `<div class="side-h"><span>${t("today")} · ${UI.lang === "en" ? "none" : "无"}</span><button data-cal-add>+</button></div>`;
     else $("#cal").innerHTML = `<div class="side-h"><span>${t("today")} <span class="dim" style="font-weight:400">${evs.filter(e => e.date === today).length + rtRows.length} ${t("meetings")}</span></span><button data-cal-add>${UI.calForm ? "−" : "+"}</button></div>
       ${UI.calForm ? `<form class="cal-form" id="calf"><input name="title" placeholder="${UI.lang === "en" ? "What…" : "做什么…"}" required><input type="date" name="date" value="${today}"><input type="time" name="time"><button class="btn-s">${t("add")}</button></form>` : ""}
-      ${[...evs.map(e => ({ k: (e.date === tmr ? "1" : "0") + (e.time || "99"), h: `<div class="cal-i ${e.date === today && e.time && e.time < nowHM ? "past" : ""}"><span class="tm">${e.date === tmr ? "+1 " : ""}${esc(e.time || "—")}</span><span>${esc(e.title)}</span><button class="x" data-cal-del="${e.id}">✕</button></div>` })), ...rtRows].sort((x, y) => x.k < y.k ? -1 : x.k > y.k ? 1 : 0).map(x => x.h).join("")}
+      ${calFold([...evs.map(e => ({ k: (e.date === tmr ? "1" : "0") + (e.time || "99"), h: `<div class="cal-i ${e.date === today && e.time && e.time < nowHM ? "past" : ""}"><span class="tm">${e.date === tmr ? "+1 " : ""}${esc(e.time || "—")}</span><span>${esc(e.title)}</span><button class="x" data-cal-del="${e.id}">✕</button></div>` })), ...rtRows].sort((x, y) => x.k < y.k ? -1 : x.k > y.k ? 1 : 0))}
       ${rtOff.length ? `<div class="cal-off" title="${esc(rtOff.map(rtName).join("、"))}">${UI.lang === "en" ? "Paused" : "暂停"} ${rtOff.length}${UI.lang === "en" ? "" : " 项"} · ${esc(rtOff.map(rtName).join("、"))}</div>` : ""}
       <div class="cal-now">${nowHM}</div>`;
     const f = $("#calf");
@@ -1702,7 +1727,7 @@
   function arHide() { const b = document.getElementById("ar-undo"); if (b && !b.hidden) { b.classList.remove("on"); clearTimeout(b._h); b._h = setTimeout(() => { b.hidden = true; }, 260); } }
   function arStart(id) {
     const it = ST.items.find(i => i.id === id); if (!it) return;
-    if (AR.pending) arCommit();
+    if (AR.pending) arCommit(); if (GRP.pending) grpCommit();   /* t-ri1113-a P3: one hold at a time (they share #ar-undo) */
     const picks = openAsks(it).map(a => ({ ask: a.id, opt: recOf(a) })).filter(x => x.opt); if (!picks.length) return;
     AR.pending = { id, picks }; const zh = UI.lang !== "en";
     if (UI.item === id) renderDrawer();
@@ -1713,6 +1738,65 @@
     clearTimeout(AR.timer); AR.timer = setTimeout(() => arCommit(), RV_HOLD);
   }
   function arUndo() { const P = AR.pending; if (!P) return; clearTimeout(AR.timer); AR.pending = null; arHide(); if (UI.item === P.id) renderDrawer(); }
+  /* ===== t-ri1113-a P3: the card sweep (twice a day) asks one and the same question on many cards. A card that is on you ONLY for one open ask
+     (not in review) joins a group with every card whose ask has the very same text and options; GRP_MIN or more are drawn as one group row in
+     等你拍板 (widget home + phone home). 「全部 X」 answers each card with the ordinary answer action after the same 4.5 s undo hold as 全按推荐;
+     「逐张看」 expands the cards under the group row. Counts stay per card. Exact matches only, no fuzzy grouping. */
+  const GRP = { open: new Set(), pending: null, timer: 0 }, GRP_MIN = 3;
+  const grpAsk = it => { if (!it || it.stage === "review") return null; const oa = openAsks(it); return oa.length === 1 ? oa[0] : null; };
+  const grpId = a => { const k = a.q + "\u241f" + a.options.join("\u241e"); let h = 5381; for (let i = 0; i < k.length; i++) h = (h * 33 + k.charCodeAt(i)) >>> 0; return "g" + h.toString(36); };
+  function askGroups(list) {   // -> list order kept: { it } per card, or one { g: { id, a, items, open, pend } } where the group's first card was
+    const by = new Map(); list.forEach(it => { const a = grpAsk(it); if (a) { const k = grpId(a); if (!by.has(k)) by.set(k, []); by.get(k).push(it); } });
+    const out = [], put = new Set();
+    list.forEach(it => { const a = grpAsk(it), k = a && grpId(a), m = k && by.get(k);
+      if (!m || m.length < GRP_MIN) return out.push({ it });
+      if (put.has(k)) return; put.add(k);
+      out.push({ g: { id: k, a: grpAsk(m[0]), items: m, open: GRP.open.has(k), pend: GRP.pending && GRP.pending.id === k ? GRP.pending.opt : null } }); });
+    return out;
+  }
+  function grpHTML(g, cls = "") {   // the group row; the caller adds the member cards under it when g.open
+    const zh = UI.lang !== "en", n = g.items.length, a = g.a, rec = recOf(a), by = agent(a.by || g.items[0].owner);
+    const opts = rec ? [rec].concat(a.options.filter(o => o !== rec)) : a.options, last = g.items.reduce((t, i) => (i.activity || i.updated) > t ? (i.activity || i.updated) : t, "");
+    const acts = g.pend
+      ? `<div class="ri13-pend" role="status">${zh ? `4.5 秒后 ${n} 张都答「${esc(g.pend)}」` : `Answering all ${n} “${esc(g.pend)}” in 4.5 s`}</div>`
+      : opts.map(o => `<button type="button" class="ri13-o${o === rec ? " rec" : ""}" data-ri13-all="${g.id}" data-ri13-opt="${esc(o)}">${zh ? `全部${esc(o)}` : `All: ${esc(o)}`}${o === rec && !REC_TXT.test(o) ? `<i class="rec-b">${zh ? "推荐" : "Rec."}</i>` : ""}</button>`).join("");
+    return `<div class="ri13-grp${cls ? " " + cls : ""}${g.open ? " open" : ""}${g.pend ? " pend" : ""}" data-ri13-g="${g.id}"><div class="ri13-hd"><span class="ri13-n">${n}</span><div class="ri13-t"><b>${esc(a.q)}</b><small>${zh ? `${n} 张卡同一个问题 · ${esc(aname(by))} · ${agoH(last)}` : `Same question on ${n} cards · ${esc(aname(by))} · ${agoH(last)}`}</small></div></div>`
+      + `<div class="ri13-acts">${acts}<button type="button" class="ri13-x" data-ri13-open="${g.id}" aria-expanded="${g.open}">${g.open ? (zh ? "收起 ‹" : "Fold ‹") : (zh ? "逐张看 ›" : "One by one ›")}</button></div></div>`;
+  }
+  const grpFind = id => askGroups(items().filter(onYouCard)).map(e => e.g).find(g => g && g.id === id);
+  function grpStart(id, opt) {
+    const g = grpFind(id); if (!g || !g.a.options.includes(opt)) return;
+    if (AR.pending) arCommit(); if (GRP.pending) grpCommit();
+    GRP.pending = { id, opt, picks: g.items.map(it => ({ item: it.id, ask: grpAsk(it).id })) };
+    const zh = UI.lang !== "en", n = GRP.pending.picks.length;
+    let b = document.getElementById("ar-undo");
+    if (!b) { b = document.createElement("div"); b.id = "ar-undo"; b.setAttribute("role", "status"); b.hidden = true; document.body.appendChild(b); }
+    b.innerHTML = `<span class="rv-u-tx"><b>${zh ? `${n} 张都答「${esc(opt)}」` : `${n} cards: “${esc(opt)}”`}</b>${zh ? "4.5 秒后发出" : "sending in 4.5 s"}</span><button type="button" data-ri13-undo>${zh ? "撤销" : "Undo"}</button><i class="rv-u-bar" style="--hold:${RV_HOLD}ms"></i>`;
+    clearTimeout(b._h); b.hidden = false; void b.offsetWidth; b.classList.add("on");
+    clearTimeout(GRP.timer); GRP.timer = setTimeout(() => grpCommit(), RV_HOLD);
+    if (UI.page === "review") renderPage();
+  }
+  function grpCommit(keepalive) {
+    const P = GRP.pending; if (!P) return;
+    clearTimeout(GRP.timer); GRP.pending = null; arHide();
+    const body = x => ({ kind: "answer", item: x.item, ask: x.ask, opt: P.opt });
+    if (keepalive) { P.picks.forEach(x => { try { fetch("/api/action", { method: "POST", keepalive: true, headers: { "Content-Type": "application/json" }, body: JSON.stringify(body(x)) }); } catch (e) { } }); return; }
+    const zh = UI.lang !== "en";
+    P.picks.reduce((q, x) => q.then(() => postAct("answer", body(x))), Promise.resolve())
+      .then(() => toast(zh ? `已回答 ${P.picks.length} 张 · 都选了「${P.opt}」` : `${P.picks.length} cards answered “${P.opt}”`), e => toast(String(e.message || e), true))
+      .then(() => poll(true)).catch(() => { });
+  }
+  function grpUndo() { if (!GRP.pending) return; clearTimeout(GRP.timer); GRP.pending = null; arHide(); if (UI.page === "review") renderPage(); }
+  addEventListener("pagehide", () => grpCommit(true));
+  document.addEventListener("visibilitychange", () => { if (document.visibilityState === "hidden") grpCommit(true); });
+  document.addEventListener("click", e => {   // capture: a group button must not also open a card or a widget row
+    const all = e.target.closest("[data-ri13-all]"), op = !all && e.target.closest("[data-ri13-open]"), un = !all && !op && e.target.closest("[data-ri13-undo]");
+    if (!all && !op && !un) return;
+    e.stopPropagation(); e.preventDefault();
+    if (all) return grpStart(all.dataset.ri13All, all.dataset.ri13Opt);
+    if (un) return grpUndo();
+    const id = op.dataset.ri13Open; GRP.open.has(id) ? GRP.open.delete(id) : GRP.open.add(id); renderPage();
+  }, true);
   // t-m-accept-btn: the detail dock's main button. Phones show the short label (the tail after it is hidden) and the open-question count as a badge;
   // desktop keeps the full label and the line under it. Before, "Accept & close" + "1 question unanswered" wrapped and pushed out of a 390 px dock.
   const okShort = (it, en = UI.lang === "en") => it && it.kind === "plan" ? (en ? "Approve" : "批准") : it && it.kind === "question" ? (en ? "Answer" : "回答") : (en ? "Accept" : "验收");
@@ -2026,7 +2110,8 @@
       if (mob && hf === "review") {   // P5: one flat column of review cards (new first, then by category), no group headers; the category sits in each card's meta line
         const rest = seen ? list.filter(i => !fresh.includes(i)) : list, cats = ["urgent", "main", "side", "daily", "ongoing"];
         const ord = (seen ? fresh : []).concat(cats.flatMap(c => rest.filter(i => i.category === c)), rest.filter(i => !cats.includes(i.category)));
-        return html + decH + `<div class="rv-list">${ord.map(i => reviewCard(i, !!seen && fresh.includes(i))).join("")}</div>` + decR + nowBlock();   // t-now-always
+        const rc = i => reviewCard(i, !!seen && fresh.includes(i));   /* t-ri1113-a P3: the same sweep question on 3+ cards = one group card */
+        return html + decH + `<div class="rv-list">${askGroups(ord).map(e => e.g ? grpHTML(e.g, "rv") + (e.g.open ? e.g.items.map(rc).join("") : "") : rc(e.it)).join("")}</div>` + decR + nowBlock();   // t-now-always
       }
       if (fresh.length && seen) html += `<div class="grp-h"><b>${UI.lang === "en" ? "New" : "新到待批"}</b> · ${fresh.length}</div>` + wrap(fresh.map(rowf).join(""));
       const rest = seen ? list.filter(i => !fresh.includes(i)) : list;
@@ -3022,12 +3107,18 @@
   // on any device marks those mails read, and a thread counts as read up to the newest mirrored mail that is read. Opening a card reads all of its
   // mail, and mail of a closed card is read once seen here (only mail_read, which already existed: no server change).
   const chatMail = id => (ST.mail || []).filter(m => m.kind === "reply" && (!m.item || m.item === "None") && m.agent === id);
-  const srvSeen = id => chatMail(id).reduce((t, m) => m.read && m.t > t ? m.t : t, "");
+  /* t-ri1113-a P1: the mailbox copies slide out of the poll window (300 letters) and out of the 1500 kept, so the server also keeps how far each
+     chat was read (meta.chat_seen, only ever moves forward). Opening a thread reports it (chatMailRead below); a fresh browser starts from there. */
+  const chatSeenSrv = id => (((ST.meta || {}).chat_seen) || {})[id] || "";
+  const srvSeen = id => chatMail(id).reduce((t, m) => m.read && m.t > t ? m.t : t, chatSeenSrv(id));
   const seenOf = id => { const a = (UI.seen || {})["chat." + id] || "", b = srvSeen(id); return a > b ? a : b; };
   /* t-ri1104-p2: the one unread rule for every dot and number (chat roster, TEAM rows, phone list + tab bar, office): messages from them newer than what you have read, server read marks included */
   const unreadOf = id => { const s = seenOf(id); return chatList(id).filter(m => m.who !== "me" && m.t > s).length; };
   const unreadTag = n => n > 99 ? "99+" : String(n);
-  function chatMailRead(id, upto) { const ids = chatMail(id).filter(m => !m.read && m.t <= upto).map(m => m.id); if (ids.length) nrRead(ids); }
+  function chatMailRead(id, upto) {
+    const ids = chatMail(id).filter(m => !m.read && m.t <= upto).map(m => m.id); if (ids.length) nrRead(ids);
+    if (upto && ST.meta && upto > chatSeenSrv(id)) { (ST.meta.chat_seen = ST.meta.chat_seen || {})[id] = upto; postAct("chat_seen", { agent: id, t: upto }).catch(() => { }); }   /* t-ri1113-a P1: local first, the next poll brings the server copy; postAct = no error toast, no extra poll */
+  }
   function itemMailRead(id) { const ids = (ST.mail || []).filter(m => !m.read && m.item === id).map(m => m.id); if (ids.length) nrRead(ids); }
   function doneMailRead() {
     const done = new Set((ST.items || []).filter(i => i.stage === "done" || i.archived).map(i => i.id)); archIx().forEach(x => done.add(x[0]));   // t-perf A
@@ -3681,6 +3772,20 @@
       kids.map(k => [k.id, k.title, k.stage, k.kind, k.owner, k.updated, k.activity, k.asks, k.snooze]),
       Object.keys(ags).map(k => JSON.stringify(ags[k], (key, v) => DW_SKIP[key] ? undefined : v)), routineOf(it), ST.meta.owner, ST.meta.avatars]);
   }
+  /* t-ri1113-a P2: the dock's question bar (t-ask-bottom) repeats the first open question of the 要你拿主意 block above. While that question is on
+     screen the bar folds away (.dup, a height + opacity transition); scrolled out of view it comes back, so long cards keep it and short cards stop
+     showing the same question twice. Re-attached on every render (the scroll content is rebuilt). Phone: the glass header and the dock float over
+     the scroller, so they are taken off the observed area. */
+  function askDup(dw, sc, it) {
+    if (DW.askIO) { DW.askIO.disconnect(); DW.askIO = null; }
+    const ab = $(".dw-askbar", dw), a = openAsks(it)[0], el = a && ab && !ab.hidden && sc.querySelector(`.ask-list .ask[data-askq="${CSS.escape(a.id)}"]`);
+    if (!el || !window.IntersectionObserver) { if (ab) ab.classList.remove("dup"); return; }
+    const dk = $(".dw-dock", dw), ph = MOBQ.matches, sr = sc.getBoundingClientRect(), tp = $(".dw-top", dw);
+    const top = ph && tp ? Math.max(0, tp.getBoundingClientRect().bottom - sr.top) : 0;
+    const bot = ph && dk ? Math.max(0, sr.bottom - dk.getBoundingClientRect().top - (ab.classList.contains("dup") ? 0 : ab.offsetHeight)) : 0;
+    DW.askIO = new IntersectionObserver(es => es.forEach(e => ab.classList.toggle("dup", e.isIntersecting && (e.intersectionRatio >= .5 || (!!e.rootBounds && e.intersectionRect.height >= e.rootBounds.height * .5)))),   /* half of it, or half the screen when it is taller */ { root: sc, rootMargin: `-${Math.round(top)}px 0px -${Math.round(bot)}px 0px`, threshold: [0, .25, .5, .75, 1] });
+    DW.askIO.observe(el);
+  }
   function renderDrawer(first) {
     if (!first && annSelInDraft()) { ANN.deferred = true; return; }   // t-imp29-p2: a poll must not wipe the text you are selecting
     const it = (ST.items || []).find(i => i.id === UI.item);
@@ -3741,6 +3846,7 @@
     else if (wasEnd) { DW.pin = true; DW.pinUntil = Math.max(DW.pinUntil || 0, Date.now() + 1500); sc.scrollTop = sc.scrollHeight; dwPinWatch(sc); }   // t-detail-jump: already at the end → stay there while the re-rendered images settle
     else { sc.scrollTop = keep; if (grew) DW.fresh = true; }
     jumpState(); drawTo(); tocBuild();   // t-ri1103-p4
+    askDup(dw, sc, it);   /* t-ri1113-a P2 */
     const done = it.stage === "done";
     const acts = $(".dw-acts", dw);
     {   // D4: desktop now uses the phone's dock (same state logic, same two pills); before it always showed 批准 / 驳回 / 完成 with ornaments
@@ -4802,6 +4908,7 @@
   // ---------- API for the mobile layer (mobile.js) ----------
   window.App = {
     okLabel, okDone, askLeft, openAsks: it => openAsks(it),   // t-btn-names
+    askGroups: l => askGroups(l), grpHTML: (g, c) => grpHTML(g, c),   /* t-ri1113-a P3 */
     rtShort, rtFull, schToday,   /* t-ri1109-a: routine names, shared with widgets.js; t-ri1110-a P2: schToday */
     utEmpty: (text, cls, h) => utEmpty(text, cls, h),   /* t-thread-motif ④ (widgets.js, palette.js, mobile.js) */
     rvApprove: id => rvApprove(id, null), rvCanApprove: it => rvCanApprove(it), awaitsUser: it => awaitsUser(it), busy: it => busy(it), onYou: it => onYou(it), onYouCard: it => onYouCard(it), grpOf: it => grpOf(it), newReplies: () => newReplies(), nrDot: id => nrDot(id), decisions: () => decisions(),   // t-imp-p5 (palette)

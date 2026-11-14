@@ -1616,6 +1616,16 @@ def act(body):
                 if body.get("all") or m["id"] in ids:
                     m["read"] = True
 
+        elif k == "chat_seen":   # t-ri1113-a P1: how far the user has read each chat / DM, kept on the server (meta.chat_seen) so every device agrees
+            aid, t = str(body.get("agent") or ""), str(body.get("t") or "")
+            if not re.fullmatch(r"[a-z0-9_-]{1,40}", aid) or not re.fullmatch(r"\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d(\.\d+)?([+-]\d\d:\d\d|Z)?", t):
+                raise ValueError("bad chat_seen")
+            cs = st["meta"].setdefault("chat_seen", {})
+            was = cs.get(aid, "")
+            if t > was:   # only ever forward
+                cs[aid] = t
+            print(f"[{S.now()}] chat_seen {aid} {t}" + ("" if t > was else f" (kept {was})"), flush=True)   # cross-device path: always logged
+
         elif k == "widget_layout":   # t-widget-drag: the desktop widget home's order / sizes, shared by every browser (meta.widgets)
             if body.get("reset"):
                 st["meta"]["widgets"] = {"layout": None, "at": S.now()}   # explicit default: an old per-browser layout must not re-upload over it
@@ -1712,7 +1722,7 @@ def act(body):
             if k in ("approve", "reject", "done", "comment", "answer", "reopen", "set_stage", "archive"):   # ri1103-P2: you dealt with it
                 it.pop("snooze", None)
                 it.pop("snoozed", None)
-        if k != "widget_layout":   # t-widget-drag: dragging tiles is not activity worth a log line
+        if k not in ("widget_layout", "chat_seen"):   # t-widget-drag: dragging tiles is not activity worth a log line; t-ri1113-a: nor is reading a chat
             S.add_log(st, me, f"{k}" + (f" {it['id']}" if it else ""), it["id"] if it else None)
 
     hire_res = None

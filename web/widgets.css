@@ -358,3 +358,9 @@ html[data-home="widgets"] .wg:not(.hero), html[data-home="widgets"] .wg.hero .wg
 
 /* t-ui-fix-r4 (R4-06): the red 待验收 tag: text leans toward --ink (same red family) so it reads on its own tint in every theme */
 html[data-home="widgets"] .wg-tg.hot { color: color-mix(in srgb, var(--dot) 55%, var(--ink)); }
+/* t-ri1113-a P3: the group row inside the 等你拍板 widget (base in style.css) */
+html[data-home="widgets"] .wg-review .ri13-grp { flex: none; margin: 2px -4px 4px; padding: 8px 10px; }
+html[data-home="widgets"] .wg-review .ri13-t b { -webkit-line-clamp: 1; }
+html[data-home="widgets"] .wg-review .ri13-acts { margin: 6px 0 0; gap: 5px; }
+html[data-home="widgets"] .wg-review .wg-row.ri13-m { margin-left: 4px; box-shadow: inset 2px 0 0 var(--line3); border-radius: 0 12px 12px 0; }
+html[data-home="widgets"] .wg-review .ri13-c .ri13-n { margin-right: 2px; }

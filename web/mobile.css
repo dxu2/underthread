@@ -1988,3 +1988,7 @@ html[data-skin="ink"]:not([data-ut]) .office .hd { overflow: visible; }
 /* R5-07: 墨刊 + a texture (针脚/毛衣, also 皮革) paints the hero .hd as a stitched card again, so it needs the card padding and clip back (R3-17's overflow:visible
    stays for plain 墨刊, where the board has no card edge) */
 html[data-skin="ink"]:not([data-ut]):is([data-texture^="knit"], [data-texture^="leather"]) .office .hd { overflow: hidden; padding: 12px; }
+/* t-ri1113-a P3: phone home group card (base in style.css) */
+.rv-list .ri13-grp { margin: 0 0 14px; padding: 14px 16px; border-radius: 22px; }
+.rv-list .ri13-acts { margin-left: 36px; gap: 8px; }
+.rv-list .ri13-o, .rv-list .ri13-x { padding: 7px 14px; font-size: var(--fs-14); }

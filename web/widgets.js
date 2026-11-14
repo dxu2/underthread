@@ -94,9 +94,22 @@
     },
     review(s, D) {
       const L = D.waiting, { n, foot } = fitM(s, L.length, 5);
-      return eb("review", L.length, true) + L.slice(0, n).map(i => { const a = A().agent(i.owner);
-        return `<div class="wg-row" data-item="${esc(i.id)}"><img class="wg-av" src="${A().avatarUrl(a)}" alt=""><div class="t">${A().nrDot ? A().nrDot(i.id) : ""}${esc(i.title)}<small>${esc(A().aname(a))} · ${en() ? "waiting" : "等了"} ${ago(i.activity || i.updated)}</small></div>${i.snoozed ? `<span class="wg-tg snz">${en() ? "Snoozed" : "推迟过"}</span>` : ""}<span class="wg-tg${i.kind === "plan" ? "" : " hot"}">${kindL(i)}</span></div>`; }).join("") +
-        (!foot ? "" : `<div class="wg-more">${L.length > n ? `<span data-go="board">${en() ? `${L.length - n} more ›` : `还有 ${L.length - n} 件 ›`}</span>` : `${en() ? "Oldest waiting" : "最久的已经等了"} ${ago(L[L.length - 1].activity || L[L.length - 1].updated)}`}</div>`);
+      const row = i => { const a = A().agent(i.owner);
+        return `<div class="wg-row" data-item="${esc(i.id)}"><img class="wg-av" src="${A().avatarUrl(a)}" alt=""><div class="t">${A().nrDot ? A().nrDot(i.id) : ""}${esc(i.title)}<small>${esc(A().aname(a))} · ${en() ? "waiting" : "等了"} ${ago(i.activity || i.updated)}</small></div>${i.snoozed ? `<span class="wg-tg snz">${en() ? "Snoozed" : "推迟过"}</span>` : ""}<span class="wg-tg${i.kind === "plan" ? "" : " hot"}">${kindL(i)}</span></div>`; };
+      /* t-ri1113-a P3: the same sweep question on 3+ cards is one group row (2 row slots, its buttons answer them all); 逐张看 lists them under it.
+         A medium tile has no room for the buttons: the group is one compact row there and a click opens the board. */
+      const E = A().askGroups ? A().askGroups(L) : L.map(it => ({ it }));
+      let slots = 0, shown = 0; const out = [];
+      for (const e of E) {
+        if (e.g) {
+          const w = s === "l" ? 2 : 1; if (out.length && slots + w > n) break;
+          out.push(s === "l" ? A().grpHTML(e.g, "wg") : `<div class="wg-row ri13-c" data-go="board"><span class="ri13-n">${e.g.items.length}</span><div class="t">${esc(e.g.a.q)}<small>${en() ? `same question on ${e.g.items.length} cards` : `${e.g.items.length} 张卡同一个问题`}</small></div><span class="wg-tg hot">${en() ? "Question" : "问题"}</span></div>`);
+          slots += w; shown += e.g.open && s === "l" ? 0 : e.g.items.length;
+          if (e.g.open && s === "l") for (const i of e.g.items) { if (slots + 1 > n) break; out.push(row(i).replace('class="wg-row"', 'class="wg-row ri13-m"')); slots++; shown++; }
+        } else { if (slots + 1 > n) break; out.push(row(e.it)); slots++; shown++; }
+      }
+      return eb("review", L.length, true) + out.join("") +
+        (!foot ? "" : `<div class="wg-more">${L.length > shown ? `<span data-go="board">${en() ? `${L.length - shown} more ›` : `还有 ${L.length - shown} 件 ›`}</span>` : `${en() ? "Oldest waiting" : "最久的已经等了"} ${ago(L[L.length - 1].activity || L[L.length - 1].updated)}`}</div>`);
     },
     busy(s, D) {
       const B = D.busy, m = B[0], a = m.a, side = B.slice(1, s === "l" ? 3 : 1), more = B.length - 1 - side.length, multi = B.length > 1;
