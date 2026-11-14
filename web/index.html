@@ -3,6 +3,7 @@
 <head>
 <script>/* t-csrf-live: every same-origin non-GET fetch carries X-Underthread: 1 (server.py refuses browser POSTs without it) */(function(){var f=window.fetch;if(!f||f.__xr)return;var w=function(i,o){try{var m=String((o&&o.method)||(i&&typeof i==="object"&&i.method)||"GET").toUpperCase();var u=new URL(typeof i==="string"?i:(i&&i.url)||String(i),location.href);if(m!=="GET"&&m!=="HEAD"&&u.origin===location.origin){var h=new Headers((o&&o.headers)||(i&&typeof i==="object"&&i.headers)||undefined);h.set("X-Underthread","1");o=Object.assign({},o,{headers:h});}}catch(e){}return f.call(this,i,o);};w.__xr=1;window.fetch=w;})();</script>
 <meta charset="utf-8">
+<script src="/static/lsmigrate.js?v=1"></script>   <!-- t-oss-struct E1: localStorage migrations, before any script reads rt.* -->
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -79,7 +80,7 @@ d.dataset.splash="1";d.style.setProperty("--ut-guard",t==="white"?"#ffffff":t===
 <script src="/static/md.js?v=6"></script>
 <script src="/static/fx.js?v=13"></script>
 <script src="/static/diff.js?v=1"></script>
-<script src="/static/app.js?v=232"></script>
+<script src="/static/app.js?v=233"></script>
 <script src="/static/market.js?v=6"></script>
 <script src="/static/transfer.js?v=3"></script>   <!-- t-ht-build: 调岗 / 退休 -->
 <script src="/static/preview.js?v=1"></script>

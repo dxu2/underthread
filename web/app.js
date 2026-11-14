@@ -1634,7 +1634,6 @@
   const MOBQ = matchMedia("(max-width: 760px)");
   const lsGet = (k, d) => { try { const v = localStorage.getItem(k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } };
   const lsSet = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} };
-  try { localStorage.removeItem("rt.mailUnread"); } catch (e) {}   /* t-mail-unread-pill: the floating 未读 toggle is gone (the filter bar has 未读); drop its saved state */
   function actRow(o) {   // one shared row: avatar (+unread dot) | name + title ... time | preview ... chips
     const ws = o.ws || [];
     return `<div class="act-row ${o.unread ? "unread" : ""}${ws.length ? " wk-on" : ""}" ${o.attr}${wkAttr(ws)}>${wkFx(ws)}
@@ -4698,9 +4697,10 @@
         + ` · ${en ? "inbox" : "信箱待处理"} ${ST.meta.inbox_unacked || 0}` + (ma.activity && m.on ? ` · ${ma.activity}` : "") });
     // 3. dashboard server (needs /api/health)
     if (H) {
-      const sv = H.server;
-      rows.push({ k: "srv", t: en ? "Dashboard server" : "看板服务器", lv: sv.loops ? "ok" : "warn",
-        s: (en ? `up ${upTxt(sv.uptime)} · started ${hm(sv.started)}` : `已运行 ${upTxt(sv.uptime)} · ${hm(sv.started)} 启动`) + ` · rev ${sv.rev}` + (sv.loops ? "" : (en ? " · background loops off" : " · 后台循环未开（测试模式）")) });
+      const sv = H.server, sc = H.schema, ahead = !!(sc && sc.ahead && sc.ahead.length);   /* t-oss-struct E1: data schema; ahead = data from a newer version (after a rollback) */
+      rows.push({ k: "srv", t: en ? "Dashboard server" : "看板服务器", lv: sv.loops && !ahead ? "ok" : "warn",
+        s: (en ? `up ${upTxt(sv.uptime)} · started ${hm(sv.started)}` : `已运行 ${upTxt(sv.uptime)} · ${hm(sv.started)} 启动`) + ` · rev ${sv.rev}` + (sv.loops ? "" : (en ? " · background loops off" : " · 后台循环未开（测试模式）"))
+          + (sc ? (ahead ? (en ? ` · data from a newer version (schema ${sc.state}, this code ${sc.code})` : ` · 数据来自较新版本（数据 v${sc.state}，代码 v${sc.code}）`) : ` · ${en ? "data" : "数据"} v${sc.state}`) : "") });
     }
     // 4. ComfyUI tunnel (already in /api/state)
     const c = (H && H.comfy) || ST.meta.comfy || {};
@@ -5014,7 +5014,6 @@
   if (H.get("fold")) UI.chatFold = H.get("fold") === "1";
   document.documentElement.dataset.theme = UI.theme;
   /* t-ui-fix-r3 R3-07: the t-visual-ink empty-state art probe (/work/t-visual-art/empty-*.png) is gone: the art was never made, so every fresh browser got 4 x 404. Empty states stay typographic; skin-ink.css keeps its unused --es-* slot. */
-  try { localStorage.removeItem("rt.esMiss"); } catch (_) { }
   snapBoot();
   poll(true).then(() => {
     if (!poll.entered) window.FX && FX.enter($("#pagebody"));
