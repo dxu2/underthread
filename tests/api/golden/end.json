@@ -1,0 +1,2568 @@
+{
+ "inbox": [
+  {
+   "attachments": [],
+   "category": "side",
+   "id": "in-0120-5c51",
+   "item": "q-0120-a5b9",
+   "kind": "new_task",
+   "owner": "writer",
+   "t": "2026-01-20T10:00:00+00:00",
+   "text": "Golden task\nsecond line"
+  },
+  {
+   "attachments": [],
+   "category": null,
+   "id": "in-0120-a80e",
+   "item": "q-0120-0611",
+   "kind": "new_task",
+   "owner": null,
+   "t": "2026-01-20T10:00:00+00:00",
+   "text": "No category given"
+  },
+  {
+   "attachments": [],
+   "id": "in-0120-8beb",
+   "kind": "manager",
+   "t": "2026-01-20T10:00:00+00:00",
+   "text": "golden chat"
+  },
+  {
+   "attachments": [],
+   "id": "in-0120-b4bf",
+   "kind": "manager",
+   "reply_q": "golden chat",
+   "reply_to": "e685c747",
+   "t": "2026-01-20T10:00:00+00:00",
+   "text": "quoting"
+  },
+  {
+   "agent": "writer",
+   "attachments": [],
+   "id": "in-0120-5152",
+   "kind": "dm",
+   "t": "2026-01-20T10:00:00+00:00",
+   "text": "golden dm"
+  },
+  {
+   "attachments": [],
+   "id": "in-0120-93d0",
+   "item": "fx-5",
+   "kind": "comment",
+   "t": "2026-01-20T10:00:00+00:00",
+   "text": "golden comment",
+   "to": "ops"
+  },
+  {
+   "attachments": [],
+   "id": "in-0120-863f",
+   "item": "fx-1",
+   "kind": "comment",
+   "t": "2026-01-20T10:00:00+00:00",
+   "text": "to scout",
+   "to": "scout"
+  },
+  {
+   "id": "in-0120-0bf6",
+   "item": "fx-3",
+   "kind": "approve",
+   "note": "go",
+   "t": "2026-01-20T10:00:00+00:00",
+   "was": "plan"
+  },
+  {
+   "id": "in-0120-ea89",
+   "item": "q-demo-email",
+   "kind": "approve",
+   "note": null,
+   "t": "2026-01-20T10:00:00+00:00",
+   "was": "deliverable"
+  },
+  {
+   "id": "in-0120-3e5d",
+   "item": "q-demo-plan",
+   "kind": "reject",
+   "reason": "tighter",
+   "t": "2026-01-20T10:00:00+00:00"
+  },
+  {
+   "ask": "0d17d1",
+   "changed": false,
+   "id": "in-0120-f633",
+   "item": "fx-7",
+   "kind": "answer",
+   "opt": "London",
+   "q": "Which cities should the rent comparison cover?",
+   "reply_to": "ask:0d17d1",
+   "t": "2026-01-20T10:00:00+00:00",
+   "to": "scout"
+  },
+  {
+   "id": "in-0120-f9e9",
+   "item": "q-demo-ask",
+   "kind": "done",
+   "t": "2026-01-20T10:00:00+00:00"
+  },
+  {
+   "id": "in-0120-be72",
+   "item": "fx-4",
+   "kind": "reopen",
+   "t": "2026-01-20T10:00:00+00:00"
+  },
+  {
+   "id": "in-0120-52eb",
+   "item": "fx-6",
+   "kind": "dispatch",
+   "owner": "ops",
+   "t": "2026-01-20T10:00:00+00:00"
+  },
+  {
+   "id": "in-0120-31db",
+   "item": "fx-6",
+   "kind": "done",
+   "t": "2026-01-20T10:00:00+00:00"
+  },
+  {
+   "agent": "writer",
+   "decision": "adopted",
+   "id": "L-0115-8967",
+   "kind": "lesson",
+   "t": "2026-01-20T10:00:00+00:00",
+   "text": "Weekly updates open with the one decision the team must make."
+  },
+  {
+   "id": "in-0120-3e43",
+   "kind": "ping",
+   "note": "刷新用量",
+   "t": "2026-01-20T10:00:00+00:00"
+  },
+  {
+   "id": "in-0120-25f9",
+   "kind": "report_request",
+   "t": "2026-01-20T10:00:00+00:00"
+  },
+  {
+   "id": "in-0120-6e72",
+   "item": null,
+   "kind": "schedule_pause",
+   "schedule": "s-0115-6be5",
+   "t": "2026-01-20T10:00:00+00:00",
+   "title": "Morning digest"
+  },
+  {
+   "id": "in-0120-4174",
+   "item": null,
+   "kind": "schedule_resume",
+   "schedule": "s-0115-6be5",
+   "t": "2026-01-20T10:00:00+00:00",
+   "title": "Morning digest"
+  },
+  {
+   "agent": "scout",
+   "for": "2026-01-20T10:00:00+00:00",
+   "id": "in-0120-fbe5",
+   "item": null,
+   "kind": "schedule_due",
+   "late_min": 0,
+   "manual": true,
+   "schedule": "s-0115-6be5",
+   "t": "2026-01-20T10:00:00+00:00",
+   "text": "Collect overnight news into a card",
+   "title": "Morning digest",
+   "type": "task"
+  },
+  {
+   "id": "in-0120-c62e",
+   "item": null,
+   "kind": "schedule_fire",
+   "schedule": "s-0115-6be5",
+   "t": "2026-01-20T10:00:00+00:00",
+   "title": "Morning digest"
+  },
+  {
+   "id": "in-0120-bf48",
+   "item": null,
+   "kind": "schedule_rm",
+   "schedule": "s-0115-bde5",
+   "t": "2026-01-20T10:00:00+00:00",
+   "title": "Weekly review"
+  },
+  {
+   "agent": null,
+   "for": "2026-01-20T10:00:00+00:00",
+   "id": "in-0120-59da",
+   "item": null,
+   "kind": "schedule_due",
+   "late_min": 0,
+   "manual": true,
+   "schedule": "s-0120-ac15",
+   "t": "2026-01-20T10:00:00+00:00",
+   "text": "",
+   "title": "Golden remind",
+   "type": "remind"
+  }
+ ],
+ "roster_file": {
+  "_note": "One entry per role. After editing: python3 make_agents.py, then restart the steward session. The dashboard picks up display fields within 5 s. name / title / duty are shown in the Chinese UI, *_en in the English UI. \"team\": \"general\" gives a role the general hard rules (no publishing-platform rules). For the Chinese content-creator team (B站 / YouTube / 小红书) run: python3 tools/preset.py apply content-zh. Optional per role: \"address\": {\"name\": \"...\", \"open\": \"Welcome back\"} sets how the role addresses you.",
+  "roles": [
+   {
+    "_comment": "The steward (manager) is the long-running main Claude Code session, not a subagent. make_agents.py skips it.",
+    "agent_name": null,
+    "color": "#e07a5f",
+    "duty": "接需求、派单、排期、日报",
+    "duty_en": "Triage, dispatch, schedule, daily report",
+    "id": "manager",
+    "look": {
+     "acc": "ribbon",
+     "eye": "#8a2b1f",
+     "hair": "#7a2f2a",
+     "outfit": "#d9714f",
+     "style": "long"
+    },
+    "name": "Steward",
+    "name_en": "Steward",
+    "room": "lead",
+    "team": "general",
+    "tint": "#8f3a3a",
+    "title": "管家",
+    "title_en": "Steward",
+    "voice": {
+     "habits": [
+      "Reports as: who, what, when it lands"
+     ],
+     "style": "Calm and brief; conclusion first, then the reason"
+    }
+   },
+   {
+    "agent_name": "underthread-scout",
+    "color": "#7fc8c2",
+    "duty": "调研、比较、核实",
+    "duty_en": "Research, comparisons, fact-checks",
+    "duty_long": "Finds things out. Researches a question, compares options, and fact-checks drafts. Evidence-first: every claim gets a link, unverified ones are marked.",
+    "id": "scout",
+    "look": {
+     "acc": "glasses",
+     "eye": "#5b3c7a",
+     "hair": "#2f2440",
+     "outfit": "#3f8f8a",
+     "style": "bob"
+    },
+    "name": "Scout",
+    "name_en": "Scout",
+    "notebooks": [
+     "roles/common.md",
+     "roles/scout.md"
+    ],
+    "room": "script",
+    "skills": [],
+    "specialties": [
+     "Research briefs: the question, what was found, sources, open questions",
+     "Comparisons as a table with a recommendation",
+     "Fact-checks: claim by claim, verified / partly / wrong, each with a link"
+    ],
+    "team": "general",
+    "tint": "#8c6fb0",
+    "title": "研究员",
+    "title_en": "Researcher",
+    "voice": {
+     "habits": [
+      "Opens with the one finding that matters most"
+     ],
+     "style": "Curious, but every finding comes with a source"
+    }
+   },
+   {
+    "agent_name": "underthread-writer",
+    "color": "#d8b56d",
+    "duty": "文档、草稿、摘要、消息",
+    "duty_en": "Docs, drafts, summaries, messages",
+    "duty_long": "Owns the words. Writes docs, summaries, posts, emails and other copy as drafts for the user to send, in the user's own voice.",
+    "id": "writer",
+    "look": {
+     "acc": "pen",
+     "eye": "#6b4a1e",
+     "hair": "#c9963e",
+     "outfit": "#e3d3a8",
+     "style": "twin"
+    },
+    "name": "Quill",
+    "name_en": "Quill",
+    "notebooks": [
+     "roles/common.md",
+     "roles/writer.md"
+    ],
+    "room": "script",
+    "skills": [],
+    "specialties": [
+     "Drafts in the user's voice: short sentences, conclusion first",
+     "Gives 2-3 options for titles and openings and says which it picks",
+     "Marks factual claims so the researcher can check them"
+    ],
+    "team": "general",
+    "tint": "#6a4e9a",
+    "title": "写作",
+    "title_en": "Writer",
+    "voice": {
+     "habits": [
+      "Offers a shorter version when a draft runs long"
+     ],
+     "style": "Plain and warm; cuts what it does not need"
+    }
+   },
+   {
+    "agent_name": "underthread-director",
+    "color": "#b28dd6",
+    "duty": "计划、清单、审稿",
+    "duty_en": "Plans, checklists, reviews",
+    "duty_long": "Turns a goal into steps. Writes plans and checklists, reviews drafts from the others against the goal, and keeps multi-step projects on track.",
+    "id": "director",
+    "look": {
+     "acc": "headphones",
+     "eye": "#3a2a5a",
+     "hair": "#2a2733",
+     "outfit": "#7a5aa8",
+     "style": "short"
+    },
+    "name": "Lens",
+    "name_en": "Lens",
+    "notebooks": [
+     "roles/common.md",
+     "roles/director.md"
+    ],
+    "room": "studio",
+    "skills": [],
+    "specialties": [
+     "Plans: goal, steps, owner per step, what done looks like",
+     "Reviews: what works, what to change, in priority order",
+     "Checklists the user can tick off"
+    ],
+    "team": "general",
+    "tint": "#243a66",
+    "title": "规划",
+    "title_en": "Planner",
+    "voice": {
+     "habits": [
+      "Ends a plan with the first step to take today"
+     ],
+     "style": "Structured; thinks in steps and owners"
+    }
+   },
+   {
+    "agent_name": "underthread-artist",
+    "color": "#e58fa8",
+    "duty": "配图、图表、样稿",
+    "duty_en": "Images, diagrams, mockups",
+    "duty_long": "Makes the visual side: images, diagrams, slide layouts and mockups. Can drive a ComfyUI server through tools/comfy.py if you set one up. Writes outputs to work/<item-id>/art/.",
+    "id": "artist",
+    "look": {
+     "acc": "beret",
+     "eye": "#9a3a62",
+     "hair": "#e37aa1",
+     "outfit": "#f1eadc",
+     "style": "pony"
+    },
+    "name": "Brush",
+    "name_en": "Brush",
+    "notebooks": [
+     "roles/common.md",
+     "roles/artist.md"
+    ],
+    "room": "art",
+    "skills": [],
+    "specialties": [
+     "Shows 2-4 candidates and says which it recommends",
+     "Diagrams as SVG or Mermaid when that is enough",
+     "Notes the source and license of every asset"
+    ],
+    "team": "general",
+    "tint": "#d58f98",
+    "title": "设计",
+    "title_en": "Designer",
+    "voice": {
+     "habits": [
+      "Puts the recommended option first"
+     ],
+     "style": "Visual first; explains choices in a line"
+    }
+   },
+   {
+    "agent_name": "underthread-ops",
+    "color": "#8cc084",
+    "duty": "日程、跟进、消息草稿",
+    "duty_en": "Calendar, follow-ups, message drafts",
+    "duty_long": "Keeps things moving after the work is made: calendar, reminders, follow-ups and message drafts. Never sends anything itself; the user sends.",
+    "id": "ops",
+    "look": {
+     "acc": "headset",
+     "eye": "#1f5a43",
+     "hair": "#3d8a67",
+     "outfit": "#2f4a6e",
+     "style": "short"
+    },
+    "name": "Signal",
+    "name_en": "Signal",
+    "notebooks": [
+     "roles/common.md",
+     "roles/ops.md"
+    ],
+    "room": "signal",
+    "skills": [],
+    "specialties": [
+     "Keeps work/calendar.md: this week and next",
+     "Drafts replies and follow-ups for the user to send",
+     "Weekly review: what got done, what slipped, what's next"
+    ],
+    "team": "general",
+    "tint": "#44444a",
+    "title": "协调",
+    "title_en": "Coordinator",
+    "voice": {
+     "habits": [
+      "Lists dates and owners, nothing else"
+     ],
+     "style": "Practical and on time"
+    }
+   },
+   {
+    "agent_name": "underthread-smith",
+    "color": "#9aa5b1",
+    "duty": "看板、脚本、自动化",
+    "duty_en": "Dashboard, scripts, automation",
+    "duty_long": "Keeps the dashboard and team tooling running. Plans first; makes a .bak before every edit; tests on a scratch copy (PORT=8799 NO_LOOPS=1) before touching the live state.",
+    "id": "smith",
+    "look": {
+     "acc": "goggles",
+     "eye": "#3a4a6a",
+     "hair": "#b9c0cc",
+     "outfit": "#5a6478",
+     "style": "short"
+    },
+    "name": "Smith",
+    "name_en": "Smith",
+    "notebooks": [
+     "roles/common.md",
+     "roles/smith.md"
+    ],
+    "room": "tools",
+    "skills": [],
+    "specialties": [
+     "Fixes the dashboard (server.py, stateutil.py, web/)",
+     "Writes small scripts: batch renames, conversions, file tidying",
+     "First responder when a tool or script fails"
+    ],
+    "team": "general",
+    "tint": "#7fa8d8",
+    "title": "工具",
+    "title_en": "Tooling keeper",
+    "voice": {
+     "habits": [
+      "Says what it backed up before changing anything"
+     ],
+     "style": "Patient; explains the cause before the fix"
+    }
+   }
+  ],
+  "team": "Personal crew"
+ },
+ "state_file": {
+  "agents": {
+   "Writer": {
+    "id": "Writer",
+    "item": null,
+    "last_seen": "2026-01-20T10:00:00+00:00",
+    "status": "idle"
+   },
+   "artist": {
+    "activity": "Sketching layouts",
+    "agent_name": "underthread-artist",
+    "color": "#e58fa8",
+    "duty": "配图、图表、样稿",
+    "duty_en": "Images, diagrams, mockups",
+    "enabled": true,
+    "id": "artist",
+    "item": null,
+    "last_seen": "2026-01-20T10:00:00+00:00",
+    "look": {
+     "acc": "beret",
+     "eye": "#9a3a62",
+     "hair": "#e37aa1",
+     "outfit": "#f1eadc",
+     "style": "pony"
+    },
+    "name": "Brush",
+    "name_en": "Brush",
+    "order": 4,
+    "room": "art",
+    "since": "2026-01-20T10:00:00+00:00",
+    "status": "working",
+    "tint": "#d58f98",
+    "title": "设计",
+    "title_en": "Designer",
+    "tool": "chrome",
+    "tool_since": "2026-01-20T10:00:00+00:00",
+    "voice": {
+     "habits": [
+      "Puts the recommended option first"
+     ],
+     "style": "Visual first; explains choices in a line"
+    }
+   },
+   "director": {
+    "activity": "Listing the steps",
+    "agent_name": "underthread-director",
+    "color": "#b28dd6",
+    "duty": "计划、清单、审稿",
+    "duty_en": "Plans, checklists, reviews",
+    "enabled": true,
+    "id": "director",
+    "item": null,
+    "last_seen": "2026-01-20T07:50:07+00:00",
+    "look": {
+     "acc": "headphones",
+     "eye": "#3a2a5a",
+     "hair": "#2a2733",
+     "outfit": "#7a5aa8",
+     "style": "short"
+    },
+    "name": "Lens",
+    "name_en": "Lens",
+    "order": 3,
+    "room": "studio",
+    "status": "idle",
+    "tint": "#243a66",
+    "title": "规划",
+    "title_en": "Planner",
+    "voice": {
+     "habits": [
+      "Ends a plan with the first step to take today"
+     ],
+     "style": "Structured; thinks in steps and owners"
+    }
+   },
+   "manager": {
+    "activity": "休眠中 · 15:00 复活",
+    "agent_name": null,
+    "color": "#e07a5f",
+    "duty": "接需求、派单、排期、日报",
+    "duty_en": "Triage, dispatch, schedule, daily report",
+    "enabled": true,
+    "id": "manager",
+    "item": null,
+    "last_seen": "2026-01-20T10:00:00+00:00",
+    "look": {
+     "acc": "ribbon",
+     "eye": "#8a2b1f",
+     "hair": "#7a2f2a",
+     "outfit": "#d9714f",
+     "style": "long"
+    },
+    "name": "Steward",
+    "name_en": "Steward",
+    "order": 0,
+    "room": "lead",
+    "status": "idle",
+    "tint": "#8f3a3a",
+    "title": "管家",
+    "title_en": "Steward",
+    "voice": {
+     "habits": [
+      "Reports as: who, what, when it lands"
+     ],
+     "style": "Calm and brief; conclusion first, then the reason"
+    }
+   },
+   "ops": {
+    "activity": "Reading the calendar",
+    "agent_name": "underthread-ops",
+    "color": "#8cc084",
+    "duty": "日程、跟进、消息草稿",
+    "duty_en": "Calendar, follow-ups, message drafts",
+    "enabled": true,
+    "id": "ops",
+    "item": null,
+    "last_seen": "2026-01-20T08:45:00+00:00",
+    "look": {
+     "acc": "headset",
+     "eye": "#1f5a43",
+     "hair": "#3d8a67",
+     "outfit": "#2f4a6e",
+     "style": "short"
+    },
+    "name": "Signal",
+    "name_en": "Signal",
+    "order": 5,
+    "room": "signal",
+    "status": "idle",
+    "tint": "#44444a",
+    "title": "协调",
+    "title_en": "Coordinator",
+    "voice": {
+     "habits": [
+      "Lists dates and owners, nothing else"
+     ],
+     "style": "Practical and on time"
+    }
+   },
+   "scout": {
+    "activity": "Checking prices again",
+    "agent_name": "underthread-scout",
+    "color": "#7fc8c2",
+    "duty": "调研、比较、核实",
+    "duty_en": "Research, comparisons, fact-checks",
+    "enabled": true,
+    "id": "scout",
+    "item": "fx-1",
+    "last_seen": "2026-01-20T09:22:00+00:00",
+    "look": {
+     "acc": "glasses",
+     "eye": "#5b3c7a",
+     "hair": "#2f2440",
+     "outfit": "#3f8f8a",
+     "style": "bob"
+    },
+    "name": "Scout",
+    "name_en": "Scout",
+    "order": 1,
+    "room": "script",
+    "since": "2026-01-20T09:20:46+00:00",
+    "status": "working",
+    "tint": "#8c6fb0",
+    "title": "研究员",
+    "title_en": "Researcher",
+    "tool": "chrome",
+    "tool_since": "2026-01-20T09:21:23+00:00",
+    "voice": {
+     "habits": [
+      "Opens with the one finding that matters most"
+     ],
+     "style": "Curious, but every finding comes with a source"
+    }
+   },
+   "smith": {
+    "agent_name": "underthread-smith",
+    "color": "#9aa5b1",
+    "duty": "看板、脚本、自动化",
+    "duty_en": "Dashboard, scripts, automation",
+    "enabled": true,
+    "id": "smith",
+    "look": {
+     "acc": "goggles",
+     "eye": "#3a4a6a",
+     "hair": "#b9c0cc",
+     "outfit": "#5a6478",
+     "style": "short"
+    },
+    "name": "Smith",
+    "name_en": "Smith",
+    "order": 6,
+    "room": "tools",
+    "status": "idle",
+    "tint": "#7fa8d8",
+    "title": "工具",
+    "title_en": "Tooling keeper",
+    "voice": {
+     "habits": [
+      "Says what it backed up before changing anything"
+     ],
+     "style": "Patient; explains the cause before the fix"
+    }
+   },
+   "writer": {
+    "activity": "golden status",
+    "agent_name": "underthread-writer",
+    "color": "#d8b56d",
+    "duty": "文档、草稿、摘要、消息",
+    "duty_en": "Docs, drafts, summaries, messages",
+    "enabled": true,
+    "id": "writer",
+    "item": "fx-2",
+    "last_seen": "2026-01-20T10:00:00+00:00",
+    "look": {
+     "acc": "pen",
+     "eye": "#6b4a1e",
+     "hair": "#c9963e",
+     "outfit": "#e3d3a8",
+     "style": "twin"
+    },
+    "name": "Quill",
+    "name_en": "Quill",
+    "order": 2,
+    "room": "script",
+    "since": "2026-01-20T07:16:12+00:00",
+    "status": "working",
+    "tint": "#6a4e9a",
+    "title": "写作",
+    "title_en": "Writer",
+    "voice": {
+     "habits": [
+      "Offers a shorter version when a draft runs long"
+     ],
+     "style": "Plain and warm; cuts what it does not need"
+    }
+   }
+  },
+  "calendar": [],
+  "chat": [
+   {
+    "id": "15924d50",
+    "t": "2026-01-20T09:28:10+00:00",
+    "text": "Morning. Two cards wait for you, one has a question.",
+    "who": "manager"
+   },
+   {
+    "id": "79192a8c",
+    "t": "2026-01-20T09:30:38+00:00",
+    "text": "What is the headphone pick?",
+    "who": "me"
+   },
+   {
+    "id": "cb8f9701",
+    "options": [
+     "Yes",
+     "Not now"
+    ],
+    "t": "2026-01-20T09:32:29+00:00",
+    "text": "Model B. Want me to order it?",
+    "who": "manager"
+   },
+   {
+    "id": "8a6719d2",
+    "t": "2026-01-20T09:34:57+00:00",
+    "text": "Not now",
+    "who": "me"
+   },
+   {
+    "id": "e685c747",
+    "t": "2026-01-20T10:00:00+00:00",
+    "text": "golden chat",
+    "who": "me"
+   },
+   {
+    "id": "0127eca2",
+    "reply_to": "e685c747",
+    "rq": {
+     "text": "golden chat",
+     "who": "me"
+    },
+    "t": "2026-01-20T10:00:00+00:00",
+    "text": "quoting",
+    "who": "me"
+   },
+   {
+    "id": "0ee5ab84",
+    "multi": true,
+    "options": [
+     "A",
+     "B"
+    ],
+    "t": "2026-01-20T10:00:00+00:00",
+    "text": "golden manager line",
+    "who": "manager"
+   }
+  ],
+  "dms": {
+   "scout": [
+    {
+     "id": "2417781a",
+     "t": "2026-01-20T09:37:25+00:00",
+     "text": "Prices checked on three sites; B is cheapest at the first one.",
+     "who": "scout"
+    },
+    {
+     "id": "4488aab6",
+     "options": [
+      "x",
+      "y"
+     ],
+     "t": "2026-01-20T10:00:00+00:00",
+     "text": "golden scout dm",
+     "who": "scout"
+    }
+   ],
+   "writer": [
+    {
+     "id": "5c9cc625",
+     "options": [
+      "Yes",
+      "No"
+     ],
+     "t": "2026-01-20T09:40:30+00:00",
+     "text": "Should the update mention the export fix?",
+     "who": "writer"
+    },
+    {
+     "id": "5634913b",
+     "t": "2026-01-20T10:00:00+00:00",
+     "text": "golden dm",
+     "who": "me"
+    }
+   ]
+  },
+  "handoffs": [
+   {
+    "f": "smith",
+    "id": "def590a1",
+    "item": "fx-6",
+    "t": "2026-01-20T10:00:00+00:00",
+    "title": "整理下载文件夹",
+    "to": "ops",
+    "via": "reassign"
+   },
+   {
+    "f": "writer",
+    "id": "c3d3eeeb",
+    "item": "fx-2",
+    "t": "2026-01-20T10:00:00+00:00",
+    "title": "周报邮件草稿",
+    "to": "director",
+    "via": "dispatch"
+   }
+  ],
+  "ho_last": {
+   "fx-1": "scout",
+   "fx-2": "director",
+   "fx-3": "director",
+   "fx-4": "artist",
+   "fx-5": "ops",
+   "fx-6": "ops",
+   "fx-7": "scout"
+  },
+  "items": [
+   {
+    "activity": "2026-01-20T10:00:00+00:00",
+    "attachments": [],
+    "category": "main",
+    "confidence": "med",
+    "confidence_note": "示例数据",
+    "confidence_note_en": "sample data",
+    "created": "2026-01-20T06:38:35+00:00",
+    "draft": "## 计划\n\n| 步骤 | 产出 | 负责 |\n|---|---|---|\n| 比较三家搬家公司 | 一张对比表 | 研究员 |\n| 通知清单 | 要改地址的地方 | 协调 |\n| 打包时间表 | 每周清单 | 规划 |\n\n批准后才开始执行；驳回时写原因，管家会把原因整理成规则提议。",
+    "draft_en": "## Plan\n\n| Step | Output | Owner |\n|---|---|---|\n| Compare three movers | One comparison table | Researcher |\n| Change-of-address list | Everywhere to update | Coordinator |\n| Packing timeline | A checklist per week | Planner |\n\nWork starts only after you approve. If you reject, give a reason; the steward turns reasons into rule proposals.",
+    "due": null,
+    "evidence": [
+     "示例：参考链接会列在这里"
+    ],
+    "evidence_en": [
+     "Sample: source links are listed here"
+    ],
+    "id": "q-demo-plan",
+    "kind": "plan",
+    "links": [],
+    "owner": "director",
+    "platforms": [],
+    "rejects": 1,
+    "stage": "doing",
+    "summary": "这是一张示例卡片。真实卡片由管家或队员用 stateutil.py upsert-item 写入。点开看详情：草稿、把握度、时间线，以及底部的 批准 / 驳回 / 完成。",
+    "summary_en": "This is a sample card. Real cards are written by the steward or a teammate with stateutil.py upsert-item. Open it to see the draft, the confidence, the timeline, and Approve / Reject / Done at the bottom.",
+    "tags": [
+     "示例"
+    ],
+    "tags_en": [
+     "sample"
+    ],
+    "thread": [
+     {
+      "id": "36608781",
+      "kind": "reject",
+      "t": "2026-01-20T10:00:00+00:00",
+      "text": "驳回 · tighter",
+      "who": "me"
+     }
+    ],
+    "title": "搬家计划（示例）",
+    "title_en": "Moving plan (sample)",
+    "updated": "2026-01-20T10:00:00+00:00",
+    "versions": []
+   },
+   {
+    "activity": "2026-01-20T10:00:00+00:00",
+    "approved": "2026-01-20T10:00:00+00:00",
+    "attachments": [],
+    "category": "side",
+    "closed": "2026-01-20T10:00:00+00:00",
+    "confidence": "high",
+    "confidence_note": "",
+    "created": "2026-01-20T06:38:35+00:00",
+    "draft": "**主题**：退租通知\n\n您好，……\n\n（队员只写草稿，从不替你发送。）",
+    "draft_en": "**Subject**: Notice of moving out\n\nHello, …\n\n(Teammates only draft. They never send anything for you.)",
+    "due": null,
+    "evidence": [],
+    "id": "q-demo-email",
+    "kind": "deliverable",
+    "links": [],
+    "owner": "writer",
+    "platforms": [],
+    "rejects": 0,
+    "stage": "done",
+    "summary": "示例交付：邮件草稿写好了，确认后你自己复制发送。",
+    "summary_en": "Sample deliverable: the email draft is ready; approve it, then copy and send it yourself.",
+    "tags": [
+     "示例"
+    ],
+    "tags_en": [
+     "sample"
+    ],
+    "thread": [
+     {
+      "id": "aab7e214",
+      "kind": "approve",
+      "t": "2026-01-20T10:00:00+00:00",
+      "text": "验收 · 关单",
+      "who": "me"
+     }
+    ],
+    "title": "给房东的邮件（示例）",
+    "title_en": "Email to the landlord (sample)",
+    "updated": "2026-01-20T10:00:00+00:00",
+    "versions": []
+   },
+   {
+    "activity": "2026-01-20T06:38:35+00:00",
+    "attachments": [],
+    "category": "daily",
+    "confidence": null,
+    "confidence_note": "",
+    "created": "2026-01-20T06:38:35+00:00",
+    "draft": "",
+    "draft_en": "",
+    "due": null,
+    "evidence": [],
+    "id": "q-demo-tool",
+    "kind": "task",
+    "links": [],
+    "owner": "smith",
+    "platforms": [],
+    "rejects": 0,
+    "stage": "doing",
+    "summary": "工具管家在写一个按类型归档的小脚本。",
+    "summary_en": "Smith is writing a small script that sorts files by type.",
+    "tags": [
+     "示例"
+    ],
+    "tags_en": [
+     "sample"
+    ],
+    "thread": [],
+    "title": "整理下载文件夹（示例）",
+    "title_en": "Tidy the downloads folder (sample)",
+    "updated": "2026-01-20T06:38:35+00:00",
+    "versions": []
+   },
+   {
+    "activity": "2026-01-20T10:00:00+00:00",
+    "attachments": [],
+    "category": "daily",
+    "closed": "2026-01-20T10:00:00+00:00",
+    "confidence": null,
+    "confidence_note": "",
+    "created": "2026-01-20T06:38:35+00:00",
+    "draft": "你想比较哪几个城市的房租？",
+    "draft_en": "Which cities do you want rent compared for?",
+    "due": null,
+    "evidence": [],
+    "id": "q-demo-ask",
+    "kind": "question",
+    "links": [],
+    "owner": "scout",
+    "platforms": [],
+    "rejects": 0,
+    "stage": "done",
+    "summary": "研究员在等你回答一个问题。",
+    "summary_en": "The researcher is waiting for your answer.",
+    "tags": [
+     "示例"
+    ],
+    "tags_en": [
+     "sample"
+    ],
+    "thread": [
+     {
+      "id": "59392cbe",
+      "kind": "done",
+      "t": "2026-01-20T10:00:00+00:00",
+      "text": "完成 · mission complete",
+      "who": "me"
+     }
+    ],
+    "title": "要比较哪几个城市？（示例）",
+    "title_en": "Which cities should I compare? (sample)",
+    "updated": "2026-01-20T10:00:00+00:00",
+    "versions": []
+   },
+   {
+    "activity": "2026-01-20T10:00:00+00:00",
+    "attachments": [],
+    "category": "daily",
+    "confidence": "med",
+    "confidence_note": "Fixture card",
+    "created": "2026-01-20T06:41:40+00:00",
+    "draft": "**Pick: model B.** Best noise cancelling for the price; model A is lighter but weaker on low hum.\n\n| | A | B | C |\n|---|---|---|---|\n| Price | $$ | $$ | $$$ |\n| Noise cancelling | ok | strong | strong |\n| Battery | 30 h | 30 h | 24 h |\n| Weight | light | medium | heavy |\n\nSources are listed under evidence. Prices not checked today.",
+    "draft_at": "2026-01-20T07:00:47+00:00",
+    "draft_attachments": [],
+    "draft_label": "v1",
+    "due": null,
+    "evidence": [],
+    "id": "fx-1",
+    "kind": "deliverable",
+    "links": [],
+    "owner": "scout",
+    "platforms": [],
+    "rejects": 0,
+    "stage": "doing",
+    "summary": "Which pair to buy for flights and the office.",
+    "summary_en": "Which pair to buy for flights and the office.",
+    "tags": [],
+    "thread": [
+     {
+      "id": "501cce9d",
+      "kind": "event",
+      "t": "2026-01-20T06:44:08+00:00",
+      "text": "created · 比较三款降噪耳机",
+      "who": "manager"
+     },
+     {
+      "id": "5dd290e9",
+      "kind": "event",
+      "t": "2026-01-20T06:47:50+00:00",
+      "text": "stage todo → doing",
+      "who": "scout"
+     },
+     {
+      "id": "f9806b85",
+      "kind": "log",
+      "t": "2026-01-20T06:54:37+00:00",
+      "text": "Reading three long reviews",
+      "who": "scout"
+     },
+     {
+      "id": "33794435",
+      "kind": "log",
+      "t": "2026-01-20T06:57:42+00:00",
+      "text": "Building the comparison table",
+      "who": "scout"
+     },
+     {
+      "id": "257ae823",
+      "kind": "event",
+      "t": "2026-01-20T07:02:01+00:00",
+      "text": "提交审核 · submitted for review",
+      "who": "scout"
+     },
+     {
+      "id": "6d1ebebd",
+      "kind": "msg",
+      "t": "2026-01-20T09:17:41+00:00",
+      "text": "Model B wins on noise cancelling; table is in the draft.",
+      "who": "scout"
+     },
+     {
+      "id": "f9d7babc",
+      "kind": "msg",
+      "t": "2026-01-20T10:00:00+00:00",
+      "text": "to scout",
+      "to": "scout",
+      "who": "me"
+     }
+    ],
+    "title": "比较三款降噪耳机",
+    "title_en": "Compare three noise-cancelling headphones",
+    "updated": "2026-01-20T10:00:00+00:00",
+    "versions": []
+   },
+   {
+    "activity": "2026-01-20T10:00:00+00:00",
+    "asks": [
+     {
+      "answer": null,
+      "by": "writer",
+      "id": "5dc147",
+      "options": [
+       "A",
+       "B",
+       "C"
+      ],
+      "other": true,
+      "q": "Which?",
+      "rec": "B",
+      "t": "2026-01-20T10:00:00+00:00"
+     }
+    ],
+    "attachments": [],
+    "category": "side",
+    "confidence": "med",
+    "confidence_note": "fixed clock",
+    "created": "2026-01-20T07:07:34+00:00",
+    "draft": "# Golden draft\n\nbody\n",
+    "draft_at": "2026-01-20T10:00:00+00:00",
+    "draft_attachments": [],
+    "draft_label": "v2: golden",
+    "due": null,
+    "evidence": [
+     "golden"
+    ],
+    "id": "fx-2",
+    "kind": "deliverable",
+    "links": [],
+    "owner": "writer",
+    "platforms": [],
+    "rejects": 0,
+    "stage": "review",
+    "summary": "A short update for the team, ready to copy.",
+    "summary_en": "A short update for the team, ready to copy.",
+    "tags": [],
+    "thread": [
+     {
+      "id": "a9dcc471",
+      "kind": "event",
+      "t": "2026-01-20T07:10:02+00:00",
+      "text": "created · 周报邮件草稿",
+      "who": "manager"
+     },
+     {
+      "id": "c53504a6",
+      "kind": "event",
+      "t": "2026-01-20T07:13:44+00:00",
+      "text": "stage todo → doing",
+      "who": "writer"
+     },
+     {
+      "id": "d829a422",
+      "kind": "log",
+      "t": "2026-01-20T07:20:31+00:00",
+      "text": "Collecting what closed this week",
+      "who": "writer"
+     },
+     {
+      "id": "a7794402",
+      "kind": "log",
+      "t": "2026-01-20T07:23:36+00:00",
+      "text": "Tightening the opening",
+      "who": "writer"
+     },
+     {
+      "id": "26b367ed",
+      "kind": "log",
+      "t": "2026-01-20T10:00:00+00:00",
+      "text": "golden log line",
+      "who": "writer"
+     },
+     {
+      "id": "c27b45cb",
+      "kind": "msg",
+      "t": "2026-01-20T10:00:00+00:00",
+      "text": "golden reply",
+      "who": "writer"
+     },
+     {
+      "id": "72f0c59e",
+      "kind": "event",
+      "t": "2026-01-20T10:00:00+00:00",
+      "text": "提问 · Which?（A / B（推荐） / C）",
+      "who": "writer"
+     },
+     {
+      "id": "0b596ea7",
+      "kind": "event",
+      "t": "2026-01-20T10:00:00+00:00",
+      "text": "提交审核 · submitted for review",
+      "who": "writer"
+     }
+    ],
+    "title": "周报邮件草稿",
+    "title_en": "Draft of the weekly update email",
+    "updated": "2026-01-20T10:00:00+00:00",
+    "versions": []
+   },
+   {
+    "activity": "2026-01-20T10:00:00+00:00",
+    "approved": "2026-01-20T10:00:00+00:00",
+    "attachments": [],
+    "category": "main",
+    "confidence": "med",
+    "confidence_note": "Fixture card",
+    "created": "2026-01-20T07:26:41+00:00",
+    "draft": "## Plan\n\n| Step | Owner | Done when | Date |\n|---|---|---|---|\n| Get three quotes | Scout | table in the card | Mon |\n| Change of address list | Signal | list ticked off | Wed |\n| Packing checklist | Lens | checklist in the card | Fri |\n\nFirst step today: ask Scout for the quotes.",
+    "draft_at": "2026-01-20T07:45:48+00:00",
+    "draft_attachments": [],
+    "draft_label": "v1",
+    "due": null,
+    "evidence": [],
+    "id": "fx-3",
+    "kind": "plan",
+    "links": [],
+    "owner": "director",
+    "platforms": [],
+    "rejects": 0,
+    "stage": "doing",
+    "summary": "Steps, owners and dates for moving at the end of next month.",
+    "summary_en": "Steps, owners and dates for moving at the end of next month.",
+    "tags": [],
+    "thread": [
+     {
+      "id": "a99baaa3",
+      "kind": "event",
+      "t": "2026-01-20T07:29:09+00:00",
+      "text": "created · 搬家计划",
+      "who": "manager"
+     },
+     {
+      "id": "946bb8ea",
+      "kind": "event",
+      "t": "2026-01-20T07:32:51+00:00",
+      "text": "stage todo → doing",
+      "who": "director"
+     },
+     {
+      "id": "fb6e3d66",
+      "kind": "log",
+      "t": "2026-01-20T07:39:38+00:00",
+      "text": "Listing the steps",
+      "who": "director"
+     },
+     {
+      "id": "01ea13c4",
+      "kind": "log",
+      "t": "2026-01-20T07:42:43+00:00",
+      "text": "Checking the dates against your calendar",
+      "who": "director"
+     },
+     {
+      "id": "454f7be5",
+      "kind": "event",
+      "t": "2026-01-20T07:47:02+00:00",
+      "text": "提交审核 · submitted for review",
+      "who": "director"
+     },
+     {
+      "id": "3e82faf2",
+      "kind": "approve",
+      "t": "2026-01-20T10:00:00+00:00",
+      "text": "批准开工 · go",
+      "who": "me"
+     }
+    ],
+    "title": "搬家计划",
+    "title_en": "Plan for the move",
+    "updated": "2026-01-20T10:00:00+00:00",
+    "versions": []
+   },
+   {
+    "activity": "2026-01-20T10:00:00+00:00",
+    "archived": true,
+    "attachments": [],
+    "category": "side",
+    "confidence": "med",
+    "confidence_note": "Fixture card",
+    "created": "2026-01-20T07:52:35+00:00",
+    "draft": "Three directions: **1. Bold type** (recommended, reads from across the room), 2. Photo-led, 3. Illustrated.\n\nFonts are OFL. No stock photos used.",
+    "draft_at": "2026-01-20T08:11:42+00:00",
+    "draft_attachments": [],
+    "draft_label": "v1",
+    "due": null,
+    "evidence": [],
+    "id": "fx-4",
+    "kind": "deliverable",
+    "links": [],
+    "owner": "artist",
+    "platforms": [],
+    "rejects": 0,
+    "stage": "doing",
+    "summary": "A4 poster, three directions.",
+    "summary_en": "A4 poster, three directions.",
+    "tags": [],
+    "thread": [
+     {
+      "id": "66b2f2fd",
+      "kind": "event",
+      "t": "2026-01-20T07:55:03+00:00",
+      "text": "created · 活动海报三版",
+      "who": "manager"
+     },
+     {
+      "id": "7a498e12",
+      "kind": "event",
+      "t": "2026-01-20T07:58:45+00:00",
+      "text": "stage todo → doing",
+      "who": "artist"
+     },
+     {
+      "id": "341ead60",
+      "kind": "log",
+      "t": "2026-01-20T08:05:32+00:00",
+      "text": "Sketching layouts",
+      "who": "artist"
+     },
+     {
+      "id": "201eab82",
+      "kind": "log",
+      "t": "2026-01-20T08:08:37+00:00",
+      "text": "Exporting three options",
+      "who": "artist"
+     },
+     {
+      "id": "fbc3e79c",
+      "kind": "event",
+      "t": "2026-01-20T08:12:56+00:00",
+      "text": "提交审核 · submitted for review",
+      "who": "artist"
+     },
+     {
+      "id": "06bd048b",
+      "kind": "event",
+      "t": "2026-01-20T08:18:29+00:00",
+      "text": "stage review → done",
+      "who": "me"
+     },
+     {
+      "id": "ec5b29da",
+      "kind": "event",
+      "t": "2026-01-20T10:00:00+00:00",
+      "text": "重开 · reopened",
+      "who": "me"
+     }
+    ],
+    "title": "活动海报三版",
+    "title_en": "Three poster options for the meetup",
+    "updated": "2026-01-20T10:00:00+00:00",
+    "versions": []
+   },
+   {
+    "activity": "2026-01-20T10:00:00+00:00",
+    "asks": [
+     {
+      "answer": null,
+      "by": "ops",
+      "closed": "2026-01-20T10:00:00+00:00",
+      "id": "c04c2b",
+      "options": [
+       "Yes",
+       "No"
+      ],
+      "other": true,
+      "q": "Ship it?",
+      "rec": "Yes",
+      "t": "2026-01-20T10:00:00+00:00"
+     }
+    ],
+    "attachments": [],
+    "category": "daily",
+    "confidence": "med",
+    "confidence_note": "Fixture card",
+    "created": "2026-01-20T08:21:34+00:00",
+    "draft": "- Tuesday: the dentist and the design review overlapped; moved the review to 15:00 (draft message to the team below).\n- Thursday: nothing booked after 14:00, kept free for focus work.\n\n> Hi, could we move the design review to 15:00 Tuesday?",
+    "draft_at": "2026-01-20T08:40:41+00:00",
+    "draft_attachments": [],
+    "draft_label": "v1",
+    "due": null,
+    "evidence": [],
+    "id": "fx-5",
+    "kind": "deliverable",
+    "links": [],
+    "owner": "ops",
+    "platforms": [],
+    "rejects": 0,
+    "stage": "doing",
+    "summary": "Two clashes found and fixed.",
+    "summary_en": "Two clashes found and fixed.",
+    "tags": [],
+    "thread": [
+     {
+      "id": "7cb2ef1a",
+      "kind": "event",
+      "t": "2026-01-20T08:24:02+00:00",
+      "text": "created · 下周日程整理",
+      "who": "manager"
+     },
+     {
+      "id": "9e7deebe",
+      "kind": "event",
+      "t": "2026-01-20T08:27:44+00:00",
+      "text": "stage todo → doing",
+      "who": "ops"
+     },
+     {
+      "id": "fde7e16a",
+      "kind": "log",
+      "t": "2026-01-20T08:34:31+00:00",
+      "text": "Reading the calendar",
+      "who": "ops"
+     },
+     {
+      "id": "071ce884",
+      "kind": "log",
+      "t": "2026-01-20T08:37:36+00:00",
+      "text": "Moving the clashing call",
+      "who": "ops"
+     },
+     {
+      "id": "11084c19",
+      "kind": "event",
+      "t": "2026-01-20T08:41:55+00:00",
+      "text": "提交审核 · submitted for review",
+      "who": "ops"
+     },
+     {
+      "id": "f6d61f1d",
+      "kind": "msg",
+      "t": "2026-01-20T10:00:00+00:00",
+      "text": "golden comment",
+      "to": "ops",
+      "who": "me"
+     },
+     {
+      "id": "eb2bd2e6",
+      "kind": "event",
+      "t": "2026-01-20T10:00:00+00:00",
+      "text": "提问 · Ship it?（Yes（推荐） / No）",
+      "who": "ops"
+     },
+     {
+      "id": "acf0bdf5",
+      "kind": "event",
+      "t": "2026-01-20T10:00:00+00:00",
+      "text": "撤回问题 · Ship it?",
+      "who": "ops"
+     }
+    ],
+    "title": "下周日程整理",
+    "title_en": "Next week's calendar, cleaned up",
+    "updated": "2026-01-20T10:00:00+00:00",
+    "versions": []
+   },
+   {
+    "activity": "2026-01-20T10:00:00+00:00",
+    "attachments": [],
+    "category": "urgent",
+    "closed": "2026-01-20T10:00:00+00:00",
+    "confidence": null,
+    "confidence_note": "",
+    "created": "2026-01-20T08:47:28+00:00",
+    "draft": "",
+    "due": null,
+    "evidence": [],
+    "id": "fx-6",
+    "kind": "task",
+    "links": [],
+    "owner": "ops",
+    "platforms": [],
+    "rejects": 0,
+    "stage": "done",
+    "summary": "A small script that sorts files by type into dated folders.",
+    "summary_en": "A small script that sorts files by type into dated folders.",
+    "tags": [],
+    "thread": [
+     {
+      "id": "63fe6dfe",
+      "kind": "event",
+      "t": "2026-01-20T08:49:56+00:00",
+      "text": "created · 整理下载文件夹",
+      "who": "manager"
+     },
+     {
+      "id": "622ec35f",
+      "kind": "event",
+      "t": "2026-01-20T10:00:00+00:00",
+      "text": "改派给 ops",
+      "who": "me"
+     },
+     {
+      "id": "61cb4315",
+      "kind": "event",
+      "t": "2026-01-20T10:00:00+00:00",
+      "text": "分类 → urgent",
+      "who": "me"
+     },
+     {
+      "id": "883edcb1",
+      "kind": "event",
+      "t": "2026-01-20T10:00:00+00:00",
+      "text": "stage todo → done",
+      "who": "me"
+     }
+    ],
+    "title": "整理下载文件夹",
+    "title_en": "Tidy the downloads folder",
+    "updated": "2026-01-20T10:00:00+00:00",
+    "versions": []
+   },
+   {
+    "activity": "2026-01-20T10:00:00+00:00",
+    "asks": [
+     {
+      "answer": {
+       "by": "me",
+       "opt": "London",
+       "t": "2026-01-20T10:00:00+00:00"
+      },
+      "by": "scout",
+      "id": "0d17d1",
+      "options": [
+       "London",
+       "Berlin",
+       "Lisbon"
+      ],
+      "other": true,
+      "q": "Which cities should the rent comparison cover?",
+      "rec": "Berlin",
+      "t": "2026-01-20T09:10:17+00:00"
+     }
+    ],
+    "attachments": [],
+    "category": "daily",
+    "confidence": "med",
+    "confidence_note": "Fixture card",
+    "created": "2026-01-20T08:53:01+00:00",
+    "draft": "Which cities do you want in the rent comparison?",
+    "draft_at": "2026-01-20T09:09:03+00:00",
+    "draft_attachments": [],
+    "draft_label": "v1",
+    "due": null,
+    "evidence": [],
+    "id": "fx-7",
+    "kind": "question",
+    "links": [],
+    "owner": "scout",
+    "platforms": [],
+    "rejects": 0,
+    "stage": "review",
+    "summary": "Scout needs one answer before starting.",
+    "summary_en": "Scout needs one answer before starting.",
+    "tags": [],
+    "thread": [
+     {
+      "id": "fb24d990",
+      "kind": "event",
+      "t": "2026-01-20T08:55:29+00:00",
+      "text": "created · 要比较哪些城市？",
+      "who": "manager"
+     },
+     {
+      "id": "988a2811",
+      "kind": "event",
+      "t": "2026-01-20T08:59:11+00:00",
+      "text": "stage todo → doing",
+      "who": "scout"
+     },
+     {
+      "id": "ae95bf8e",
+      "kind": "log",
+      "t": "2026-01-20T09:05:58+00:00",
+      "text": "Waiting for your answer",
+      "who": "scout"
+     },
+     {
+      "id": "94b651e9",
+      "kind": "event",
+      "t": "2026-01-20T09:10:54+00:00",
+      "text": "提问 · Which cities should the rent comparison cover?（London / Berlin（推荐） / Lisbon）",
+      "who": "scout"
+     },
+     {
+      "id": "2da27440",
+      "kind": "event",
+      "t": "2026-01-20T09:11:31+00:00",
+      "text": "提交审核 · submitted for review",
+      "who": "scout"
+     },
+     {
+      "id": "1d8c35c3",
+      "kind": "msg",
+      "reply_to": "ask:0d17d1",
+      "t": "2026-01-20T10:00:00+00:00",
+      "text": "回答 · Which cities should the rent comparison cover? → London",
+      "to": "scout",
+      "who": "me"
+     }
+    ],
+    "title": "要比较哪些城市？",
+    "title_en": "Which cities should the rent comparison cover?",
+    "updated": "2026-01-20T10:00:00+00:00",
+    "versions": []
+   },
+   {
+    "activity": "2026-01-20T10:00:00+00:00",
+    "attachments": [],
+    "category": "side",
+    "confidence": null,
+    "confidence_note": "",
+    "created": "2026-01-20T10:00:00+00:00",
+    "draft": "",
+    "due": null,
+    "evidence": [],
+    "id": "q-0120-a5b9",
+    "kind": "task",
+    "links": [],
+    "owner": "writer",
+    "platforms": [],
+    "rejects": 0,
+    "stage": "todo",
+    "summary": "Golden task\nsecond line",
+    "tags": [],
+    "thread": [
+     {
+      "id": "eb9bccf9",
+      "kind": "event",
+      "t": "2026-01-20T10:00:00+00:00",
+      "text": "created · Golden task",
+      "who": "me"
+     },
+     {
+      "id": "cf93d52c",
+      "kind": "msg",
+      "t": "2026-01-20T10:00:00+00:00",
+      "text": "Golden task\nsecond line",
+      "who": "me"
+     }
+    ],
+    "title": "Golden task",
+    "triage": false,
+    "updated": "2026-01-20T10:00:00+00:00",
+    "versions": []
+   },
+   {
+    "activity": "2026-01-20T10:00:00+00:00",
+    "attachments": [],
+    "category": "daily",
+    "confidence": null,
+    "confidence_note": "",
+    "created": "2026-01-20T10:00:00+00:00",
+    "draft": "",
+    "due": null,
+    "evidence": [],
+    "id": "q-0120-0611",
+    "kind": "task",
+    "links": [],
+    "owner": "manager",
+    "platforms": [],
+    "rejects": 0,
+    "stage": "todo",
+    "summary": "No category given",
+    "tags": [],
+    "thread": [
+     {
+      "id": "86e97720",
+      "kind": "event",
+      "t": "2026-01-20T10:00:00+00:00",
+      "text": "created · No category given",
+      "who": "me"
+     },
+     {
+      "id": "79fe6177",
+      "kind": "msg",
+      "t": "2026-01-20T10:00:00+00:00",
+      "text": "No category given",
+      "who": "me"
+     }
+    ],
+    "title": "No category given",
+    "triage": true,
+    "updated": "2026-01-20T10:00:00+00:00",
+    "versions": []
+   },
+   {
+    "activity": "2026-01-20T10:00:00+00:00",
+    "attachments": [],
+    "category": "daily",
+    "confidence": null,
+    "confidence_note": "",
+    "created": "2026-01-20T10:00:00+00:00",
+    "draft": "",
+    "due": null,
+    "evidence": [],
+    "id": "q-0120-9d20",
+    "kind": "task",
+    "links": [],
+    "owner": "manager",
+    "platforms": [
+     "bili"
+    ],
+    "rejects": 0,
+    "stage": "todo",
+    "summary": "",
+    "tags": [],
+    "thread": [
+     {
+      "id": "3c3d3b40",
+      "kind": "event",
+      "t": "2026-01-20T10:00:00+00:00",
+      "text": "created · Golden CLI card",
+      "who": "scout"
+     }
+    ],
+    "title": "Golden CLI card",
+    "updated": "2026-01-20T10:00:00+00:00",
+    "versions": []
+   }
+  ],
+  "lessons": [
+   {
+    "agent": "writer",
+    "decided": "2026-01-20T10:00:00+00:00",
+    "id": "L-0115-8967",
+    "item": "fx-2",
+    "status": "adopted",
+    "t": "2026-01-20T09:44:12+00:00",
+    "text": "Weekly updates open with the one decision the team must make."
+   },
+   {
+    "agent": "writer",
+    "id": "L-0120-81e0",
+    "item": "fx-2",
+    "status": "pending",
+    "t": "2026-01-20T10:00:00+00:00",
+    "text": "golden rule"
+   }
+  ],
+  "logs": [
+   {
+    "agent": "manager",
+    "item": "fx-1",
+    "t": "2026-01-20T06:44:45+00:00",
+    "text": "upsert fx-1 [todo] 比较三款降噪耳机"
+   },
+   {
+    "agent": "scout",
+    "item": "fx-1",
+    "t": "2026-01-20T06:48:27+00:00",
+    "text": "upsert fx-1 [doing] 比较三款降噪耳机"
+   },
+   {
+    "agent": "scout",
+    "item": "fx-1",
+    "t": "2026-01-20T06:52:09+00:00",
+    "text": "Reading three long reviews"
+   },
+   {
+    "agent": "scout",
+    "item": "fx-1",
+    "t": "2026-01-20T06:55:14+00:00",
+    "text": "Reading three long reviews"
+   },
+   {
+    "agent": "scout",
+    "item": "fx-1",
+    "t": "2026-01-20T06:58:19+00:00",
+    "text": "Building the comparison table"
+   },
+   {
+    "agent": "scout",
+    "item": "fx-1",
+    "t": "2026-01-20T07:03:15+00:00",
+    "text": "upsert fx-1 [review] 比较三款降噪耳机"
+   },
+   {
+    "agent": "manager",
+    "item": "fx-2",
+    "t": "2026-01-20T07:10:39+00:00",
+    "text": "upsert fx-2 [todo] 周报邮件草稿"
+   },
+   {
+    "agent": "writer",
+    "item": "fx-2",
+    "t": "2026-01-20T07:14:21+00:00",
+    "text": "upsert fx-2 [doing] 周报邮件草稿"
+   },
+   {
+    "agent": "writer",
+    "item": "fx-2",
+    "t": "2026-01-20T07:18:03+00:00",
+    "text": "Collecting what closed this week"
+   },
+   {
+    "agent": "writer",
+    "item": "fx-2",
+    "t": "2026-01-20T07:21:08+00:00",
+    "text": "Collecting what closed this week"
+   },
+   {
+    "agent": "writer",
+    "item": "fx-2",
+    "t": "2026-01-20T07:24:13+00:00",
+    "text": "Tightening the opening"
+   },
+   {
+    "agent": "manager",
+    "item": "fx-3",
+    "t": "2026-01-20T07:29:46+00:00",
+    "text": "upsert fx-3 [todo] 搬家计划"
+   },
+   {
+    "agent": "director",
+    "item": "fx-3",
+    "t": "2026-01-20T07:33:28+00:00",
+    "text": "upsert fx-3 [doing] 搬家计划"
+   },
+   {
+    "agent": "director",
+    "item": "fx-3",
+    "t": "2026-01-20T07:37:10+00:00",
+    "text": "Listing the steps"
+   },
+   {
+    "agent": "director",
+    "item": "fx-3",
+    "t": "2026-01-20T07:40:15+00:00",
+    "text": "Listing the steps"
+   },
+   {
+    "agent": "director",
+    "item": "fx-3",
+    "t": "2026-01-20T07:43:20+00:00",
+    "text": "Checking the dates against your calendar"
+   },
+   {
+    "agent": "director",
+    "item": "fx-3",
+    "t": "2026-01-20T07:48:16+00:00",
+    "text": "upsert fx-3 [review] 搬家计划"
+   },
+   {
+    "agent": "manager",
+    "item": "fx-4",
+    "t": "2026-01-20T07:55:40+00:00",
+    "text": "upsert fx-4 [todo] 活动海报三版"
+   },
+   {
+    "agent": "artist",
+    "item": "fx-4",
+    "t": "2026-01-20T07:59:22+00:00",
+    "text": "upsert fx-4 [doing] 活动海报三版"
+   },
+   {
+    "agent": "artist",
+    "item": "fx-4",
+    "t": "2026-01-20T08:03:04+00:00",
+    "text": "Sketching layouts"
+   },
+   {
+    "agent": "artist",
+    "item": "fx-4",
+    "t": "2026-01-20T08:06:09+00:00",
+    "text": "Sketching layouts"
+   },
+   {
+    "agent": "artist",
+    "item": "fx-4",
+    "t": "2026-01-20T08:09:14+00:00",
+    "text": "Exporting three options"
+   },
+   {
+    "agent": "artist",
+    "item": "fx-4",
+    "t": "2026-01-20T08:14:10+00:00",
+    "text": "upsert fx-4 [review] 活动海报三版"
+   },
+   {
+    "agent": "me",
+    "item": "fx-4",
+    "t": "2026-01-20T08:19:06+00:00",
+    "text": "upsert fx-4 [done] 活动海报三版"
+   },
+   {
+    "agent": "manager",
+    "item": "fx-5",
+    "t": "2026-01-20T08:24:39+00:00",
+    "text": "upsert fx-5 [todo] 下周日程整理"
+   },
+   {
+    "agent": "ops",
+    "item": "fx-5",
+    "t": "2026-01-20T08:28:21+00:00",
+    "text": "upsert fx-5 [doing] 下周日程整理"
+   },
+   {
+    "agent": "ops",
+    "item": "fx-5",
+    "t": "2026-01-20T08:32:03+00:00",
+    "text": "Reading the calendar"
+   },
+   {
+    "agent": "ops",
+    "item": "fx-5",
+    "t": "2026-01-20T08:35:08+00:00",
+    "text": "Reading the calendar"
+   },
+   {
+    "agent": "ops",
+    "item": "fx-5",
+    "t": "2026-01-20T08:38:13+00:00",
+    "text": "Moving the clashing call"
+   },
+   {
+    "agent": "ops",
+    "item": "fx-5",
+    "t": "2026-01-20T08:43:09+00:00",
+    "text": "upsert fx-5 [review] 下周日程整理"
+   },
+   {
+    "agent": "manager",
+    "item": "fx-6",
+    "t": "2026-01-20T08:50:33+00:00",
+    "text": "upsert fx-6 [todo] 整理下载文件夹"
+   },
+   {
+    "agent": "manager",
+    "item": "fx-7",
+    "t": "2026-01-20T08:56:06+00:00",
+    "text": "upsert fx-7 [todo] 要比较哪些城市？"
+   },
+   {
+    "agent": "scout",
+    "item": "fx-7",
+    "t": "2026-01-20T08:59:48+00:00",
+    "text": "upsert fx-7 [doing] 要比较哪些城市？"
+   },
+   {
+    "agent": "scout",
+    "item": "fx-7",
+    "t": "2026-01-20T09:03:30+00:00",
+    "text": "Waiting for your answer"
+   },
+   {
+    "agent": "scout",
+    "item": "fx-7",
+    "t": "2026-01-20T09:06:35+00:00",
+    "text": "Waiting for your answer"
+   },
+   {
+    "agent": "scout",
+    "item": "fx-7",
+    "t": "2026-01-20T09:12:45+00:00",
+    "text": "upsert fx-7 [review] 要比较哪些城市？"
+   },
+   {
+    "agent": "scout",
+    "item": "fx-1",
+    "t": "2026-01-20T09:18:55+00:00",
+    "text": "reply on fx-1"
+   },
+   {
+    "agent": "scout",
+    "item": "fx-1",
+    "t": "2026-01-20T09:23:14+00:00",
+    "text": "Checking prices again"
+   },
+   {
+    "agent": "writer",
+    "item": "fx-2",
+    "t": "2026-01-20T09:26:19+00:00",
+    "text": "Tightening the opening"
+   },
+   {
+    "agent": "me",
+    "item": "q-0120-a5b9",
+    "t": "2026-01-20T10:00:00+00:00",
+    "text": "new_task q-0120-a5b9"
+   },
+   {
+    "agent": "me",
+    "item": "q-0120-0611",
+    "t": "2026-01-20T10:00:00+00:00",
+    "text": "new_task q-0120-0611"
+   },
+   {
+    "agent": "me",
+    "item": null,
+    "t": "2026-01-20T10:00:00+00:00",
+    "text": "chat"
+   },
+   {
+    "agent": "me",
+    "item": null,
+    "t": "2026-01-20T10:00:00+00:00",
+    "text": "chat"
+   },
+   {
+    "agent": "me",
+    "item": null,
+    "t": "2026-01-20T10:00:00+00:00",
+    "text": "dm"
+   },
+   {
+    "agent": "me",
+    "item": "fx-5",
+    "t": "2026-01-20T10:00:00+00:00",
+    "text": "comment fx-5"
+   },
+   {
+    "agent": "me",
+    "item": "fx-1",
+    "t": "2026-01-20T10:00:00+00:00",
+    "text": "comment fx-1"
+   },
+   {
+    "agent": "me",
+    "item": "fx-3",
+    "t": "2026-01-20T10:00:00+00:00",
+    "text": "approve fx-3"
+   },
+   {
+    "agent": "me",
+    "item": "q-demo-email",
+    "t": "2026-01-20T10:00:00+00:00",
+    "text": "approve q-demo-email"
+   },
+   {
+    "agent": "me",
+    "item": "q-demo-plan",
+    "t": "2026-01-20T10:00:00+00:00",
+    "text": "reject q-demo-plan"
+   },
+   {
+    "agent": "me",
+    "item": "fx-7",
+    "t": "2026-01-20T10:00:00+00:00",
+    "text": "answer fx-7"
+   },
+   {
+    "agent": "me",
+    "item": "q-demo-ask",
+    "t": "2026-01-20T10:00:00+00:00",
+    "text": "done q-demo-ask"
+   },
+   {
+    "agent": "me",
+    "item": "fx-4",
+    "t": "2026-01-20T10:00:00+00:00",
+    "text": "reopen fx-4"
+   },
+   {
+    "agent": "me",
+    "item": "fx-6",
+    "t": "2026-01-20T10:00:00+00:00",
+    "text": "reassign fx-6"
+   },
+   {
+    "agent": "me",
+    "item": "fx-6",
+    "t": "2026-01-20T10:00:00+00:00",
+    "text": "set_category fx-6"
+   },
+   {
+    "agent": "me",
+    "item": "fx-6",
+    "t": "2026-01-20T10:00:00+00:00",
+    "text": "set_stage fx-6"
+   },
+   {
+    "agent": "me",
+    "item": "fx-1",
+    "t": "2026-01-20T10:00:00+00:00",
+    "text": "unsnooze fx-1"
+   },
+   {
+    "agent": "me",
+    "item": "fx-4",
+    "t": "2026-01-20T10:00:00+00:00",
+    "text": "archive fx-4"
+   },
+   {
+    "agent": "me",
+    "item": null,
+    "t": "2026-01-20T10:00:00+00:00",
+    "text": "lesson"
+   },
+   {
+    "agent": "me",
+    "item": null,
+    "t": "2026-01-20T10:00:00+00:00",
+    "text": "calendar_add"
+   },
+   {
+    "agent": "me",
+    "item": null,
+    "t": "2026-01-20T10:00:00+00:00",
+    "text": "calendar_del"
+   },
+   {
+    "agent": "me",
+    "item": null,
+    "t": "2026-01-20T10:00:00+00:00",
+    "text": "notice_dismiss"
+   },
+   {
+    "agent": "me",
+    "item": null,
+    "t": "2026-01-20T10:00:00+00:00",
+    "text": "mail_read"
+   },
+   {
+    "agent": "me",
+    "item": null,
+    "t": "2026-01-20T10:00:00+00:00",
+    "text": "mail_read"
+   },
+   {
+    "agent": "me",
+    "item": null,
+    "t": "2026-01-20T10:00:00+00:00",
+    "text": "stamina"
+   },
+   {
+    "agent": "me",
+    "item": null,
+    "t": "2026-01-20T10:00:00+00:00",
+    "text": "ping"
+   },
+   {
+    "agent": "me",
+    "item": null,
+    "t": "2026-01-20T10:00:00+00:00",
+    "text": "report_request"
+   },
+   {
+    "agent": "me",
+    "item": null,
+    "t": "2026-01-20T10:00:00+00:00",
+    "text": "schedule_pause"
+   },
+   {
+    "agent": "me",
+    "item": null,
+    "t": "2026-01-20T10:00:00+00:00",
+    "text": "schedule_resume"
+   },
+   {
+    "agent": "me",
+    "item": null,
+    "t": "2026-01-20T10:00:00+00:00",
+    "text": "schedule_fire"
+   },
+   {
+    "agent": "me",
+    "item": null,
+    "t": "2026-01-20T10:00:00+00:00",
+    "text": "schedule_rm"
+   },
+   {
+    "agent": "writer",
+    "item": "fx-2",
+    "t": "2026-01-20T10:00:00+00:00",
+    "text": "golden status"
+   },
+   {
+    "agent": "writer",
+    "item": "fx-2",
+    "t": "2026-01-20T10:00:00+00:00",
+    "text": "golden log line"
+   },
+   {
+    "agent": "writer",
+    "item": "fx-2",
+    "t": "2026-01-20T10:00:00+00:00",
+    "text": "reply on fx-2"
+   },
+   {
+    "agent": "scout",
+    "item": "q-0120-9d20",
+    "t": "2026-01-20T10:00:00+00:00",
+    "text": "upsert q-0120-9d20 [todo] Golden CLI card"
+   },
+   {
+    "agent": "writer",
+    "item": "fx-2",
+    "t": "2026-01-20T10:00:00+00:00",
+    "text": "upsert fx-2 [review] 周报邮件草稿"
+   },
+   {
+    "agent": "ops",
+    "item": "fx-5",
+    "t": "2026-01-20T10:00:00+00:00",
+    "text": "ask c04c2b: Ship it?"
+   },
+   {
+    "agent": "ops",
+    "item": "fx-5",
+    "t": "2026-01-20T10:00:00+00:00",
+    "text": "ask-close c04c2b"
+   },
+   {
+    "agent": "manager",
+    "item": null,
+    "t": "2026-01-20T10:00:00+00:00",
+    "text": "休眠：golden，15:00 复活"
+   }
+  ],
+  "mail": [
+   {
+    "agent": "scout",
+    "id": "15ef3a3b",
+    "item": "fx-1",
+    "kind": "update",
+    "read": true,
+    "t": "2026-01-20T07:02:38+00:00",
+    "text": "待审核: 比较三款降噪耳机"
+   },
+   {
+    "agent": "director",
+    "id": "990ab926",
+    "item": "fx-3",
+    "kind": "update",
+    "read": true,
+    "t": "2026-01-20T07:47:39+00:00",
+    "text": "待审核: 搬家计划"
+   },
+   {
+    "agent": "artist",
+    "id": "441cc874",
+    "item": "fx-4",
+    "kind": "update",
+    "read": true,
+    "t": "2026-01-20T08:13:33+00:00",
+    "text": "待审核: 活动海报三版"
+   },
+   {
+    "agent": "ops",
+    "id": "2b8dd77f",
+    "item": "fx-5",
+    "kind": "update",
+    "read": true,
+    "t": "2026-01-20T08:42:32+00:00",
+    "text": "待审核: 下周日程整理"
+   },
+   {
+    "agent": "scout",
+    "id": "456f85b0",
+    "item": "fx-7",
+    "kind": "update",
+    "read": true,
+    "t": "2026-01-20T09:12:08+00:00",
+    "text": "待审核: 要比较哪些城市？"
+   },
+   {
+    "agent": "scout",
+    "id": "7065df07",
+    "item": "fx-1",
+    "kind": "reply",
+    "read": true,
+    "t": "2026-01-20T09:18:18+00:00",
+    "text": "Model B wins on noise cancelling; table is in the draft."
+   },
+   {
+    "agent": "manager",
+    "id": "4c3c155b",
+    "item": null,
+    "kind": "reply",
+    "read": true,
+    "t": "2026-01-20T09:28:47+00:00",
+    "text": "管家: Morning. Two cards wait for you, one has a question."
+   },
+   {
+    "agent": "manager",
+    "id": "4a53fcf9",
+    "item": null,
+    "kind": "reply",
+    "read": true,
+    "t": "2026-01-20T09:33:06+00:00",
+    "text": "管家: Model B. Want me to order it?"
+   },
+   {
+    "agent": "scout",
+    "id": "7c387712",
+    "item": null,
+    "kind": "reply",
+    "read": true,
+    "t": "2026-01-20T09:38:02+00:00",
+    "text": "scout: Prices checked on three sites; B is cheapest at the first one."
+   },
+   {
+    "agent": "writer",
+    "id": "f142a404",
+    "item": null,
+    "kind": "reply",
+    "read": true,
+    "t": "2026-01-20T09:41:07+00:00",
+    "text": "writer: Should the update mention the export fix?"
+   },
+   {
+    "agent": "writer",
+    "id": "fe8a9a44",
+    "item": "fx-2",
+    "kind": "update",
+    "read": true,
+    "t": "2026-01-20T09:44:49+00:00",
+    "text": "新规则提议 · writer: Weekly updates open with the one decision the team must make."
+   },
+   {
+    "agent": "manager",
+    "id": "6a6964f4",
+    "item": null,
+    "kind": "update",
+    "read": true,
+    "t": "2026-01-20T09:47:54+00:00",
+    "text": "Daily report · 2026-01-15"
+   },
+   {
+    "agent": "writer",
+    "id": "1c9f9781",
+    "item": "fx-2",
+    "kind": "reply",
+    "read": false,
+    "t": "2026-01-20T10:00:00+00:00",
+    "text": "golden reply"
+   },
+   {
+    "agent": "writer",
+    "id": "eb413b9c",
+    "item": "fx-2",
+    "kind": "update",
+    "read": false,
+    "t": "2026-01-20T10:00:00+00:00",
+    "text": "待审核: 周报邮件草稿"
+   },
+   {
+    "agent": "manager",
+    "id": "476811c8",
+    "item": null,
+    "kind": "reply",
+    "read": false,
+    "t": "2026-01-20T10:00:00+00:00",
+    "text": "管家: golden manager line"
+   },
+   {
+    "agent": "scout",
+    "id": "18b7d95f",
+    "item": null,
+    "kind": "reply",
+    "read": false,
+    "t": "2026-01-20T10:00:00+00:00",
+    "text": "scout: golden scout dm"
+   },
+   {
+    "agent": "writer",
+    "id": "5ded305a",
+    "item": "fx-2",
+    "kind": "update",
+    "read": false,
+    "t": "2026-01-20T10:00:00+00:00",
+    "text": "新规则提议 · writer: golden rule"
+   },
+   {
+    "agent": "manager",
+    "id": "a989c49c",
+    "item": null,
+    "kind": "update",
+    "read": false,
+    "t": "2026-01-20T10:00:00+00:00",
+    "text": "Daily · 2026-01-20"
+   },
+   {
+    "agent": null,
+    "id": "a2703b05",
+    "item": null,
+    "kind": "remind",
+    "read": false,
+    "t": "2026-01-20T10:00:00+00:00",
+    "text": "⏰ 提醒：Golden remind"
+   },
+   {
+    "agent": "manager",
+    "id": "87930240",
+    "item": null,
+    "kind": "update",
+    "read": false,
+    "t": "2026-01-20T10:00:00+00:00",
+    "text": "管家休眠 · 15:00 复活。golden；新指令会排队，醒来自动处理。"
+   }
+  ],
+  "media": {},
+  "meta": {
+   "archive_at": "2026-01-20T10:00:00+00:00",
+   "chat_seen": {
+    "writer": "2026-01-20T09:00:00+00:00"
+   },
+   "fixture": {
+    "built_by": "tests/e2e/fixtures/build.py",
+    "end": "2026-01-20T09:59:00+00:00",
+    "seed": 20260115
+   },
+   "focus": {
+    "at": "2026-01-20T10:00:00+00:00",
+    "pct": 3
+   },
+   "ho_start": "2026-01-20T06:51:32+00:00",
+   "inbox_acked": [
+    "in-0120-5c51",
+    "in-0120-a80e",
+    "in-0120-8beb",
+    "in-0120-b4bf",
+    "in-0120-5152",
+    "in-0120-93d0",
+    "in-0120-863f",
+    "in-0120-0bf6",
+    "in-0120-ea89",
+    "in-0120-3e5d",
+    "in-0120-f633",
+    "in-0120-f9e9",
+    "in-0120-be72",
+    "in-0120-52eb",
+    "in-0120-31db",
+    "L-0115-8967",
+    "in-0120-3e43",
+    "in-0120-25f9",
+    "in-0120-6e72",
+    "in-0120-4174",
+    "in-0120-fbe5",
+    "in-0120-c62e",
+    "in-0120-bf48",
+    "in-0120-59da"
+   ],
+   "last_report_date": "2026-01-20",
+   "migrations": [
+    {
+     "at": "2026-01-20T06:39:49+00:00",
+     "from": 0,
+     "ran": [
+      "0001_baseline",
+      "0002_routines_log"
+     ],
+     "to": 2
+    }
+   ],
+   "rev": 117,
+   "routines_log": {},
+   "schema": 2,
+   "stamina": {
+    "at": "2026-01-20T10:00:00+00:00",
+    "note": "cli",
+    "pct": 70
+   },
+   "updated": "2026-01-20T10:00:00+00:00",
+   "usage": {
+    "at": "2026-01-20T10:00:00+00:00",
+    "context": 33,
+    "five_hour": {
+     "resets_at": "2026-01-20T12:00:00+00:00",
+     "used": 12.5
+    },
+    "seven_day": {
+     "resets_at": null,
+     "used": 40.0
+    },
+    "source": "manager"
+   },
+   "widgets": {
+    "at": "2026-01-20T10:00:00+00:00",
+    "layout": null
+   }
+  },
+  "notices": [
+   {
+    "id": "n-0120-dbfd",
+    "level": "urgent",
+    "t": "2026-01-20T10:00:00+00:00",
+    "text": "golden notice",
+    "until": "2026-01-20T12:00:00+00:00"
+   }
+  ],
+  "reports": [
+   {
+    "body": "## Today\n\n- 3 cards handed in\n- 1 question open (fx-7)\n",
+    "date": "2026-01-20",
+    "id": "r-0115-93e8",
+    "t": "2026-01-20T09:47:17+00:00",
+    "title": "Daily report"
+   },
+   {
+    "body": "golden report",
+    "date": "2026-01-20",
+    "id": "r-0120-684c",
+    "t": "2026-01-20T10:00:00+00:00",
+    "title": "Daily"
+   }
+  ],
+  "schedules": [
+   {
+    "by": "manager",
+    "created": "2026-01-20T09:52:50+00:00",
+    "enabled": true,
+    "end": null,
+    "id": "s-0115-6be5",
+    "kind": "task",
+    "last": "2026-01-20T10:00:00+00:00",
+    "next": "2026-01-21T09:00:00+00:00",
+    "routine": null,
+    "rule": {
+     "at": "09:00",
+     "type": "daily"
+    },
+    "runs": [
+     {
+      "at": "2026-01-20T10:00:00+00:00",
+      "for": "2026-01-20T10:00:00+00:00",
+      "late": 0,
+      "manual": true
+     }
+    ],
+    "said": "",
+    "task": {
+     "agent": "scout",
+     "item": null,
+     "text": "Collect overnight news into a card"
+    },
+    "title": "Morning digest",
+    "tz": "UTC"
+   },
+   {
+    "by": "manager",
+    "created": "2026-01-20T09:57:46+00:00",
+    "deleted": "2026-01-20T10:00:00+00:00",
+    "enabled": false,
+    "end": null,
+    "id": "s-0115-bde5",
+    "kind": "remind",
+    "last": null,
+    "next": "2026-01-24T07:38:35+00:00",
+    "routine": null,
+    "rule": {
+     "at": "10:00",
+     "days": [
+      1
+     ],
+     "type": "weekly"
+    },
+    "runs": [],
+    "said": "",
+    "task": {
+     "agent": null,
+     "item": null,
+     "text": ""
+    },
+    "title": "Weekly review",
+    "tz": "UTC"
+   },
+   {
+    "by": "manager",
+    "created": "2026-01-20T10:00:00+00:00",
+    "deleted": "2026-01-20T10:00:00+00:00",
+    "enabled": false,
+    "end": null,
+    "id": "s-0120-ac15",
+    "kind": "remind",
+    "last": "2026-01-20T10:00:00+00:00",
+    "next": "2026-01-21T08:00:00+00:00",
+    "routine": null,
+    "rule": {
+     "at": "08:00",
+     "type": "daily"
+    },
+    "runs": [
+     {
+      "at": "2026-01-20T10:00:00+00:00",
+      "for": "2026-01-20T10:00:00+00:00",
+      "late": 0,
+      "manual": true
+     }
+    ],
+    "said": "每周一提醒",
+    "task": {
+     "agent": null,
+     "item": null,
+     "text": ""
+    },
+    "title": "Golden remind",
+    "tz": "UTC"
+   }
+  ]
+ }
+}

@@ -26,8 +26,10 @@ def free_port():
 
 
 class FixtureServer:
-    def __init__(self, prepare=None):
-        """prepare(root): change the loaded copy before the server starts (e.g. make it look like an older install)."""
+    def __init__(self, prepare=None, env=None):
+        """prepare(root): change the loaded copy before the server starts (e.g. make it look like an older install).
+        env: extra environment for loading the fixtures, the server and su() (the golden test pins the clock this way)."""
+        self.env = dict(os.environ, **(env or {}))
         self.dir = tempfile.mkdtemp(prefix="rt-api-")
         self.root = os.path.join(self.dir, "rt")
 
@@ -37,12 +39,12 @@ class FixtureServer:
                 out |= {n for n in names if n in MODELS}
             return out
         shutil.copytree(ROOT, self.root, ignore=ignore, symlinks=True)
-        subprocess.run([sys.executable, os.path.join(ROOT, "tests", "e2e", "fixtures", "load.py"), self.root], check=True, capture_output=True)
+        subprocess.run([sys.executable, os.path.join(ROOT, "tests", "e2e", "fixtures", "load.py"), self.root], check=True, capture_output=True, env=self.env)
         if prepare:
             prepare(self.root)
         self.port = free_port()
         self.log = open(os.path.join(self.dir, "server.log"), "w")
-        env = dict(os.environ, PORT=str(self.port), NO_LOOPS="1")
+        env = dict(self.env, PORT=str(self.port), NO_LOOPS="1")
         self.p = subprocess.Popen([sys.executable, "server.py"], cwd=self.root, env=env, stdout=self.log, stderr=subprocess.STDOUT)
         t0 = time.time()
         while time.time() - t0 < 20:
@@ -82,7 +84,7 @@ class FixtureServer:
         return self.req("/api/action", "POST", body, {"Content-Type": "application/json", "Origin": o, "X-Underthread": "1"})
 
     def su(self, *args):
-        return subprocess.run([sys.executable, "stateutil.py", *args], cwd=self.root, capture_output=True, text=True, check=True).stdout
+        return subprocess.run([sys.executable, "stateutil.py", *args], cwd=self.root, capture_output=True, text=True, check=True, env=self.env).stdout
 
     def inbox(self):
         p = os.path.join(self.root, "inbox.jsonl")

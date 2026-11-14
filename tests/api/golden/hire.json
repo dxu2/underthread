@@ -1,0 +1,29 @@
+{
+ "plan": {
+  "body": {
+   "err": "these agent files differ from what make_agents.py would write (hand-edited?); make_agents would overwrite them:\n  .claude/agents/underthread-scout.md\n  .claude/agents/underthread-writer.md\n  .claude/agents/underthread-director.md\n  .claude/agents/underthread-artist.md\n  .claude/agents/underthread-ops.md\n  .claude/agents/underthread-smith.md\n",
+   "ok": false,
+   "op": "plan",
+   "out": ""
+  },
+  "code": 200
+ },
+ "plan_bad_id": {
+  "body": {
+   "error": "id 要小写字母开头，只用 a-z 0-9 -，2–16 个字"
+  },
+  "code": 400
+ },
+ "retire_core": {
+  "body": {
+   "error": "管家、HR、Smith不能退休"
+  },
+  "code": 400
+ },
+ "unknown_job": {
+  "body": {
+   "error": "no such template"
+  },
+  "code": 400
+ }
+}

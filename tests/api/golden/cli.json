@@ -1,0 +1,291 @@
+{
+ "archive_list": {
+  "err": [],
+  "out": "",
+  "rc": 0
+ },
+ "archive_sweep": {
+  "err": [],
+  "out": "archived 0, archive now 0\n",
+  "rc": 0
+ },
+ "ask": {
+  "err": [],
+  "out": "c04c2b\n",
+  "rc": 0
+ },
+ "ask_close": {
+  "err": [],
+  "out": "ok\n",
+  "rc": 0
+ },
+ "config_show": {
+  "err": [],
+  "out": "owner.display_name           \"You\"                                                        你改的\nport                         8765                                                         默认\nreport_time                  \"18:00\"                                                      你改的\nroutines                     []                                                           你改的\nallowed_hosts                []                                                           默认\nlegacy_headers               []                                                           默认\n",
+  "rc": 0
+ },
+ "config_show_json": {
+  "err": [],
+  "out": "[\n {\n  \"key\": \"owner.display_name\",\n  \"value\": \"You\",\n  \"from\": \"yours\"\n },\n {\n  \"key\": \"port\",\n  \"value\": 8765,\n  \"from\": \"default\"\n },\n {\n  \"key\": \"report_time\",\n  \"value\": \"18:00\",\n  \"from\": \"yours\"\n },\n {\n  \"key\": \"routines\",\n  \"value\": [],\n  \"from\": \"yours\"\n },\n {\n  \"key\": \"allowed_hosts\",\n  \"value\": [],\n  \"from\": \"default\"\n },\n {\n  \"key\": \"legacy_headers\",\n  \"value\": [],\n  \"from\": \"default\"\n }\n]\n",
+  "rc": 0
+ },
+ "dm_cli": {
+  "err": [],
+  "out": "ok\n",
+  "rc": 0
+ },
+ "handoff": {
+  "err": [],
+  "out": "{\"id\": \"c3d3eeeb\", \"t\": \"2026-01-20T10:00:00+00:00\", \"f\": \"writer\", \"to\": \"director\", \"item\": \"fx-2\", \"title\": \"周报邮件草稿\", \"via\": \"dispatch\"}\n",
+  "rc": 0
+ },
+ "handoffs_cli": {
+  "err": [],
+  "out": "01-20T10:00      smith -> ops       reassign fx-6  整理下载文件夹\n01-20T10:00     writer -> director  dispatch fx-2  周报邮件草稿\n",
+  "rc": 0
+ },
+ "help": {
+  "err": [],
+  "out": [
+   "archive",
+   "ask",
+   "ask-close",
+   "config",
+   "dm",
+   "handoff",
+   "handoffs",
+   "inbox-ack",
+   "inbox-pending",
+   "interview",
+   "items",
+   "lesson",
+   "log",
+   "notice",
+   "reply",
+   "report",
+   "say-mgr",
+   "schedule",
+   "schema",
+   "set-agent",
+   "set-stamina",
+   "set-usage",
+   "show",
+   "sleep",
+   "transcript",
+   "upsert-item"
+  ],
+  "rc": 0
+ },
+ "inbox_ack_all": {
+  "err": [],
+  "out": "acked 24\n",
+  "rc": 0
+ },
+ "inbox_pending": {
+  "err": [],
+  "out": "{\"kind\": \"new_task\", \"item\": \"q-0120-a5b9\", \"text\": \"Golden task\\nsecond line\", \"owner\": \"writer\", \"category\": \"side\", \"attachments\": [], \"id\": \"in-0120-5c51\", \"t\": \"2026-01-20T10:00:00+00:00\"}\n{\"kind\": \"new_task\", \"item\": \"q-0120-0611\", \"text\": \"No category given\", \"owner\": null, \"category\": null, \"attachments\": [], \"id\": \"in-0120-a80e\", \"t\": \"2026-01-20T10:00:00+00:00\"}\n{\"kind\": \"manager\", \"text\": \"golden chat\", \"attachments\": [], \"id\": \"in-0120-8beb\", \"t\": \"2026-01-20T10:00:00+00:00\"}\n{\"kind\": \"manager\", \"text\": \"quoting\", \"attachments\": [], \"reply_to\": \"e685c747\", \"reply_q\": \"golden chat\", \"id\": \"in-0120-b4bf\", \"t\": \"2026-01-20T10:00:00+00:00\"}\n{\"kind\": \"dm\", \"agent\": \"writer\", \"text\": \"golden dm\", \"attachments\": [], \"id\": \"in-0120-5152\", \"t\": \"2026-01-20T10:00:00+00:00\"}\n{\"kind\": \"comment\", \"item\": \"fx-5\", \"to\": \"ops\", \"text\": \"golden comment\", \"attachments\": [], \"id\": \"in-0120-93d0\", \"t\": \"2026-01-20T10:00:00+00:00\"}\n{\"kind\": \"comment\", \"item\": \"fx-1\", \"to\": \"scout\", \"text\": \"to scout\", \"attachments\": [], \"id\": \"in-0120-863f\", \"t\": \"2026-01-20T10:00:00+00:00\"}\n{\"kind\": \"approve\", \"item\": \"fx-3\", \"was\": \"plan\", \"note\": \"go\", \"id\": \"in-0120-0bf6\", \"t\": \"2026-01-20T10:00:00+00:00\"}\n{\"kind\": \"approve\", \"item\": \"q-demo-email\", \"was\": \"deliverable\", \"note\": null, \"id\": \"in-0120-ea89\", \"t\": \"2026-01-20T10:00:00+00:00\"}\n{\"kind\": \"reject\", \"item\": \"q-demo-plan\", \"reason\": \"tighter\", \"id\": \"in-0120-3e5d\", \"t\": \"2026-01-20T10:00:00+00:00\"}\n{\"kind\": \"answer\", \"item\": \"fx-7\", \"ask\": \"0d17d1\", \"q\": \"Which cities should the rent comparison cover?\", \"opt\": \"London\", \"to\": \"scout\", \"changed\": false, \"reply_to\": \"ask:0d17d1\", \"id\": \"in-0120-f633\", \"t\": \"2026-01-20T10:00:00+00:00\"}\n{\"kind\": \"done\", \"item\": \"q-demo-ask\", \"id\": \"in-0120-f9e9\", \"t\": \"2026-01-20T10:00:00+00:00\"}\n{\"kind\": \"reopen\", \"item\": \"fx-4\", \"id\": \"in-0120-be72\", \"t\": \"2026-01-20T10:00:00+00:00\"}\n{\"kind\": \"dispatch\", \"item\": \"fx-6\", \"owner\": \"ops\", \"id\": \"in-0120-52eb\", \"t\": \"2026-01-20T10:00:00+00:00\"}\n{\"kind\": \"done\", \"item\": \"fx-6\", \"id\": \"in-0120-31db\", \"t\": \"2026-01-20T10:00:00+00:00\"}\n{\"kind\": \"lesson\", \"id\": \"L-0115-8967\", \"decision\": \"adopted\", \"agent\": \"writer\", \"text\": \"Weekly updates open with the one decision the team must make.\", \"t\": \"2026-01-20T10:00:00+00:00\"}\n{\"kind\": \"ping\", \"note\": \"刷新用量\", \"id\": \"in-0120-3e43\", \"t\": \"2026-01-20T10:00:00+00:00\"}\n{\"kind\": \"report_request\", \"id\": \"in-0120-25f9\", \"t\": \"2026-01-20T10:00:00+00:00\"}\n{\"kind\": \"schedule_pause\", \"schedule\": \"s-0115-6be5\", \"title\": \"Morning digest\", \"item\": null, \"id\": \"in-0120-6e72\", \"t\": \"2026-01-20T10:00:00+00:00\"}\n{\"kind\": \"schedule_resume\", \"schedule\": \"s-0115-6be5\", \"title\": \"Morning digest\", \"item\": null, \"id\": \"in-0120-4174\", \"t\": \"2026-01-20T10:00:00+00:00\"}\n{\"kind\": \"schedule_due\", \"schedule\": \"s-0115-6be5\", \"type\": \"task\", \"title\": \"Morning digest\", \"text\": \"Collect overnight news into a card\", \"agent\": \"scout\", \"item\": null, \"for\": \"2026-01-20T10:00:00+00:00\", \"late_min\": 0, \"manual\": true, \"id\": \"in-0120-fbe5\", \"t\": \"2026-01-20T10:00:00+00:00\"}\n{\"kind\": \"schedule_fire\", \"schedule\": \"s-0115-6be5\", \"title\": \"Morning digest\", \"item\": null, \"id\": \"in-0120-c62e\", \"t\": \"2026-01-20T10:00:00+00:00\"}\n{\"kind\": \"schedule_rm\", \"schedule\": \"s-0115-bde5\", \"title\": \"Weekly review\", \"item\": null, \"id\": \"in-0120-bf48\", \"t\": \"2026-01-20T10:00:00+00:00\"}\n",
+  "rc": 0
+ },
+ "inbox_pending_after": {
+  "err": [
+   "(inbox empty)"
+  ],
+  "out": "",
+  "rc": 0
+ },
+ "interview_missing": {
+  "err": [
+   "nope is not an interview card"
+  ],
+  "out": "",
+  "rc": 1
+ },
+ "items": {
+  "err": [],
+  "out": "q-demo-plan\tmain\tdoing\tdirector\t搬家计划（示例）\nq-demo-tool\tdaily\tdoing\tsmith\t整理下载文件夹（示例）\nfx-1\tdaily\tdoing\tscout\t比较三款降噪耳机\nfx-2\tside\tdoing\twriter\t周报邮件草稿\nfx-3\tmain\tdoing\tdirector\t搬家计划\nfx-4\tside\tdoing\tartist\t活动海报三版\nfx-5\tdaily\tdoing\tops\t下周日程整理\nfx-7\tdaily\treview\tscout\t要比较哪些城市？\nq-0120-a5b9\tside\ttodo\twriter\tGolden task\nq-0120-0611\tdaily\ttodo\tmanager\tNo category given\n",
+  "rc": 0
+ },
+ "items_owner_all": {
+  "err": [],
+  "out": "q-demo-email\tside\tdone\twriter\t给房东的邮件（示例）\nfx-2\tside\tdoing\twriter\t周报邮件草稿\nq-0120-a5b9\tside\ttodo\twriter\tGolden task\n",
+  "rc": 0
+ },
+ "items_review": {
+  "err": [],
+  "out": "fx-7\tdaily\treview\tscout\t要比较哪些城市？\n",
+  "rc": 0
+ },
+ "lesson_cli": {
+  "err": [],
+  "out": "L-0120-81e0\n",
+  "rc": 0
+ },
+ "log": {
+  "err": [],
+  "out": "ok\n",
+  "rc": 0
+ },
+ "notice": {
+  "err": [],
+  "out": "ok\n",
+  "rc": 0
+ },
+ "reply": {
+  "err": [],
+  "out": "ok\n",
+  "rc": 0
+ },
+ "report": {
+  "err": [],
+  "out": "r-0120-684c\n",
+  "rc": 0
+ },
+ "say_mgr": {
+  "err": [],
+  "out": "ok\n",
+  "rc": 0
+ },
+ "sched_add": {
+  "err": [],
+  "out": "s-0120-ac15\n提醒 · 每周一 09:00 · Golden remind\n时区 UTC\n接下来：\n  2026-01-26 Mon 09:00 UTC\n  2026-02-02 Mon 09:00 UTC\n  2026-02-09 Mon 09:00 UTC\n",
+  "rc": 0
+ },
+ "sched_add_dry": {
+  "err": [],
+  "out": "(dry run, nothing saved)\n提醒 · 每天 09:00 · Golden remind\n时区 UTC\n接下来：\n  2026-01-21 Wed 09:00 UTC\n  2026-01-22 Thu 09:00 UTC\n  2026-01-23 Fri 09:00 UTC\n",
+  "rc": 0
+ },
+ "sched_bad_rule": {
+  "err": [
+   "<usage error>"
+  ],
+  "out": "",
+  "rc": 2
+ },
+ "sched_edit": {
+  "err": [],
+  "out": "提醒 · 每天 08:00 · Golden remind\n时区 UTC\n接下来：\n  2026-01-21 Wed 08:00 UTC\n  2026-01-22 Thu 08:00 UTC\n  2026-01-23 Fri 08:00 UTC\n",
+  "rc": 0
+ },
+ "sched_fire": {
+  "err": [],
+  "out": "{\"kind\": \"schedule_due\", \"schedule\": \"s-0120-ac15\", \"type\": \"remind\", \"title\": \"Golden remind\", \"text\": \"\", \"agent\": null, \"item\": null, \"for\": \"2026-01-20T10:00:00+00:00\", \"late_min\": 0, \"manual\": true}\n",
+  "rc": 0
+ },
+ "sched_list": {
+  "err": [],
+  "out": "s-0115-6be5            开 task   每天 09:00           下次 2026-01-21 09:00 Morning digest @scout\ns-0120-ac15            开 remind 每周一 09:00          下次 2026-01-26 09:00 Golden remind\n",
+  "rc": 0
+ },
+ "sched_list_json": {
+  "err": [],
+  "out": "[\n {\n  \"by\": \"manager\",\n  \"created\": \"2026-01-20T09:52:50+00:00\",\n  \"enabled\": true,\n  \"end\": null,\n  \"id\": \"s-0115-6be5\",\n  \"kind\": \"task\",\n  \"last\": \"2026-01-20T10:00:00+00:00\",\n  \"next\": \"2026-01-21T09:00:00+00:00\",\n  \"routine\": null,\n  \"rule\": {\n   \"at\": \"09:00\",\n   \"type\": \"daily\"\n  },\n  \"runs\": [\n   {\n    \"for\": \"2026-01-20T10:00:00+00:00\",\n    \"at\": \"2026-01-20T10:00:00+00:00\",\n    \"late\": 0,\n    \"manual\": true\n   }\n  ],\n  \"said\": \"\",\n  \"task\": {\n   \"agent\": \"scout\",\n   \"item\": null,\n   \"text\": \"Collect overnight news into a card\"\n  },\n  \"title\": \"Morning digest\",\n  \"tz\": \"UTC\"\n },\n {\n  \"id\": \"s-0120-ac15\",\n  \"title\": \"Golden remind\",\n  \"kind\": \"remind\",\n  \"rule\": {\n   \"type\": \"weekly\",\n   \"at\": \"09:00\",\n   \"days\": [\n    1\n   ]\n  },\n  \"tz\": \"UTC\",\n  \"task\": {\n   \"text\": \"\",\n   \"agent\": null,\n   \"item\": null\n  },\n  \"said\": \"每周一提醒\",\n  \"enabled\": true,\n  \"next\": \"2026-01-26T09:00:00+00:00\",\n  \"last\": null,\n  \"runs\": [],\n  \"created\": \"2026-01-20T10:00:00+00:00\",\n  \"by\": \"manager\",\n  \"routine\": null,\n  \"end\": null\n }\n]\n",
+  "rc": 0
+ },
+ "sched_pause": {
+  "err": [],
+  "out": "paused s-0120-ac15\n",
+  "rc": 0
+ },
+ "sched_resume": {
+  "err": [],
+  "out": "resumed s-0120-ac15 next 2026-01-21T08:00:00+00:00\n",
+  "rc": 0
+ },
+ "sched_rm": {
+  "err": [],
+  "out": "removed s-0120-ac15\n",
+  "rc": 0
+ },
+ "sched_show": {
+  "err": [],
+  "out": "{\n \"id\": \"s-0120-ac15\",\n \"title\": \"Golden remind\",\n \"kind\": \"remind\",\n \"rule\": {\n  \"type\": \"weekly\",\n  \"at\": \"09:00\",\n  \"days\": [\n   1\n  ]\n },\n \"tz\": \"UTC\",\n \"task\": {\n  \"text\": \"\",\n  \"agent\": null,\n  \"item\": null\n },\n \"said\": \"每周一提醒\",\n \"enabled\": true,\n \"next\": \"2026-01-26T09:00:00+00:00\",\n \"last\": null,\n \"runs\": [],\n \"created\": \"2026-01-20T10:00:00+00:00\",\n \"by\": \"manager\",\n \"routine\": null,\n \"end\": null\n}\n",
+  "rc": 0
+ },
+ "schema": {
+  "err": [],
+  "out": "code 2 (0001_baseline, 0002_routines_log)\n  state   2\n  config  0\n  roster  0\n  config / roster carry _schema only after a step changed them; 0 there is normal\n  2026-01-20T06:39:49  0 -> 2  0001_baseline, 0002_routines_log\n",
+  "rc": 0
+ },
+ "schema_json": {
+  "err": [],
+  "out": "{\n \"code\": 2,\n \"steps\": [\n  \"0001_baseline\",\n  \"0002_routines_log\"\n ],\n \"state\": 2,\n \"config\": 0,\n \"roster\": 0,\n \"ahead\": [],\n \"log\": [\n  {\n   \"at\": \"2026-01-20T06:39:49+00:00\",\n   \"from\": 0,\n   \"ran\": [\n    \"0001_baseline\",\n    \"0002_routines_log\"\n   ],\n   \"to\": 2\n  }\n ]\n}\n",
+  "rc": 0
+ },
+ "set_agent": {
+  "err": [],
+  "out": "ok\n",
+  "rc": 0
+ },
+ "set_agent_by_name": {
+  "err": [],
+  "out": "ok\n",
+  "rc": 0
+ },
+ "set_agent_tool": {
+  "err": [],
+  "out": "ok\n",
+  "rc": 0
+ },
+ "set_agent_wake": {
+  "err": [],
+  "out": "ok\n",
+  "rc": 0
+ },
+ "set_stamina": {
+  "err": [],
+  "out": "ok\n",
+  "rc": 0
+ },
+ "set_usage": {
+  "err": [],
+  "out": "ok\n",
+  "rc": 0
+ },
+ "show": {
+  "err": [],
+  "out": "{\n \"activity\": \"2026-01-20T10:00:00+00:00\",\n \"asks\": [\n  {\n   \"answer\": {\n    \"opt\": \"London\",\n    \"by\": \"me\",\n    \"t\": \"2026-01-20T10:00:00+00:00\"\n   },\n   \"by\": \"scout\",\n   \"id\": \"0d17d1\",\n   \"options\": [\n    \"London\",\n    \"Berlin\",\n    \"Lisbon\"\n   ],\n   \"other\": true,\n   \"q\": \"Which cities should the rent comparison cover?\",\n   \"rec\": \"Berlin\",\n   \"t\": \"2026-01-20T09:10:17+00:00\"\n  }\n ],\n \"attachments\": [],\n \"category\": \"daily\",\n \"confidence\": \"med\",\n \"confidence_note\": \"Fixture card\",\n \"created\": \"2026-01-20T08:53:01+00:00\",\n \"draft\": \"Which cities do you want in the rent comparison?\",\n \"draft_at\": \"2026-01-20T09:09:03+00:00\",\n \"draft_attachments\": [],\n \"draft_label\": \"v1\",\n \"due\": null,\n \"evidence\": [],\n \"id\": \"fx-7\",\n \"kind\": \"question\",\n \"links\": [],\n \"owner\": \"scout\",\n \"platforms\": [],\n \"rejects\": 0,\n \"stage\": \"review\",\n \"summary\": \"Scout needs one answer before starting.\",\n \"summary_en\": \"Scout needs one answer before starting.\",\n \"tags\": [],\n \"thread\": [\n  {\n   \"id\": \"fb24d990\",\n   \"kind\": \"event\",\n   \"t\": \"2026-01-20T08:55:29+00:00\",\n   \"text\": \"created · 要比较哪些城市？\",\n   \"who\": \"manager\"\n  },\n  {\n   \"id\": \"988a2811\",\n   \"kind\": \"event\",\n   \"t\": \"2026-01-20T08:59:11+00:00\",\n   \"text\": \"stage todo → doing\",\n   \"who\": \"scout\"\n  },\n  {\n   \"id\": \"ae95bf8e\",\n   \"kind\": \"log\",\n   \"t\": \"2026-01-20T09:05:58+00:00\",\n   \"text\": \"Waiting for your answer\",\n   \"who\": \"scout\"\n  },\n  {\n   \"id\": \"94b651e9\",\n   \"kind\": \"event\",\n   \"t\": \"2026-01-20T09:10:54+00:00\",\n   \"text\": \"提问 · Which cities should the rent comparison cover?（London / Berlin（推荐） / Lisbon）\",\n   \"who\": \"scout\"\n  },\n  {\n   \"id\": \"2da27440\",\n   \"kind\": \"event\",\n   \"t\": \"2026-01-20T09:11:31+00:00\",\n   \"text\": \"提交审核 · submitted for review\",\n   \"who\": \"scout\"\n  },\n  {\n   \"id\": \"1d8c35c3\",\n   \"t\": \"2026-01-20T10:00:00+00:00\",\n   \"who\": \"me\",\n   \"text\": \"回答 · Which cities should the rent comparison cover? → London\",\n   \"kind\": \"msg\",\n   \"to\": \"scout\",\n   \"reply_to\": \"ask:0d17d1\"\n  }\n ],\n \"title\": \"要比较哪些城市？\",\n \"title_en\": \"Which cities should the rent comparison cover?\",\n \"updated\": \"2026-01-20T10:00:00+00:00\",\n \"versions\": \"<0 older drafts>\"\n}\n",
+  "rc": 0
+ },
+ "show_full": {
+  "err": [],
+  "out": "{\n \"activity\": \"2026-01-20T07:23:36+00:00\",\n \"attachments\": [],\n \"category\": \"side\",\n \"confidence\": null,\n \"confidence_note\": \"\",\n \"created\": \"2026-01-20T07:07:34+00:00\",\n \"draft\": \"\",\n \"due\": null,\n \"evidence\": [],\n \"id\": \"fx-2\",\n \"kind\": \"deliverable\",\n \"links\": [],\n \"owner\": \"writer\",\n \"platforms\": [],\n \"rejects\": 0,\n \"stage\": \"doing\",\n \"summary\": \"A short update for the team, ready to copy.\",\n \"summary_en\": \"A short update for the team, ready to copy.\",\n \"tags\": [],\n \"thread\": [\n  {\n   \"id\": \"a9dcc471\",\n   \"kind\": \"event\",\n   \"t\": \"2026-01-20T07:10:02+00:00\",\n   \"text\": \"created · 周报邮件草稿\",\n   \"who\": \"manager\"\n  },\n  {\n   \"id\": \"c53504a6\",\n   \"kind\": \"event\",\n   \"t\": \"2026-01-20T07:13:44+00:00\",\n   \"text\": \"stage todo → doing\",\n   \"who\": \"writer\"\n  },\n  {\n   \"id\": \"d829a422\",\n   \"kind\": \"log\",\n   \"t\": \"2026-01-20T07:20:31+00:00\",\n   \"text\": \"Collecting what closed this week\",\n   \"who\": \"writer\"\n  },\n  {\n   \"id\": \"a7794402\",\n   \"kind\": \"log\",\n   \"t\": \"2026-01-20T07:23:36+00:00\",\n   \"text\": \"Tightening the opening\",\n   \"who\": \"writer\"\n  }\n ],\n \"title\": \"周报邮件草稿\",\n \"title_en\": \"Draft of the weekly update email\",\n \"updated\": \"2026-01-20T07:13:07+00:00\",\n \"versions\": []\n}\n",
+  "rc": 0
+ },
+ "show_missing": {
+  "err": [
+   "no item nope"
+  ],
+  "out": "",
+  "rc": 1
+ },
+ "sleep": {
+  "err": [],
+  "out": "ok\n",
+  "rc": 0
+ },
+ "transcript_missing": {
+  "err": [
+   "no media entry for uploads/nope.m4a (not a voice memo, or uploaded before transcription existed)"
+  ],
+  "out": "",
+  "rc": 1
+ },
+ "upsert_bad_stage": {
+  "err": [
+   "<usage error>"
+  ],
+  "out": "",
+  "rc": 2
+ },
+ "upsert_draft": {
+  "err": [],
+  "out": "fx-2\n",
+  "rc": 0
+ },
+ "upsert_new": {
+  "err": [],
+  "out": "q-0120-9d20\n",
+  "rc": 0
+ }
+}

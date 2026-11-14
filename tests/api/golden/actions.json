@@ -1,0 +1,1787 @@
+{
+ "answer": {
+  "body": {
+   "inbox": "in-0120-f633",
+   "ok": true
+  },
+  "code": 200,
+  "inbox": [
+   {
+    "ask": "0d17d1",
+    "changed": false,
+    "id": "in-0120-f633",
+    "item": "fx-7",
+    "kind": "answer",
+    "opt": "London",
+    "q": "Which cities should the rent comparison cover?",
+    "reply_to": "ask:0d17d1",
+    "t": "2026-01-20T10:00:00+00:00",
+    "to": "scout"
+   }
+  ],
+  "item": {
+   "activity": "2026-01-20T10:00:00+00:00",
+   "asks": [
+    {
+     "answer": {
+      "by": "me",
+      "opt": "London",
+      "t": "2026-01-20T10:00:00+00:00"
+     },
+     "by": "scout",
+     "id": "0d17d1",
+     "options": [
+      "London",
+      "Berlin",
+      "Lisbon"
+     ],
+     "other": true,
+     "q": "Which cities should the rent comparison cover?",
+     "rec": "Berlin",
+     "t": "2026-01-20T09:10:17+00:00"
+    }
+   ],
+   "attachments": [],
+   "category": "daily",
+   "confidence": "med",
+   "confidence_note": "Fixture card",
+   "created": "2026-01-20T08:53:01+00:00",
+   "draft": "Which cities do you want in the rent comparison?",
+   "draft_at": "2026-01-20T09:09:03+00:00",
+   "draft_attachments": [],
+   "draft_label": "v1",
+   "due": null,
+   "evidence": [],
+   "id": "fx-7",
+   "kind": "question",
+   "links": [],
+   "owner": "scout",
+   "platforms": [],
+   "rejects": 0,
+   "stage": "review",
+   "summary": "Scout needs one answer before starting.",
+   "summary_en": "Scout needs one answer before starting.",
+   "tags": [],
+   "thread": [
+    {
+     "id": "fb24d990",
+     "kind": "event",
+     "t": "2026-01-20T08:55:29+00:00",
+     "text": "created · 要比较哪些城市？",
+     "who": "manager"
+    },
+    {
+     "id": "988a2811",
+     "kind": "event",
+     "t": "2026-01-20T08:59:11+00:00",
+     "text": "stage todo → doing",
+     "who": "scout"
+    },
+    {
+     "id": "ae95bf8e",
+     "kind": "log",
+     "t": "2026-01-20T09:05:58+00:00",
+     "text": "Waiting for your answer",
+     "who": "scout"
+    },
+    {
+     "id": "94b651e9",
+     "kind": "event",
+     "t": "2026-01-20T09:10:54+00:00",
+     "text": "提问 · Which cities should the rent comparison cover?（London / Berlin（推荐） / Lisbon）",
+     "who": "scout"
+    },
+    {
+     "id": "2da27440",
+     "kind": "event",
+     "t": "2026-01-20T09:11:31+00:00",
+     "text": "提交审核 · submitted for review",
+     "who": "scout"
+    },
+    {
+     "id": "1d8c35c3",
+     "kind": "msg",
+     "reply_to": "ask:0d17d1",
+     "t": "2026-01-20T10:00:00+00:00",
+     "text": "回答 · Which cities should the rent comparison cover? → London",
+     "to": "scout",
+     "who": "me"
+    }
+   ],
+   "title": "要比较哪些城市？",
+   "title_en": "Which cities should the rent comparison cover?",
+   "updated": "2026-01-20T10:00:00+00:00",
+   "versions": []
+  }
+ },
+ "approve_deliverable": {
+  "body": {
+   "inbox": "in-0120-ea89",
+   "ok": true
+  },
+  "code": 200,
+  "inbox": [
+   {
+    "id": "in-0120-ea89",
+    "item": "q-demo-email",
+    "kind": "approve",
+    "note": null,
+    "t": "2026-01-20T10:00:00+00:00",
+    "was": "deliverable"
+   }
+  ],
+  "item": {
+   "activity": "2026-01-20T10:00:00+00:00",
+   "approved": "2026-01-20T10:00:00+00:00",
+   "attachments": [],
+   "category": "side",
+   "closed": "2026-01-20T10:00:00+00:00",
+   "confidence": "high",
+   "confidence_note": "",
+   "created": "2026-01-20T06:38:35+00:00",
+   "draft": "**主题**：退租通知\n\n您好，……\n\n（队员只写草稿，从不替你发送。）",
+   "draft_en": "**Subject**: Notice of moving out\n\nHello, …\n\n(Teammates only draft. They never send anything for you.)",
+   "due": null,
+   "evidence": [],
+   "id": "q-demo-email",
+   "kind": "deliverable",
+   "links": [],
+   "owner": "writer",
+   "platforms": [],
+   "rejects": 0,
+   "stage": "done",
+   "summary": "示例交付：邮件草稿写好了，确认后你自己复制发送。",
+   "summary_en": "Sample deliverable: the email draft is ready; approve it, then copy and send it yourself.",
+   "tags": [
+    "示例"
+   ],
+   "tags_en": [
+    "sample"
+   ],
+   "thread": [
+    {
+     "id": "aab7e214",
+     "kind": "approve",
+     "t": "2026-01-20T10:00:00+00:00",
+     "text": "验收 · 关单",
+     "who": "me"
+    }
+   ],
+   "title": "给房东的邮件（示例）",
+   "title_en": "Email to the landlord (sample)",
+   "updated": "2026-01-20T10:00:00+00:00",
+   "versions": []
+  }
+ },
+ "approve_plan": {
+  "body": {
+   "inbox": "in-0120-0bf6",
+   "ok": true
+  },
+  "code": 200,
+  "inbox": [
+   {
+    "id": "in-0120-0bf6",
+    "item": "fx-3",
+    "kind": "approve",
+    "note": "go",
+    "t": "2026-01-20T10:00:00+00:00",
+    "was": "plan"
+   }
+  ],
+  "item": {
+   "activity": "2026-01-20T10:00:00+00:00",
+   "approved": "2026-01-20T10:00:00+00:00",
+   "attachments": [],
+   "category": "main",
+   "confidence": "med",
+   "confidence_note": "Fixture card",
+   "created": "2026-01-20T07:26:41+00:00",
+   "draft": "## Plan\n\n| Step | Owner | Done when | Date |\n|---|---|---|---|\n| Get three quotes | Scout | table in the card | Mon |\n| Change of address list | Signal | list ticked off | Wed |\n| Packing checklist | Lens | checklist in the card | Fri |\n\nFirst step today: ask Scout for the quotes.",
+   "draft_at": "2026-01-20T07:45:48+00:00",
+   "draft_attachments": [],
+   "draft_label": "v1",
+   "due": null,
+   "evidence": [],
+   "id": "fx-3",
+   "kind": "plan",
+   "links": [],
+   "owner": "director",
+   "platforms": [],
+   "rejects": 0,
+   "stage": "doing",
+   "summary": "Steps, owners and dates for moving at the end of next month.",
+   "summary_en": "Steps, owners and dates for moving at the end of next month.",
+   "tags": [],
+   "thread": [
+    {
+     "id": "a99baaa3",
+     "kind": "event",
+     "t": "2026-01-20T07:29:09+00:00",
+     "text": "created · 搬家计划",
+     "who": "manager"
+    },
+    {
+     "id": "946bb8ea",
+     "kind": "event",
+     "t": "2026-01-20T07:32:51+00:00",
+     "text": "stage todo → doing",
+     "who": "director"
+    },
+    {
+     "id": "fb6e3d66",
+     "kind": "log",
+     "t": "2026-01-20T07:39:38+00:00",
+     "text": "Listing the steps",
+     "who": "director"
+    },
+    {
+     "id": "01ea13c4",
+     "kind": "log",
+     "t": "2026-01-20T07:42:43+00:00",
+     "text": "Checking the dates against your calendar",
+     "who": "director"
+    },
+    {
+     "id": "454f7be5",
+     "kind": "event",
+     "t": "2026-01-20T07:47:02+00:00",
+     "text": "提交审核 · submitted for review",
+     "who": "director"
+    },
+    {
+     "id": "3e82faf2",
+     "kind": "approve",
+     "t": "2026-01-20T10:00:00+00:00",
+     "text": "批准开工 · go",
+     "who": "me"
+    }
+   ],
+   "title": "搬家计划",
+   "title_en": "Plan for the move",
+   "updated": "2026-01-20T10:00:00+00:00",
+   "versions": []
+  }
+ },
+ "archive": {
+  "body": {
+   "inbox": null,
+   "ok": true
+  },
+  "code": 200,
+  "inbox": [],
+  "item": {
+   "activity": "2026-01-20T10:00:00+00:00",
+   "archived": true,
+   "attachments": [],
+   "category": "side",
+   "confidence": "med",
+   "confidence_note": "Fixture card",
+   "created": "2026-01-20T07:52:35+00:00",
+   "draft": "Three directions: **1. Bold type** (recommended, reads from across the room), 2. Photo-led, 3. Illustrated.\n\nFonts are OFL. No stock photos used.",
+   "draft_at": "2026-01-20T08:11:42+00:00",
+   "draft_attachments": [],
+   "draft_label": "v1",
+   "due": null,
+   "evidence": [],
+   "id": "fx-4",
+   "kind": "deliverable",
+   "links": [],
+   "owner": "artist",
+   "platforms": [],
+   "rejects": 0,
+   "stage": "doing",
+   "summary": "A4 poster, three directions.",
+   "summary_en": "A4 poster, three directions.",
+   "tags": [],
+   "thread": [
+    {
+     "id": "66b2f2fd",
+     "kind": "event",
+     "t": "2026-01-20T07:55:03+00:00",
+     "text": "created · 活动海报三版",
+     "who": "manager"
+    },
+    {
+     "id": "7a498e12",
+     "kind": "event",
+     "t": "2026-01-20T07:58:45+00:00",
+     "text": "stage todo → doing",
+     "who": "artist"
+    },
+    {
+     "id": "341ead60",
+     "kind": "log",
+     "t": "2026-01-20T08:05:32+00:00",
+     "text": "Sketching layouts",
+     "who": "artist"
+    },
+    {
+     "id": "201eab82",
+     "kind": "log",
+     "t": "2026-01-20T08:08:37+00:00",
+     "text": "Exporting three options",
+     "who": "artist"
+    },
+    {
+     "id": "fbc3e79c",
+     "kind": "event",
+     "t": "2026-01-20T08:12:56+00:00",
+     "text": "提交审核 · submitted for review",
+     "who": "artist"
+    },
+    {
+     "id": "06bd048b",
+     "kind": "event",
+     "t": "2026-01-20T08:18:29+00:00",
+     "text": "stage review → done",
+     "who": "me"
+    },
+    {
+     "id": "ec5b29da",
+     "kind": "event",
+     "t": "2026-01-20T10:00:00+00:00",
+     "text": "重开 · reopened",
+     "who": "me"
+    }
+   ],
+   "title": "活动海报三版",
+   "title_en": "Three poster options for the meetup",
+   "updated": "2026-01-20T10:00:00+00:00",
+   "versions": []
+  }
+ },
+ "calendar_add": {
+  "body": {
+   "inbox": null,
+   "ok": true
+  },
+  "code": 200,
+  "inbox": []
+ },
+ "calendar_del": {
+  "body": {
+   "inbox": null,
+   "ok": true
+  },
+  "code": 200,
+  "inbox": []
+ },
+ "chat": {
+  "body": {
+   "inbox": "in-0120-8beb",
+   "ok": true
+  },
+  "code": 200,
+  "inbox": [
+   {
+    "attachments": [],
+    "id": "in-0120-8beb",
+    "kind": "manager",
+    "t": "2026-01-20T10:00:00+00:00",
+    "text": "golden chat"
+   }
+  ]
+ },
+ "chat_reply": {
+  "body": {
+   "inbox": "in-0120-b4bf",
+   "ok": true
+  },
+  "code": 200,
+  "inbox": [
+   {
+    "attachments": [],
+    "id": "in-0120-b4bf",
+    "kind": "manager",
+    "reply_q": "golden chat",
+    "reply_to": "e685c747",
+    "t": "2026-01-20T10:00:00+00:00",
+    "text": "quoting"
+   }
+  ]
+ },
+ "chat_seen": {
+  "body": {
+   "inbox": null,
+   "ok": true
+  },
+  "code": 200,
+  "inbox": []
+ },
+ "chat_seen_bad": {
+  "body": {
+   "error": "bad chat_seen"
+  },
+  "code": 400,
+  "inbox": []
+ },
+ "comment": {
+  "body": {
+   "inbox": "in-0120-93d0",
+   "ok": true
+  },
+  "code": 200,
+  "inbox": [
+   {
+    "attachments": [],
+    "id": "in-0120-93d0",
+    "item": "fx-5",
+    "kind": "comment",
+    "t": "2026-01-20T10:00:00+00:00",
+    "text": "golden comment",
+    "to": "ops"
+   }
+  ],
+  "item": {
+   "activity": "2026-01-20T10:00:00+00:00",
+   "attachments": [],
+   "category": "daily",
+   "confidence": "med",
+   "confidence_note": "Fixture card",
+   "created": "2026-01-20T08:21:34+00:00",
+   "draft": "- Tuesday: the dentist and the design review overlapped; moved the review to 15:00 (draft message to the team below).\n- Thursday: nothing booked after 14:00, kept free for focus work.\n\n> Hi, could we move the design review to 15:00 Tuesday?",
+   "draft_at": "2026-01-20T08:40:41+00:00",
+   "draft_attachments": [],
+   "draft_label": "v1",
+   "due": null,
+   "evidence": [],
+   "id": "fx-5",
+   "kind": "deliverable",
+   "links": [],
+   "owner": "ops",
+   "platforms": [],
+   "rejects": 0,
+   "stage": "doing",
+   "summary": "Two clashes found and fixed.",
+   "summary_en": "Two clashes found and fixed.",
+   "tags": [],
+   "thread": [
+    {
+     "id": "7cb2ef1a",
+     "kind": "event",
+     "t": "2026-01-20T08:24:02+00:00",
+     "text": "created · 下周日程整理",
+     "who": "manager"
+    },
+    {
+     "id": "9e7deebe",
+     "kind": "event",
+     "t": "2026-01-20T08:27:44+00:00",
+     "text": "stage todo → doing",
+     "who": "ops"
+    },
+    {
+     "id": "fde7e16a",
+     "kind": "log",
+     "t": "2026-01-20T08:34:31+00:00",
+     "text": "Reading the calendar",
+     "who": "ops"
+    },
+    {
+     "id": "071ce884",
+     "kind": "log",
+     "t": "2026-01-20T08:37:36+00:00",
+     "text": "Moving the clashing call",
+     "who": "ops"
+    },
+    {
+     "id": "11084c19",
+     "kind": "event",
+     "t": "2026-01-20T08:41:55+00:00",
+     "text": "提交审核 · submitted for review",
+     "who": "ops"
+    },
+    {
+     "id": "f6d61f1d",
+     "kind": "msg",
+     "t": "2026-01-20T10:00:00+00:00",
+     "text": "golden comment",
+     "to": "ops",
+     "who": "me"
+    }
+   ],
+   "title": "下周日程整理",
+   "title_en": "Next week's calendar, cleaned up",
+   "updated": "2026-01-20T10:00:00+00:00",
+   "versions": []
+  }
+ },
+ "comment_to": {
+  "body": {
+   "inbox": "in-0120-863f",
+   "ok": true
+  },
+  "code": 200,
+  "inbox": [
+   {
+    "attachments": [],
+    "id": "in-0120-863f",
+    "item": "fx-1",
+    "kind": "comment",
+    "t": "2026-01-20T10:00:00+00:00",
+    "text": "to scout",
+    "to": "scout"
+   }
+  ],
+  "item": {
+   "activity": "2026-01-20T10:00:00+00:00",
+   "attachments": [],
+   "category": "daily",
+   "confidence": "med",
+   "confidence_note": "Fixture card",
+   "created": "2026-01-20T06:41:40+00:00",
+   "draft": "**Pick: model B.** Best noise cancelling for the price; model A is lighter but weaker on low hum.\n\n| | A | B | C |\n|---|---|---|---|\n| Price | $$ | $$ | $$$ |\n| Noise cancelling | ok | strong | strong |\n| Battery | 30 h | 30 h | 24 h |\n| Weight | light | medium | heavy |\n\nSources are listed under evidence. Prices not checked today.",
+   "draft_at": "2026-01-20T07:00:47+00:00",
+   "draft_attachments": [],
+   "draft_label": "v1",
+   "due": null,
+   "evidence": [],
+   "id": "fx-1",
+   "kind": "deliverable",
+   "links": [],
+   "owner": "scout",
+   "platforms": [],
+   "rejects": 0,
+   "stage": "doing",
+   "summary": "Which pair to buy for flights and the office.",
+   "summary_en": "Which pair to buy for flights and the office.",
+   "tags": [],
+   "thread": [
+    {
+     "id": "501cce9d",
+     "kind": "event",
+     "t": "2026-01-20T06:44:08+00:00",
+     "text": "created · 比较三款降噪耳机",
+     "who": "manager"
+    },
+    {
+     "id": "5dd290e9",
+     "kind": "event",
+     "t": "2026-01-20T06:47:50+00:00",
+     "text": "stage todo → doing",
+     "who": "scout"
+    },
+    {
+     "id": "f9806b85",
+     "kind": "log",
+     "t": "2026-01-20T06:54:37+00:00",
+     "text": "Reading three long reviews",
+     "who": "scout"
+    },
+    {
+     "id": "33794435",
+     "kind": "log",
+     "t": "2026-01-20T06:57:42+00:00",
+     "text": "Building the comparison table",
+     "who": "scout"
+    },
+    {
+     "id": "257ae823",
+     "kind": "event",
+     "t": "2026-01-20T07:02:01+00:00",
+     "text": "提交审核 · submitted for review",
+     "who": "scout"
+    },
+    {
+     "id": "6d1ebebd",
+     "kind": "msg",
+     "t": "2026-01-20T09:17:41+00:00",
+     "text": "Model B wins on noise cancelling; table is in the draft.",
+     "who": "scout"
+    },
+    {
+     "id": "f9d7babc",
+     "kind": "msg",
+     "t": "2026-01-20T10:00:00+00:00",
+     "text": "to scout",
+     "to": "scout",
+     "who": "me"
+    }
+   ],
+   "title": "比较三款降噪耳机",
+   "title_en": "Compare three noise-cancelling headphones",
+   "updated": "2026-01-20T10:00:00+00:00",
+   "versions": []
+  }
+ },
+ "dm": {
+  "body": {
+   "inbox": "in-0120-5152",
+   "ok": true
+  },
+  "code": 200,
+  "inbox": [
+   {
+    "agent": "writer",
+    "attachments": [],
+    "id": "in-0120-5152",
+    "kind": "dm",
+    "t": "2026-01-20T10:00:00+00:00",
+    "text": "golden dm"
+   }
+  ]
+ },
+ "dm_manager_refused": {
+  "body": {
+   "error": "use chat for the manager"
+  },
+  "code": 400,
+  "inbox": []
+ },
+ "done_open_ask": {
+  "body": {
+   "inbox": "in-0120-f9e9",
+   "ok": true
+  },
+  "code": 200,
+  "inbox": [
+   {
+    "id": "in-0120-f9e9",
+    "item": "q-demo-ask",
+    "kind": "done",
+    "t": "2026-01-20T10:00:00+00:00"
+   }
+  ],
+  "item": {
+   "activity": "2026-01-20T10:00:00+00:00",
+   "attachments": [],
+   "category": "daily",
+   "closed": "2026-01-20T10:00:00+00:00",
+   "confidence": null,
+   "confidence_note": "",
+   "created": "2026-01-20T06:38:35+00:00",
+   "draft": "你想比较哪几个城市的房租？",
+   "draft_en": "Which cities do you want rent compared for?",
+   "due": null,
+   "evidence": [],
+   "id": "q-demo-ask",
+   "kind": "question",
+   "links": [],
+   "owner": "scout",
+   "platforms": [],
+   "rejects": 0,
+   "stage": "done",
+   "summary": "研究员在等你回答一个问题。",
+   "summary_en": "The researcher is waiting for your answer.",
+   "tags": [
+    "示例"
+   ],
+   "tags_en": [
+    "sample"
+   ],
+   "thread": [
+    {
+     "id": "59392cbe",
+     "kind": "done",
+     "t": "2026-01-20T10:00:00+00:00",
+     "text": "完成 · mission complete",
+     "who": "me"
+    }
+   ],
+   "title": "要比较哪几个城市？（示例）",
+   "title_en": "Which cities should I compare? (sample)",
+   "updated": "2026-01-20T10:00:00+00:00",
+   "versions": []
+  }
+ },
+ "lesson": {
+  "body": {
+   "inbox": "L-0115-8967",
+   "ok": true
+  },
+  "code": 200,
+  "inbox": [
+   {
+    "agent": "writer",
+    "decision": "adopted",
+    "id": "L-0115-8967",
+    "kind": "lesson",
+    "t": "2026-01-20T10:00:00+00:00",
+    "text": "Weekly updates open with the one decision the team must make."
+   }
+  ]
+ },
+ "mail_read": {
+  "body": {
+   "inbox": null,
+   "ok": true
+  },
+  "code": 200,
+  "inbox": []
+ },
+ "mail_read_all": {
+  "body": {
+   "inbox": null,
+   "ok": true
+  },
+  "code": 200,
+  "inbox": []
+ },
+ "new_task": {
+  "body": {
+   "inbox": "in-0120-5c51",
+   "ok": true
+  },
+  "code": 200,
+  "inbox": [
+   {
+    "attachments": [],
+    "category": "side",
+    "id": "in-0120-5c51",
+    "item": "q-0120-a5b9",
+    "kind": "new_task",
+    "owner": "writer",
+    "t": "2026-01-20T10:00:00+00:00",
+    "text": "Golden task\nsecond line"
+   }
+  ]
+ },
+ "new_task_card": {
+  "activity": "2026-01-20T10:00:00+00:00",
+  "attachments": [],
+  "category": "side",
+  "confidence": null,
+  "confidence_note": "",
+  "created": "2026-01-20T10:00:00+00:00",
+  "draft": "",
+  "due": null,
+  "evidence": [],
+  "id": "q-0120-a5b9",
+  "kind": "task",
+  "links": [],
+  "owner": "writer",
+  "platforms": [],
+  "rejects": 0,
+  "stage": "todo",
+  "summary": "Golden task\nsecond line",
+  "tags": [],
+  "thread": [
+   {
+    "id": "eb9bccf9",
+    "kind": "event",
+    "t": "2026-01-20T10:00:00+00:00",
+    "text": "created · Golden task",
+    "who": "me"
+   },
+   {
+    "id": "cf93d52c",
+    "kind": "msg",
+    "t": "2026-01-20T10:00:00+00:00",
+    "text": "Golden task\nsecond line",
+    "who": "me"
+   }
+  ],
+  "title": "Golden task",
+  "triage": false,
+  "updated": "2026-01-20T10:00:00+00:00",
+  "versions": []
+ },
+ "new_task_triage": {
+  "body": {
+   "inbox": "in-0120-a80e",
+   "ok": true
+  },
+  "code": 200,
+  "inbox": [
+   {
+    "attachments": [],
+    "category": null,
+    "id": "in-0120-a80e",
+    "item": "q-0120-0611",
+    "kind": "new_task",
+    "owner": null,
+    "t": "2026-01-20T10:00:00+00:00",
+    "text": "No category given"
+   }
+  ]
+ },
+ "notice_dismiss": {
+  "body": {
+   "inbox": null,
+   "ok": true
+  },
+  "code": 200,
+  "inbox": []
+ },
+ "ping": {
+  "body": {
+   "inbox": "in-0120-3e43",
+   "ok": true
+  },
+  "code": 200,
+  "inbox": [
+   {
+    "id": "in-0120-3e43",
+    "kind": "ping",
+    "note": "刷新用量",
+    "t": "2026-01-20T10:00:00+00:00"
+   }
+  ]
+ },
+ "reassign": {
+  "body": {
+   "inbox": "in-0120-52eb",
+   "ok": true
+  },
+  "code": 200,
+  "inbox": [
+   {
+    "id": "in-0120-52eb",
+    "item": "fx-6",
+    "kind": "dispatch",
+    "owner": "ops",
+    "t": "2026-01-20T10:00:00+00:00"
+   }
+  ],
+  "item": {
+   "activity": "2026-01-20T10:00:00+00:00",
+   "attachments": [],
+   "category": "daily",
+   "confidence": null,
+   "confidence_note": "",
+   "created": "2026-01-20T08:47:28+00:00",
+   "draft": "",
+   "due": null,
+   "evidence": [],
+   "id": "fx-6",
+   "kind": "task",
+   "links": [],
+   "owner": "ops",
+   "platforms": [],
+   "rejects": 0,
+   "stage": "todo",
+   "summary": "A small script that sorts files by type into dated folders.",
+   "summary_en": "A small script that sorts files by type into dated folders.",
+   "tags": [],
+   "thread": [
+    {
+     "id": "63fe6dfe",
+     "kind": "event",
+     "t": "2026-01-20T08:49:56+00:00",
+     "text": "created · 整理下载文件夹",
+     "who": "manager"
+    },
+    {
+     "id": "622ec35f",
+     "kind": "event",
+     "t": "2026-01-20T10:00:00+00:00",
+     "text": "改派给 ops",
+     "who": "me"
+    }
+   ],
+   "title": "整理下载文件夹",
+   "title_en": "Tidy the downloads folder",
+   "updated": "2026-01-20T10:00:00+00:00",
+   "versions": []
+  }
+ },
+ "reject": {
+  "body": {
+   "inbox": "in-0120-3e5d",
+   "ok": true
+  },
+  "code": 200,
+  "inbox": [
+   {
+    "id": "in-0120-3e5d",
+    "item": "q-demo-plan",
+    "kind": "reject",
+    "reason": "tighter",
+    "t": "2026-01-20T10:00:00+00:00"
+   }
+  ],
+  "item": {
+   "activity": "2026-01-20T10:00:00+00:00",
+   "attachments": [],
+   "category": "main",
+   "confidence": "med",
+   "confidence_note": "示例数据",
+   "confidence_note_en": "sample data",
+   "created": "2026-01-20T06:38:35+00:00",
+   "draft": "## 计划\n\n| 步骤 | 产出 | 负责 |\n|---|---|---|\n| 比较三家搬家公司 | 一张对比表 | 研究员 |\n| 通知清单 | 要改地址的地方 | 协调 |\n| 打包时间表 | 每周清单 | 规划 |\n\n批准后才开始执行；驳回时写原因，管家会把原因整理成规则提议。",
+   "draft_en": "## Plan\n\n| Step | Output | Owner |\n|---|---|---|\n| Compare three movers | One comparison table | Researcher |\n| Change-of-address list | Everywhere to update | Coordinator |\n| Packing timeline | A checklist per week | Planner |\n\nWork starts only after you approve. If you reject, give a reason; the steward turns reasons into rule proposals.",
+   "due": null,
+   "evidence": [
+    "示例：参考链接会列在这里"
+   ],
+   "evidence_en": [
+    "Sample: source links are listed here"
+   ],
+   "id": "q-demo-plan",
+   "kind": "plan",
+   "links": [],
+   "owner": "director",
+   "platforms": [],
+   "rejects": 1,
+   "stage": "doing",
+   "summary": "这是一张示例卡片。真实卡片由管家或队员用 stateutil.py upsert-item 写入。点开看详情：草稿、把握度、时间线，以及底部的 批准 / 驳回 / 完成。",
+   "summary_en": "This is a sample card. Real cards are written by the steward or a teammate with stateutil.py upsert-item. Open it to see the draft, the confidence, the timeline, and Approve / Reject / Done at the bottom.",
+   "tags": [
+    "示例"
+   ],
+   "tags_en": [
+    "sample"
+   ],
+   "thread": [
+    {
+     "id": "36608781",
+     "kind": "reject",
+     "t": "2026-01-20T10:00:00+00:00",
+     "text": "驳回 · tighter",
+     "who": "me"
+    }
+   ],
+   "title": "搬家计划（示例）",
+   "title_en": "Moving plan (sample)",
+   "updated": "2026-01-20T10:00:00+00:00",
+   "versions": []
+  }
+ },
+ "reject_no_reason": {
+  "body": {
+   "error": "reject needs a reason"
+  },
+  "code": 400,
+  "inbox": [],
+  "item": {
+   "activity": "2026-01-20T06:38:35+00:00",
+   "attachments": [],
+   "category": "main",
+   "confidence": "med",
+   "confidence_note": "示例数据",
+   "confidence_note_en": "sample data",
+   "created": "2026-01-20T06:38:35+00:00",
+   "draft": "## 计划\n\n| 步骤 | 产出 | 负责 |\n|---|---|---|\n| 比较三家搬家公司 | 一张对比表 | 研究员 |\n| 通知清单 | 要改地址的地方 | 协调 |\n| 打包时间表 | 每周清单 | 规划 |\n\n批准后才开始执行；驳回时写原因，管家会把原因整理成规则提议。",
+   "draft_en": "## Plan\n\n| Step | Output | Owner |\n|---|---|---|\n| Compare three movers | One comparison table | Researcher |\n| Change-of-address list | Everywhere to update | Coordinator |\n| Packing timeline | A checklist per week | Planner |\n\nWork starts only after you approve. If you reject, give a reason; the steward turns reasons into rule proposals.",
+   "due": null,
+   "evidence": [
+    "示例：参考链接会列在这里"
+   ],
+   "evidence_en": [
+    "Sample: source links are listed here"
+   ],
+   "id": "q-demo-plan",
+   "kind": "plan",
+   "links": [],
+   "owner": "director",
+   "platforms": [],
+   "rejects": 0,
+   "stage": "review",
+   "summary": "这是一张示例卡片。真实卡片由管家或队员用 stateutil.py upsert-item 写入。点开看详情：草稿、把握度、时间线，以及底部的 批准 / 驳回 / 完成。",
+   "summary_en": "This is a sample card. Real cards are written by the steward or a teammate with stateutil.py upsert-item. Open it to see the draft, the confidence, the timeline, and Approve / Reject / Done at the bottom.",
+   "tags": [
+    "示例"
+   ],
+   "tags_en": [
+    "sample"
+   ],
+   "thread": [],
+   "title": "搬家计划（示例）",
+   "title_en": "Moving plan (sample)",
+   "updated": "2026-01-20T06:38:35+00:00",
+   "versions": []
+  }
+ },
+ "reopen": {
+  "body": {
+   "inbox": "in-0120-be72",
+   "ok": true
+  },
+  "code": 200,
+  "inbox": [
+   {
+    "id": "in-0120-be72",
+    "item": "fx-4",
+    "kind": "reopen",
+    "t": "2026-01-20T10:00:00+00:00"
+   }
+  ],
+  "item": {
+   "activity": "2026-01-20T10:00:00+00:00",
+   "attachments": [],
+   "category": "side",
+   "confidence": "med",
+   "confidence_note": "Fixture card",
+   "created": "2026-01-20T07:52:35+00:00",
+   "draft": "Three directions: **1. Bold type** (recommended, reads from across the room), 2. Photo-led, 3. Illustrated.\n\nFonts are OFL. No stock photos used.",
+   "draft_at": "2026-01-20T08:11:42+00:00",
+   "draft_attachments": [],
+   "draft_label": "v1",
+   "due": null,
+   "evidence": [],
+   "id": "fx-4",
+   "kind": "deliverable",
+   "links": [],
+   "owner": "artist",
+   "platforms": [],
+   "rejects": 0,
+   "stage": "doing",
+   "summary": "A4 poster, three directions.",
+   "summary_en": "A4 poster, three directions.",
+   "tags": [],
+   "thread": [
+    {
+     "id": "66b2f2fd",
+     "kind": "event",
+     "t": "2026-01-20T07:55:03+00:00",
+     "text": "created · 活动海报三版",
+     "who": "manager"
+    },
+    {
+     "id": "7a498e12",
+     "kind": "event",
+     "t": "2026-01-20T07:58:45+00:00",
+     "text": "stage todo → doing",
+     "who": "artist"
+    },
+    {
+     "id": "341ead60",
+     "kind": "log",
+     "t": "2026-01-20T08:05:32+00:00",
+     "text": "Sketching layouts",
+     "who": "artist"
+    },
+    {
+     "id": "201eab82",
+     "kind": "log",
+     "t": "2026-01-20T08:08:37+00:00",
+     "text": "Exporting three options",
+     "who": "artist"
+    },
+    {
+     "id": "fbc3e79c",
+     "kind": "event",
+     "t": "2026-01-20T08:12:56+00:00",
+     "text": "提交审核 · submitted for review",
+     "who": "artist"
+    },
+    {
+     "id": "06bd048b",
+     "kind": "event",
+     "t": "2026-01-20T08:18:29+00:00",
+     "text": "stage review → done",
+     "who": "me"
+    },
+    {
+     "id": "ec5b29da",
+     "kind": "event",
+     "t": "2026-01-20T10:00:00+00:00",
+     "text": "重开 · reopened",
+     "who": "me"
+    }
+   ],
+   "title": "活动海报三版",
+   "title_en": "Three poster options for the meetup",
+   "updated": "2026-01-20T10:00:00+00:00",
+   "versions": []
+  }
+ },
+ "report_request": {
+  "body": {
+   "inbox": "in-0120-25f9",
+   "ok": true
+  },
+  "code": 200,
+  "inbox": [
+   {
+    "id": "in-0120-25f9",
+    "kind": "report_request",
+    "t": "2026-01-20T10:00:00+00:00"
+   }
+  ]
+ },
+ "routine_pause_not_standing": {
+  "body": {
+   "error": "not a standing card fx-2"
+  },
+  "code": 400,
+  "inbox": [],
+  "item": {
+   "activity": "2026-01-20T07:23:36+00:00",
+   "attachments": [],
+   "category": "side",
+   "confidence": null,
+   "confidence_note": "",
+   "created": "2026-01-20T07:07:34+00:00",
+   "draft": "",
+   "due": null,
+   "evidence": [],
+   "id": "fx-2",
+   "kind": "deliverable",
+   "links": [],
+   "owner": "writer",
+   "platforms": [],
+   "rejects": 0,
+   "stage": "doing",
+   "summary": "A short update for the team, ready to copy.",
+   "summary_en": "A short update for the team, ready to copy.",
+   "tags": [],
+   "thread": [
+    {
+     "id": "a9dcc471",
+     "kind": "event",
+     "t": "2026-01-20T07:10:02+00:00",
+     "text": "created · 周报邮件草稿",
+     "who": "manager"
+    },
+    {
+     "id": "c53504a6",
+     "kind": "event",
+     "t": "2026-01-20T07:13:44+00:00",
+     "text": "stage todo → doing",
+     "who": "writer"
+    },
+    {
+     "id": "d829a422",
+     "kind": "log",
+     "t": "2026-01-20T07:20:31+00:00",
+     "text": "Collecting what closed this week",
+     "who": "writer"
+    },
+    {
+     "id": "a7794402",
+     "kind": "log",
+     "t": "2026-01-20T07:23:36+00:00",
+     "text": "Tightening the opening",
+     "who": "writer"
+    }
+   ],
+   "title": "周报邮件草稿",
+   "title_en": "Draft of the weekly update email",
+   "updated": "2026-01-20T07:13:07+00:00",
+   "versions": []
+  }
+ },
+ "routine_pause_unknown": {
+  "body": {
+   "error": "no routine nope"
+  },
+  "code": 400,
+  "inbox": []
+ },
+ "schedule_fire": {
+  "body": {
+   "inbox": "in-0120-c62e",
+   "ok": true
+  },
+  "code": 200,
+  "inbox": [
+   {
+    "agent": "scout",
+    "for": "2026-01-20T10:00:00+00:00",
+    "id": "in-0120-fbe5",
+    "item": null,
+    "kind": "schedule_due",
+    "late_min": 0,
+    "manual": true,
+    "schedule": "s-0115-6be5",
+    "t": "2026-01-20T10:00:00+00:00",
+    "text": "Collect overnight news into a card",
+    "title": "Morning digest",
+    "type": "task"
+   },
+   {
+    "id": "in-0120-c62e",
+    "item": null,
+    "kind": "schedule_fire",
+    "schedule": "s-0115-6be5",
+    "t": "2026-01-20T10:00:00+00:00",
+    "title": "Morning digest"
+   }
+  ]
+ },
+ "schedule_pause": {
+  "body": {
+   "inbox": "in-0120-6e72",
+   "ok": true
+  },
+  "code": 200,
+  "inbox": [
+   {
+    "id": "in-0120-6e72",
+    "item": null,
+    "kind": "schedule_pause",
+    "schedule": "s-0115-6be5",
+    "t": "2026-01-20T10:00:00+00:00",
+    "title": "Morning digest"
+   }
+  ]
+ },
+ "schedule_resume": {
+  "body": {
+   "inbox": "in-0120-4174",
+   "ok": true
+  },
+  "code": 200,
+  "inbox": [
+   {
+    "id": "in-0120-4174",
+    "item": null,
+    "kind": "schedule_resume",
+    "schedule": "s-0115-6be5",
+    "t": "2026-01-20T10:00:00+00:00",
+    "title": "Morning digest"
+   }
+  ]
+ },
+ "schedule_rm": {
+  "body": {
+   "inbox": "in-0120-bf48",
+   "ok": true
+  },
+  "code": 200,
+  "inbox": [
+   {
+    "id": "in-0120-bf48",
+    "item": null,
+    "kind": "schedule_rm",
+    "schedule": "s-0115-bde5",
+    "t": "2026-01-20T10:00:00+00:00",
+    "title": "Weekly review"
+   }
+  ]
+ },
+ "schedule_unknown": {
+  "body": {
+   "error": "no schedule nope"
+  },
+  "code": 400,
+  "inbox": []
+ },
+ "set_category": {
+  "body": {
+   "inbox": null,
+   "ok": true
+  },
+  "code": 200,
+  "inbox": [],
+  "item": {
+   "activity": "2026-01-20T10:00:00+00:00",
+   "attachments": [],
+   "category": "urgent",
+   "confidence": null,
+   "confidence_note": "",
+   "created": "2026-01-20T08:47:28+00:00",
+   "draft": "",
+   "due": null,
+   "evidence": [],
+   "id": "fx-6",
+   "kind": "task",
+   "links": [],
+   "owner": "ops",
+   "platforms": [],
+   "rejects": 0,
+   "stage": "todo",
+   "summary": "A small script that sorts files by type into dated folders.",
+   "summary_en": "A small script that sorts files by type into dated folders.",
+   "tags": [],
+   "thread": [
+    {
+     "id": "63fe6dfe",
+     "kind": "event",
+     "t": "2026-01-20T08:49:56+00:00",
+     "text": "created · 整理下载文件夹",
+     "who": "manager"
+    },
+    {
+     "id": "622ec35f",
+     "kind": "event",
+     "t": "2026-01-20T10:00:00+00:00",
+     "text": "改派给 ops",
+     "who": "me"
+    },
+    {
+     "id": "61cb4315",
+     "kind": "event",
+     "t": "2026-01-20T10:00:00+00:00",
+     "text": "分类 → urgent",
+     "who": "me"
+    }
+   ],
+   "title": "整理下载文件夹",
+   "title_en": "Tidy the downloads folder",
+   "updated": "2026-01-20T10:00:00+00:00",
+   "versions": []
+  }
+ },
+ "set_stage_bad": {
+  "body": {
+   "error": "bad stage"
+  },
+  "code": 400,
+  "inbox": [],
+  "item": {
+   "activity": "2026-01-20T10:00:00+00:00",
+   "attachments": [],
+   "category": "urgent",
+   "confidence": null,
+   "confidence_note": "",
+   "created": "2026-01-20T08:47:28+00:00",
+   "draft": "",
+   "due": null,
+   "evidence": [],
+   "id": "fx-6",
+   "kind": "task",
+   "links": [],
+   "owner": "ops",
+   "platforms": [],
+   "rejects": 0,
+   "stage": "todo",
+   "summary": "A small script that sorts files by type into dated folders.",
+   "summary_en": "A small script that sorts files by type into dated folders.",
+   "tags": [],
+   "thread": [
+    {
+     "id": "63fe6dfe",
+     "kind": "event",
+     "t": "2026-01-20T08:49:56+00:00",
+     "text": "created · 整理下载文件夹",
+     "who": "manager"
+    },
+    {
+     "id": "622ec35f",
+     "kind": "event",
+     "t": "2026-01-20T10:00:00+00:00",
+     "text": "改派给 ops",
+     "who": "me"
+    },
+    {
+     "id": "61cb4315",
+     "kind": "event",
+     "t": "2026-01-20T10:00:00+00:00",
+     "text": "分类 → urgent",
+     "who": "me"
+    }
+   ],
+   "title": "整理下载文件夹",
+   "title_en": "Tidy the downloads folder",
+   "updated": "2026-01-20T10:00:00+00:00",
+   "versions": []
+  }
+ },
+ "set_stage_done": {
+  "body": {
+   "inbox": "in-0120-31db",
+   "ok": true
+  },
+  "code": 200,
+  "inbox": [
+   {
+    "id": "in-0120-31db",
+    "item": "fx-6",
+    "kind": "done",
+    "t": "2026-01-20T10:00:00+00:00"
+   }
+  ],
+  "item": {
+   "activity": "2026-01-20T10:00:00+00:00",
+   "attachments": [],
+   "category": "urgent",
+   "closed": "2026-01-20T10:00:00+00:00",
+   "confidence": null,
+   "confidence_note": "",
+   "created": "2026-01-20T08:47:28+00:00",
+   "draft": "",
+   "due": null,
+   "evidence": [],
+   "id": "fx-6",
+   "kind": "task",
+   "links": [],
+   "owner": "ops",
+   "platforms": [],
+   "rejects": 0,
+   "stage": "done",
+   "summary": "A small script that sorts files by type into dated folders.",
+   "summary_en": "A small script that sorts files by type into dated folders.",
+   "tags": [],
+   "thread": [
+    {
+     "id": "63fe6dfe",
+     "kind": "event",
+     "t": "2026-01-20T08:49:56+00:00",
+     "text": "created · 整理下载文件夹",
+     "who": "manager"
+    },
+    {
+     "id": "622ec35f",
+     "kind": "event",
+     "t": "2026-01-20T10:00:00+00:00",
+     "text": "改派给 ops",
+     "who": "me"
+    },
+    {
+     "id": "61cb4315",
+     "kind": "event",
+     "t": "2026-01-20T10:00:00+00:00",
+     "text": "分类 → urgent",
+     "who": "me"
+    },
+    {
+     "id": "883edcb1",
+     "kind": "event",
+     "t": "2026-01-20T10:00:00+00:00",
+     "text": "stage todo → done",
+     "who": "me"
+    }
+   ],
+   "title": "整理下载文件夹",
+   "title_en": "Tidy the downloads folder",
+   "updated": "2026-01-20T10:00:00+00:00",
+   "versions": []
+  }
+ },
+ "snooze_bad": {
+  "body": {
+   "error": "bad preset"
+  },
+  "code": 400,
+  "inbox": [],
+  "item": {
+   "activity": "2026-01-20T10:00:00+00:00",
+   "attachments": [],
+   "category": "daily",
+   "confidence": "med",
+   "confidence_note": "Fixture card",
+   "created": "2026-01-20T08:21:34+00:00",
+   "draft": "- Tuesday: the dentist and the design review overlapped; moved the review to 15:00 (draft message to the team below).\n- Thursday: nothing booked after 14:00, kept free for focus work.\n\n> Hi, could we move the design review to 15:00 Tuesday?",
+   "draft_at": "2026-01-20T08:40:41+00:00",
+   "draft_attachments": [],
+   "draft_label": "v1",
+   "due": null,
+   "evidence": [],
+   "id": "fx-5",
+   "kind": "deliverable",
+   "links": [],
+   "owner": "ops",
+   "platforms": [],
+   "rejects": 0,
+   "stage": "doing",
+   "summary": "Two clashes found and fixed.",
+   "summary_en": "Two clashes found and fixed.",
+   "tags": [],
+   "thread": [
+    {
+     "id": "7cb2ef1a",
+     "kind": "event",
+     "t": "2026-01-20T08:24:02+00:00",
+     "text": "created · 下周日程整理",
+     "who": "manager"
+    },
+    {
+     "id": "9e7deebe",
+     "kind": "event",
+     "t": "2026-01-20T08:27:44+00:00",
+     "text": "stage todo → doing",
+     "who": "ops"
+    },
+    {
+     "id": "fde7e16a",
+     "kind": "log",
+     "t": "2026-01-20T08:34:31+00:00",
+     "text": "Reading the calendar",
+     "who": "ops"
+    },
+    {
+     "id": "071ce884",
+     "kind": "log",
+     "t": "2026-01-20T08:37:36+00:00",
+     "text": "Moving the clashing call",
+     "who": "ops"
+    },
+    {
+     "id": "11084c19",
+     "kind": "event",
+     "t": "2026-01-20T08:41:55+00:00",
+     "text": "提交审核 · submitted for review",
+     "who": "ops"
+    },
+    {
+     "id": "f6d61f1d",
+     "kind": "msg",
+     "t": "2026-01-20T10:00:00+00:00",
+     "text": "golden comment",
+     "to": "ops",
+     "who": "me"
+    }
+   ],
+   "title": "下周日程整理",
+   "title_en": "Next week's calendar, cleaned up",
+   "updated": "2026-01-20T10:00:00+00:00",
+   "versions": []
+  }
+ },
+ "snooze_reply": {
+  "body": {
+   "error": "这张卡现在不在等你拍板，不用推迟"
+  },
+  "code": 400,
+  "inbox": [],
+  "item": {
+   "activity": "2026-01-20T10:00:00+00:00",
+   "attachments": [],
+   "category": "daily",
+   "confidence": "med",
+   "confidence_note": "Fixture card",
+   "created": "2026-01-20T06:41:40+00:00",
+   "draft": "**Pick: model B.** Best noise cancelling for the price; model A is lighter but weaker on low hum.\n\n| | A | B | C |\n|---|---|---|---|\n| Price | $$ | $$ | $$$ |\n| Noise cancelling | ok | strong | strong |\n| Battery | 30 h | 30 h | 24 h |\n| Weight | light | medium | heavy |\n\nSources are listed under evidence. Prices not checked today.",
+   "draft_at": "2026-01-20T07:00:47+00:00",
+   "draft_attachments": [],
+   "draft_label": "v1",
+   "due": null,
+   "evidence": [],
+   "id": "fx-1",
+   "kind": "deliverable",
+   "links": [],
+   "owner": "scout",
+   "platforms": [],
+   "rejects": 0,
+   "stage": "doing",
+   "summary": "Which pair to buy for flights and the office.",
+   "summary_en": "Which pair to buy for flights and the office.",
+   "tags": [],
+   "thread": [
+    {
+     "id": "501cce9d",
+     "kind": "event",
+     "t": "2026-01-20T06:44:08+00:00",
+     "text": "created · 比较三款降噪耳机",
+     "who": "manager"
+    },
+    {
+     "id": "5dd290e9",
+     "kind": "event",
+     "t": "2026-01-20T06:47:50+00:00",
+     "text": "stage todo → doing",
+     "who": "scout"
+    },
+    {
+     "id": "f9806b85",
+     "kind": "log",
+     "t": "2026-01-20T06:54:37+00:00",
+     "text": "Reading three long reviews",
+     "who": "scout"
+    },
+    {
+     "id": "33794435",
+     "kind": "log",
+     "t": "2026-01-20T06:57:42+00:00",
+     "text": "Building the comparison table",
+     "who": "scout"
+    },
+    {
+     "id": "257ae823",
+     "kind": "event",
+     "t": "2026-01-20T07:02:01+00:00",
+     "text": "提交审核 · submitted for review",
+     "who": "scout"
+    },
+    {
+     "id": "6d1ebebd",
+     "kind": "msg",
+     "t": "2026-01-20T09:17:41+00:00",
+     "text": "Model B wins on noise cancelling; table is in the draft.",
+     "who": "scout"
+    },
+    {
+     "id": "f9d7babc",
+     "kind": "msg",
+     "t": "2026-01-20T10:00:00+00:00",
+     "text": "to scout",
+     "to": "scout",
+     "who": "me"
+    }
+   ],
+   "title": "比较三款降噪耳机",
+   "title_en": "Compare three noise-cancelling headphones",
+   "updated": "2026-01-20T10:00:00+00:00",
+   "versions": []
+  }
+ },
+ "snooze_tomorrow": {
+  "body": {
+   "error": "这张卡现在不在等你拍板，不用推迟"
+  },
+  "code": 400,
+  "inbox": [],
+  "item": {
+   "activity": "2026-01-20T10:00:00+00:00",
+   "attachments": [],
+   "category": "main",
+   "confidence": "med",
+   "confidence_note": "示例数据",
+   "confidence_note_en": "sample data",
+   "created": "2026-01-20T06:38:35+00:00",
+   "draft": "## 计划\n\n| 步骤 | 产出 | 负责 |\n|---|---|---|\n| 比较三家搬家公司 | 一张对比表 | 研究员 |\n| 通知清单 | 要改地址的地方 | 协调 |\n| 打包时间表 | 每周清单 | 规划 |\n\n批准后才开始执行；驳回时写原因，管家会把原因整理成规则提议。",
+   "draft_en": "## Plan\n\n| Step | Output | Owner |\n|---|---|---|\n| Compare three movers | One comparison table | Researcher |\n| Change-of-address list | Everywhere to update | Coordinator |\n| Packing timeline | A checklist per week | Planner |\n\nWork starts only after you approve. If you reject, give a reason; the steward turns reasons into rule proposals.",
+   "due": null,
+   "evidence": [
+    "示例：参考链接会列在这里"
+   ],
+   "evidence_en": [
+    "Sample: source links are listed here"
+   ],
+   "id": "q-demo-plan",
+   "kind": "plan",
+   "links": [],
+   "owner": "director",
+   "platforms": [],
+   "rejects": 1,
+   "stage": "doing",
+   "summary": "这是一张示例卡片。真实卡片由管家或队员用 stateutil.py upsert-item 写入。点开看详情：草稿、把握度、时间线，以及底部的 批准 / 驳回 / 完成。",
+   "summary_en": "This is a sample card. Real cards are written by the steward or a teammate with stateutil.py upsert-item. Open it to see the draft, the confidence, the timeline, and Approve / Reject / Done at the bottom.",
+   "tags": [
+    "示例"
+   ],
+   "tags_en": [
+    "sample"
+   ],
+   "thread": [
+    {
+     "id": "36608781",
+     "kind": "reject",
+     "t": "2026-01-20T10:00:00+00:00",
+     "text": "驳回 · tighter",
+     "who": "me"
+    }
+   ],
+   "title": "搬家计划（示例）",
+   "title_en": "Moving plan (sample)",
+   "updated": "2026-01-20T10:00:00+00:00",
+   "versions": []
+  }
+ },
+ "stamina": {
+  "body": {
+   "inbox": null,
+   "ok": true
+  },
+  "code": 200,
+  "inbox": []
+ },
+ "unknown_item": {
+  "body": {
+   "error": "no item nope"
+  },
+  "code": 400,
+  "inbox": []
+ },
+ "unknown_kind": {
+  "body": {
+   "error": "unknown action nope"
+  },
+  "code": 400,
+  "inbox": []
+ },
+ "unsnooze": {
+  "body": {
+   "inbox": null,
+   "ok": true
+  },
+  "code": 200,
+  "inbox": [],
+  "item": {
+   "activity": "2026-01-20T10:00:00+00:00",
+   "attachments": [],
+   "category": "daily",
+   "confidence": "med",
+   "confidence_note": "Fixture card",
+   "created": "2026-01-20T06:41:40+00:00",
+   "draft": "**Pick: model B.** Best noise cancelling for the price; model A is lighter but weaker on low hum.\n\n| | A | B | C |\n|---|---|---|---|\n| Price | $$ | $$ | $$$ |\n| Noise cancelling | ok | strong | strong |\n| Battery | 30 h | 30 h | 24 h |\n| Weight | light | medium | heavy |\n\nSources are listed under evidence. Prices not checked today.",
+   "draft_at": "2026-01-20T07:00:47+00:00",
+   "draft_attachments": [],
+   "draft_label": "v1",
+   "due": null,
+   "evidence": [],
+   "id": "fx-1",
+   "kind": "deliverable",
+   "links": [],
+   "owner": "scout",
+   "platforms": [],
+   "rejects": 0,
+   "stage": "doing",
+   "summary": "Which pair to buy for flights and the office.",
+   "summary_en": "Which pair to buy for flights and the office.",
+   "tags": [],
+   "thread": [
+    {
+     "id": "501cce9d",
+     "kind": "event",
+     "t": "2026-01-20T06:44:08+00:00",
+     "text": "created · 比较三款降噪耳机",
+     "who": "manager"
+    },
+    {
+     "id": "5dd290e9",
+     "kind": "event",
+     "t": "2026-01-20T06:47:50+00:00",
+     "text": "stage todo → doing",
+     "who": "scout"
+    },
+    {
+     "id": "f9806b85",
+     "kind": "log",
+     "t": "2026-01-20T06:54:37+00:00",
+     "text": "Reading three long reviews",
+     "who": "scout"
+    },
+    {
+     "id": "33794435",
+     "kind": "log",
+     "t": "2026-01-20T06:57:42+00:00",
+     "text": "Building the comparison table",
+     "who": "scout"
+    },
+    {
+     "id": "257ae823",
+     "kind": "event",
+     "t": "2026-01-20T07:02:01+00:00",
+     "text": "提交审核 · submitted for review",
+     "who": "scout"
+    },
+    {
+     "id": "6d1ebebd",
+     "kind": "msg",
+     "t": "2026-01-20T09:17:41+00:00",
+     "text": "Model B wins on noise cancelling; table is in the draft.",
+     "who": "scout"
+    },
+    {
+     "id": "f9d7babc",
+     "kind": "msg",
+     "t": "2026-01-20T10:00:00+00:00",
+     "text": "to scout",
+     "to": "scout",
+     "who": "me"
+    }
+   ],
+   "title": "比较三款降噪耳机",
+   "title_en": "Compare three noise-cancelling headphones",
+   "updated": "2026-01-20T10:00:00+00:00",
+   "versions": []
+  }
+ },
+ "widget_layout": {
+  "body": {
+   "inbox": null,
+   "ok": true
+  },
+  "code": 200,
+  "inbox": []
+ },
+ "widget_layout_bad": {
+  "body": {
+   "error": "bad layout entry"
+  },
+  "code": 400,
+  "inbox": []
+ },
+ "widget_layout_reset": {
+  "body": {
+   "inbox": null,
+   "ok": true
+  },
+  "code": 200,
+  "inbox": []
+ }
+}
