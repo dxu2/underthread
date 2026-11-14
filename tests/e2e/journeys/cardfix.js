@@ -10,7 +10,7 @@ module.exports = {
     const p = c.p, errs = [];
     p.on("pageerror", e => errs.push(String(e).split("\n")[0]));
     /* one open card per category so every page really calls card() */
-    if (c.view === "desk" && c.engine === "chromium") for (const pg of PAGES) await c.su("upsert-item", "--id", `fx-cardfix-${pg}`, "--category", pg, "--stage", "doing", "--kind", "task", "--owner", "smith", "--title", `fixture ${pg}`);
+    if (!(await c.state()).items.some(i => i.id === `fx-cardfix-${PAGES[0]}`)) for (const pg of PAGES)   /* seed once per server (run.py gives each run a fresh one) */ await c.su("upsert-item", "--id", `fx-cardfix-${pg}`, "--category", pg, "--stage", "doing", "--kind", "task", "--owner", "smith", "--title", `fixture ${pg}`);
     for (const lang of ["en", "zh"]) {
       await p.evaluate(l => localStorage.setItem("rt.lang", JSON.stringify(l)), lang);
       await p.goto(c.BASE + "/", { waitUntil: "load" });

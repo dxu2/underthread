@@ -22,6 +22,7 @@ Playwright comes from tests/e2e/node_modules (npm ci) or from $PW. Exit code 1 i
 import glob
 import os
 import shutil
+import socket
 import subprocess
 import sys
 import time
@@ -83,6 +84,10 @@ def e2e():
     if PORT == "8765":
         print("refuse: 8765 is the live dashboard")
         return 2
+    with socket.socket() as so:   # one run per port: two runs would share (and wipe) one scratch copy
+        if so.connect_ex(("127.0.0.1", int(PORT))) == 0:
+            print(f"refuse: port {PORT} is in use (another e2e run?); pick --port")
+            return 2
     if not playwright_ready():
         return 1
     journeys = sorted(j for j in glob.glob(os.path.join(E2E, "journeys", "*.js")) if ONLY in os.path.basename(j))

@@ -12,13 +12,17 @@ module.exports = {
       c.su("upsert-item", "--id", id, "--title", title, "--who", "writer", "--owner", "writer", "--category", "side", "--kind", "deliverable",
         "--stage", "review", "--draft", `Draft body: the quick brown fox (${title}).`, "--label", "v1");
     const item = async id => (await c.state()).items.find(i => i.id === id);
+    /* Playwright WebKit: a touch tap on a plain div row fires no click; fall back to a click and say so in the log */
+    const openRow = async (id, opened) => { await c.tap(`[data-item="${id}"]`); if (await c.until(opened, 4000)) return;
+      if (c.engine === "webkit" && c.view === "phone") { c.note("WebKit tap fired no click on the row; clicked instead"); await p.click(`[data-item="${id}"]`); } };
+    const drawerHas = t => () => p.evaluate(t => { const d = document.querySelector("#drawer"); return !!d && d.getClientRects().length > 0 && (d.textContent || "").includes(t); }, t);
     const visible = id => c.until(() => p.evaluate(id => { const e = document.querySelector(`[data-item="${id}"]`); return !!e && e.getClientRects().length > 0; }, id), 12000);
     if (c.view === "phone") { await c.tap("#tabbar button[data-k=home]"); await c.sleep(600); }
     c.check("new review card shows on home", await visible(cid));
     await c.shot("home");
 
-    await c.tap(`[data-item="${cid}"]`);
-    const open = await c.until(() => p.evaluate(id => { const d = document.querySelector("#drawer"); return !!d && d.getClientRects().length > 0 && (d.textContent || "").includes("Draft body: the quick brown fox (E2E comment card)"); }, cid), 8000);
+    await openRow(cid, drawerHas("(E2E comment card)"));
+    const open = await c.until(drawerHas("Draft body: the quick brown fox (E2E comment card)"), 8000);
     c.check("drawer opens with the draft", open);
     await c.shot("drawer", "#drawer");
 
@@ -32,9 +36,11 @@ module.exports = {
     await c.shot("commented", "#drawer");
 
     await p.keyboard.press("Escape"); await c.sleep(700);
-    if (c.view === "phone") { const x = p.locator("#drawer .dw-x, #drawer .dw-back").first(); if (await x.isVisible().catch(() => false)) await x.tap(); await c.sleep(700); await c.tap("#tabbar button[data-k=home]"); await c.sleep(700); }
+    if (c.view === "phone") {   /* the full-screen drawer covers the tab bar; reload to get back home (Escape is a desk thing) */
+      await p.reload({ waitUntil: "load" }); await p.waitForFunction(() => window.App && App.ST && App.ST.meta && !document.getElementById("ut-splash"), null, { timeout: 15000 });
+      await c.sleep(600); await c.tap("#tabbar button[data-k=home]"); await c.sleep(700); }
     c.check("approve card shows on home", await visible(aid));
-    await c.tap(`[data-item="${aid}"]`); await c.sleep(900);
+    await openRow(aid, drawerHas("(E2E approve card)")); await c.sleep(900);
     const ok = await c.until(() => p.evaluate(() => { const b = document.querySelector('#drawer .dw-acts .ab.ok[data-act="approve"]'); return !!b && b.getClientRects().length > 0; }), 8000);
     c.check("approve button in the drawer", ok);
     if (ok) {
