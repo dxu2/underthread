@@ -1,5 +1,7 @@
 """HTTP contract of server.py on the fixture board: what the page and the scripts rely on.
 Golden snapshots of whole responses come with the server split (plan step S6); these are the stable basics."""
+import json
+import os
 import time
 import unittest
 
@@ -70,3 +72,44 @@ class Api(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+def _as_old_install(root):
+    """Strip the schema stamp: the copy now looks like an install from before S3."""
+    p = os.path.join(root, "state.json")
+    with open(p, encoding="utf-8") as f:
+        st = json.load(f)
+    st["meta"].pop("schema", None)
+    st["meta"].pop("migrations", None)
+    with open(p, "w", encoding="utf-8") as f:
+        json.dump(st, f, ensure_ascii=False, indent=1)
+
+
+class UpgradeOnStart(unittest.TestCase):
+    """t-oss-struct E1: an older install upgrades with zero manual steps; the server start migrates and keeps a backup."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.s = FixtureServer(prepare=_as_old_install)
+
+    @classmethod
+    def tearDownClass(cls):
+        cls.s.stop()
+
+    def test_state_is_current_after_start(self):
+        h = self.s.json("/api/health")["schema"]
+        self.assertEqual(h["state"], h["code"])
+        self.assertEqual(h["ahead"], [])
+        st = self.s.json("/api/state")
+        self.assertEqual(st["meta"]["schema"], st["meta"]["schema_code"])
+        self.assertTrue({"fx-1", "fx-7"} <= {i["id"] for i in st["items"]})
+
+    def test_backup_of_the_old_file(self):
+        d = os.path.join(self.s.root, ".backups", "migrate")
+        self.assertEqual(len([f for f in os.listdir(d) if f.startswith("state.json-s0-")]), 1)
+
+    def test_config_show(self):
+        out = self.s.su("config", "show", "--json")
+        rows = {r["key"]: r for r in json.loads(out)}
+        self.assertEqual(rows["port"]["from"], "default")
+        self.assertEqual(rows["owner.display_name"]["from"], "yours")

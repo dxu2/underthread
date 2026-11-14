@@ -20,6 +20,9 @@ import sys
 import uuid
 
 ROOT = os.path.dirname(os.path.abspath(__file__))
+if ROOT not in sys.path:   # core/ lives next to this file; tools import stateutil from elsewhere
+    sys.path.insert(0, ROOT)
+from core import migrate as MG   # noqa: E402  t-oss-struct E1: data schema + ordered migrations
 STATE = os.path.join(ROOT, "state.json")
 STATE_LOCK = os.path.join(ROOT, ".state.lock")
 INBOX = os.path.join(ROOT, "inbox.jsonl")
@@ -151,17 +154,36 @@ def _fresh_times(st):
     return walk(st, lambda s: (parse(s) + shift).astimezone().isoformat(timespec="seconds"))
 
 
-def _load():
+class _NeedsMigration(Exception):
+    """_load under a shared lock found an old schema; read() retakes the lock exclusively and migrates."""
+
+
+def _load(exclusive=True):
+    """state.json as a dict. Called with the state lock held (exclusive in mutate(), shared in read()).
+    t-oss-struct E1: an older meta.schema is migrated here, once, under the exclusive lock: the file as it was is saved to
+    local/backups/migrate/ (core.migrate.backup_dir), the steps run, the result is written back. Newer data (after a code
+    rollback) is read as it is."""
     if not os.path.exists(STATE):
         example = os.path.join(ROOT, "state.example.json")
         if os.path.exists(example):
             with open(example, encoding="utf-8") as f:
-                seed = json.load(f)
-            _save(_fresh_times(seed))
+                seed = _fresh_times(json.load(f))
+            MG.run("state", seed, ROOT, now=now())   # a fresh install starts current; nothing worth a backup yet
+            _save(seed)
         else:
-            return blank_state()
-    with open(STATE, encoding="utf-8") as f:
-        return _shape(json.load(f))
+            st = blank_state()
+            st["meta"]["schema"] = MG.LATEST   # nothing to migrate in a state that starts now
+            return st
+    with open(STATE, "rb") as f:
+        raw = f.read()
+    st = json.loads(raw.decode("utf-8"))
+    if MG.needs("state", st):
+        if not exclusive:
+            raise _NeedsMigration
+        MG.backup(ROOT, "state.json", raw, MG.version("state", st))
+        MG.run("state", st, ROOT, now=now())
+        _save(st)   # at once: a mutate that fails later must not leave the migrated data unsaved
+    return _shape(st)
 
 
 def _save(st):
@@ -348,6 +370,9 @@ def read():
     with open(STATE_LOCK, "a+") as lf:
         fcntl.flock(lf, fcntl.LOCK_SH)
         try:
+            return _load(exclusive=False)
+        except _NeedsMigration:
+            fcntl.flock(lf, fcntl.LOCK_EX)   # converts the shared lock; the first reader after an update migrates
             return _load()
         finally:
             fcntl.flock(lf, fcntl.LOCK_UN)
@@ -1498,6 +1523,37 @@ def _add_schedule_parsers(sub):
     for name, fn in (("show", cmd_schedule_show), ("pause", cmd_schedule_pause), ("resume", cmd_schedule_resume), ("rm", cmd_schedule_rm), ("fire", cmd_schedule_fire)):
         s = sc.add_parser(name); s.add_argument("id"); s.add_argument("--who", default="manager"); s.set_defaults(fn=_sched_cmd(fn))
     s = sc.add_parser("edit"); s.add_argument("id"); common(s, False); s.set_defaults(fn=_sched_cmd(cmd_schedule_edit))
+    s = sub.add_parser("schema", help="t-oss-struct E1: data schema numbers (code / state / config / roster) and the migrations log")
+    s.add_argument("--json", action="store_true"); s.set_defaults(fn=cmd_schema)
+    s = sub.add_parser("config", help="t-oss-struct E2: effective config").add_subparsers(dest="op", required=True)
+    s = s.add_parser("show", help="every effective value and whether it is a default or yours"); s.add_argument("--json", action="store_true")
+    s.set_defaults(fn=cmd_config_show)
+
+
+def cmd_schema(a):
+    st = read()   # migrates first if this code is newer than the data
+    info = MG.status(ROOT, st)
+    info["log"] = st["meta"].get("migrations") or []
+    if a.json:
+        print(json.dumps(info, ensure_ascii=False, indent=1))
+        return
+    print(f"code {info['code']} ({', '.join(info['steps']) or 'no steps'})")
+    for t in ("state", "config", "roster"):
+        v = info.get(t)
+        print(f"  {t:7} {'missing' if v is None else v}" + ("  (newer than this code)" if t in info["ahead"] else ""))
+    print("  config / roster carry _schema only after a step changed them; 0 there is normal")
+    for e in info["log"][-10:]:
+        print(f"  {e.get('at', '')[:19]}  {e.get('from')} -> {e.get('to')}  {', '.join(e.get('ran') or []) or '(stamp only)'}")
+
+
+def cmd_config_show(a):
+    from core import config as C
+    rows = C.sources(ROOT)
+    if a.json:
+        print(json.dumps([{"key": k, "value": v, "from": f} for k, v, f in rows], ensure_ascii=False, indent=1))
+        return
+    for k, v, f in rows:
+        print(f"{k:28} {json.dumps(v, ensure_ascii=False)[:60]:60} {'你改的' if f == 'yours' else '默认'}")
 
 
 def _need_rule(a):

@@ -28,6 +28,7 @@ rcshots/
 /.live/
 /archive/
 .demo/
+.backups/
 avatars/*
 # the Underthread needle-thread avatar set ships with the repo (shown under the 特典 palette)
 !avatars/ut/

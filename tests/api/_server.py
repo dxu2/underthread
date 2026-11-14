@@ -12,7 +12,7 @@ import urllib.error
 import urllib.request
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-SKIP = {".git", ".demo", "uploads", "work", "logs", "local", "node_modules", "__pycache__", "archive", "rcshots", ".live", ".claude",
+SKIP = {".git", ".demo", ".backups", "uploads", "work", "logs", "local", "node_modules", "__pycache__", "archive", "rcshots", ".live", ".claude",
         "state.json", "roster.json", "config.json", "inbox.jsonl", "archive.json", "push_subs.json", "vapid.json"}
 MODELS = {"models", "voice"}   # tools/models, tools/voice: big local downloads
 
@@ -26,7 +26,8 @@ def free_port():
 
 
 class FixtureServer:
-    def __init__(self):
+    def __init__(self, prepare=None):
+        """prepare(root): change the loaded copy before the server starts (e.g. make it look like an older install)."""
         self.dir = tempfile.mkdtemp(prefix="rt-api-")
         self.root = os.path.join(self.dir, "rt")
 
@@ -37,6 +38,8 @@ class FixtureServer:
             return out
         shutil.copytree(ROOT, self.root, ignore=ignore, symlinks=True)
         subprocess.run([sys.executable, os.path.join(ROOT, "tests", "e2e", "fixtures", "load.py"), self.root], check=True, capture_output=True)
+        if prepare:
+            prepare(self.root)
         self.port = free_port()
         self.log = open(os.path.join(self.dir, "server.log"), "w")
         env = dict(os.environ, PORT=str(self.port), NO_LOOPS="1")

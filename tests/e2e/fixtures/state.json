@@ -4,39 +4,39 @@
    "activity": "Sketching layouts",
    "id": "artist",
    "item": null,
-   "last_seen": "2026-01-15T10:36:12+00:00",
+   "last_seen": "2026-01-15T10:37:26+00:00",
    "status": "idle"
   },
   "director": {
    "activity": "Listing the steps",
    "id": "director",
    "item": null,
-   "last_seen": "2026-01-15T10:10:18+00:00",
+   "last_seen": "2026-01-15T10:11:32+00:00",
    "status": "idle"
   },
   "ops": {
    "activity": "Reading the calendar",
    "id": "ops",
    "item": null,
-   "last_seen": "2026-01-15T11:05:11+00:00",
+   "last_seen": "2026-01-15T11:06:25+00:00",
    "status": "idle"
   },
   "scout": {
    "activity": "Checking prices again",
    "id": "scout",
    "item": "fx-1",
-   "last_seen": "2026-01-15T11:42:11+00:00",
-   "since": "2026-01-15T11:40:57+00:00",
+   "last_seen": "2026-01-15T11:43:25+00:00",
+   "since": "2026-01-15T11:42:11+00:00",
    "status": "working",
    "tool": "chrome",
-   "tool_since": "2026-01-15T11:41:34+00:00"
+   "tool_since": "2026-01-15T11:42:48+00:00"
   },
   "writer": {
    "activity": "Tightening the opening",
    "id": "writer",
    "item": "fx-2",
-   "last_seen": "2026-01-15T11:45:16+00:00",
-   "since": "2026-01-15T09:36:23+00:00",
+   "last_seen": "2026-01-15T11:46:30+00:00",
+   "since": "2026-01-15T09:37:37+00:00",
    "status": "working"
   }
  },
@@ -44,13 +44,13 @@
  "chat": [
   {
    "id": "15924d50",
-   "t": "2026-01-15T11:48:21+00:00",
+   "t": "2026-01-15T11:49:35+00:00",
    "text": "Morning. Two cards wait for you, one has a question.",
    "who": "manager"
   },
   {
    "id": "79192a8c",
-   "t": "2026-01-15T11:50:49+00:00",
+   "t": "2026-01-15T11:52:03+00:00",
    "text": "What is the headphone pick?",
    "who": "me"
   },
@@ -60,13 +60,13 @@
     "Yes",
     "Not now"
    ],
-   "t": "2026-01-15T11:52:40+00:00",
+   "t": "2026-01-15T11:53:54+00:00",
    "text": "Model B. Want me to order it?",
    "who": "manager"
   },
   {
    "id": "8a6719d2",
-   "t": "2026-01-15T11:55:08+00:00",
+   "t": "2026-01-15T11:56:22+00:00",
    "text": "Not now",
    "who": "me"
   }
@@ -75,7 +75,7 @@
   "scout": [
    {
     "id": "2417781a",
-    "t": "2026-01-15T11:57:36+00:00",
+    "t": "2026-01-15T11:58:50+00:00",
     "text": "Prices checked on three sites; B is cheapest at the first one.",
     "who": "scout"
    }
@@ -87,7 +87,7 @@
      "Yes",
      "No"
     ],
-    "t": "2026-01-15T12:00:41+00:00",
+    "t": "2026-01-15T12:01:55+00:00",
     "text": "Should the update mention the export fix?",
     "who": "writer"
    }
@@ -238,14 +238,14 @@
    "versions": []
   },
   {
-   "activity": "2026-01-15T11:37:52+00:00",
+   "activity": "2026-01-15T11:39:06+00:00",
    "attachments": [],
    "category": "daily",
    "confidence": "med",
    "confidence_note": "Fixture card",
-   "created": "2026-01-15T09:01:51+00:00",
+   "created": "2026-01-15T09:03:05+00:00",
    "draft": "**Pick: model B.** Best noise cancelling for the price; model A is lighter but weaker on low hum.\n\n| | A | B | C |\n|---|---|---|---|\n| Price | $$ | $$ | $$$ |\n| Noise cancelling | ok | strong | strong |\n| Battery | 30 h | 30 h | 24 h |\n| Weight | light | medium | heavy |\n\nSources are listed under evidence. Prices not checked today.",
-   "draft_at": "2026-01-15T09:20:58+00:00",
+   "draft_at": "2026-01-15T09:22:12+00:00",
    "draft_attachments": [],
    "draft_label": "v1",
    "due": null,
@@ -264,58 +264,58 @@
     {
      "id": "501cce9d",
      "kind": "event",
-     "t": "2026-01-15T09:04:19+00:00",
+     "t": "2026-01-15T09:05:33+00:00",
      "text": "created · 比较三款降噪耳机",
      "who": "manager"
     },
     {
      "id": "5dd290e9",
      "kind": "event",
-     "t": "2026-01-15T09:08:01+00:00",
+     "t": "2026-01-15T09:09:15+00:00",
      "text": "stage todo → doing",
      "who": "scout"
     },
     {
      "id": "f9806b85",
      "kind": "log",
-     "t": "2026-01-15T09:14:48+00:00",
+     "t": "2026-01-15T09:16:02+00:00",
      "text": "Reading three long reviews",
      "who": "scout"
     },
     {
      "id": "33794435",
      "kind": "log",
-     "t": "2026-01-15T09:17:53+00:00",
+     "t": "2026-01-15T09:19:07+00:00",
      "text": "Building the comparison table",
      "who": "scout"
     },
     {
      "id": "257ae823",
      "kind": "event",
-     "t": "2026-01-15T09:22:12+00:00",
+     "t": "2026-01-15T09:23:26+00:00",
      "text": "提交审核 · submitted for review",
      "who": "scout"
     },
     {
      "id": "6d1ebebd",
      "kind": "msg",
-     "t": "2026-01-15T11:37:52+00:00",
+     "t": "2026-01-15T11:39:06+00:00",
      "text": "Model B wins on noise cancelling; table is in the draft.",
      "who": "scout"
     }
    ],
    "title": "比较三款降噪耳机",
    "title_en": "Compare three noise-cancelling headphones",
-   "updated": "2026-01-15T09:21:35+00:00",
+   "updated": "2026-01-15T09:22:49+00:00",
    "versions": []
   },
   {
-   "activity": "2026-01-15T09:43:47+00:00",
+   "activity": "2026-01-15T09:45:01+00:00",
    "attachments": [],
    "category": "side",
    "confidence": null,
    "confidence_note": "",
-   "created": "2026-01-15T09:27:45+00:00",
+   "created": "2026-01-15T09:28:59+00:00",
    "draft": "",
    "due": null,
    "evidence": [],
@@ -333,46 +333,46 @@
     {
      "id": "a9dcc471",
      "kind": "event",
-     "t": "2026-01-15T09:30:13+00:00",
+     "t": "2026-01-15T09:31:27+00:00",
      "text": "created · 周报邮件草稿",
      "who": "manager"
     },
     {
      "id": "c53504a6",
      "kind": "event",
-     "t": "2026-01-15T09:33:55+00:00",
+     "t": "2026-01-15T09:35:09+00:00",
      "text": "stage todo → doing",
      "who": "writer"
     },
     {
      "id": "d829a422",
      "kind": "log",
-     "t": "2026-01-15T09:40:42+00:00",
+     "t": "2026-01-15T09:41:56+00:00",
      "text": "Collecting what closed this week",
      "who": "writer"
     },
     {
      "id": "a7794402",
      "kind": "log",
-     "t": "2026-01-15T09:43:47+00:00",
+     "t": "2026-01-15T09:45:01+00:00",
      "text": "Tightening the opening",
      "who": "writer"
     }
    ],
    "title": "周报邮件草稿",
    "title_en": "Draft of the weekly update email",
-   "updated": "2026-01-15T09:33:18+00:00",
+   "updated": "2026-01-15T09:34:32+00:00",
    "versions": []
   },
   {
-   "activity": "2026-01-15T10:07:13+00:00",
+   "activity": "2026-01-15T10:08:27+00:00",
    "attachments": [],
    "category": "main",
    "confidence": "med",
    "confidence_note": "Fixture card",
-   "created": "2026-01-15T09:46:52+00:00",
+   "created": "2026-01-15T09:48:06+00:00",
    "draft": "## Plan\n\n| Step | Owner | Done when | Date |\n|---|---|---|---|\n| Get three quotes | Scout | table in the card | Mon |\n| Change of address list | Signal | list ticked off | Wed |\n| Packing checklist | Lens | checklist in the card | Fri |\n\nFirst step today: ask Scout for the quotes.",
-   "draft_at": "2026-01-15T10:05:59+00:00",
+   "draft_at": "2026-01-15T10:07:13+00:00",
    "draft_attachments": [],
    "draft_label": "v1",
    "due": null,
@@ -391,53 +391,53 @@
     {
      "id": "a99baaa3",
      "kind": "event",
-     "t": "2026-01-15T09:49:20+00:00",
+     "t": "2026-01-15T09:50:34+00:00",
      "text": "created · 搬家计划",
      "who": "manager"
     },
     {
      "id": "946bb8ea",
      "kind": "event",
-     "t": "2026-01-15T09:53:02+00:00",
+     "t": "2026-01-15T09:54:16+00:00",
      "text": "stage todo → doing",
      "who": "director"
     },
     {
      "id": "fb6e3d66",
      "kind": "log",
-     "t": "2026-01-15T09:59:49+00:00",
+     "t": "2026-01-15T10:01:03+00:00",
      "text": "Listing the steps",
      "who": "director"
     },
     {
      "id": "01ea13c4",
      "kind": "log",
-     "t": "2026-01-15T10:02:54+00:00",
+     "t": "2026-01-15T10:04:08+00:00",
      "text": "Checking the dates against your calendar",
      "who": "director"
     },
     {
      "id": "454f7be5",
      "kind": "event",
-     "t": "2026-01-15T10:07:13+00:00",
+     "t": "2026-01-15T10:08:27+00:00",
      "text": "提交审核 · submitted for review",
      "who": "director"
     }
    ],
    "title": "搬家计划",
    "title_en": "Plan for the move",
-   "updated": "2026-01-15T10:06:36+00:00",
+   "updated": "2026-01-15T10:07:50+00:00",
    "versions": []
   },
   {
-   "activity": "2026-01-15T10:38:40+00:00",
+   "activity": "2026-01-15T10:39:54+00:00",
    "attachments": [],
    "category": "side",
    "confidence": "med",
    "confidence_note": "Fixture card",
-   "created": "2026-01-15T10:12:46+00:00",
+   "created": "2026-01-15T10:14:00+00:00",
    "draft": "Three directions: **1. Bold type** (recommended, reads from across the room), 2. Photo-led, 3. Illustrated.\n\nFonts are OFL. No stock photos used.",
-   "draft_at": "2026-01-15T10:31:53+00:00",
+   "draft_at": "2026-01-15T10:33:07+00:00",
    "draft_attachments": [],
    "draft_label": "v1",
    "due": null,
@@ -456,60 +456,60 @@
     {
      "id": "66b2f2fd",
      "kind": "event",
-     "t": "2026-01-15T10:15:14+00:00",
+     "t": "2026-01-15T10:16:28+00:00",
      "text": "created · 活动海报三版",
      "who": "manager"
     },
     {
      "id": "7a498e12",
      "kind": "event",
-     "t": "2026-01-15T10:18:56+00:00",
+     "t": "2026-01-15T10:20:10+00:00",
      "text": "stage todo → doing",
      "who": "artist"
     },
     {
      "id": "341ead60",
      "kind": "log",
-     "t": "2026-01-15T10:25:43+00:00",
+     "t": "2026-01-15T10:26:57+00:00",
      "text": "Sketching layouts",
      "who": "artist"
     },
     {
      "id": "201eab82",
      "kind": "log",
-     "t": "2026-01-15T10:28:48+00:00",
+     "t": "2026-01-15T10:30:02+00:00",
      "text": "Exporting three options",
      "who": "artist"
     },
     {
      "id": "fbc3e79c",
      "kind": "event",
-     "t": "2026-01-15T10:33:07+00:00",
+     "t": "2026-01-15T10:34:21+00:00",
      "text": "提交审核 · submitted for review",
      "who": "artist"
     },
     {
      "id": "06bd048b",
      "kind": "event",
-     "t": "2026-01-15T10:38:40+00:00",
+     "t": "2026-01-15T10:39:54+00:00",
      "text": "stage review → done",
      "who": "me"
     }
    ],
    "title": "活动海报三版",
    "title_en": "Three poster options for the meetup",
-   "updated": "2026-01-15T10:38:03+00:00",
+   "updated": "2026-01-15T10:39:17+00:00",
    "versions": []
   },
   {
-   "activity": "2026-01-15T11:02:06+00:00",
+   "activity": "2026-01-15T11:03:20+00:00",
    "attachments": [],
    "category": "daily",
    "confidence": "med",
    "confidence_note": "Fixture card",
-   "created": "2026-01-15T10:41:45+00:00",
+   "created": "2026-01-15T10:42:59+00:00",
    "draft": "- Tuesday: the dentist and the design review overlapped; moved the review to 15:00 (draft message to the team below).\n- Thursday: nothing booked after 14:00, kept free for focus work.\n\n> Hi, could we move the design review to 15:00 Tuesday?",
-   "draft_at": "2026-01-15T11:00:52+00:00",
+   "draft_at": "2026-01-15T11:02:06+00:00",
    "draft_attachments": [],
    "draft_label": "v1",
    "due": null,
@@ -528,51 +528,51 @@
     {
      "id": "7cb2ef1a",
      "kind": "event",
-     "t": "2026-01-15T10:44:13+00:00",
+     "t": "2026-01-15T10:45:27+00:00",
      "text": "created · 下周日程整理",
      "who": "manager"
     },
     {
      "id": "9e7deebe",
      "kind": "event",
-     "t": "2026-01-15T10:47:55+00:00",
+     "t": "2026-01-15T10:49:09+00:00",
      "text": "stage todo → doing",
      "who": "ops"
     },
     {
      "id": "fde7e16a",
      "kind": "log",
-     "t": "2026-01-15T10:54:42+00:00",
+     "t": "2026-01-15T10:55:56+00:00",
      "text": "Reading the calendar",
      "who": "ops"
     },
     {
      "id": "071ce884",
      "kind": "log",
-     "t": "2026-01-15T10:57:47+00:00",
+     "t": "2026-01-15T10:59:01+00:00",
      "text": "Moving the clashing call",
      "who": "ops"
     },
     {
      "id": "11084c19",
      "kind": "event",
-     "t": "2026-01-15T11:02:06+00:00",
+     "t": "2026-01-15T11:03:20+00:00",
      "text": "提交审核 · submitted for review",
      "who": "ops"
     }
    ],
    "title": "下周日程整理",
    "title_en": "Next week's calendar, cleaned up",
-   "updated": "2026-01-15T11:01:29+00:00",
+   "updated": "2026-01-15T11:02:43+00:00",
    "versions": []
   },
   {
-   "activity": "2026-01-15T11:10:07+00:00",
+   "activity": "2026-01-15T11:11:21+00:00",
    "attachments": [],
    "category": "daily",
    "confidence": null,
    "confidence_note": "",
-   "created": "2026-01-15T11:07:39+00:00",
+   "created": "2026-01-15T11:08:53+00:00",
    "draft": "",
    "due": null,
    "evidence": [],
@@ -590,18 +590,18 @@
     {
      "id": "63fe6dfe",
      "kind": "event",
-     "t": "2026-01-15T11:10:07+00:00",
+     "t": "2026-01-15T11:11:21+00:00",
      "text": "created · 整理下载文件夹",
      "who": "manager"
     }
    ],
    "title": "整理下载文件夹",
    "title_en": "Tidy the downloads folder",
-   "updated": "2026-01-15T11:09:30+00:00",
+   "updated": "2026-01-15T11:10:44+00:00",
    "versions": []
   },
   {
-   "activity": "2026-01-15T11:31:42+00:00",
+   "activity": "2026-01-15T11:32:56+00:00",
    "asks": [
     {
      "answer": null,
@@ -615,16 +615,16 @@
      "other": true,
      "q": "Which cities should the rent comparison cover?",
      "rec": "Berlin",
-     "t": "2026-01-15T11:30:28+00:00"
+     "t": "2026-01-15T11:31:42+00:00"
     }
    ],
    "attachments": [],
    "category": "daily",
    "confidence": "med",
    "confidence_note": "Fixture card",
-   "created": "2026-01-15T11:13:12+00:00",
+   "created": "2026-01-15T11:14:26+00:00",
    "draft": "Which cities do you want in the rent comparison?",
-   "draft_at": "2026-01-15T11:29:14+00:00",
+   "draft_at": "2026-01-15T11:30:28+00:00",
    "draft_attachments": [],
    "draft_label": "v1",
    "due": null,
@@ -643,42 +643,42 @@
     {
      "id": "fb24d990",
      "kind": "event",
-     "t": "2026-01-15T11:15:40+00:00",
+     "t": "2026-01-15T11:16:54+00:00",
      "text": "created · 要比较哪些城市？",
      "who": "manager"
     },
     {
      "id": "988a2811",
      "kind": "event",
-     "t": "2026-01-15T11:19:22+00:00",
+     "t": "2026-01-15T11:20:36+00:00",
      "text": "stage todo → doing",
      "who": "scout"
     },
     {
      "id": "ae95bf8e",
      "kind": "log",
-     "t": "2026-01-15T11:26:09+00:00",
+     "t": "2026-01-15T11:27:23+00:00",
      "text": "Waiting for your answer",
      "who": "scout"
     },
     {
      "id": "94b651e9",
      "kind": "event",
-     "t": "2026-01-15T11:31:05+00:00",
+     "t": "2026-01-15T11:32:19+00:00",
      "text": "提问 · Which cities should the rent comparison cover?（London / Berlin（推荐） / Lisbon）",
      "who": "scout"
     },
     {
      "id": "2da27440",
      "kind": "event",
-     "t": "2026-01-15T11:31:42+00:00",
+     "t": "2026-01-15T11:32:56+00:00",
      "text": "提交审核 · submitted for review",
      "who": "scout"
     }
    ],
    "title": "要比较哪些城市？",
    "title_en": "Which cities should the rent comparison cover?",
-   "updated": "2026-01-15T11:29:51+00:00",
+   "updated": "2026-01-15T11:31:05+00:00",
    "versions": []
   }
  ],
@@ -688,7 +688,7 @@
    "id": "L-0115-8967",
    "item": "fx-2",
    "status": "pending",
-   "t": "2026-01-15T12:04:23+00:00",
+   "t": "2026-01-15T12:05:37+00:00",
    "text": "Weekly updates open with the one decision the team must make."
   }
  ],
@@ -696,235 +696,235 @@
   {
    "agent": "manager",
    "item": "fx-1",
-   "t": "2026-01-15T09:04:56+00:00",
+   "t": "2026-01-15T09:06:10+00:00",
    "text": "upsert fx-1 [todo] 比较三款降噪耳机"
   },
   {
    "agent": "scout",
    "item": "fx-1",
-   "t": "2026-01-15T09:08:38+00:00",
+   "t": "2026-01-15T09:09:52+00:00",
    "text": "upsert fx-1 [doing] 比较三款降噪耳机"
   },
   {
    "agent": "scout",
    "item": "fx-1",
-   "t": "2026-01-15T09:12:20+00:00",
+   "t": "2026-01-15T09:13:34+00:00",
    "text": "Reading three long reviews"
   },
   {
    "agent": "scout",
    "item": "fx-1",
-   "t": "2026-01-15T09:15:25+00:00",
+   "t": "2026-01-15T09:16:39+00:00",
    "text": "Reading three long reviews"
   },
   {
    "agent": "scout",
    "item": "fx-1",
-   "t": "2026-01-15T09:18:30+00:00",
+   "t": "2026-01-15T09:19:44+00:00",
    "text": "Building the comparison table"
   },
   {
    "agent": "scout",
    "item": "fx-1",
-   "t": "2026-01-15T09:23:26+00:00",
+   "t": "2026-01-15T09:24:40+00:00",
    "text": "upsert fx-1 [review] 比较三款降噪耳机"
   },
   {
    "agent": "manager",
    "item": "fx-2",
-   "t": "2026-01-15T09:30:50+00:00",
+   "t": "2026-01-15T09:32:04+00:00",
    "text": "upsert fx-2 [todo] 周报邮件草稿"
   },
   {
    "agent": "writer",
    "item": "fx-2",
-   "t": "2026-01-15T09:34:32+00:00",
+   "t": "2026-01-15T09:35:46+00:00",
    "text": "upsert fx-2 [doing] 周报邮件草稿"
   },
   {
    "agent": "writer",
    "item": "fx-2",
-   "t": "2026-01-15T09:38:14+00:00",
+   "t": "2026-01-15T09:39:28+00:00",
    "text": "Collecting what closed this week"
   },
   {
    "agent": "writer",
    "item": "fx-2",
-   "t": "2026-01-15T09:41:19+00:00",
+   "t": "2026-01-15T09:42:33+00:00",
    "text": "Collecting what closed this week"
   },
   {
    "agent": "writer",
    "item": "fx-2",
-   "t": "2026-01-15T09:44:24+00:00",
+   "t": "2026-01-15T09:45:38+00:00",
    "text": "Tightening the opening"
   },
   {
    "agent": "manager",
    "item": "fx-3",
-   "t": "2026-01-15T09:49:57+00:00",
+   "t": "2026-01-15T09:51:11+00:00",
    "text": "upsert fx-3 [todo] 搬家计划"
   },
   {
    "agent": "director",
    "item": "fx-3",
-   "t": "2026-01-15T09:53:39+00:00",
+   "t": "2026-01-15T09:54:53+00:00",
    "text": "upsert fx-3 [doing] 搬家计划"
   },
   {
    "agent": "director",
    "item": "fx-3",
-   "t": "2026-01-15T09:57:21+00:00",
+   "t": "2026-01-15T09:58:35+00:00",
    "text": "Listing the steps"
   },
   {
    "agent": "director",
    "item": "fx-3",
-   "t": "2026-01-15T10:00:26+00:00",
+   "t": "2026-01-15T10:01:40+00:00",
    "text": "Listing the steps"
   },
   {
    "agent": "director",
    "item": "fx-3",
-   "t": "2026-01-15T10:03:31+00:00",
+   "t": "2026-01-15T10:04:45+00:00",
    "text": "Checking the dates against your calendar"
   },
   {
    "agent": "director",
    "item": "fx-3",
-   "t": "2026-01-15T10:08:27+00:00",
+   "t": "2026-01-15T10:09:41+00:00",
    "text": "upsert fx-3 [review] 搬家计划"
   },
   {
    "agent": "manager",
    "item": "fx-4",
-   "t": "2026-01-15T10:15:51+00:00",
+   "t": "2026-01-15T10:17:05+00:00",
    "text": "upsert fx-4 [todo] 活动海报三版"
   },
   {
    "agent": "artist",
    "item": "fx-4",
-   "t": "2026-01-15T10:19:33+00:00",
+   "t": "2026-01-15T10:20:47+00:00",
    "text": "upsert fx-4 [doing] 活动海报三版"
   },
   {
    "agent": "artist",
    "item": "fx-4",
-   "t": "2026-01-15T10:23:15+00:00",
+   "t": "2026-01-15T10:24:29+00:00",
    "text": "Sketching layouts"
   },
   {
    "agent": "artist",
    "item": "fx-4",
-   "t": "2026-01-15T10:26:20+00:00",
+   "t": "2026-01-15T10:27:34+00:00",
    "text": "Sketching layouts"
   },
   {
    "agent": "artist",
    "item": "fx-4",
-   "t": "2026-01-15T10:29:25+00:00",
+   "t": "2026-01-15T10:30:39+00:00",
    "text": "Exporting three options"
   },
   {
    "agent": "artist",
    "item": "fx-4",
-   "t": "2026-01-15T10:34:21+00:00",
+   "t": "2026-01-15T10:35:35+00:00",
    "text": "upsert fx-4 [review] 活动海报三版"
   },
   {
    "agent": "me",
    "item": "fx-4",
-   "t": "2026-01-15T10:39:17+00:00",
+   "t": "2026-01-15T10:40:31+00:00",
    "text": "upsert fx-4 [done] 活动海报三版"
   },
   {
    "agent": "manager",
    "item": "fx-5",
-   "t": "2026-01-15T10:44:50+00:00",
+   "t": "2026-01-15T10:46:04+00:00",
    "text": "upsert fx-5 [todo] 下周日程整理"
   },
   {
    "agent": "ops",
    "item": "fx-5",
-   "t": "2026-01-15T10:48:32+00:00",
+   "t": "2026-01-15T10:49:46+00:00",
    "text": "upsert fx-5 [doing] 下周日程整理"
   },
   {
    "agent": "ops",
    "item": "fx-5",
-   "t": "2026-01-15T10:52:14+00:00",
+   "t": "2026-01-15T10:53:28+00:00",
    "text": "Reading the calendar"
   },
   {
    "agent": "ops",
    "item": "fx-5",
-   "t": "2026-01-15T10:55:19+00:00",
+   "t": "2026-01-15T10:56:33+00:00",
    "text": "Reading the calendar"
   },
   {
    "agent": "ops",
    "item": "fx-5",
-   "t": "2026-01-15T10:58:24+00:00",
+   "t": "2026-01-15T10:59:38+00:00",
    "text": "Moving the clashing call"
   },
   {
    "agent": "ops",
    "item": "fx-5",
-   "t": "2026-01-15T11:03:20+00:00",
+   "t": "2026-01-15T11:04:34+00:00",
    "text": "upsert fx-5 [review] 下周日程整理"
   },
   {
    "agent": "manager",
    "item": "fx-6",
-   "t": "2026-01-15T11:10:44+00:00",
+   "t": "2026-01-15T11:11:58+00:00",
    "text": "upsert fx-6 [todo] 整理下载文件夹"
   },
   {
    "agent": "manager",
    "item": "fx-7",
-   "t": "2026-01-15T11:16:17+00:00",
+   "t": "2026-01-15T11:17:31+00:00",
    "text": "upsert fx-7 [todo] 要比较哪些城市？"
   },
   {
    "agent": "scout",
    "item": "fx-7",
-   "t": "2026-01-15T11:19:59+00:00",
+   "t": "2026-01-15T11:21:13+00:00",
    "text": "upsert fx-7 [doing] 要比较哪些城市？"
   },
   {
    "agent": "scout",
    "item": "fx-7",
-   "t": "2026-01-15T11:23:41+00:00",
+   "t": "2026-01-15T11:24:55+00:00",
    "text": "Waiting for your answer"
   },
   {
    "agent": "scout",
    "item": "fx-7",
-   "t": "2026-01-15T11:26:46+00:00",
+   "t": "2026-01-15T11:28:00+00:00",
    "text": "Waiting for your answer"
   },
   {
    "agent": "scout",
    "item": "fx-7",
-   "t": "2026-01-15T11:32:56+00:00",
+   "t": "2026-01-15T11:34:10+00:00",
    "text": "upsert fx-7 [review] 要比较哪些城市？"
   },
   {
    "agent": "scout",
    "item": "fx-1",
-   "t": "2026-01-15T11:39:06+00:00",
+   "t": "2026-01-15T11:40:20+00:00",
    "text": "reply on fx-1"
   },
   {
    "agent": "scout",
    "item": "fx-1",
-   "t": "2026-01-15T11:43:25+00:00",
+   "t": "2026-01-15T11:44:39+00:00",
    "text": "Checking prices again"
   },
   {
    "agent": "writer",
    "item": "fx-2",
-   "t": "2026-01-15T11:46:30+00:00",
+   "t": "2026-01-15T11:47:44+00:00",
    "text": "Tightening the opening"
   }
  ],
@@ -935,7 +935,7 @@
    "item": "fx-1",
    "kind": "update",
    "read": false,
-   "t": "2026-01-15T09:22:49+00:00",
+   "t": "2026-01-15T09:24:03+00:00",
    "text": "待审核: 比较三款降噪耳机"
   },
   {
@@ -944,7 +944,7 @@
    "item": "fx-3",
    "kind": "update",
    "read": false,
-   "t": "2026-01-15T10:07:50+00:00",
+   "t": "2026-01-15T10:09:04+00:00",
    "text": "待审核: 搬家计划"
   },
   {
@@ -953,7 +953,7 @@
    "item": "fx-4",
    "kind": "update",
    "read": false,
-   "t": "2026-01-15T10:33:44+00:00",
+   "t": "2026-01-15T10:34:58+00:00",
    "text": "待审核: 活动海报三版"
   },
   {
@@ -962,7 +962,7 @@
    "item": "fx-5",
    "kind": "update",
    "read": false,
-   "t": "2026-01-15T11:02:43+00:00",
+   "t": "2026-01-15T11:03:57+00:00",
    "text": "待审核: 下周日程整理"
   },
   {
@@ -971,7 +971,7 @@
    "item": "fx-7",
    "kind": "update",
    "read": false,
-   "t": "2026-01-15T11:32:19+00:00",
+   "t": "2026-01-15T11:33:33+00:00",
    "text": "待审核: 要比较哪些城市？"
   },
   {
@@ -980,7 +980,7 @@
    "item": "fx-1",
    "kind": "reply",
    "read": false,
-   "t": "2026-01-15T11:38:29+00:00",
+   "t": "2026-01-15T11:39:43+00:00",
    "text": "Model B wins on noise cancelling; table is in the draft."
   },
   {
@@ -989,7 +989,7 @@
    "item": null,
    "kind": "reply",
    "read": false,
-   "t": "2026-01-15T11:48:58+00:00",
+   "t": "2026-01-15T11:50:12+00:00",
    "text": "管家: Morning. Two cards wait for you, one has a question."
   },
   {
@@ -998,7 +998,7 @@
    "item": null,
    "kind": "reply",
    "read": false,
-   "t": "2026-01-15T11:53:17+00:00",
+   "t": "2026-01-15T11:54:31+00:00",
    "text": "管家: Model B. Want me to order it?"
   },
   {
@@ -1007,7 +1007,7 @@
    "item": null,
    "kind": "reply",
    "read": false,
-   "t": "2026-01-15T11:58:13+00:00",
+   "t": "2026-01-15T11:59:27+00:00",
    "text": "scout: Prices checked on three sites; B is cheapest at the first one."
   },
   {
@@ -1016,7 +1016,7 @@
    "item": null,
    "kind": "reply",
    "read": false,
-   "t": "2026-01-15T12:01:18+00:00",
+   "t": "2026-01-15T12:02:32+00:00",
    "text": "writer: Should the update mention the export fix?"
   },
   {
@@ -1025,7 +1025,7 @@
    "item": "fx-2",
    "kind": "update",
    "read": false,
-   "t": "2026-01-15T12:05:00+00:00",
+   "t": "2026-01-15T12:06:14+00:00",
    "text": "新规则提议 · writer: Weekly updates open with the one decision the team must make."
   },
   {
@@ -1034,7 +1034,7 @@
    "item": null,
    "kind": "update",
    "read": false,
-   "t": "2026-01-15T12:08:05+00:00",
+   "t": "2026-01-15T12:09:19+00:00",
    "text": "Daily report · 2026-01-15"
   }
  ],
@@ -1042,23 +1042,36 @@
  "meta": {
   "fixture": {
    "built_by": "tests/e2e/fixtures/build.py",
-   "end": "2026-01-15T12:19:11+00:00",
+   "end": "2026-01-15T12:20:25+00:00",
    "seed": 20260115
   },
   "focus": {
    "at": null,
    "pct": null
   },
-  "ho_start": "2026-01-15T09:11:43+00:00",
+  "ho_start": "2026-01-15T09:12:57+00:00",
   "inbox_acked": [],
   "last_report_date": "2026-01-15",
+  "migrations": [
+   {
+    "at": "2026-01-15T09:01:14+00:00",
+    "from": 0,
+    "ran": [
+     "0001_baseline",
+     "0002_routines_log"
+    ],
+    "to": 2
+   }
+  ],
   "rev": 55,
+  "routines_log": {},
+  "schema": 2,
   "stamina": {
    "at": "2026-01-15T09:00:00+00:00",
    "note": "",
    "pct": 100
   },
-  "updated": "2026-01-15T12:19:11+00:00"
+  "updated": "2026-01-15T12:20:25+00:00"
  },
  "notices": [
   {
@@ -1075,14 +1088,14 @@
    "body": "## Today\n\n- 3 cards handed in\n- 1 question open (fx-7)\n",
    "date": "2026-01-15",
    "id": "r-0115-93e8",
-   "t": "2026-01-15T12:07:28+00:00",
+   "t": "2026-01-15T12:08:42+00:00",
    "title": "Daily report"
   }
  ],
  "schedules": [
   {
    "by": "manager",
-   "created": "2026-01-15T12:13:01+00:00",
+   "created": "2026-01-15T12:14:15+00:00",
    "enabled": true,
    "end": null,
    "id": "s-0115-6be5",
@@ -1106,7 +1119,7 @@
   },
   {
    "by": "manager",
-   "created": "2026-01-15T12:17:57+00:00",
+   "created": "2026-01-15T12:19:11+00:00",
    "enabled": true,
    "end": null,
    "id": "s-0115-bde5",

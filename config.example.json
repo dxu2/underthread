@@ -1,6 +1,11 @@
 {
-  "owner": {"display_name": "<your name>"},
+  "_schema": 2,
+  "owner": {
+    "display_name": "<your name>"
+  },
   "port": 8765,
   "report_time": "18:00",
-  "routines": []
+  "routines": [],
+  "allowed_hosts": [],
+  "legacy_headers": []
 }

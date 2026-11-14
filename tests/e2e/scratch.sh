@@ -33,7 +33,7 @@ case "${1:-}" in
     rsync -a --delete \
       --exclude '/tools/models/' --exclude '/tools/voice/' --exclude '/logs/' --exclude '/uploads/' --exclude '/work/' \
       --exclude '/archive/' --exclude '/rcshots/' --exclude '/.claude/' --exclude '/.live/' --exclude '*.bak*' --exclude '*.tar' \
-      --exclude '/.git/' --exclude '/.demo/' --exclude 'node_modules/' --exclude '/tests/e2e/out/' --exclude '/.split-backup/' \
+      --exclude '/.git/' --exclude '/.demo/' --exclude '/.backups/' --exclude '/local/backups/' --exclude 'node_modules/' --exclude '/tests/e2e/out/' --exclude '/.split-backup/' \
       --exclude '/.state.lock' --exclude '/.inbox.lock' --exclude '/state.json.tmp' --exclude '/.verify.pid' --exclude '/verify-server.log' \
       "$ROOT/" "$S/"
     rm -f "${S:?}/push_subs.json"            # no test message may reach the user's phone

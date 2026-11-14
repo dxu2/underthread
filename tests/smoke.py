@@ -35,7 +35,7 @@ import urllib.request
 SRC = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 PY = sys.executable
 ONLY = sys.argv[sys.argv.index("-k") + 1] if "-k" in sys.argv else ""
-SKIP = {".git", ".demo", "uploads", "work", "logs", "__pycache__", "node_modules"}
+SKIP = {".backups", ".git", ".demo", "uploads", "work", "logs", "__pycache__", "node_modules"}
 RUNTIME = ("state.json", "roster.json", "config.json", "inbox.jsonl", "archive.json")
 
 

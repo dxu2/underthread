@@ -43,6 +43,15 @@ Read [docs/architecture.md](docs/architecture.md) first. In short:
 - **Local only.** Don't add anything that binds to `0.0.0.0`, calls out to a third-party service by default, or sends data off the machine.
 - Keep comments about *why*, not *what*.
 
+## Changing the data or the config
+
+Updates must never need a manual step from the user, so every change to the shape of `state.json`, `config.json` or `roster.json` ships with its own upgrade:
+
+- **New key with a sensible default:** nothing else to do. Missing top-level state keys are filled by `stateutil._shape`; missing config keys come from `DEFAULTS` in `core/config.py` (defaults are never written into the user's `config.json`; regenerate the example with `python3 -m core.config example --write`).
+- **Anything else** (rename, move, backfill, new meaning): add the next numbered step in `core/migrations/` (`NNNN_<name>.py` with `TARGETS` and `up(data, ctx)`). It runs once, in order, on the first read after the update, after the old file is saved under `local/backups/migrate/` (`.backups/migrate/` without a `local/` folder). A step must be idempotent and, within a minor version, add-only: leave the old key in place so a rollback to the previous code still works.
+- **Browser storage** (`rt.*` keys in localStorage): add a step at the end of `STEPS` in `web/lsmigrate.js`; never edit or reorder a shipped one.
+- `python3 stateutil.py schema` shows the numbers and the migration log; `python3 stateutil.py config show` shows each effective config value and whether it is a default.
+
 ## Changing prompts
 
 `manager.md`, `policy.md`, `roles/*.md` and the hard rules in `make_agents.py` are instructions that real agents follow. Keep them generic (no personal names, private card ids or dates), in the second person, and test them by running a steward against a copy for a few cards.

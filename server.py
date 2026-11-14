@@ -24,6 +24,8 @@ import gzip
 from urllib.parse import parse_qs, unquote, urlparse
 
 import stateutil as S
+from core import config as C   # t-oss-struct E2: DEFAULTS deep-merged with config.json; roster ROLE_DEFAULTS
+from core import migrate as MG   # t-oss-struct E1
 import sys
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "tools"))
 import webpush as WP  # noqa: E402
@@ -55,7 +57,7 @@ DOC_FILES = ["SETUP-GUIDE.md", "team.md", "policy.md", "manager.md", "manager-ha
 
 def rname(rid, fallback):
     """A role's display name from roster.json (so messages say your HR's name, not a fixed one); fallback when it is not on the team."""
-    for r in load_json("roster.json", {"roles": []}).get("roles", []):
+    for r in C.roster(ROOT).get("roles", []):
         if r.get("id") == rid and r.get("enabled", True) is not False:
             return r.get("name") or fallback
     return fallback
@@ -168,7 +170,7 @@ def sync_roster():
     if m == _roster_mtime:
         return
     _roster_mtime = m
-    roster = load_json("roster.json", {"roles": []})
+    roster = C.roster(ROOT)
     keys = ("name", "name_en", "title", "title_en", "duty", "duty_en", "color", "room", "agent_name", "order", "look", "voice",
             "tint", "seat", "pipe")   # t-hr-registry: tint = art backdrop colour, seat = stage [x, y] (null = no seat), pipe = production-line column(s)
     with S.mutate() as st:
@@ -269,29 +271,6 @@ def log_routine_run(meta, rid, day):
         lg.append(day)
         lg.sort()
         del lg[:-ROUTINES_LOG_KEEP]
-
-
-def routines_log_backfill():
-    """t-ri1104-p3, once: build meta.routines_log from the routine_due entries already in inbox.jsonl
-    (every run since t-routine-trigger is there with its date). Skipped once the key exists."""
-    if "routines_log" in S.read()["meta"]:
-        return
-    days = {}
-    try:
-        with open(S.INBOX, encoding="utf-8") as f:
-            for line in f:
-                try:
-                    e = json.loads(line)
-                except ValueError:
-                    continue
-                if isinstance(e, dict) and e.get("kind") == "routine_due" and e.get("routine") and e.get("date"):
-                    days.setdefault(str(e["routine"]), set()).add(str(e["date"]))
-    except FileNotFoundError:
-        pass
-    with S.mutate() as st:
-        if "routines_log" not in st["meta"]:
-            st["meta"]["routines_log"] = {rid: sorted(ds)[-ROUTINES_LOG_KEEP:] for rid, ds in days.items()}
-    print("routines_log: backfilled from inbox:", {k: len(v) for k, v in days.items()})
 
 
 def routine_item(r):
@@ -820,6 +799,7 @@ def health():
                    "uptime": int(t - START), "pid": os.getpid(), "rev": st["meta"].get("rev"),
                    "loops": not os.environ.get("NO_LOOPS")},
         "comfy": dict(_comfy),
+        "schema": MG.status(ROOT, st),   # t-oss-struct E1: code / state / config / roster schema numbers, "ahead" after a rollback
         "push": {"devices": len(subs), "last_at": last and last["last_at"], "last_code": last and last.get("last_code"),
                  "failing": sum(1 for s in subs if s.get("last_code") and not 200 <= s["last_code"] < 300)},
         "report": {"time": CONFIG.get("report_time", "18:00"), "last_date": st["meta"].get("last_report_date"),
@@ -922,7 +902,7 @@ def _tpl_list():
 
 
 def templates_payload():
-    roster = load_json("roster.json", {"roles": []}).get("roles", [])
+    roster = C.roster(ROOT).get("roles", [])
     hired = {}
     for r in roster:
         if r.get("template"):
@@ -1011,7 +991,7 @@ HR_Q = os.path.join(ROOT, "templates", "hr", "interview.json")
 
 
 def _hr_on():
-    r = next((x for x in load_json("roster.json", {"roles": []}).get("roles", []) if x["id"] == HR_ID), None)
+    r = next((x for x in C.roster(ROOT).get("roles", []) if x["id"] == HR_ID), None)
     return bool(r) and r.get("enabled", True) is not False
 
 
@@ -1155,7 +1135,7 @@ NR = os.path.join(ROOT, "tools", "new_role.py")
 
 
 def _role(rid):
-    return next((x for x in load_json("roster.json", {"roles": []}).get("roles", []) if x["id"] == rid), None)
+    return next((x for x in C.roster(ROOT).get("roles", []) if x["id"] == rid), None)
 
 
 def _nr_mod():
@@ -1307,7 +1287,7 @@ def retire_plan(rid):
     pipe = r.get("pipe")
     pipes = set([pipe] if isinstance(pipe, str) else pipe or [])
     cands = []
-    for x in load_json("roster.json", {"roles": []}).get("roles", []):
+    for x in C.roster(ROOT).get("roles", []):
         if x["id"] in (rid,) or x.get("enabled") is False:
             continue
         xp = x.get("pipe")
@@ -1930,7 +1910,7 @@ MANAGER_MEM = os.path.join(os.path.expanduser("~"), ".claude", "projects", re.su
 def _mem_dir(rid):
     if rid == "manager":
         return MANAGER_MEM, True
-    for r in load_json("roster.json", {"roles": []}).get("roles", []):
+    for r in C.roster(ROOT).get("roles", []):
         if r.get("id") == rid and r.get("agent_name") and re.fullmatch(r"[A-Za-z0-9_-]+", r["agent_name"]):
             return os.path.join(MEM_BASE, r["agent_name"]), False
     raise ValueError("unknown role")
@@ -1953,7 +1933,7 @@ def _mem_files(d):
 def role_memory(rid=None):
     if rid is None:
         counts = {}
-        for r in load_json("roster.json", {"roles": []}).get("roles", []):
+        for r in C.roster(ROOT).get("roles", []):
             try:
                 counts[r["id"]] = len([f for f in _mem_files(_mem_dir(r["id"])[0]) if f[0] != "MEMORY.md"])
             except ValueError:
@@ -2188,6 +2168,7 @@ def public_state(slim=False):
     st["meta"]["server_time"] = S.now()
     st["meta"]["routines"] = routines_view(st["meta"], items=st.get("items"), scheds=st.get("schedules"))
     st["schedules"] = [x for x in st.get("schedules") or [] if not x.get("deleted")]   # t-schedule-backend: removed ones stay 30 days for undo, not shown
+    st["meta"]["schema_code"] = MG.LATEST   # t-oss-struct E1: meta.schema > this = data from a newer version (settings shows a line)
     st["meta"]["report_time"] = str(CONFIG.get("report_time", "18:00"))   # ri1103-P1: the 日报 row of 今日日程
     st["meta"]["media_v"] = 1   # t-voice-memo: this server transcribes (the page hides 转写/重试 on older servers)
     trim_state(st)
@@ -2698,7 +2679,7 @@ class H(BaseHTTPRequestHandler):
                 p = tpl_avatar(q.get("job", [""])[0], q.get("v", [""])[0])
                 return self._file(p, media=True) if p else self._send(404, {"error": "not found"})
             if u.path == "/api/roster":
-                return self._send(200, load_json("roster.json", {"roles": []}))
+                return self._send(200, C.roster(ROOT))
             if u.path.startswith("/api/voice/") and VC:   # t-vb-2
                 r = VC.handle_get(u.path, q)
                 if r:
@@ -2900,15 +2881,14 @@ def main():
     if "--demo" in sys.argv[1:]:   # demo mode: tools/demo.py builds .demo/ with sample data and runs this server there
         os.execv(sys.executable, [sys.executable, os.path.join(ROOT, "tools", "demo.py")] + [a for a in sys.argv[1:] if a != "--demo"])
     ensure_live_files()
-    CONFIG = load_json("config.json", {})
+    CONFIG = C.load(ROOT)   # migrated in memory; config.json is rewritten only when a migration changes it
     if S.EXT:
         print("extensions: " + ", ".join(f"{n}" + (f" (error: {e['error']})" if e.get("error") else "") for n, e in S.EXT.items()), flush=True)
     _comfy["configured"] = bool(CONFIG.get("comfy"))
     sync_roster()
-    try:
-        routines_log_backfill()   # t-ri1104-p3
-    except Exception as e:
-        print("routines_log_backfill:", e)
+    st0 = S.read()   # t-oss-struct E1: the first read after an update runs the state migrations (backup in local/backups/migrate)
+    sc = MG.status(ROOT, st0)
+    print(f"schema: code {sc['code']}, state {sc['state']}" + (f"; data newer than this code: {', '.join(sc['ahead'])}" if sc["ahead"] else ""), flush=True)
     try:
         schedules_import()   # t-schedule-backend: also with NO_LOOPS, so a scratch copy shows the imported routines
     except Exception as e:
