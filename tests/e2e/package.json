@@ -1,0 +1,12 @@
+{
+  "name": "underthread-e2e",
+  "private": true,
+  "description": "Browser tests for the dashboard. Test-only: the app itself has no npm dependencies.",
+  "license": "MIT",
+  "scripts": {
+    "browsers": "playwright install chromium webkit"
+  },
+  "devDependencies": {
+    "playwright": "1.59.1"
+  }
+}

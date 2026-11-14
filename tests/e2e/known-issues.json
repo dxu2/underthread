@@ -1,0 +1,9 @@
+{
+  "_doc": "Page errors that are real but known and tracked elsewhere. drive.js logs them as 'known' instead of failing the run. Each entry: pattern (regex on the error line), why (where it is tracked). Remove an entry once fixed.",
+  "issues": [
+    {
+      "pattern": "^http 404 /avatars/ut/(hr|theory|xingzhe)\\.png$",
+      "why": "avatars/ut/_s/index.json in core lists three roles whose source png lives only in a private local/ layer; the page HEAD-checks them and falls back. Found by t-oss-s2-tests; fix belongs to the avatar manifest (core/local split), not to the tests."
+    }
+  ]
+}
