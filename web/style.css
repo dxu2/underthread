@@ -240,6 +240,8 @@ body.resizing { cursor: col-resize; user-select: none; }
 .cal-i.past .cal-av { opacity: .55; }
 .cal-now { text-align: right; font-size: var(--fs-11); color: var(--ink2); margin-top: 6px; font-family: var(--f-display); letter-spacing: .04em; display: flex; align-items: center; gap: 8px; }
 .cal-now::before { content: ""; flex: 1; height: 1px; background: linear-gradient(90deg, transparent, var(--glow)); box-shadow: 0 0 6px var(--glow-a); }
+.cal-now.ri14-now { margin: 4px 0; color: var(--accent); gap: 6px; }   /* t-ri1114-a P5: sits between the rows now */
+.cal-now.ri14-now b { margin-left: 2px; font-weight: 600; font-family: var(--f-cjk); letter-spacing: .02em; }
 .cal-form { display: flex; gap: 6px; margin: 8px 0; animation: rise .5s var(--ease); }
 .cal-form input { background: transparent; border: 0; border-bottom: 1px solid var(--line2); padding: 3px 4px; font-size: var(--fs-12); min-width: 0; outline: none; }
 .cal-form input:focus { border-bottom-color: var(--glow); }
@@ -880,6 +882,7 @@ body.resizing #layout { transition: none; }
 .mb-i .av.sm { margin-top: 2px; }
 .mb-m { display: flex; gap: 8px; align-items: baseline; font-size: var(--fs-13); color: var(--dim); } .mb-m b { color: var(--ink); font-weight: 600; font-family: var(--f-cjk); letter-spacing: .04em; }
 .mb-m i { font-style: normal; font-size: var(--fs-11); border: 1px solid var(--line2); border-radius: 8px; padding: 0 6px; } .mb-m span { margin-left: auto; font-family: var(--f-display); font-size: var(--fs-11); }
+.mb-m i.ri14-rv { color: var(--dot); border-color: color-mix(in srgb, var(--dot) 55%, transparent); }   /* t-ri1114-a P2: a folded row holding a 待审核 letter */
 .mb-x { font-size: var(--fs-13); color: var(--ink2); line-height: 1.5; margin-top: 3px; overflow-wrap: anywhere; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 .mb-i.unread .mb-x { color: var(--ink); } .mb-i .u { width: 6px; height: 6px; border-radius: 50%; margin-top: 7px; } .mb-i.unread .u { background: var(--dot); box-shadow: 0 0 0 1.5px var(--bg); }
 .mb-all { padding: 11px; text-align: center; font-size: var(--fs-13); color: var(--ink2); letter-spacing: .04em; font-family: var(--f-cjk); border-top: 1px solid var(--line2); transition: color .2s; } .mb-all:hover { color: var(--soul); }
@@ -1632,6 +1635,14 @@ html[data-theme="white"] .mc-flash { background: rgba(0,0,0,.28); }
 .mdl.ask-guard .ask-gp { margin: 4px 0 14px; font-size: var(--fs-13); line-height: 1.55; color: var(--ink2); }
 .mdl.ask-guard .ask-list { margin: 0; }
 @media (prefers-reduced-motion: reduce) { .ask-o { transition: none; } .ask-o:active:not(:disabled) { transform: none; } }
+/* t-ri1114-a P4: list cards show at most 2 lines of the question (tap the card for the rest); 「还有 N 题 ›」 is a dashed pill that opens the card at 「要你拿主意」 */
+.ask-row.ri14-clamp .ask-rt { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2; overflow: hidden; }
+.ri14-more { display: inline-flex; align-items: center; gap: 3px; margin-top: 7px; padding: 4px 11px; border: 1px dashed var(--line3); border-radius: 999px; background: transparent; color: var(--ink2); font-size: var(--fs-13); line-height: 1.3; cursor: pointer; transition: background .2s, color .2s, border-color .2s, transform 90ms ease-out; }
+.ri14-more span { font-size: 1.1em; line-height: 1; }
+.ri14-more:hover { color: var(--ink); border-color: var(--accent); background: color-mix(in srgb, var(--accent) 6%, transparent); }
+.ri14-more:active { transform: scale(.97); }
+.ask-row.ri14-clamp .ask-opts.sm + .ri14-more { display: flex; width: max-content; }
+@media (prefers-reduced-motion: reduce) { .ri14-more { transition: none; } .ri14-more:active { transform: none; } }
 /* the guard sheet uses the neutral system look, not the older spaced-serif modal title and ornament buttons */
 #modal .mdl.ask-guard h2 { text-align: left; font-family: var(--f-sys); font-size: var(--fs-17); letter-spacing: 0; padding-left: 0; text-shadow: none; }
 #modal .mdl.ask-guard .foot { gap: 10px; margin-top: 18px; }

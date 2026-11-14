@@ -1544,9 +1544,10 @@
     if (!evs.length && !rtRows.length && !UI.calForm) $("#cal").innerHTML = `<div class="side-h"><span>${t("today")} · ${UI.lang === "en" ? "none" : "无"}</span><button data-cal-add>+</button></div>`;
     else $("#cal").innerHTML = `<div class="side-h"><span>${t("today")} <span class="dim" style="font-weight:400">${evs.filter(e => e.date === today).length + rtRows.length} ${t("meetings")}</span></span><button data-cal-add>${UI.calForm ? "−" : "+"}</button></div>
       ${UI.calForm ? `<form class="cal-form" id="calf"><input name="title" placeholder="${UI.lang === "en" ? "What…" : "做什么…"}" required><input type="date" name="date" value="${today}"><input type="time" name="time"><button class="btn-s">${t("add")}</button></form>` : ""}
-      ${calFold([...evs.map(e => ({ k: (e.date === tmr ? "1" : "0") + (e.time || "99"), h: `<div class="cal-i ${e.date === today && e.time && e.time < nowHM ? "past" : ""}"><span class="tm">${e.date === tmr ? "+1 " : ""}${esc(e.time || "—")}</span><span>${esc(e.title)}</span><button class="x" data-cal-del="${e.id}">✕</button></div>` })), ...rtRows].sort((x, y) => x.k < y.k ? -1 : x.k > y.k ? 1 : 0))}
-      ${rtOff.length ? `<div class="cal-off" title="${esc(rtOff.map(rtName).join("、"))}">${UI.lang === "en" ? "Paused" : "暂停"} ${rtOff.length}${UI.lang === "en" ? "" : " 项"} · ${esc(rtOff.map(rtName).join("、"))}</div>` : ""}
-      <div class="cal-now">${nowHM}</div>`;
+      ${calFold([...evs.map(e => ({ k: (e.date === tmr ? "1" : "0") + (e.time || "99"), h: `<div class="cal-i ${e.date === today && e.time && e.time < nowHM ? "past" : ""}"><span class="tm">${e.date === tmr ? "+1 " : ""}${esc(e.time || "—")}</span><span>${esc(e.title)}</span><button class="x" data-cal-del="${e.id}">✕</button></div>` })), ...rtRows,
+        /* t-ri1114-a P5: the 「现在」 line sorts in at the current minute (between what has run and what is still to come), not under the list */
+        { k: "0" + nowHM + "~", h: `<div class="cal-now ri14-now"><b>${UI.lang === "en" ? "Now" : "现在"}</b>${nowHM}</div>` }].sort((x, y) => x.k < y.k ? -1 : x.k > y.k ? 1 : 0))}
+      ${rtOff.length ? `<div class="cal-off" title="${esc(rtOff.map(rtName).join("、"))}">${UI.lang === "en" ? "Paused" : "暂停"} ${rtOff.length}${UI.lang === "en" ? "" : " 项"} · ${esc(rtOff.map(rtName).join("、"))}</div>` : ""}`;
     const f = $("#calf");
     if (f) f.onsubmit = e => { e.preventDefault(); const fd = new FormData(f); api("calendar_add", Object.fromEntries(fd)); };
 
@@ -1567,6 +1568,7 @@
     const ch = e.target.closest("[data-chat]"); if (ch) { setChat(ch.dataset.chat); if (NARROWQ.matches && !MOBQ.matches) chatPop(true); return; }
     if (e.target.closest("[data-cal-add]")) { UI.calForm = !UI.calForm; renderLeft(); return; }
     const cd = e.target.closest("[data-cal-del]"); if (cd) { api("calendar_del", { id: cd.dataset.calDel }); return; }
+    const aj = e.target.closest("[data-askjump]"); if (aj) { askJump(aj.dataset.askjump); return; }   /* t-ri1114-a P4 */
     const oi = e.target.closest("[data-item]"); if (oi && !e.target.closest("button")) { openItem(oi.dataset.item); return; }
   });
   const SET_TABS = ["general", "roles", "docs", "logs", "system"];
@@ -1828,10 +1830,25 @@
     const open = DW.askOpen.has(it.id), picks = all.map(a => a.answer.opt).join(" · ");
     return `${head}<button type="button" class="uin-asum${open ? " open" : ""}" data-uin-asks aria-expanded="${open}"><b>${zh ? `${all.length} 个问题都答了` : `${all.length} answered`}</b><span class="p">${esc(picks)}</span><span class="t">${open ? (zh ? "收起 ▴" : "Hide ▴") : (zh ? "展开 ▾" : "Show ▾")}</span></button>${open ? list : ""}`;
   }
-  function askRow(it) {   // list cards: the first open question with its options, answerable in place
+  function askRow(it, dock) {   // list cards: the first open question with its options, answerable in place (dock = the card's own question bar)
     const oa = openAsks(it); if (!oa.length) return "";
-    const zh = UI.lang !== "en", a = oa[0];
-    return `<div class="ask-row"><div class="ask-rt"><i></i><b>${zh ? `${oa.length} 个问题要你选` : `${oa.length} question${oa.length > 1 ? "s" : ""} for you`}</b><span><span class="ask-sep"> · </span>${esc(a.q)}</span></div>${askChips(it, a, " sm")}${oa.length > 1 ? `<span class="ask-more">+${oa.length - 1}</span>` : ""}</div>`;
+    const zh = UI.lang !== "en", a = oa[0], n = oa.length - 1;
+    /* t-ri1114-a P4: list cards clamp the question to 2 lines (ri14-clamp) and 「+N」 is a button that opens the card at 「要你拿主意」 */
+    const more = !n ? "" : dock ? `<span class="ask-more">+${n}</span>` : `<button type="button" class="ri14-more" data-askjump="${it.id}">${zh ? `还有 ${n} 题` : `${n} more`}<span aria-hidden="true">›</span></button>`;
+    return `<div class="ask-row${dock ? "" : " ri14-clamp"}"><div class="ask-rt"><i></i><b>${zh ? `${oa.length} 个问题要你选` : `${oa.length} question${oa.length > 1 ? "s" : ""} for you`}</b><span><span class="ask-sep"> · </span>${esc(a.q)}</span></div>${askChips(it, a, " sm")}${more}</div>`;
+  }
+  /* t-ri1114-a P4: 「还有 N 题 ›」 on a list card opens the card scrolled to 「要你拿主意」 (same placing as seekItem) */
+  function askJump(id) {
+    openItem(id); let tries = 0, set = -1;
+    const place = () => {
+      const sc = $("#drawer .dw-scroll"), h = sc && UI.item === id ? $(".ask-h", sc) : null; if (!h) return false;
+      DW.pin = false; DW.jumpT = 0;
+      sc.scrollTop = set = Math.max(0, sc.scrollTop + h.getBoundingClientRect().top - sc.getBoundingClientRect().top - 12); jumpState(); return true;
+    };
+    const go = () => { if (UI.item !== id) return;
+      if (place()) [400, 1200].forEach(ms => setTimeout(() => { const sc = $("#drawer .dw-scroll"); if (sc && UI.item === id && Math.abs(sc.scrollTop - set) < 2) place(); }, ms));
+      else if (++tries < 20) setTimeout(go, 150); };
+    go();
   }
   // t-m-ask-sheet: the dock's question bar is one line (● n 个问题 · question ⌄) until tapped. A question shown here for the first time opens it;
   // after that it stays as the user left it while the card is open (ab._open lives on the bar, which is rebuilt each time a card opens).
@@ -2074,6 +2091,11 @@
     if ([...s].length > 60) s = [...s].slice(0, 60).join("") + "…";
     return who && !(rowA && x.who === rowA.id) ? who + (en ? ": " : "：") + s : s;
   }
+  /* t-ri1114-a P1: a manager 「日报 · <date>」 update names a report; same match as server.py _mail_target (push taps) */
+  function mailRep(m) {
+    if (!m || m.item || m.agent !== "manager" || m.kind !== "update") return null;
+    const r = (ST.reports || []).find(x => `${x.title} · ${x.date}` === m.text); return r ? r.id : null;
+  }
   function mailRow(g) {
     const m = g.last, it = m.item ? ST.items.find(i => i.id === m.item) : null, a = m.agent ? agent(m.agent) : null;
     const unread = g.ms.some(x => !x.read);
@@ -2144,6 +2166,9 @@
     reports() {
       const list = (ST.reports || []).slice().reverse();
       const open = UI.openRep || (list[0] && list[0].id);
+      if (UI.page === "reports" && list.some(r => r.id === open)) {   /* t-ri1114-a P1: reading a report reads its 日报 letter */
+        const ids = mailAll().filter(m => !m.read && mailRep(m) === open).map(m => m.id); if (ids.length) nrRead(ids);
+      }
       return pageHead("reports", `<div class="ph-bar"><button class="btn-s" data-repreq>${t("report_req")}</button></div>`) +
         (list.length ? list.map(r => {
           /* t-ri1110-a P5: a body that opens with its own 「# 日报 …」 line said the title twice; that line becomes the row title (keeps the weekday) */
@@ -2497,18 +2522,30 @@
     }
     return { box, sc };
   }
+  /* t-ri1114-a P2: in the drop-down, letters next to each other from one card and one person are one row (newest first).
+     A 「待审核: 卡名」 letter only repeats the title: the row is labelled 待审核 and shows the reply text instead. Letters without a card stay one per row. */
+  function mbGroups(list) {
+    const gs = [];
+    for (const m of list) {
+      const g = gs[gs.length - 1];
+      if (g && m.item && g.last.item === m.item && g.last.agent === m.agent) g.ms.push(m); else gs.push({ last: m, ms: [m] });
+    }
+    for (const g of gs) { g.rv = g.ms.some(x => REV_MAIL.test(x.text || "")); g.body = g.ms.find(x => !REV_MAIL.test(x.text || "")) || g.last; }
+    return gs;
+  }
   function renderMailbox(enter) {
     if (!MB.open) return;
     const { box } = mailboxEls(), f = UI.mailFilter;
     const unread = mailUnread();
     const fs = [["all", t("all")], ["unread", t("unread")], ["reply", t("replies")], ["update", t("updates")], ["urgent", t("urgent")]];
     const kindName = { reply: t("replies"), update: t("updates") };
-    const list = mailFiltered(40);
+    const list = mbGroups(mailFiltered(40)), en = UI.lang === "en";
     const keep = $(".mb-list", box) ? $(".mb-list", box).scrollTop : 0;
     box.innerHTML = `<div class="mb-h"><div class="mb-t"><b>${t("mail")}</b><span>${UI.lang === "en" ? `${unread} unread` : `${unread} 条未读`}</span></div><button class="btn-s" data-mailall>${t("mark_all")}</button></div>
       <div class="mb-f"><div class="seg" data-seg="mailbox">${fs.map(([k, n]) => `<button class="seg-i ${f === k ? "on" : ""}" data-mailf="${k}">${n}</button>`).join("")}</div></div>
-      <div class="mb-list ${enter ? "mb-enter" : ""}">${list.length ? list.map((m, i) => `<div class="mb-i ${m.read ? "" : "unread"}" data-mail="${m.id}" style="--i:${Math.min(i, 8)}">
-        ${m.agent ? av(agent(m.agent), "sm") : "<span class=\"av sm\"></span>"}<div class="mb-b"><div class="mb-m"><b>${m.agent ? esc(aname(agent(m.agent))) : ""}</b>${kindName[m.kind] ? `<i>${esc(kindName[m.kind])}</i>` : ""}<span>${whenH(m.t)}</span></div><div class="mb-x">${esc(mailPv(m.text, m.agent && agent(m.agent)))}</div></div><span class="u"></span></div>`).join("") : utEmpty(t("empty"))}</div>
+      <div class="mb-list ${enter ? "mb-enter" : ""}">${list.length ? list.map((g, i) => { const m = g.body, rv = g.rv, n = g.ms.length;
+        return `<div class="mb-i ${g.ms.some(x => !x.read) ? "unread" : ""}" data-mail="${g.last.id}"${n > 1 ? ` data-mailids="${g.ms.map(x => x.id).join(",")}"` : ""} style="--i:${Math.min(i, 8)}">
+        ${m.agent ? av(agent(m.agent), "sm") : "<span class=\"av sm\"></span>"}<div class="mb-b"><div class="mb-m"><b>${m.agent ? esc(aname(agent(m.agent))) : ""}</b>${rv ? `<i class="ri14-rv">${en ? "Review" : "待审核"}</i>` : kindName[m.kind] ? `<i>${esc(kindName[m.kind])}</i>` : ""}<span>${whenH(g.last.t)}${n > 1 ? (en ? ` · ${n}` : ` · ${n} 条`) : ""}</span></div><div class="mb-x">${esc(mailPv(m.text, m.agent && agent(m.agent)))}</div></div><span class="u"></span></div>`; }).join("") : utEmpty(t("empty"))}</div>
       <button class="mb-all" data-mbfull>${UI.lang === "en" ? "View all" : "查看全部"} →</button>`;
     $(".mb-list", box).scrollTop = keep;
     if (enter) setTimeout(() => { const l = $(".mb-list", box); l && l.classList.remove("mb-enter"); }, 700);
@@ -3181,7 +3218,8 @@
     if (ml) {
       const m = mailAll().find(x => x.id === ml.dataset.mail); if (!m) return;
       api("mail_read", { ids: ml.dataset.mailids ? ml.dataset.mailids.split(",") : [m.id] });
-      if (m.item) openItem(m.item); else if (m.agent) setChat(m.agent);
+      const rep = mailRep(m);   /* t-ri1114-a P1: a 日报 letter opens that report, not the manager DM */
+      if (m.item) openItem(m.item); else if (rep) route(new URLSearchParams("rep=" + rep)); else if (m.agent) setChat(m.agent);
     }
   });
   // board drag & drop
@@ -3816,7 +3854,7 @@
     const wasEnd = !first && nearEnd(sc), grew = !first && stream.length > DW.n; DW.n = stream.length;
     { // t-ask-bottom: the first unanswered question sits right above the reply box (same chips as the list cards: recommended one marked, a tap answers;
       // with more than one, they come one after another and the bar says how many are left). The full list stays in the card above as before.
-      const ab = $(".dw-askbar", dw); if (ab) { const h = it.stage === "done" ? "" : askRow(it); if (ab._h !== h) { ab.innerHTML = ab._h = h; ab.hidden = !h; if (h) askFold(ab, it); } } }
+      const ab = $(".dw-askbar", dw); if (ab) { const h = it.stage === "done" ? "" : askRow(it, true); if (ab._h !== h) { ab.innerHTML = ab._h = h; ab.hidden = !h; if (h) askFold(ab, it); } } }
     const wsD = workersOf(it.id);   // t-working-item-highlight: phone shows this row under the glass header (desktop keeps the tag in .dw-top)
     const par = parentOf(it), kids = childrenOf(it), en = UI.lang === "en";
     const parHTML = par ? `<button class="dw-parent" data-dw-nav="${esc(par.id)}"><span class="k">${en ? "Part of" : "属于"}</span><b>${esc(par.title)}</b><span class="st">${esc(rowLabel(par))}</span><svg viewBox="0 0 8 14" width="7" height="12" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1.5 1.5 6.5 7l-5 5.5"/></svg></button>` : "";

@@ -80,7 +80,10 @@
   const wnb = n => { const m = /^(\d+)\s*(.*)$/.exec(String(n)); return m ? `<span class="n wnb"><span class="wnb-num">${m[1]}</span>${m[2] ? `<span class="wnb-unit">${m[2]}</span>` : ""}</span>` : `<span class="n">${n}</span>`; };
   window.WgNum = wnb;
   const eb = (k, n, dot) => `<div class="wg-eb">${dot ? '<span class="wg-dot"></span>' : ""}<b>${nm(k)}</b>${n != null ? wnb(n) : ""}</div>`;
-  const kindL = i => i.kind === "plan" ? (en() ? "Plan" : "方案") : i.kind === "question" || (A().openAsks(i).length && i.stage !== "review") ? (en() ? "Question" : "问题") : (en() ? "Review" : "待验收");
+  /* t-ri1114-a P3: open asks outrank the card kind (a plan card with unanswered asks read as a grey 「方案」) */
+  const askN = i => i.stage !== "review" ? A().openAsks(i).length : 0;
+  const isQ = i => i.kind === "question" || askN(i) > 0;
+  const kindL = i => isQ(i) ? (en() ? "Question" : "问题") : i.kind === "plan" ? (en() ? "Plan" : "方案") : (en() ? "Review" : "待验收");
   const rowsFit = (s, big, small) => s === "l" ? big : small;
   // t-home-motion: a medium widget holds two rows and nothing else. Two or fewer: both rows, no footer (each row already says how long);
   // more: one row + 「还有 N 件 ›」 (the footer used to be clipped by ~21px under two rows)
@@ -95,7 +98,7 @@
     review(s, D) {
       const L = D.waiting, { n, foot } = fitM(s, L.length, 5);
       const row = i => { const a = A().agent(i.owner);
-        return `<div class="wg-row" data-item="${esc(i.id)}"><img class="wg-av" src="${A().avatarUrl(a)}" alt=""><div class="t">${A().nrDot ? A().nrDot(i.id) : ""}${esc(i.title)}<small>${esc(A().aname(a))} · ${en() ? "waiting" : "等了"} ${ago(i.activity || i.updated)}</small></div>${i.snoozed ? `<span class="wg-tg snz">${en() ? "Snoozed" : "推迟过"}</span>` : ""}<span class="wg-tg${i.kind === "plan" ? "" : " hot"}">${kindL(i)}</span></div>`; };
+        return `<div class="wg-row" data-item="${esc(i.id)}"><img class="wg-av" src="${A().avatarUrl(a)}" alt=""><div class="t">${A().nrDot ? A().nrDot(i.id) : ""}${esc(i.title)}<small>${esc(A().aname(a))} · ${en() ? "waiting" : "等了"} ${ago(i.activity || i.updated)}${askN(i) ? (en() ? ` · ${askN(i)} question${askN(i) > 1 ? "s" : ""}` : ` · ${askN(i)} 个问题`) : ""}</small></div>${i.snoozed ? `<span class="wg-tg snz">${en() ? "Snoozed" : "推迟过"}</span>` : ""}<span class="wg-tg${i.kind === "plan" && !isQ(i) ? "" : " hot"}">${kindL(i)}</span></div>`; };
       /* t-ri1113-a P3: the same sweep question on 3+ cards is one group row (2 row slots, its buttons answer them all); 逐张看 lists them under it.
          A medium tile has no room for the buttons: the group is one compact row there and a click opens the board. */
       const E = A().askGroups ? A().askGroups(L) : L.map(it => ({ it }));
@@ -121,7 +124,7 @@
       const ut = !!document.documentElement.dataset.ut, ws = ut && A().wsheet ? A().wsheet(a, 320) : "";
       return (ut ? `<div class="wg-utav" data-noidle><i class="wg-utp${ws ? " ws" : ""}" data-chat="${esc(a.id)}" title="${esc(A().aname(a))}" style="background-image:url('${A().avatarUrl(a, 1)}')${ws}${ws ? `;--wg-fd:-${Date.now() % 4000}ms` : ""}"></i></div>`   /* v4: same phase as App.av (--wp = Date.now() % 4000), so this patch and the Team column show the same frame */
         : `<div class="wg-bg" style="background-image:url('${art(a)}')"></div><div class="wg-sh"></div>`) + `
-        <div class="wg-top">${eb("busy", `${B.length} ${en() ? "" : "人"}`.trim())}</div>
+        <div class="wg-top">${eb("busy", B.length)}</div>
         <div class="wg-in"><h3 data-chat="${esc(a.id)}">${esc(A().aname(a))}<small>${esc(A().atitle(a) || "")}</small>${A().qBadge ? A().qBadge(a.id) : ""}</h3>
         <div class="wg-job" data-item="${esc(m.it.id)}" style="--wg-fd:-${Date.now() % 2400}ms"><span>${esc(m.it.title)}</span><b>${hm(m.since)} ${en() ? "start" : "起"} · ${ago(m.since)} ›</b></div>
         ${side.length || more > 0 ? `<div class="wg-side">${side.map(x => `<div class="wg-sr" data-item="${esc(x.it.id)}"><img src="${A().avatarUrl(x.a)}" alt="" data-chat="${esc(x.a.id)}"><div class="st"><b><span class="wg-nm">${esc(A().aname(x.a))}</span>${A().qBadge ? A().qBadge(x.a.id) : ""}</b><span>${esc(x.it.title)}</span><i><em style="width:${bar(x)}%"></em></i></div><time>${ago(x.since)}</time></div>`).join("")}${more > 0 ? `<div class="wg-sr plus" data-go="board">${en() ? `+${more} more working ›` : `+${more} 人在忙 · 看全部 ›`}</div>` : ""}</div>` : ""}</div>`;

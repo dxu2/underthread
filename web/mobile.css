@@ -1504,6 +1504,7 @@ body[data-ret="main"][data-mtab="chat"][data-cv="thread"] #main, body[data-ret="
 /* ---------- t-open-questions (phone): bigger tap targets; the dock keeps its two buttons (the block above already counts what is open) ---------- */
 .ask-o { padding: 8px 14px; font-size: var(--fs-14); }
 .ask-opts.sm .ask-o { padding: 7px 13px; font-size: var(--fs-14); }
+.ri14-more { padding: 7px 13px; font-size: var(--fs-14); }   /* t-ri1114-a P4: same size as the option chips above it */
 .rv-card .ask-row { margin: 10px 0 2px; padding: 10px 12px; border: 1px solid var(--line2); border-radius: 12px; }
 .rv-card .ask-row .ask-opts.sm { display: flex; }
 #drawer .dock-note { display: none; }
