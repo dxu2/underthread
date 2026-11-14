@@ -2,27 +2,55 @@
 
 What changed in Underthread, newest first. Underthread is developed in the open from the author's daily use; a few features that depend on private artwork or aren't ready for others yet are left out.
 
-## Unreleased
+Versions follow [semantic versioning](https://semver.org) and the `VERSION` file. Every version has the same four parts, and `tools/release.py` refuses to tag a version whose section is incomplete:
+
+- **Added**, **Changed**, **Fixed**: what a user would notice (write "Nothing." when a part is empty).
+- **Upgrade notes**: four lines, always present:
+  - `Migrations:` the numbers of the new steps in `core/migrations/` (or `none`);
+  - `New config keys:` each new key in `core/config.py` with its default, in backticks (or `none`);
+  - `Extension API:` `unchanged`, or what changed for `local/ext/` and `local/web/`;
+  - `Manual steps: none`. A change that needs a manual step does not go into a minor or patch version.
+
+Work in progress goes under `## Unreleased`; the release renames it to `## [X.Y.Z] - YYYY-MM-DD`. Sections dated before 0.1.0 are from before versioning.
+
+## [0.1.0] - 2026-11-14
 
 ### Added
-- **Seamless data upgrades**: `state.json` carries a schema number (`meta.schema`) and ordered migrations in `core/migrations/` run on the first read after an update, with the old file saved to `local/backups/migrate/` first. Config defaults live in `core/config.py` and are merged at read time, so new settings need no edit to your `config.json`; `stateutil.py schema` and `stateutil.py config show` show where things stand. Browser settings get the same treatment through `web/lsmigrate.js`. Upgrade notes: migrations 0001 (stamp) and 0002 (routines log backfill, already done on most installs); manual steps: none.
+- **Seamless data upgrades**: `state.json` carries a schema number (`meta.schema`) and ordered migrations in `core/migrations/` run on the first read after an update, with the old file saved to `local/backups/migrate/` first. Config defaults live in `core/config.py` and are merged at read time, so new settings need no edit to your `config.json`; `stateutil.py schema` and `stateutil.py config show` show where things stand. Browser settings get the same treatment through `web/lsmigrate.js`, and Settings → System status shows the data schema.
+- **Versions and releases**: a `VERSION` file, this changelog's fixed four parts, and `tools/release.py X.Y.Z`, which checks the tree, the tests, the migrations and the changelog before it writes `core.manifest.json`, commits and tags. The compatibility promise is in `CONTRIBUTING.md`.
+- **Your own layer in `local/`**: your rules, manager notes, extensions and web overrides live in `local/` (or `$UNDERTHREAD_LOCAL`), which updates never touch. Extensions: `local/ext/<name>/stateutil_ext.py` (`CLI_EXT`, `SET_AGENT_HOOKS`, `UPSERT_HOOKS`) and `server_ext.py` (`EXT_GET`); `local/web/` files win over `web/`, and `local/ext.json` adds or drops web files. `core.manifest.json` lists every core file with its sha256. See `docs/local.md`.
+- **Multi-select quick replies**: a message sent with `stateutil.py dm|say-mgr --multi` shows its options as toggles and a "Send (n)" button.
+- **Read state per chat on the server**: unread dots agree across your devices.
 - **Demo mode**: `python3 server.py --demo` (or `python3 tools/demo.py`) shows the dashboard with a crew at work, without Claude Code. It runs in a separate `.demo/` folder that is rebuilt on every start and never touches your own cards. The steward's chat lines follow `--lang zh|en` or `$LANG`, and what you click gets a canned "(Demo) …" reply. `PORT` picks the port.
 - **Presets**: `python3 tools/preset.py list|apply <name> [--dry]` switches the whole team. The Chinese content-creator team (B站 / YouTube / 小红书) now lives in `presets/content-zh/`. Every replaced file is backed up as `<file>.bak-preset-<time>`.
-- **Tests and CI**: `tests/smoke.py` (about 15 s, runs in a temporary copy), `tests/scan.py` (leak scan, optional private word list in the git-ignored `tests/scan-words.txt`), and a GitHub Actions workflow on Ubuntu and macOS with Python 3.10 and 3.12.
+- **Tests and CI**: `python3 tests/run.py quick|unit|api|e2e|upgrade|all` is the one entry point: leak scan, smoke test, unit tests, an HTTP contract test on a fixture server, and browser journeys (Playwright, Chromium and WebKit) on fixed-clock fixtures. GitHub Actions runs them on Ubuntu and macOS with Python 3.10 and 3.12.
 - **Request guard**: the server answers only known host names (against DNS rebinding; extra names go in `allowed_hosts` in `config.json`), and a POST from a browser must be same-origin and carry the `X-Underthread` header (against cross-site requests).
 - **Desktop notices**: a small card slides in at the top right for a new reply, a delivery waiting for review, a rule proposal, a reminder or a new question; click it to open the card.
-- **Docs**: a Chinese README (`README.zh-CN.md`), `CONTRIBUTING.md`, `SECURITY.md`, `CODE_OF_CONDUCT.md`, issue and pull request templates, and new pages in `docs/`: architecture, custom crew, phone and push, troubleshooting and FAQ.
+- **Docs**: a Chinese README (`README.zh-CN.md`), `CONTRIBUTING.md`, `SECURITY.md`, `CODE_OF_CONDUCT.md`, issue and pull request templates, and new pages in `docs/`: architecture, custom crew, phone and push, troubleshooting, FAQ and your own layer.
 
 ### Changed
 - **Default crew in neutral English**: Steward, Scout (Researcher), Quill (Writer), Lens (Planner), Brush (Designer), Signal (Coordinator), Smith (Tooling keeper), for any kind of personal work. Ids and avatars are unchanged. `roles/*.md`, `team.md`, `policy.md` and `manager.md` are rewritten in English for a new user. Roles with `"team": "general"` get neutral hard rules in their agent file.
 - **One settings file**: `.claude/settings.json` ships with the repository (status line plus the steward's permissions) and `claude-settings.example.json` is gone, so no setup step copies over it. Personal additions go in the git-ignored `.claude/settings.local.json`.
-- **Fresh install**: the first visit follows the browser language; the sample cards start "a few minutes ago" instead of weeks ago; the usage widget says "No tokens used yet today" when Claude Code has not run here yet; the avatar index no longer 404s before `tools/avatar_sizes.py` has run; a taken port prints one clear line instead of a traceback; `tools/new_role.py` works before the server has ever started.
-- **ComfyUI is optional and neutral**: the status labels say "ComfyUI", and the ComfyUI line and its probe only appear when `config.json` has a `comfy` block. `config.example.json` has no default routine, platforms or ComfyUI settings.
+- **Fresh install**: the first visit follows the browser language; the sample cards start "a few minutes ago" instead of weeks ago; the usage widget says "No tokens used yet today" when Claude Code has not run here yet; `tools/new_role.py` works before the server has ever started.
+- **ComfyUI is optional and neutral**: the status labels say "ComfyUI", and the ComfyUI line and its probe only appear when `config.json` has a `comfy` block. `config.example.json` is generated from `core/config.py` and has no default routine, platforms or ComfyUI settings.
 - **Run-forever tooling on Linux**: `tools/keepalive.sh` runs under bash on macOS and Linux and pauses 15 s when the server dies right after starting. `tools/install_service.sh` is macOS only; on other systems it says so and points to `keepalive.sh`; `tools/ensure_server.py` falls back to `keepalive.sh` without launchd.
 - **Home is widgets only**: the older app-style home and the top-bar usage orb are removed. Widget layout is stored on the server.
-- Upload responses no longer include the absolute file path.
+- **Calmer mail, asks and calendar**: a daily-report letter opens the report page; ask rows on list cards show at most two lines and a "N more" pill; today's fired schedules fold into one calendar row and the "now" line sits between rows; the same ask on three or more cards shows as one row with an "all" answer.
+- **Job templates in English too**: the hiring market and the HR interview read in English on the English interface; job art and the needle-thread avatars are refreshed.
 - **README**: the first screen now says what Underthread is, who it's for and that it uses your Claude plan's usage; the quickstart lists hard requirements and what you should see after each step; one set of crew names (Steward, Scout, Quill, Lens, Brush, Signal, Smith), with steward = `manager` in code.
 - **SETUP-GUIDE**: brought up to date (no more pixel office; adds the Hiring market, Schedules, push, archive and usage brakes).
+
+### Fixed
+- Cards that move to review or done withdraw their unanswered asks, with a one-line note on the card.
+- Links stop before full-width (CJK) punctuation, and markdown links are no longer linked twice.
+- Upload responses no longer include the absolute file path.
+- The avatar index no longer 404s before `tools/avatar_sizes.py` has run, and a taken port prints one clear line instead of a traceback.
+
+### Upgrade notes
+- Migrations: 0001 (stamps the schema number), 0002 (builds `meta.routines_log` from the inbox; installs that ran a server since 2026-11-04 already have it). Both run by themselves on the first read.
+- New config keys: first version with config defaults: `owner.display_name` = `""`, `port` = `8765`, `report_time` = `"18:00"`, `routines` = `[]`, `allowed_hosts` = `[]`, `legacy_headers` = `[]`; per role in `roster.json`: `role.enabled` = `true`.
+- Extension API: new in this version (`local/ext/<name>/stateutil_ext.py`, `server_ext.py`, `local/web/`, `local/ext.json`; see `docs/local.md`).
+- Manual steps: none.
 
 ## 2026-11-09
 
