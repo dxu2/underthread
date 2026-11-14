@@ -608,7 +608,9 @@ body #right .ch-comp.sending .m-send svg { animation: none; }
 .msg .opts, #right .msg .opts { gap: 8px; }
 #right .msg .opts .btn-s { min-height: 34px; padding: 0 14px; border-radius: 17px; background: var(--glass-lite); border: 1px solid var(--glass-line); box-shadow: none; font-size: var(--fs-13); font-weight: 600; letter-spacing: 0; color: var(--ink); }   /* P3: quick replies = tinted glass pills (no blur: list content) */
 #right .msg .opts .btn-s.rec { border-color: var(--accent); box-shadow: inset 0 0 0 .5px var(--accent); }   /* t-opt-star */
-#right .msg .opts .btn-s { padding-block: 7px; }   /* t-i18n-chips: room above/below when a long quick reply wraps; one line still sits in the 34px min-height */
+#right .msg .opts .btn-s { padding-block: 7px; }
+#right .msg .opts-multi .btn-s.on { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }   /* t-hr-multiselect */
+#right .msg .opts-multi .msend { border-style: dashed; } #right .msg .opts-multi .msend:not([disabled]) { border-style: solid; }   /* t-i18n-chips: room above/below when a long quick reply wraps; one line still sits in the 34px min-height */
 
 /* ===== ui8 (t-composer-fix): + stays beside 发送; no 90° spin; panel = 拍照 / 上传媒体 =====
    Spin cause: style.css `.ch-comp > button:hover { transform: rotate(90deg) }` also matched .m-send; on touch the :hover sticks after the tap. */

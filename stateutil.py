@@ -888,13 +888,15 @@ def reply_fields(src):
     return out
 
 
-def _chat_entry(who, text, options=None, attachments=None, quote=None):
+def _chat_entry(who, text, options=None, attachments=None, quote=None, multi=False):
     e = {"id": uuid.uuid4().hex[:8], "t": now(), "who": who, "text": text}
     if quote:
         e["reply_to"] = quote.get("id")
         e["rq"] = quote_of(quote)
     if options:
         e["options"] = [o.strip() for o in options.split("|") if o.strip()]
+        if multi and len(e["options"]) > 1:
+            e["multi"] = True   # t-hr-multiselect: chips toggle, one 发送（n） sends 「A、B」
     if attachments:
         e["attachments"] = norm_attach(list(attachments))
     return e
@@ -902,7 +904,7 @@ def _chat_entry(who, text, options=None, attachments=None, quote=None):
 
 def cmd_say_mgr(a):
     with mutate() as st:
-        st["chat"].append(_chat_entry("manager", _text_arg(a.text), a.options, a.attach))
+        st["chat"].append(_chat_entry("manager", _text_arg(a.text), a.options, a.attach, multi=a.multi))
         _cap(st["chat"], "chat")
         push_mail(st, "reply", "管家: " + _text_arg(a.text)[:160], None, "manager")
     print("ok")
@@ -911,7 +913,7 @@ def cmd_say_mgr(a):
 def cmd_dm(a):
     with mutate() as st:
         lst = st["dms"].setdefault(a.agent, [])
-        lst.append(_chat_entry(a.agent, _text_arg(a.text), a.options, a.attach))
+        lst.append(_chat_entry(a.agent, _text_arg(a.text), a.options, a.attach, multi=a.multi))
         _cap(lst, "dm")
         push_mail(st, "reply", f"{a.agent}: " + _text_arg(a.text)[:160], None, a.agent)
     print("ok")
@@ -1032,10 +1034,12 @@ def main():
 
     s = sub.add_parser("say-mgr", help="manager chat message to the user"); s.add_argument("text")
     s.add_argument("--options", help="quick replies, 'a|b|c'"); s.add_argument("--attach", action="append")
+    s.add_argument("--multi", action="store_true", help="the user may pick several options, sent as 'a、b'")
     s.set_defaults(fn=cmd_say_mgr)
 
     s = sub.add_parser("dm", help="agent DM to the user"); s.add_argument("agent"); s.add_argument("text")
-    s.add_argument("--options"); s.add_argument("--attach", action="append"); s.set_defaults(fn=cmd_dm)
+    s.add_argument("--options"); s.add_argument("--attach", action="append")
+    s.add_argument("--multi", action="store_true", help="the user may pick several options, sent as 'a、b'"); s.set_defaults(fn=cmd_dm)
 
     s = sub.add_parser("inbox-pending", help="print unacked inbox entries (JSON lines)")
     s.set_defaults(fn=cmd_inbox_pending)

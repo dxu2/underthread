@@ -1668,15 +1668,19 @@
   const recOf = a => (a && a.rec && a.options.includes(a.rec)) ? a.rec : ((a && a.options) || []).find(o => REC_TXT.test(o)) || null;
   // t-opt-star: chat quick-reply chips. "B*" marks the manager's recommendation (same convention as --ask): the * is never shown or sent;
   // the starred chip gets the 推荐 outline + badge. An option whose text already says （推荐） gets the outline only.
-  const optChips = (opts, mid) => { const clean = o => String(o).replace(/\s*[*＊]\s*$/, ""); const star = opts.find(o => /[*＊]\s*$/.test(o)); const rec = star || opts.find(o => REC_TXT.test(o)) || null;
-    return `<div class="opts">${opts.map(o => { const c = clean(o), r = o === rec; return `<button class="btn-s${r ? " rec" : ""}" data-opt="${esc(c)}"${mid ? ` data-mid="${esc(mid)}"` : ""}>${esc(c)}${r && !REC_TXT.test(c) ? `<i class="rec-b">${UI.lang === "en" ? "Rec." : "推荐"}</i>` : ""}</button>`; }).join("")}</div>`; };
+  const optChips = (opts, mid, multi) => { const clean = o => String(o).replace(/\s*[*＊]\s*$/, ""); const star = opts.find(o => /[*＊]\s*$/.test(o)); const rec = star || opts.find(o => REC_TXT.test(o)) || null;
+    const sel = multi && mid ? MSEL.get(mid) : null;   // t-hr-multiselect: --multi chips toggle; picks live in MSEL so a poll re-render keeps them lit
+    return `<div class="opts${multi ? " opts-multi" : ""}">${opts.map(o => { const c = clean(o), r = o === rec, on = sel && sel.has(c); return `<button class="btn-s${r ? " rec" : ""}${on ? " on" : ""}" ${multi ? `data-mopt` : `data-opt`}="${esc(c)}"${multi ? ` aria-pressed="${on ? "true" : "false"}"` : ""}${mid ? ` data-mid="${esc(mid)}"` : ""}>${esc(c)}${r && !REC_TXT.test(c) ? `<i class="rec-b">${UI.lang === "en" ? "Rec." : "推荐"}</i>` : ""}</button>`; }).join("")}${multi ? msendBtn(mid, sel ? sel.size : 0) : ""}</div>`; };
+  const MSEL = new Map();   // mid -> Set of picked option texts (client only, until 发送)
+  const msendBtn = (mid, n) => `<button class="btn-s msend" data-msend="${esc(mid || "")}"${n ? "" : " disabled"}>${UI.lang === "en" ? (n ? `Send (${n})` : "Pick one or more") : (n ? `发送（${n}）` : "可多选")}</button>`;
   // r-improve-1102 P2: a card chip wrapped in full-width brackets 「（chip）」 already reads as a bracket; drop the pair so the line does not break three ways
   const CHIP_RE = '<span class="idc[^"]*"[^>]*>(?:(?!<\\/span>)[\\s\\S])*<\\/span>';
   const chipParens = h => String(h).replace(new RegExp(`（\\s*(${CHIP_RE})\\s*）`, "g"), " $1 ")
     .replace(new RegExp(`(${CHIP_RE})\\s*([。，、；：！？」』]+)`, "g"), '<span class="idc-nw">$1$2</span>');   // punctuation stays on the chip's line
   const optDone = (opts, said, at) => {   // r-improve-1102 P1; t-option-quote: at = time of the quoting reply
     const norm = x => String(x || "").replace(/\s*[*＊]\s*$/, "").replace(/\s+/g, " ").trim(), s = norm(said), en = UI.lang === "en";
-    const hit = opts.map(norm).find(o => o && (s === o || s.startsWith(o)));
+    const parts = s.split(/\s*[、，,]\s*/), many = opts.map(norm).filter(o => o && parts.includes(o));
+    const hit = many.length > 1 ? many.join("、") : opts.map(norm).find(o => o && (s === o || s.startsWith(o)));
     return `<div class="opt-done">${hit ? (en ? `✓ You chose “${esc(hit)}”` : `✓ 你选了「${esc(hit)}」`) : (en ? "Replied" : "已回复")}${hit && at ? ` · ${whenH(at)}` : ""}</div>`;
   };
   const AR = { pending: null, timer: 0 };   // pending = { id, picks: [{ ask, opt }] }
@@ -4100,6 +4104,15 @@
     addEventListener("scroll", railHide, true);
     r.addEventListener("click", e => {
       const o = e.target.closest("[data-opt]"); if (o) { RQ.fresh = o.dataset.mid || ""; sendChat(o.dataset.opt, [], o.dataset.mid); }
+      const mo = e.target.closest("[data-mopt]"); if (mo) {   // t-hr-multiselect: toggle only; nothing is sent until 发送（n）
+        const mid = mo.dataset.mid || "", v = mo.dataset.mopt, set = MSEL.get(mid) || new Set(); set.has(v) ? set.delete(v) : set.add(v);
+        if (set.size) MSEL.set(mid, set); else MSEL.delete(mid);
+        mo.classList.toggle("on", set.has(v)); mo.setAttribute("aria-pressed", set.has(v) ? "true" : "false");
+        const sb = mo.parentElement && mo.parentElement.querySelector("[data-msend]"); if (sb) sb.outerHTML = msendBtn(mid, set.size);
+        return; }
+      const ms = e.target.closest("[data-msend]"); if (ms) { const mid = ms.dataset.msend, set = MSEL.get(mid); if (!set || !set.size) return;
+        const order = [...ms.parentElement.querySelectorAll("[data-mopt]")].map(b => b.dataset.mopt), picks = order.filter(v => set.has(v));
+        MSEL.delete(mid); RQ.fresh = mid; sendChat(picks.join("、"), [], mid || undefined); return; }
       const q = e.target.closest(".rq[data-rq]"); if (q) { rqSeek(q.dataset.rq); return; }
       const pr = e.target.closest("[data-pend-retry]"), pd = e.target.closest("[data-pend-drop]");   // t-perf C: a failed bubble
       if (pr || pd) { const p = PEND.list.find(x => x.pend === (pr || pd).dataset[pr ? "pendRetry" : "pendDrop"]); if (p) { if (pd) { PEND.list.splice(PEND.list.indexOf(p), 1); chatCount = -1; renderChat(); hooks.forEach(f => f("all")); } else { pendPost(p); pendPaint(p); } } return; }
@@ -4383,7 +4396,7 @@
     const quoted = {}; for (const x of list) if (x.who === "me" && x.reply_to && !quoted[x.reply_to]) quoted[x.reply_to] = x;
     if (RQ.for !== UI.chat) { RQ.for = UI.chat; list.forEach(x => RQ.seen.add(x.id)); }
     const optsOf = (m, i) => { if (!m.options) return ""; const q = m.id && quoted[m.id]; if (q) return optDone(m.options, q.text, q.t);
-      const r = nextMe[chatFrom + i]; if (!r || r.reply_to) return optChips(m.options, m.id); return optDone(m.options, r.text); };
+      const r = nextMe[chatFrom + i]; if (!r || r.reply_to) return optChips(m.options, m.id, m.multi); return optDone(m.options, r.text); };
     const pendSt = m => m.st === "fail" ? `<span class="pend-x">${UI.lang === "en" ? "Not sent" : "没发出去"}</span><button type="button" class="pend-b" data-pend-retry="${m.pend}">${UI.lang === "en" ? "Retry" : "重试"}</button><button type="button" class="pend-b" data-pend-drop="${m.pend}">${UI.lang === "en" ? "Delete" : "删除"}</button>`
       : m.st === "ok" ? whenH(m.t) : (UI.lang === "en" ? "Sending…" : "发送中…");
     chatPatch(box, list.length ? [more].concat(view.map((m, i) => sepHTML(i) + (m.pend

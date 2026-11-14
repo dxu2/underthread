@@ -1934,6 +1934,12 @@ mark.an-hl { background: var(--accent-soft); color: inherit; border-radius: 2px;
 /* t-i18n-chips: a long quick reply ("As the template says: <duty>") wraps inside its pill instead of running off the column. Single-line pills
    keep their exact box: line-height 1.3 is paid back from the padding (12 * .3 / 2 = 1.8px a side). */
 .msg .opts .btn-s { max-width: 100%; white-space: normal; text-align: left; line-height: 1.3; padding-block: calc(8px - .15em); }
+/* t-hr-multiselect: --multi quick replies toggle; 发送（n） sends the picks as 「A、B」 */
+.opts-multi .btn-s.on { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.opts-multi .btn-s.on .rec-b { background: var(--accent-ink); color: var(--accent); }
+.opts-multi .msend { border-style: dashed; }
+.opts-multi .msend:not([disabled]) { border-style: solid; font-weight: 600; }
+.opts-multi .msend[disabled] { opacity: .6; cursor: default; }
 .sec-h .ask-allrec, .ask-allrec { margin-left: auto; height: 30px; padding: 0 14px; border: 0; border-radius: 15px; background: var(--accent); color: var(--accent-ink);
   font: 600 var(--fs-13) var(--f-sys); letter-spacing: 0; text-transform: none; cursor: pointer; white-space: nowrap; }
 .sec-h .ask-allrec:hover { color: var(--accent-ink); }
