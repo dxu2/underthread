@@ -29,6 +29,11 @@ jobs:
         run: python3 tests/scan.py
       - name: Smoke test
         run: python3 tests/smoke.py
+      - name: Fixtures, unit and API tests
+        run: |
+          python3 tests/e2e/fixtures/build.py --check
+          python3 tests/run.py unit
+          python3 tests/run.py api
       - name: Keepalive runs in the foreground (Linux)
         if: runner.os == 'Linux'
         run: |
@@ -36,3 +41,56 @@ jobs:
           PORT=8790 NO_LOOPS=1 timeout 8 bash tools/keepalive.sh > ka.log 2>&1 &
           for i in $(seq 1 20); do curl -fs -o /dev/null http://127.0.0.1:8790/ && break; sleep 0.5; done
           curl -fs -o /dev/null -w "dashboard: %{http_code}\n" http://127.0.0.1:8790/
+
+  e2e:
+    # Browser journeys (tests/e2e/journeys) on the fixture board, desk 1440 + phone 390.
+    # WebKit on Linux differs from Safari on macOS / iOS in a few places, so it runs but does not block a merge
+    # (continue-on-error) until it has been green for a week; Chromium blocks.
+    name: e2e (${{ matrix.engine }}${{ matrix.engine == 'webkit' && ', non-blocking' || '' }})
+    runs-on: ubuntu-latest
+    continue-on-error: ${{ matrix.engine == 'webkit' }}
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        engine: [chromium, webkit]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: tests/e2e/package-lock.json
+      - name: Install Playwright
+        working-directory: tests/e2e
+        run: |
+          npm ci --no-audit --no-fund
+          npx playwright install --with-deps ${{ matrix.engine }}
+          sudo apt-get install -y --no-install-recommends fonts-noto-cjk
+      - name: Journeys
+        run: python3 tests/run.py e2e --engines ${{ matrix.engine }} --no-install
+      - name: Keep the evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-${{ matrix.engine }}
+          path: tests/e2e/out/
+          retention-days: 7
+
+  upgrade:
+    # Placeholder until plan step S5 (tools/update.py): tests/upgrade is skipped and this job only proves the wiring.
+    # In S5 it upgrades a populated install from the previous release tag to this commit.
+    name: upgrade (from last tag; placeholder until S5)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Upgrade tests
+        run: python3 tests/run.py upgrade
