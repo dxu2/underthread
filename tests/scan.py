@@ -35,7 +35,8 @@ def main():
     if os.path.exists(wl):
         words = [w.strip() for w in open(wl, encoding="utf-8") if w.strip() and not w.startswith("#")]
         if words:
-            pats.append(("listed word", re.compile("|".join(re.escape(w) for w in words), re.I)))
+            # whole words only on the ASCII side: "5090" must not hit inside a sha256 in core.manifest.json
+            pats.append(("listed word", re.compile("(?<![A-Za-z0-9])(?:" + "|".join(re.escape(w) for w in words) + ")(?![A-Za-z0-9])", re.I)))
     hits = 0
     for f in files("--staged" in sys.argv):
         if f in ("tests/scan.py", "tests/scan-words.txt"):
