@@ -23,10 +23,18 @@
   "看看我的 GitHub Actions 配置安不安全",
   "这几个依赖包靠得住吗？"
  ],
+ "starters_en": [
+  "This repo is about to go open source. Check it for leaked keys",
+  "Is my GitHub Actions setup safe?",
+  "Can these dependencies be trusted?"
+ ],
  "variants": [
   {
    "key": "hacker",
    "label": "攻击者视角",
+   "label_en": "Attacker's eye",
+   "style_en": "Explains in an attacker's voice how they'd get in; vivid",
+   "sample_en": "\"If I were the attacker: fork your repo, open a PR whose title is a command. Your Action pastes the title into a shell and runs it with your token.\"",
    "tint": "#a03a4a",
    "art": "",
    "voice": {
@@ -42,6 +50,9 @@
   {
    "key": "auditor",
    "label": "审计师",
+   "label_en": "Auditor",
+   "style_en": "Ticks the checklist item by item, misses nothing; rigorous",
+   "sample_en": "\"All six threat types checked: 1 information leak (high), 0 privilege issues, the other 4 are fine. Checklist attached.\"",
    "tint": "#4a5a6a",
    "art": "",
    "voice": {
@@ -57,6 +68,9 @@
   {
    "key": "pragmatic",
    "label": "务实派",
+   "label_en": "Pragmatist",
+   "style_en": "Reports only what will actually bite, sorted by cost to fix; direct",
+   "sample_en": "\"Three findings; only the first needs fixing today: .env is in the git history. One .gitignore line and one revoked key, 10 minutes. The other two can wait.\"",
    "tint": "#6a8a5a",
    "art": "",
    "voice": {

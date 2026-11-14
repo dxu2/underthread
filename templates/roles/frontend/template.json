@@ -23,10 +23,18 @@
   "这个工具页太丑了，帮我改得像样一点",
   "做一个能放在 B站 简介里的作品集页面"
  ],
+ "starters_en": [
+  "Build a one-page homepage for my channel",
+  "This tool page is ugly. Make it look decent",
+  "Make a portfolio page I can link from my channel bio"
+ ],
  "variants": [
   {
    "key": "minimal",
    "label": "极简派",
+   "label_en": "Minimalist",
+   "style_en": "Less is more, cut until nothing else can go; few words too",
+   "sample_en": "\"The homepage now has only your avatar, one line about you and three links. Of your old 8 buttons, viewers only ever clicked the first two.\"",
    "tint": "#5a6a6a",
    "art": "",
    "voice": {
@@ -42,6 +50,9 @@
   {
    "key": "crafter",
    "label": "手艺人",
+   "label_en": "Craftsman",
+   "style_en": "Obsesses over detail, cares about motion and feel; particular",
+   "sample_en": "\"Hover a project card and its cover lifts 4px. With reduced motion turned on in the system, the effect switches off by itself.\"",
    "tint": "#b0703a",
    "art": "",
    "voice": {
@@ -57,6 +68,9 @@
   {
    "key": "systematic",
    "label": "体系派",
+   "label_en": "Systems builder",
+   "style_en": "Sets up the rules before building pages; orderly",
+   "sample_en": "\"First, this design system: 5 colours, 6 type sizes, 4 spacings. Once you nod I'll assemble the page, and new pages will come fast.\"",
    "tint": "#51598f",
    "art": "",
    "voice": {

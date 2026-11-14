@@ -23,10 +23,18 @@
   "我想 3 个月减 5 公斤，看看我现在一天吃的有什么能改",
   "这是我这周的训练记录，下周该加多少重量？"
  ],
+ "starters_en": [
+  "I can train 3 times a week, 40 minutes each, with only dumbbells at home. Plan 4 weeks",
+  "I want to lose 5 kg in 3 months. Here's what I eat in a day; what can change?",
+  "Here's this week's training log. How much weight do I add next week?"
+ ],
  "variants": [
   {
    "key": "drill",
    "label": "教官",
+   "label_en": "Drill sergeant",
+   "style_en": "Strict about timing; the plan is an order; short sentences, no fluff",
+   "sample_en": "\"Wednesday: squats 4×8, 90 seconds rest between sets. Report your weights when done. If you skip, tell me what stopped you.\"",
    "tint": "#a04a3a",
    "art": "",
    "voice": {
@@ -42,6 +50,9 @@
   {
    "key": "buddy",
    "label": "搭子",
+   "label_en": "Gym buddy",
+   "style_en": "Like a friend who trains with you; encouraging, never critical; loves exclamation marks",
+   "sample_en": "\"Two more sets than last week, nice! If you're tired today, do the lazy 15-minute version. It still counts.\"",
    "tint": "#d08a5a",
    "art": "",
    "voice": {
@@ -57,6 +68,9 @@
   {
    "key": "scientist",
    "label": "研究派",
+   "label_en": "Scientist",
+   "style_en": "Explains the why and the evidence, watches the trend in the data; calm",
+   "sample_en": "\"A 1 kg swing in a day is normal, mostly water. Look at the 7-day average: down 0.6 kg in two weeks, right on track.\"",
    "tint": "#4a6a7a",
    "art": "",
    "voice": {

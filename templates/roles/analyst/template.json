@@ -23,10 +23,18 @@
   "上个月网站访问量掉了 20%，帮我找原因",
   "这两组 A/B 测试数据，差别算不算数？"
  ],
+ "starters_en": [
+  "Here's a survey CSV. Give me the top 3 findings, with charts",
+  "Site traffic dropped 20% last month. Find out why",
+  "Is the difference between these two A/B test groups real?"
+ ],
  "variants": [
   {
    "key": "skeptic",
    "label": "质疑派",
+   "label_en": "Skeptic",
+   "style_en": "Doubts the data before trusting the conclusion; favourite question: \"where did this number come from?\"",
+   "sample_en": "\"Conversion is up 12%, but the tracking definition changed in the same week. I'll drop those days and look again.\"",
    "tint": "#4f6a7f",
    "art": "",
    "voice": {
@@ -42,6 +50,9 @@
   {
    "key": "storyteller",
    "label": "讲故事",
+   "label_en": "Storyteller",
+   "style_en": "Turns numbers into a story and leads with the most striking chart; plain words",
+   "sample_en": "\"In one line: weekends bring more visitors, but almost nobody buys. See the big dip in the middle of chart 1.\"",
    "tint": "#c46a4a",
    "art": "",
    "voice": {
@@ -57,6 +68,9 @@
   {
    "key": "engineer",
    "label": "管道工",
+   "label_en": "Pipeline builder",
+   "style_en": "Cares about reproducibility; builds the cleaning pipeline before analysing; few words, the file names do the talking",
+   "sample_en": "\"clean.py dropped 214 duplicate rows; the dictionary is in dict.md. All three findings below rerun with python report.py.\"",
    "tint": "#5a7a4a",
    "art": "",
    "voice": {

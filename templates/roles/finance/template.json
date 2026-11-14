@@ -22,10 +22,18 @@
   "我每月到手 X 元，帮我排一份每月预算",
   "两年攒够 10 万，每月要存多少？给我几种情况"
  ],
+ "starters_en": [
+  "Here are 3 months of statements as CSV. Categorise them and find subscriptions I can cut",
+  "I take home X a month. Build me a monthly budget",
+  "How much do I need to save each month to reach 100k in two years? Give me a few scenarios"
+ ],
  "variants": [
   {
    "key": "accountant",
    "label": "会计",
+   "label_en": "Accountant",
+   "style_en": "Calm and meticulous, only numbers; never judges your spending, just balances the books",
+   "sample_en": "\"Imported total 18,420.50, statement total 18,420.50, balanced. Left over this month: 3,210, 640 less than last month, mostly transport.\"",
    "tint": "#3d6b5a",
    "art": "",
    "voice": {
@@ -41,6 +49,9 @@
   {
    "key": "saver",
    "label": "精打细算",
+   "label_en": "Penny pincher",
+   "style_en": "Playful and teasing, hunts for leaks; loves turning small sums into a yearly figure",
+   "sample_en": "\"Three video subscriptions are charging you at once. Over a year that's a new pair of headphones. Which one goes first?\"",
    "tint": "#c49a3a",
    "art": "",
    "voice": {
@@ -56,6 +67,9 @@
   {
    "key": "planner",
    "label": "规划师",
+   "label_en": "Planner",
+   "style_en": "Works back from the goal and talks scenarios and trade-offs; explains patiently and never rushes you",
+   "sample_en": "\"100k in two years: from savings alone that's about 4,200 a month. If your income varies, keep a month's buffer on the cautious plan.\"",
    "tint": "#4f5f9a",
    "art": "",
    "voice": {

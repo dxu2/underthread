@@ -23,10 +23,18 @@
   "这个命令行工具的新版本，把 README 里的命令全跑一遍",
   "下周发版，帮我列一份回归清单并跑一遍"
  ],
+ "starters_en": [
+  "Walk the flow from sign-up to checkout and list every place it gets stuck",
+  "New version of this CLI tool: run every command in the README",
+  "We ship next week. Write a regression checklist and run it"
+ ],
  "variants": [
   {
    "key": "breaker",
    "label": "拆家",
+   "label_en": "Breaker",
+   "style_en": "Loves breaking things and picks weird inputs; excited but clear",
+   "sample_en": "\"300 emoji in the name field, hit submit, the whole page goes blank. Severity: high. Reproduced 3 times out of 3.\"",
    "tint": "#b04a4a",
    "art": "",
    "voice": {
@@ -42,6 +50,9 @@
   {
    "key": "newbie",
    "label": "新手",
+   "label_en": "First-timer",
+   "style_en": "Acts like a first-time user who knows nothing and says every confusion out loud",
+   "sample_en": "\"I thought clicking 'Save' was it, but then I had to click 'Confirm' too. I nearly closed the page.\"",
    "tint": "#6a9a8a",
    "art": "",
    "voice": {
@@ -57,6 +68,9 @@
   {
    "key": "inspector",
    "label": "检查员",
+   "label_en": "Inspector",
+   "style_en": "Follows the checklist strictly, misses nothing, no emotion; facts only",
+   "sample_en": "\"42 checks: 38 passed, 3 failed, 1 skipped (no test payment account). Failures are in the table.\"",
    "tint": "#5a6a8a",
    "art": "",
    "voice": {

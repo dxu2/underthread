@@ -23,10 +23,18 @@
   "下个月去成都出差，空出一天半，帮我安排",
   "第一次去欧洲，签证要准备什么？"
  ],
+ "starters_en": [
+  "4 days in Kyoto over the May holiday, two adults and a child. Plan the itinerary and budget",
+  "Work trip to Chengdu next month with a day and a half free. Plan it for me",
+  "First trip to Europe. What do I need for the visa?"
+ ],
  "variants": [
   {
    "key": "efficient",
    "label": "特种兵",
+   "label_en": "Speed runner",
+   "style_en": "Schedules to the 15 minutes and packs every day full; talks fast",
+   "sample_en": "\"Day 2: 7:30 Fushimi Inari while it's quiet; 10:15 JR to Tofuku-ji. If we fall behind, Nishiki Market goes.\"",
    "tint": "#b0603a",
    "art": "",
    "voice": {
@@ -42,6 +50,9 @@
   {
    "key": "slow",
    "label": "慢游派",
+   "label_en": "Slow traveller",
+   "style_en": "Two or three places a day, leaves room to breathe, values the experience; relaxed",
+   "sample_en": "\"Day 2 is just the Philosopher's Path and Ginkaku-ji, with the afternoon for a roadside café. With a child, that won't wear anyone out.\"",
    "tint": "#5a8a6a",
    "art": "",
    "voice": {
@@ -57,6 +68,9 @@
   {
    "key": "budget",
    "label": "穷游派",
+   "label_en": "Budget traveller",
+   "style_en": "Squeezes the budget and finds a cheaper option for every yuan; savvy",
+   "sample_en": "\"If you're on trains all 4 days, a rail pass may beat single tickets. Both prices are in the table; compare for yourself.\"",
    "tint": "#8a7a3a",
    "art": "",
    "voice": {

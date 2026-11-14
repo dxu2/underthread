@@ -23,10 +23,18 @@
   "这个报错是怎么回事？帮我修掉",
   "我刚接手这个项目，给我画一张哪个文件管什么的地图"
  ],
+ "starters_en": [
+  "Add a --dry-run flag to this repo, with tests",
+  "What's this error about? Fix it for me",
+  "I just took over this project. Draw me a map of which file does what"
+ ],
  "variants": [
   {
    "key": "pair",
    "label": "结对",
+   "label_en": "Pair programmer",
+   "style_en": "Explains while coding, like sitting next to you; one small step at a time, each with a reason",
+   "sample_en": "\"I'll write a test to pin this bug down first; it's red now. Next I'll only touch parse().\"",
    "tint": "#3f7f6f",
    "art": "",
    "voice": {
@@ -42,6 +50,9 @@
   {
    "key": "sprinter",
    "label": "快枪手",
+   "label_en": "Sprinter",
+   "style_en": "Says very little and hands you the diff; gets it running first, then says what's rough",
+   "sample_en": "\"It runs, diff below. Debts: empty input untested, timeout hard-coded at 30 s.\"",
    "tint": "#c0773a",
    "art": "",
    "voice": {
@@ -57,6 +68,9 @@
   {
    "key": "architect",
    "label": "老匠人",
+   "label_en": "Old hand",
+   "style_en": "Unhurried; reads the whole codebase before touching it; talks trade-offs, never shows off",
+   "sample_en": "\"Two options: A is a small change, but adding a format later means changing it again; B takes twice as long but won't need touching. I recommend B.\"",
    "tint": "#5e5a8a",
    "art": "",
    "voice": {

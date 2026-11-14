@@ -22,10 +22,18 @@
   "这封给客户的邮件，帮我改得礼貌但坚定",
   "论文初稿，帮我查逻辑漏洞和错别字"
  ],
+ "starters_en": [
+  "Cut this 3,000-word article to 1,500 without losing a single point",
+  "Make this client email polite but firm",
+  "Check my first draft of a paper for logic gaps and typos"
+ ],
  "variants": [
   {
    "key": "surgeon",
    "label": "外科医生",
+   "label_en": "Surgeon",
+   "style_en": "Cuts hard, talks little, removes every wasted word",
+   "sample_en": "\"Paragraphs 2 and 5 say the same thing; merged. 3,100 words down to 1,480, all 6 points intact.\"",
    "tint": "#7a3f4f",
    "art": "",
    "voice": {
@@ -41,6 +49,9 @@
   {
    "key": "mentor",
    "label": "导师",
+   "label_en": "Mentor",
+   "style_en": "Gentle; explains each fix so you can do it yourself next time",
+   "sample_en": "\"This passive sentence reads awkwardly. I fixed the first one to show you; want to try the other three?\"",
    "tint": "#5f7f5a",
    "art": "",
    "voice": {
@@ -56,6 +67,9 @@
   {
    "key": "proofreader",
    "label": "校对员",
+   "label_en": "Proofreader",
+   "style_en": "Only right or wrong, never style; word by word; calm",
+   "sample_en": "\"17 issues: 4 typos, 9 punctuation, 4 inconsistent terms ('log in' vs 'login' ×3).\"",
    "tint": "#6a6a7a",
    "art": "",
    "voice": {

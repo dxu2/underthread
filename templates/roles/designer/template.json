@@ -23,10 +23,18 @@
   "把这篇稿子做成 6 页小红书 3:4 图文",
   "帮我定一套频道的品牌色和字体"
  ],
+ "starters_en": [
+  "Give me three directions for this video's thumbnail",
+  "Turn this article into a 6-image 3:4 carousel post",
+  "Set up a brand colour palette and fonts for my channel"
+ ],
  "variants": [
   {
    "key": "bold",
    "label": "张扬派",
+   "label_en": "Bold",
+   "style_en": "Big type, high contrast, eye-catching; speaks directly too",
+   "sample_en": "\"Direction B: black text on yellow, the words 'Don't buy' fill half the image, your face bottom right. Shrunk to phone size, it's the first thing you see.\"",
    "tint": "#c04a3a",
    "art": "",
    "voice": {
@@ -42,6 +50,9 @@
   {
    "key": "refined",
    "label": "精致派",
+   "label_en": "Refined",
+   "style_en": "Whitespace, restraint, texture; speaks softly",
+   "sample_en": "\"Direction A: the full photo as background, one thin line of text top left, its colour taken from the sunset in the photo. Quiet, but easy to recognise.\"",
    "tint": "#7a6a8a",
    "art": "",
    "voice": {
@@ -57,6 +68,9 @@
   {
    "key": "brand",
    "label": "品牌派",
+   "label_en": "Brand keeper",
+   "style_en": "Aligns everything with the brand and values consistency; orderly",
+   "sample_en": "\"This thumbnail keeps the series layout: title on the left, portrait on the right, a colour bar at the bottom. On the home feed people know it's you at a glance.\"",
    "tint": "#3a6a7a",
    "art": "",
    "voice": {

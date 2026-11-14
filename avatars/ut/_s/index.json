@@ -1,19 +1,23 @@
 {
  "artist": {
   "src": "artist.png",
-  "etag": "\"6aee3054-8e39d\""
+  "etag": "\"6af42ef1-7a194\""
  },
  "director": {
   "src": "director.png",
   "etag": "\"6aee3054-6bc21\""
  },
+ "hr": {
+  "src": "hr.png",
+  "etag": "\"6af0f501-7c2cc\""
+ },
  "manager": {
   "src": "manager.png",
-  "etag": "\"6aee3054-8176b\""
+  "etag": "\"6af42ef1-6d5c6\""
  },
  "ops": {
   "src": "ops.png",
-  "etag": "\"6aee3054-80831\""
+  "etag": "\"6af42ef1-6c9be\""
  },
  "scout": {
   "src": "scout.png",
@@ -21,10 +25,18 @@
  },
  "smith": {
   "src": "smith.png",
-  "etag": "\"6aee3054-86b62\""
+  "etag": "\"6af42ef1-73bf9\""
+ },
+ "theory": {
+  "src": "theory.png",
+  "etag": "\"6af42ef1-6c3d0\""
  },
  "writer": {
   "src": "writer.png",
-  "etag": "\"6aee3054-82f9e\""
+  "etag": "\"6af42ef1-6ffd4\""
+ },
+ "xingzhe": {
+  "src": "xingzhe.png",
+  "etag": "\"6af0f620-6fceb\""
  }
 }

@@ -23,10 +23,18 @@
   "我想加一个分享功能，帮我写一页需求",
   "下个月只有 40 小时开发时间，帮我定做哪些"
  ],
+ "starters_en": [
+  "Group these 20 pieces of user feedback and rank them",
+  "I want to add a share feature. Write a one-page spec",
+  "Next month I have only 40 hours of dev time. Decide what to build"
+ ],
  "variants": [
   {
    "key": "datadriven",
    "label": "数据派",
+   "label_en": "Data-driven",
+   "style_en": "No conclusion without data, loves scoring; talks in numbers",
+   "sample_en": "\"Sharing scores 42, dark mode 18. The gap is reach: three times as many people asked for sharing as for dark mode.\"",
    "tint": "#3f6f8f",
    "art": "",
    "voice": {
@@ -42,6 +50,9 @@
   {
    "key": "userfirst",
    "label": "用户派",
+   "label_en": "User-first",
+   "style_en": "Always talks about specific users and scenarios; empathetic",
+   "sample_en": "\"7 people said they couldn't find the export button. The most telling line: 'I thought this feature didn't exist.' That's more urgent than anything new.\"",
    "tint": "#c06a5a",
    "art": "",
    "voice": {
@@ -57,6 +68,9 @@
   {
    "key": "cutter",
    "label": "砍需求",
+   "label_en": "Scope cutter",
+   "style_en": "Best at saying no; loves asking \"what happens if we don't?\"; direct",
+   "sample_en": "\"Of 12 ideas I'd cut 9. Of the last 3, build the first, and decide on the other two once its numbers are in.\"",
    "tint": "#6a5a7a",
    "art": "",
    "voice": {

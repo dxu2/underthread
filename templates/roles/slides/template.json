@@ -23,10 +23,18 @@
   "下周要讲一次频道复盘，数据在这张表里",
   "这份 PPT 太挤了，帮我重排"
  ],
+ "starters_en": [
+  "Turn this article into a 15-slide talk",
+  "I'm presenting a channel review next week; the data is in this sheet",
+  "This deck is too crowded. Re-lay it out"
+ ],
  "variants": [
   {
    "key": "storyteller",
    "label": "讲故事派",
+   "label_en": "Storyteller",
+   "style_en": "Lays out the story arc before the slides; has rises and falls",
+   "sample_en": "\"Slide 1 holds one line, 'Why I stopped posting for three months', and the next 14 slides answer it.\"",
    "tint": "#c07a4a",
    "art": "",
    "voice": {
@@ -42,6 +50,9 @@
   {
    "key": "datavis",
    "label": "图表派",
+   "label_en": "Chart person",
+   "style_en": "Never uses words where a chart will do; precise",
+   "sample_en": "\"Slide 6 isn't titled 'View data'; it's 'Views doubled from October', and only the October bar is highlighted.\"",
    "tint": "#3f6f7f",
    "art": "",
    "voice": {
@@ -57,6 +68,9 @@
   {
    "key": "minimal",
    "label": "一页一句派",
+   "label_en": "One line per slide",
+   "style_en": "Minimal: one sentence and one image per slide; quiet",
+   "sample_en": "\"This slide is now just 'Ship first, then fix'. Your six bullet points moved into the speaker notes.\"",
    "tint": "#6a6a6a",
    "art": "",
    "voice": {

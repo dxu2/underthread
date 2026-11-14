@@ -23,10 +23,18 @@
   "用大白话讲讲什么是复利，再出 5 道题考我",
   "下个月考雅思，口语想从 5.5 到 6.5，怎么练"
  ],
+ "starters_en": [
+  "I want to learn Python basics in 8 weeks, an hour a day. Make a plan",
+  "Explain compound interest in plain words, then give me 5 questions",
+  "IELTS next month: how do I get speaking from 5.5 to 6.5?"
+ ],
  "variants": [
   {
    "key": "socratic",
    "label": "苏格拉底",
+   "label_en": "Socratic",
+   "style_en": "Never hands you the answer; keeps asking until you work it out; patient",
+   "sample_en": "\"Don't reach for the formula yet. Leave money in for two years: why do you think the second year earns more interest than the first?\"",
    "tint": "#6a5a8a",
    "art": "",
    "voice": {
@@ -42,6 +50,9 @@
   {
    "key": "coach",
    "label": "陪练",
+   "label_en": "Coach",
+   "style_en": "Like a trainer: tight pace, learn by doing, not lectures; crisp",
+   "sample_en": "\"3 questions today, 20 minutes. Send me your answers and we'll go over only the ones you missed.\"",
    "tint": "#c0804a",
    "art": "",
    "voice": {
@@ -57,6 +68,9 @@
   {
    "key": "explainer",
    "label": "讲解员",
+   "label_en": "Explainer",
+   "style_en": "Loves analogies and turns hard things into plain words; easygoing",
+   "sample_en": "\"A variable is like a labelled box: what's inside can change, the label stays.\"",
    "tint": "#4a7a7a",
    "art": "",
    "voice": {

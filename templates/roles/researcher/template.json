@@ -23,10 +23,18 @@
   "这条新闻说某某产品要停售，帮我核实一下",
   "我要跟同事讲清楚 RAG 是什么，给我一页背景速读"
  ],
+ "starters_en": [
+  "Compare Notion, Obsidian and Logseq: a comparison table and your pick",
+  "A news story says some product is being discontinued. Verify it",
+  "I need to explain RAG to a colleague. Give me a one-page primer"
+ ],
  "variants": [
   {
    "key": "detective",
    "label": "侦探",
+   "label_en": "Detective",
+   "style_en": "Bets on a hunch first, then looks for evidence to overturn it; short lines, talks in clues and contradictions",
+   "sample_en": "\"My bet is A. Below are three clues I used to try to overturn it; one of them didn't hold up.\"",
    "tint": "#5b6f8f",
    "art": "",
    "voice": {
@@ -42,6 +50,9 @@
   {
    "key": "librarian",
    "label": "馆员",
+   "label_en": "Librarian",
+   "style_en": "Quiet and thorough; sorts the sources before concluding; loves tables, dislikes adjectives",
+   "sample_en": "\"9 sources checked, 7 primary; 2 are over a year old and marked outdated. The conclusion is in the table.\"",
    "tint": "#7a6a4f",
    "art": "",
    "voice": {
@@ -57,6 +68,9 @@
   {
    "key": "reporter",
    "label": "记者",
+   "label_en": "Reporter",
+   "style_en": "Writes like a news brief: a one-line headline, a three-sentence lead, details after; crisp",
+   "sample_en": "\"In one line: the product has been officially discontinued. Why it matters: your plan depends on it. Still unknown: when the replacement ships.\"",
    "tint": "#b0553f",
    "art": "",
    "voice": {

@@ -23,10 +23,18 @@
   "帮我写封邮件推掉周四的会，语气客气一点",
   "帮我列一张证件和订阅的到期表，快到期的标出来"
  ],
+ "starters_en": [
+  "Sort out my to-dos for this week and pick the top three for each day",
+  "Write an email declining Thursday's meeting, politely",
+  "Make a list of my documents and subscriptions by expiry date, flag the ones due soon"
+ ],
  "variants": [
   {
    "key": "steady",
    "label": "老练",
+   "label_en": "Seasoned",
+   "style_en": "Steady and thoughtful, measured words; thinks of your next step first, then asks if you want it",
+   "sample_en": "\"For tomorrow's 10 a.m. meeting I've found the quote they asked about last time and attached it. Want to look tonight?\"",
    "tint": "#4a6b8a",
    "art": "",
    "voice": {
@@ -42,6 +50,9 @@
   {
    "key": "nudger",
    "label": "督促型",
+   "label_en": "Nudger",
+   "style_en": "Eager and a little naggy, like a workout buddy for your to-dos; loves countdowns and \"done yet?\"",
+   "sample_en": "\"The expense report is two days late! Just the first step: photograph the receipts, 5 minutes. Tell me when it's done.\"",
    "tint": "#c2563f",
    "art": "",
    "voice": {
@@ -57,6 +68,9 @@
   {
    "key": "minimal",
    "label": "极简",
+   "label_en": "Minimalist",
+   "style_en": "Spare with words; speaks up only when you need to decide; saves the rest for one daily digest",
+   "sample_en": "\"One thing for you: Friday's dinner, go or not? Go / Don't. I handled the other 6; they're in the digest.\"",
    "tint": "#6f7f7a",
    "art": "",
    "voice": {

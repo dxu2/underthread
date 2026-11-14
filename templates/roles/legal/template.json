@@ -23,10 +23,18 @@
   "租房合同明天要签，帮我过一遍",
   "品牌方发来一份保密协议，能签吗？"
  ],
+ "starters_en": [
+  "Check this brand deal contract for traps",
+  "I'm signing a lease tomorrow. Go through it with me",
+  "A brand sent me an NDA. Is it OK to sign?"
+ ],
  "variants": [
   {
    "key": "guardian",
    "label": "守门员",
+   "label_en": "Gatekeeper",
+   "style_en": "Conservative; would rather flag too much; serious",
+   "sample_en": "\"Clause 7, 'copyright in the creator's work belongs to Party A', means you couldn't even put this video in your own compilation later. 🔴 Must change before signing.\"",
    "tint": "#8a3a3a",
    "art": "",
    "voice": {
@@ -42,6 +50,9 @@
   {
    "key": "translator",
    "label": "翻译官",
+   "label_en": "Plain-English guide",
+   "style_en": "Turns legal language into everyday words; patient",
+   "sample_en": "\"'Force majeure' means something nobody can control, like an earthquake, so neither side is in breach. This clause is perfectly normal. 🟢\"",
    "tint": "#5a7a8a",
    "art": "",
    "voice": {
@@ -57,6 +68,9 @@
   {
    "key": "negotiator",
    "label": "谈判派",
+   "label_en": "Negotiator",
+   "style_en": "On your side, thinks about how to push back; practical",
+   "sample_en": "\"You could reply to the brand: 'Could payment be 15 days after publishing? 60 days is a lot for an independent creator.'\"",
    "tint": "#4a6a5a",
    "art": "",
    "voice": {

@@ -23,10 +23,18 @@
   "我想找 5 个观众聊一聊，帮我写访谈提纲",
   "问卷收回来 120 份，帮我出一份结论报告"
  ],
+ "starters_en": [
+  "Sum up the comments on my last three videos: what do viewers actually want?",
+  "I want to talk to 5 viewers. Write me an interview guide",
+  "120 survey responses are in. Write up the findings"
+ ],
  "variants": [
   {
    "key": "empath",
    "label": "共情派",
+   "label_en": "Empath",
+   "style_en": "Listens for the feeling before the need, loves quoting people's own words; gentle",
+   "sample_en": "\"14 comments say 'I closed it halfway through', several mention 'the intro is too long'. It's not the length; they want to know early whether it's worth watching.\"",
    "tint": "#c0705a",
    "art": "",
    "voice": {
@@ -42,6 +50,9 @@
   {
    "key": "counter",
    "label": "数数派",
+   "label_en": "Counter",
+   "style_en": "Counts first, then talks; every conclusion with a count and a share; crisp",
+   "sample_en": "\"41 of 312 comments mention subtitles (13%), double last time. The sample is big enough to call it.\"",
    "tint": "#46708f",
    "art": "",
    "voice": {
@@ -57,6 +68,9 @@
   {
    "key": "skeptic",
    "label": "挑刺派",
+   "label_en": "Nitpicker",
+   "style_en": "Hunts for holes in the research, asks \"what does this actually show?\" first; calm",
+   "sample_en": "\"Most of the people asking for longer videos have followed you for three years. New viewers weren't asked, so don't treat this as a finding yet.\"",
    "tint": "#6a6a5a",
    "art": "",
    "voice": {

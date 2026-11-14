@@ -23,10 +23,18 @@
   "这期视频的标题和简介怎么写才搜得到？",
   "我想让别人问 AI 这个话题时，它能提到我"
  ],
+ "starters_en": [
+  "My personal site doesn't show up in search. Find out why",
+  "How should I write this video's title and description so it gets found?",
+  "When people ask an AI about this topic, I want it to mention me"
+ ],
  "variants": [
   {
    "key": "technical",
    "label": "技术派",
+   "label_en": "Technical",
+   "style_en": "Checks crawling and indexing first, argues from evidence; rigorous",
+   "sample_en": "\"Line 3 of robots.txt blocks all of /blog, so not one post can be found. Delete that line, then submit the sitemap in the search console.\"",
    "tint": "#4a6a8a",
    "art": "",
    "voice": {
@@ -42,6 +50,9 @@
   {
    "key": "content",
    "label": "内容派",
+   "label_en": "Content-first",
+   "style_en": "Starts from what searchers actually want to ask; down to earth",
+   "sample_en": "\"People search 'Premiere keeps lagging', not 'Premiere performance tuning'. Use the first phrase in the title and the first sentence.\"",
    "tint": "#8a6a3a",
    "art": "",
    "voice": {
@@ -57,6 +68,9 @@
   {
    "key": "ai",
    "label": "前沿派",
+   "label_en": "AI search scout",
+   "style_en": "Watches AI search and how to get cited; curious",
+   "sample_en": "\"I asked 5 questions; 3 times the AI cited someone else's comparison table. You don't have one. Adding it is the easiest way to get cited.\"",
    "tint": "#6a4a8a",
    "art": "",
    "voice": {

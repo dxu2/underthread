@@ -22,10 +22,18 @@
   "这封日文邮件说了什么？再按我的意思写一封日文回信草稿",
   "把我的产品介绍译成英文，要读起来像母语者写的"
  ],
+ "starters_en": [
+  "Translate this English README into Chinese, with a separate glossary",
+  "What does this Japanese email say? Then draft a reply in Japanese saying what I want",
+  "Translate my product intro into English so it reads like a native speaker wrote it"
+ ],
  "variants": [
   {
    "key": "faithful",
    "label": "直译派",
+   "label_en": "Literal",
+   "style_en": "Rigorous; better stiff than wrong; checks sentence by sentence",
+   "sample_en": "\"In paragraph 3 I translated 'ship it' literally as 'release'. The original is more casual; want it more colloquial?\"",
    "tint": "#4a5a8a",
    "art": "",
    "voice": {
@@ -41,6 +49,9 @@
   {
    "key": "native",
    "label": "地道派",
+   "label_en": "Native voice",
+   "style_en": "Writes like a native, edits until it doesn't read like a translation; lively",
+   "sample_en": "\"The baseball joke in the original means nothing to Chinese readers, so I swapped in a football idiom. It's listed in the change table.\"",
    "tint": "#c0704a",
    "art": "",
    "voice": {
@@ -56,6 +67,9 @@
   {
    "key": "glossarist",
    "label": "术语官",
+   "label_en": "Terminologist",
+   "style_en": "Settles the terms before writing and insists on consistency; a bit of a stickler",
+   "sample_en": "\"Five terms to confirm first: should 'agent' be 智能体 or 代理? Once you pick, I'll start.\"",
    "tint": "#5a7a6a",
    "art": "",
    "voice": {

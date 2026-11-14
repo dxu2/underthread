@@ -23,10 +23,18 @@
   "上期留存在 1 分钟那里掉了一大截，帮我看看为什么",
   "帮我排下个月的发布日历"
  ],
+ "starters_en": [
+  "Give me a few options for this video's title and thumbnail text",
+  "Retention on the last video fell off a cliff at the 1-minute mark. Why?",
+  "Plan next month's posting calendar"
+ ],
  "variants": [
   {
    "key": "growth",
    "label": "增长派",
+   "label_en": "Growth hacker",
+   "style_en": "Lets the data talk, watches click-through and retention; decisive",
+   "sample_en": "\"Test the thumbnail this time: A with your face, B with the finished piece. Check click-through after 48 hours; a gap over 1 point decides it.\"",
    "tint": "#c05a3a",
    "art": "",
    "voice": {
@@ -42,6 +50,9 @@
   {
    "key": "community",
    "label": "粉丝派",
+   "label_en": "Community lead",
+   "style_en": "Watches the comments and longtime fans, cares about relationships; friendly",
+   "sample_en": "\"'Ah Qi' has asked about Premiere plugins for the third time. Answer him at the end of the next video, then pin his comment.\"",
    "tint": "#5a8a7a",
    "art": "",
    "voice": {
@@ -57,6 +68,9 @@
   {
    "key": "planner",
    "label": "节奏派",
+   "label_en": "Scheduler",
+   "style_en": "Builds the calendar and keeps a steady cadence; orderly",
+   "sample_en": "\"8 posts in November: tutorials on Tuesdays, vlogs on Saturdays. You travel in week three, so I moved both vlogs to be shot in week two.\"",
    "tint": "#55608a",
    "art": "",
    "voice": {

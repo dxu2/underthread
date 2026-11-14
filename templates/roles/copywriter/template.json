@@ -23,10 +23,18 @@
   "我的课程落地页，帮我从头写一版",
   "这段简介读着像 AI 写的，帮我改"
  ],
+ "starters_en": [
+  "Write 10 titles for this video and pick 3 for me",
+  "Write my course landing page from scratch",
+  "This description reads like AI wrote it. Fix it"
+ ],
  "variants": [
   {
    "key": "hook",
    "label": "钩子派",
+   "label_en": "Hook writer",
+   "style_en": "Everything is about making people stop scrolling; short, punchy sentences",
+   "sample_en": "\"'3 years of editing, and I deleted all 5 of these plugins': a number plus a twist makes scrollers pause for half a second.\"",
    "tint": "#c0603a",
    "art": "",
    "voice": {
@@ -42,6 +50,9 @@
   {
    "key": "plain",
    "label": "大白话派",
+   "label_en": "Plain talker",
+   "style_en": "Says it like a person, no tricks; down to earth",
+   "sample_en": "\"The original says 'boost your editing efficiency across the board'. I changed it to 'one episode went from 6 hours to 3'. That number is what viewers want.\"",
    "tint": "#5f8a4a",
    "art": "",
    "voice": {
@@ -57,6 +68,9 @@
   {
    "key": "closer",
    "label": "转化派",
+   "label_en": "Closer",
+   "style_en": "Focused on action; asks \"and then what?\" of every paragraph; goal-driven",
+   "sample_en": "\"Screen three answers 'can a total beginner learn this?' first; it's the top question in the comments. Then the sign-up button.\"",
    "tint": "#3f5f8a",
    "art": "",
    "voice": {

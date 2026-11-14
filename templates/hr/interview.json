@@ -1,42 +1,58 @@
 {
  "_note": "t-hr-build: HR interview script. server.py sends `opening` (+ first_options as quick replies) as her first DM the moment you click 面试; the rest of the questions are asked by HR herself, one per turn, in the order of `slots`. {job} {variant} {duty} are filled from the template. Edit freely, no restart needed.",
  "opening": "这位「{job}」（{variant}）我先替你把把关，不会耽误你太久。第一件事：你招 TA 主要替你干什么？",
+ "opening_en": "{job} ({variant}): let me check what you need before we hire; it won't take long. First: what do you mainly want them to do for you?",
  "first_options": [
   "就按模板：{duty}"
  ],
+ "first_options_en": [
+  "As the template says: {duty}"
+ ],
  "max_turns": 8,
+ "lang_note_en": "The user is on the English UI: ask every question, quick reply, recap and draft.md in English (recap ends with \"If that's right I'll write the draft; tell me anything to change.\", options 'Yes, draft it|Let me change something'). role.json still fills title/duty in Chinese plus title_en/duty_en.",
  "slots": [
   {
    "key": "duty",
    "label": "职责",
-   "ask": "你招 TA 主要替你干什么？"
+   "label_en": "Duties",
+   "ask": "你招 TA 主要替你干什么？",
+   "ask_en": "What do you mainly want them to do for you?"
   },
   {
    "key": "limits",
    "label": "红线",
+   "label_en": "Red lines",
    "ask": "有什么是 TA 绝对不许碰的？",
+   "ask_en": "What must they never touch?",
    "note": "答案原话进新人 roles/<id>.md 的 Confirmed rules"
   },
   {
    "key": "tools",
    "label": "工具",
-   "ask": "干活去哪找东西、用什么工具？"
+   "label_en": "Tools",
+   "ask": "干活去哪找东西、用什么工具？",
+   "ask_en": "Where do they look for things, and what tools do they use?"
   },
   {
    "key": "delivery",
    "label": "交付",
-   "ask": "交给你的东西长什么样？"
+   "label_en": "Delivery",
+   "ask": "交给你的东西长什么样？",
+   "ask_en": "What should their work look like when it reaches you?"
   },
   {
    "key": "persona",
    "label": "名字和性格",
+   "label_en": "Name and personality",
    "ask": "叫什么、怎么称呼你、说话什么味？",
+   "ask_en": "What's their name, what do they call you, and how do they talk?",
    "note": "不说名字就起两个让用户挑"
   }
  ],
  "transfer": {
   "_note": "t-ht-build: 调岗. server.py sends `opening` + `options` (quick replies) as her first DM when you click 调岗 on a role card; {name} = the role's name. HR asks the rest herself, at most max_turns turns.",
   "opening": "{name} 想改哪块？可以多选，也可以直接说想改成什么样。",
+  "opening_en": "What would you like to change about {name}? Pick several or just tell me how it should be.",
   "options": [
    "职责",
    "说话味道",
@@ -44,6 +60,14 @@
    "工具",
    "加一条红线"
   ],
+  "options_en": [
+   "Duties",
+   "How they talk",
+   "Name / how they address you",
+   "Tools",
+   "Add a red line"
+  ],
   "max_turns": 5
- }
+ },
+ "_note_en": "t-i18n-c: *_en lines are used instead when the browser that clicked Interview / Transfer is in English (it sends lang). {job} {variant} {duty} then come from title_en / label_en / duty_en."
 }

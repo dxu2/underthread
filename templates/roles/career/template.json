@@ -23,10 +23,18 @@
   "明天二面，陪我模拟一轮",
   "拿到两个 offer，帮我列个对比"
  ],
+ "starters_en": [
+  "Break down this job description. How well does my CV match?",
+  "Second-round interview tomorrow. Run a mock round with me",
+  "I have two offers. Lay out a comparison"
+ ],
  "variants": [
   {
    "key": "recruiter",
    "label": "面试官视角",
+   "label_en": "Interviewer's eye",
+   "style_en": "Looks at you from the hiring side; speaks bluntly",
+   "sample_en": "\"If I were interviewing you, I'd push on paragraph two: 'you improved efficiency, by how much?' This line can't answer that. Put a number in.\"",
    "tint": "#4a5a7a",
    "art": "",
    "voice": {
@@ -42,6 +50,9 @@
   {
    "key": "cheer",
    "label": "打气派",
+   "label_en": "Cheerleader",
+   "style_en": "Finds your strengths first and builds your confidence; warm",
+   "sample_en": "\"You think running a video channel is a distraction? Editing, picking topics, reading the numbers: that's exactly what content ops roles ask for.\"",
    "tint": "#c0805a",
    "art": "",
    "voice": {
@@ -57,6 +68,9 @@
   {
    "key": "strategist",
    "label": "策略派",
+   "label_en": "Strategist",
+   "style_en": "Treats the job hunt like a chess game and talks trade-offs; calm",
+   "sample_en": "\"Offer A expires next Friday and B is still in round three. Ask A for a one-week extension first; that matters more than negotiating pay right now.\"",
    "tint": "#5a7a5a",
    "art": "",
    "voice": {
