@@ -36,7 +36,11 @@ FIXED = _dtm.datetime(2026, 1, 15, 9, 0, 0, tzinfo=_dtm.timezone.utc)
 STEP = _dtm.timedelta(seconds=37)
 SEED = 20260115
 FILES = ("state.json", "config.json")
-MODS = ("stateutil", "schedules", "core", "core.migrate", "core.config")
+MODS = ("stateutil", "schedules", "core")   # plus every core.* submodule (see _ours)
+
+
+def _ours():
+    return [m for m in sys.modules if m in MODS or m.startswith("core.")]
 
 
 def _demo():
@@ -113,7 +117,7 @@ def build(out):
         uuid.uuid4 = lambda: uuid.UUID(int=rnd.getrandbits(128), version=4)
         sys.path.insert(0, work)
         try:
-            for m in MODS:
+            for m in _ours():
                 sys.modules.pop(m, None)
             import stateutil as S   # noqa: E402  (the copy in `work`, ROOT = work)
 
@@ -130,7 +134,7 @@ def build(out):
             _script(su, S, demo)
         finally:
             sys.path.remove(work)
-            for m in MODS:
+            for m in _ours():
                 sys.modules.pop(m, None)
             _dtm.datetime, _dtm.date, uuid.uuid4 = real_dt, real_date, real_uuid4
 

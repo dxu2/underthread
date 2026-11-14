@@ -7,7 +7,11 @@ import tempfile
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 CORE = ("stateutil.py", "schedules.py")
-MODS = ("stateutil", "schedules", "core", "core.migrate", "core.config")   # core/ is copied too: the copy must import its own
+MODS = ("stateutil", "schedules", "core")   # and every core.* submodule: core/ is copied too, the copy must import its own
+
+
+def _ours():
+    return [m for m in sys.modules if m in MODS or m.startswith("core.")]
 
 
 class Core:
@@ -19,7 +23,7 @@ class Core:
             shutil.copy(os.path.join(ROOT, f), self.dir)
         shutil.copytree(os.path.join(ROOT, "core"), os.path.join(self.dir, "core"), ignore=shutil.ignore_patterns("__pycache__"))
         shutil.copy(os.path.join(ROOT, "roster.example.json"), os.path.join(self.dir, "roster.json"))
-        self._saved = {m: sys.modules.pop(m) for m in MODS if m in sys.modules}
+        self._saved = {m: sys.modules.pop(m) for m in _ours()}
         sys.path.insert(0, self.dir)
         self.stateutil = importlib.import_module("stateutil")
         self.schedules = importlib.import_module("schedules")
@@ -27,7 +31,7 @@ class Core:
 
     def __exit__(self, *exc):
         sys.path.remove(self.dir)
-        for m in MODS:
+        for m in _ours():
             sys.modules.pop(m, None)
         sys.modules.update(self._saved)
         shutil.rmtree(self.dir, ignore_errors=True)
