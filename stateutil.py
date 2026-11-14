@@ -112,6 +112,31 @@ def _save(st):
     os.replace(tmp, STATE)
 
 
+def _ask_snapshot(st):
+    """t-ask-autoclose: stage + open ask ids of every card, taken when a mutate starts."""
+    return {i.get("id"): (i.get("stage"), {a.get("id") for a in i.get("asks") or [] if not a.get("answer") and not a.get("closed")})
+            for i in st.get("items") or []}
+
+
+def _autoclose_asks(st, before):
+    """t-ask-autoclose: a card that moved into review or done during this mutate withdraws the asks that were already open
+    before the move (same effect as ask-close). Asks added in the same mutate (a delivery that asks a question) stay, answered
+    asks are never touched, and doing / todo / waiting never close anything. One path for stateutil, server.py and the sweeps."""
+    for it in st.get("items") or []:
+        old = before.get(it.get("id"))
+        if not old or it.get("stage") not in ("review", "done") or old[0] == it.get("stage"):
+            continue
+        stale = [a for a in it.get("asks") or [] if a.get("id") in old[1] and not a.get("answer") and not a.get("closed")]
+        if not stale:
+            continue
+        t = now()
+        for a in stale:
+            a["closed"] = t
+            a["auto"] = it.get("stage")
+        add_thread(it, "manager", f"已撤 {len(stale)} 个过期提问", "event")
+        add_log(st, "manager", f"ask-autoclose {','.join(a['id'] for a in stale)} (stage {old[0]} -> {it.get('stage')})", it.get("id"))
+
+
 @contextlib.contextmanager
 def mutate():
     """Locked read-modify-write. Bumps meta.rev on exit.
@@ -123,8 +148,10 @@ def mutate():
         try:
             st = _load()
             st["_mut"] = []   # ids restored from the archive during this mutate
+            before = _ask_snapshot(st)
             yield st
             restored = st.pop("_mut", None) or []
+            _autoclose_asks(st, before)
             archive_sweep(st)
             st["meta"]["rev"] = int(st["meta"].get("rev", 0)) + 1
             st["meta"]["updated"] = now()
