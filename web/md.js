@@ -17,12 +17,20 @@
     const codes = [];
     s = s.replace(/`([^`]+)`/g, (_, c) => { codes.push(c); return "\u0000" + (codes.length - 1) + "\u0000"; });
     s = esc(s);
+    /* t-md-url-comma: finished <a> tags are parked as \u0001N\u0001 so the bare-URL pass cannot re-link the href of a [text](url)
+       link and bold, italic or strike marks cannot reach inside a URL. A bare URL stops at full-width punctuation (，。、；：！？…“”‘’《》 …) and drops
+       trailing sentence punctuation (. , ; : ! ? ' * ~ and an escaped quote), so 「见 https://x.com/a，然后」 links only the URL. */
+    const links = [], park = h => { links.push(h); return "\u0001" + (links.length - 1) + "\u0001"; };
+    const deco = t => t.replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>").replace(/(^|[^*])\*([^*\s][^*]*)\*/g, "$1<em>$2</em>").replace(/~~([^~]+)~~/g, "<del>$1</del>");
     s = s.replace(/\[([^\]]+)\]\(((?:https?:\/\/|\/|uploads\/|work\/)[^)\s]+)\)/g,
-      (_, t, u) => `<a href="${u}" target="_blank" rel="noopener">${t}</a>`);
-    s = s.replace(/(^|[^a-zA-Z0-9\/._%?#=&+-])(https?:\/\/[^\s<)（）「」【】]+)/g, (_, p, u) => `${p}<a href="${u}" target="_blank" rel="noopener">${u}</a>`);
-    s = s.replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
-    s = s.replace(/(^|[^*])\*([^*\s][^*]*)\*/g, "$1<em>$2</em>");
-    s = s.replace(/~~([^~]+)~~/g, "<del>$1</del>");
+      (_, t, u) => park(`<a href="${u}" target="_blank" rel="noopener">${deco(t)}</a>`));
+    s = s.replace(/(^|[^a-zA-Z0-9\/._%?#=&+-])(https?:\/\/[^\s<)\u0001\u3000-\u303f\uff01-\uff0f\uff1a-\uff20\uff3b-\uff40\uff5b-\uff65\u2010-\u2027]+)/g, (_, p, u) => {
+      let tail = "", m;
+      while ((m = u.match(/(?:[.,;:!?'*~]|&quot;)$/)) && u.length > 8) { tail = m[0] + tail; u = u.slice(0, -m[0].length); }
+      return /^https?:\/\/[^\/]/.test(u) ? `${p}${park(`<a href="${u}" target="_blank" rel="noopener">${u}</a>`)}${tail}` : p + u + tail;
+    });
+    s = deco(s);
+    s = s.replace(/\u0001(\d+)\u0001/g, (_, i) => links[+i]);
     s = s.replace(/\u0000(\d+)\u0000/g, (_, i) => `<code>${esc(codes[+i])}</code>`);
     return refs(s);
   }
