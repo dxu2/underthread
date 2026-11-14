@@ -5,9 +5,11 @@
   "use strict";
   const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
   const zh = () => document.documentElement.lang !== "en";
+  /* core / local split: each core file is followed by its local/ counterpart (your own layer, read after core; missing ones are skipped) */
+  const withLocal = l => l.flatMap(p => p.startsWith(".claude/") ? [p] : [p, "local/" + p]);
   const soulFiles = (id, agentName) => id === "manager"
-    ? ["manager.md", "roles/manager.md", "team.md", "policy.md", "roles/common.md"]
-    : [".claude/agents/" + agentName + ".md", "roles/" + id + ".md"];
+    ? withLocal(["manager.md", "roles/manager.md", "team.md", "policy.md", "roles/common.md"]).concat(["local/dispatch.md"])
+    : withLocal([".claude/agents/" + agentName + ".md", "roles/" + id + ".md"]);
   window.RF = { soulFiles, counts: null, at: 0, loading: false };
 
   function loadCounts(cb) {
@@ -38,7 +40,7 @@
   async function openSoul(id, an, nm) {
     const out = [];
     for (const p of soulFiles(id, an)) {
-      try { const j = await (await fetch("/api/doc?path=" + encodeURIComponent(p))).json(); if (j.text != null) out.push({ name: p.split("/").pop(), path: p, text: j.text }); } catch (e) { }
+      try { const j = await (await fetch("/api/doc?path=" + encodeURIComponent(p))).json(); if (j.text != null) out.push({ name: (p.startsWith("local/") ? "local · " : "") + p.split("/").pop(), path: p, text: j.text }); } catch (e) { }
     }
     show((zh() ? "灵魂 · " : "Soul · ") + nm, zh() ? "人设 · 声音 · 硬规则 · 已采纳规则" : "persona · voice · rules", out);
   }

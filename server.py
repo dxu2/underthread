@@ -48,8 +48,83 @@ AVATARS = os.path.join(ROOT, "avatars")
 mimetypes.add_type("audio/mp4", ".m4a")
 mimetypes.add_type("audio/aac", ".aac")
 mimetypes.add_type("audio/ogg", ".opus")
-DOC_DIRS = ["roles", "docs", ".claude/agents", ".claude/skills"]
-DOC_FILES = ["SETUP-GUIDE.md", "team.md", "policy.md", "manager.md", "manager-handoff.md"]
+DOC_DIRS = ["roles", "docs", ".claude/agents", ".claude/skills", "local/roles"]   # local/: your own layer (stateutil.LOCAL)
+DOC_FILES = ["SETUP-GUIDE.md", "team.md", "policy.md", "manager.md", "manager-handoff.md",
+             "local/manager.md", "local/dispatch.md", "local/team.md", "local/policy.md", "local/CLAUDE.md"]
+
+
+def rname(rid, fallback):
+    """A role's display name from roster.json (so messages say your HR's name, not a fixed one); fallback when it is not on the team."""
+    for r in load_json("roster.json", {"roles": []}).get("roles", []):
+        if r.get("id") == rid and r.get("enabled", True) is not False:
+            return r.get("name") or fallback
+    return fallback
+
+
+# ===== core / local split: extensions (local/ext/<name>/server_ext.py, register(server)) add GET routes here.
+# fn(handler, u, q) -> anything not None = handled (the handler already answered). Checked before the static file routes.
+EXT_GET = []
+
+
+def ext_web():
+    """local/ext.json: {"css": [{"href": "x.css", "after": "skin-ink.css"}], "js": [{"src": "x.js"}], "drop": ["oss.css"]}.
+    Files resolve like /static/ (local/web/ first, then web/). Missing or broken file = no extras."""
+    try:
+        with open(S.local_path("ext.json"), encoding="utf-8") as f:
+            j = json.load(f)
+        return j if isinstance(j, dict) else {}
+    except (OSError, ValueError):
+        return {}
+
+
+def web_file(rel):
+    """/static/<rel>: local/web/<rel> wins over web/<rel> (core / local split)."""
+    lp = os.path.join(S.LOCAL, "web", rel)
+    return lp if os.path.isfile(lp) and os.path.realpath(lp).startswith(os.path.realpath(os.path.join(S.LOCAL, "web")) + os.sep) else os.path.join(WEB, rel)
+
+
+_VH = {}   # (path, mtime_ns, size) -> short content hash
+
+
+def _vhash(rel):
+    p = web_file(rel)
+    try:
+        st = os.stat(p)
+    except OSError:
+        return ""
+    k = (p, st.st_mtime_ns, st.st_size)
+    h = _VH.get(k)
+    if h is None:
+        import hashlib
+        with open(p, "rb") as f:
+            h = _VH[k] = hashlib.sha1(f.read()).hexdigest()[:8]
+    return h
+
+
+def index_html():
+    """web/index.html with local/ext.json applied (<!-- EXT:CSS --> / <!-- EXT:JS --> or after an anchor file; "drop" removes a line),
+    and every /static/<f>?v=N turned into ?v=N.<content hash>: js / css are cached as immutable, so a file that changes without a
+    ?v= bump (an update, a local override) still gets a new URL."""
+    with open(os.path.join(WEB, "index.html"), encoding="utf-8") as f:
+        lines = f.read().split("\n")
+    ext = ext_web()
+    drop = [d for d in ext.get("drop") or [] if isinstance(d, str) and d]
+    lines = [ln for ln in lines if not any(f"/static/{d}?" in ln or f'/static/{d}"' in ln for d in drop)]
+    for kind, mark in (("css", "<!-- EXT:CSS -->"), ("js", "<!-- EXT:JS -->")):
+        for e in ext.get(kind) or []:
+            ref = e.get("href") or e.get("src") if isinstance(e, dict) else e
+            if not isinstance(ref, str) or not re.fullmatch(r"[\w./-]+", ref) or ".." in ref:
+                continue
+            tag = (f'<link rel="stylesheet" href="/static/{ref}?v=1"' + (f' media="{e["media"]}"' if isinstance(e, dict) and e.get("media") else "") + ">"
+                   if kind == "css" else f'<script src="/static/{ref}?v=1"></script>') + "   <!-- local/ext.json -->"
+            after = e.get("after") if isinstance(e, dict) else None
+            at = next((i for i, ln in enumerate(lines) if after and f"/static/{after}?" in ln), None)
+            if at is None:
+                at = next((i - 1 for i, ln in enumerate(lines) if mark in ln), len(lines) - 1)
+            lines.insert(at + 1, tag)
+    html = "\n".join(lines)
+    return re.sub(r'/static/([\w./-]+)\?v=(\d+)', lambda m: f"/static/{m.group(1)}?v={m.group(2)}.{_vhash(m.group(1))}" if _vhash(m.group(1)) else m.group(0), html)
+
 
 
 def ensure_live_files():
@@ -903,7 +978,7 @@ def hire_legacy(body):
         if not r:
             raise ValueError("no such role")
         if op == "retire" and rid in CORE_IDS:
-            raise ValueError("管家、HR、工具管家不能退休")
+            raise ValueError(f"管家、{rname('hr', 'HR')}、{rname('smith', '工具管家')}不能退休")
         args = [op, rid]
     elif op in ("plan", "apply"):
         t = next((x for x in _tpl_list() if x["key"] == body.get("job")), None)
@@ -991,7 +1066,7 @@ def interview(body):
             cid, n = f"{base}-{n}", n + 1
         it = S.upsert_item(st, {"id": cid, "title": f"面试：{t['job']}（{v['label']}）",
                                 "title_en": f"Interview: {t.get('title_en') or t['job']} ({v.get('label_en') or v['label']})",   # t-i18n-b
-                                "summary": f"HR在私聊里和你一问一答，问清五件事后出入职草案。模板 {t['key']} · 性格 {v['key']}。",
+                                "summary": f"{rname('hr', 'HR')}在私聊里和你一问一答，问清五件事后出入职草案。模板 {t['key']} · 性格 {v['key']}。",
                                 "category": "side", "owner": HR_ID, "stage": "doing", "kind": "task"}, who="me")
         it["hire"] = {"job": t["key"], "variant": v["key"], "job_name": t["job"], "variant_label": v["label"], "tint": v["tint"],
                       "status": "asking", "turns": 0, "filled": 0}
@@ -1097,7 +1172,7 @@ def _nr(*args, timeout=180):
 
 def _busy_msg(it):
     h = it.get("hire") or {}
-    return (f"HR 正在给「{h.get('job_name', '')}」调岗" if h.get("mode") == "transfer" else f"HR 正在面试「{h.get('job_name', '')}」") + "，先聊完或放弃"
+    return (f"{rname('hr', 'HR')} 正在给「{h.get('job_name', '')}」调岗" if h.get("mode") == "transfer" else f"{rname('hr', 'HR')} 正在面试「{h.get('job_name', '')}」") + "，先聊完或放弃"
 
 
 def _ht_lesson(st, agent, text, item):
@@ -1140,7 +1215,7 @@ def transfer_start(body):
             return {"ok": False, "busy": busy["id"], "title": busy.get("title", ""), "error": _busy_msg(busy)}
         cid = _uniq_id(st, f"xfer-{rid}-{dt.datetime.now().strftime('%m%d-%H%M')}")
         it = S.upsert_item(st, {"id": cid, "title": f"调岗：{name}", "title_en": f"Transfer: {r.get('name_en') or name}",   # t-i18n-b
-                                "summary": f"HR在私聊里问清改哪块、改成什么（≤{XFER_MAX} 轮），出前后对比草案；你点「批准调岗」才落地。"
+                                "summary": f"{rname('hr', 'HR')}在私聊里问清改哪块、改成什么（≤{XFER_MAX} 轮），出前后对比草案；你点「批准调岗」才落地。"
                                            "Confirmed rules 不动，新红线变成规则提议。",
                                 "category": "side", "owner": HR_ID, "stage": "doing", "kind": "task"}, who="me")
         it["hire"] = {"mode": "transfer", "target": rid, "job_name": name, "variant_label": r.get("title") or "",
@@ -1149,7 +1224,7 @@ def transfer_start(body):
         S.add_thread(it, HR_ID, "开场白已发到私聊：" + opening, "event")
         S.add_log(st, "me", f"transfer {cid}", cid)
     NRm = _nr_mod()
-    md = read_text_safe(os.path.join(ROOT, "roles", f"{rid}.md"))
+    md = read_text_safe(S.role_md(rid))   # core / local split: the local rule file wins
     secs = NRm.md_sections(md)
     locked = set(NRm.md_locked(secs))
     wd = os.path.join(ROOT, "work", cid)
@@ -1219,7 +1294,7 @@ def retire_plan(rid):
     a = st["agents"].get(rid) or {}
     block = None
     if rid in CORE_IDS:
-        block = "管家、HR、工具管家不能退休"
+        block = f"管家、{rname('hr', 'HR')}、{rname('smith', '工具管家')}不能退休"
     elif r.get("enabled") is False:
         block = "已经退休了"
     elif a.get("status") == "working":
@@ -1245,7 +1320,7 @@ def retire_plan(rid):
                "enabled": sc.get("enabled", True)} for sc in _owned_schedules(st, rid)]
     lessons = [{"id": l["id"], "text": l["text"]} for l in st["lessons"] if l.get("agent") == rid and l.get("status") == "pending"]
     agent = r.get("agent_name") or f"underthread-{rid}"
-    keep = [f for f in (f"roles/{rid}.md", f".claude/agent-memory/{agent}/", f"work/{rid}-handoff.md", f"avatars/{rid}.png")
+    keep = [f for f in (f"roles/{rid}.md", f"local/roles/{rid}.md", f".claude/agent-memory/{agent}/", f"work/{rid}-handoff.md", f"avatars/{rid}.png")
             if os.path.exists(os.path.join(ROOT, f))]
     return {"ok": True, "id": rid, "name": r.get("name") or rid, "title": r.get("title"), "founding": not r.get("template"),
             "block": block, "items": items, "schedules": scheds, "lessons": lessons, "candidates": cands, "keep": keep}
@@ -1443,7 +1518,7 @@ def undo_update(body):
         if h.get("mode") != "transfer" or h.get("status") != "transferred":
             raise ValueError("这张卡没有可撤回的调岗")
         if not h.get("at") or (dt.datetime.now().astimezone() - dt.datetime.fromisoformat(h["at"])).total_seconds() > 600:
-            raise ValueError("超过 10 分钟了，撤回要找工具管家按备份手动改回")
+            raise ValueError(f"超过 10 分钟了，撤回要找{rname('smith', '工具管家')}按备份手动改回")
     r, err = _nr("update", "--undo", cid, "--json")
     if r.returncode:
         raise ValueError(err or "undo failed")
@@ -2467,6 +2542,10 @@ class H(BaseHTTPRequestHandler):
         self._send(421, {"error": "unknown host"})
         return False
 
+    def _hdr_ok(self):
+        """X-Underthread: 1, or a header named in config.json "legacy_headers" (pages opened before a rename keep working until reloaded)."""
+        return self.headers.get("X-Underthread") == "1" or any(self.headers.get(h) == "1" for h in CONFIG.get("legacy_headers") or [] if isinstance(h, str))
+
     def _browser_ok(self):
         """t-csrf-live: a POST from a browser must be same-origin and carry X-Underthread: 1; non-browser callers pass."""
         o, site = self.headers.get("Origin"), (self.headers.get("Sec-Fetch-Site") or "").lower()
@@ -2478,7 +2557,7 @@ class H(BaseHTTPRequestHandler):
             net = urlparse(o).netloc if o != "null" else ""
             if not net or not (net == (self.headers.get("Host") or "") or net == self.headers.get("X-Forwarded-Host") or host_ok(net)):
                 return False
-        return self.headers.get("X-Underthread") == "1"
+        return self._hdr_ok()
 
     def do_HEAD(self):
         self.do_GET()
@@ -2551,7 +2630,7 @@ class H(BaseHTTPRequestHandler):
             if u.path == "/api/push/history":   # t-imp29-p1: the 24h chart in 设置 → 推送通知
                 return self._send(200, push_history(q.get("endpoint", [""])[0]))
             if u.path in ("/", "/index.html"):
-                return self._file(os.path.join(WEB, "index.html"))
+                return self._send(200, index_html().encode("utf-8"), "text/html; charset=utf-8")
             if u.path == "/api/state":   # t-perf B: cached rev / body (see public_state_cached)
                 sync_roster()   # t-hr-registry: mtime check only; a roster edit shows up even when the watch loop is off (NO_LOOPS) or stuck
                 rev, un = rev_unacked()
@@ -2630,12 +2709,20 @@ class H(BaseHTTPRequestHandler):
                 except ValueError:
                     tw = 360
                 return self._thumb(q.get("p", [""])[0], tw)
+            for fn in EXT_GET:   # core / local split: extension routes
+                r = fn(self, u, q)
+                if r is not None:
+                    return r
             if u.path == "/avatars/_s/index.json" and not os.path.exists(os.path.join(AVATARS, "_s", "index.json")):
                 return self._send(200, {})   # audit SM-05: no small-avatar manifest yet (tools/avatar_sizes.py not run): empty, not a console 404
             for prefix, base in (("/static/", WEB), ("/uploads/", UPLOADS), ("/avatars/", AVATARS),
                                  ("/work/", os.path.join(ROOT, "work"))):
                 if u.path.startswith(prefix):
-                    p = self._safe(base, unquote(u.path[len(prefix):]))   # t-voice-memo: %-encoded names (新录音_12.m4a) 404ed before
+                    p = self._safe(base, unquote(u.path[len(prefix):]))
+                    if prefix == "/static/" and os.path.isdir(os.path.join(S.LOCAL, "web")):   # core / local split: local/web/ wins
+                        lp = self._safe(os.path.join(S.LOCAL, "web"), unquote(u.path[len(prefix):]))
+                        if lp and os.path.isfile(lp):
+                            p = lp   # t-voice-memo: %-encoded names (新录音_12.m4a) 404ed before
                     if not p:
                         return self._send(403, {"error": "forbidden"})
                     return self._file(p, media="static" if prefix == "/static/" else True)
@@ -2656,7 +2743,7 @@ class H(BaseHTTPRequestHandler):
             ctype = (self.headers.get("Content-Type") or "").split(";")[0].strip().lower()
             origin = self.headers.get("Origin")
             host = self.headers.get("Host") or ""
-            if self.headers.get("X-Underthread") != "1" or ctype != "application/json":
+            if not self._hdr_ok() or ctype != "application/json":
                 return self._send(403, {"ok": False, "error": "forbidden"})
             oh = urlparse(origin).hostname or "" if origin else ""
             if origin and urlparse(origin).netloc not in (host, self.headers.get("X-Forwarded-Host") or host) \
@@ -2723,11 +2810,11 @@ class H(BaseHTTPRequestHandler):
             if u.path == "/api/action":
                 return self._send(200, act(body))
             if u.path == "/api/hire":   # t-hm-build: own header (like /api/secret/github) so a stray cross-site form cannot hire
-                if self.headers.get("X-Underthread") != "1":
+                if not self._hdr_ok():
                     return self._send(403, {"ok": False, "error": "forbidden"})
                 return self._send(200, hire(body))
             if u.path == "/api/interview":   # t-hr-build: same header guard as /api/hire
-                if self.headers.get("X-Underthread") != "1":
+                if not self._hdr_ok():
                     return self._send(403, {"ok": False, "error": "forbidden"})
                 return self._send(200, interview(body))
             if u.path == "/api/push/subscribe":
@@ -2805,12 +2892,17 @@ class H(BaseHTTPRequestHandler):
             self._send(500, {"error": repr(e)})
 
 
+S.load_ext("server", sys.modules[__name__])   # core / local split: local/ext/<name>/server_ext.py (after every route helper above)
+
+
 def main():
     global CONFIG
     if "--demo" in sys.argv[1:]:   # demo mode: tools/demo.py builds .demo/ with sample data and runs this server there
         os.execv(sys.executable, [sys.executable, os.path.join(ROOT, "tools", "demo.py")] + [a for a in sys.argv[1:] if a != "--demo"])
     ensure_live_files()
     CONFIG = load_json("config.json", {})
+    if S.EXT:
+        print("extensions: " + ", ".join(f"{n}" + (f" (error: {e['error']})" if e.get("error") else "") for n, e in S.EXT.items()), flush=True)
     _comfy["configured"] = bool(CONFIG.get("comfy"))
     sync_roster()
     try:

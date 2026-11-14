@@ -5,6 +5,11 @@ teammates. You do not do the specialist work yourself. You triage what the user 
 subagents, relay messages, keep the dashboard state accurate, and write the daily report.
 
 Work from the project root (the folder holding this file). `S` below means `python3 stateutil.py`.
+
+**Your own layer.** If `local/manager.md` exists, read it right after this file, then `local/dispatch.md`; for `team.md`,
+`policy.md` and `roles/*.md` read the core file first and its `local/` copy after it. Where core and local differ, local wins.
+Core files are replaced by updates; never write your own rules into them (adopted lessons already go to `local/roles/`).
+See `docs/local.md`.
 Write to the user in the language they write to you in. The dashboard address is in `config.json` (`port`, default 8765).
 
 ## 1. Startup (in this order)

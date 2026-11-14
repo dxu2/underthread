@@ -27,6 +27,65 @@ ARCHIVE = os.path.join(ROOT, "archive.json")   # t-perf A: done cards older than
 INBOX_LOCK = os.path.join(ROOT, ".inbox.lock")
 ROLES_DIR = os.path.join(ROOT, "roles")
 
+# ===== core / local split (docs/local.md). The repository is "core": an update may replace any tracked file. "local" is your own
+# layer, never tracked and never written by an update: your rules (local/roles/<id>.md), manager notes (local/manager.md), and
+# extensions (local/ext/<name>/). Read core first, then local; where they differ, local wins. No local/ folder = nothing changes.
+LOCAL = os.path.abspath(os.environ.get("UNDERTHREAD_LOCAL") or os.path.join(ROOT, "local"))
+EXT = {}            # name -> {"dir": path, "stateutil": module or None, "server": module or None, "error": text or None}
+CLI_EXT = []        # fn(subparsers): an extension adds its own stateutil subcommands
+SET_AGENT_HOOKS = []   # fn(st, agent_id, agent, auto, tool): after set_agent changed an agent (inside the state lock)
+UPSERT_HOOKS = []      # fn(phase, ctx): phase "before" / "after" (inside the lock) and "done" (after it); see cmd_upsert_item
+
+
+def has_local():
+    return os.path.isdir(LOCAL)
+
+
+def local_path(*parts):
+    return os.path.join(LOCAL, *parts)
+
+
+def role_md(rid, write=False):
+    """A role's rule file. Reading: local/roles/<id>.md when it exists, else roles/<id>.md. Writing (adopted lessons, hiring,
+    transfers): local/roles/<id>.md whenever the local layer exists, so core rule files stay exactly as the update shipped them."""
+    lp, cp = local_path("roles", f"{rid}.md"), os.path.join(ROLES_DIR, f"{rid}.md")
+    if write:
+        return lp if has_local() else cp
+    return lp if os.path.exists(lp) else cp
+
+
+def ext_dirs():
+    base = local_path("ext")
+    if not os.path.isdir(base):
+        return []
+    return [os.path.join(base, n) for n in sorted(os.listdir(base))
+            if not n.startswith((".", "_")) and os.path.isdir(os.path.join(base, n))]
+
+
+def load_ext(kind, target):
+    """Import local/ext/<name>/<kind>_ext.py (kind "stateutil" or "server") for every extension and call register(target).
+    Each extension folder is also put on sys.path, so its plain modules import by name. A broken extension prints one line
+    to stderr and is skipped: it must never take the CLI or the dashboard down."""
+    import importlib.util
+    for d in ext_dirs():
+        name = os.path.basename(d)
+        e = EXT.setdefault(name, {"dir": d, "stateutil": None, "server": None, "error": None})
+        if d not in sys.path:
+            sys.path.insert(0, d)
+        f = os.path.join(d, f"{kind}_ext.py")
+        if not os.path.exists(f):
+            continue
+        try:
+            spec = importlib.util.spec_from_file_location(f"_ext_{name}_{kind}", f)
+            m = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(m)
+            if hasattr(m, "register"):
+                m.register(target)
+            e[kind] = m
+        except Exception as ex:  # noqa: BLE001
+            e["error"] = f"{kind}: {ex!r}"
+            print(f"extension {name} ({kind}) not loaded: {ex!r}", file=sys.stderr)
+
 CATEGORIES = ["main", "side", "daily", "urgent", "ongoing"]
 STAGES = ["todo", "doing", "review", "waiting", "done"]
 KINDS = ["plan", "deliverable", "question", "task"]
@@ -534,7 +593,8 @@ def add_log(st, agent, text, item=None):
 
 # ---------- agents ----------
 
-def set_agent(st, agent_id, **fields):
+def set_agent(st, agent_id, auto=False, **fields):
+    """auto=True: the change comes from automation (a hook), not from the agent itself; extensions may treat it differently."""
     a = st["agents"].setdefault(agent_id, {"id": agent_id, "status": "idle"})
     was = a.get("status")
     tool = fields.pop("tool", None)
@@ -560,6 +620,8 @@ def set_agent(st, agent_id, **fields):
             a.pop("tool", None); a.pop("tool_since", None)
     if new in ("idle", "offline", "sleeping") and not (tool and tool.strip()):
         a.pop("tool", None); a.pop("tool_since", None)
+    for h in SET_AGENT_HOOKS:
+        h(st, agent_id, a, auto, tool)
     a["last_seen"] = now()
     return a
 
@@ -637,8 +699,8 @@ def decide_lesson(st, lesson_id, decision):
 
 
 def _append_rule(agent, text):
-    os.makedirs(ROLES_DIR, exist_ok=True)
-    path = os.path.join(ROLES_DIR, f"{agent}.md")
+    path = role_md(agent, write=True)   # core / local split: with a local layer, adopted rules go to local/roles/<id>.md
+    os.makedirs(os.path.dirname(path), exist_ok=True)
     body = open(path, encoding="utf-8").read() if os.path.exists(path) else f"# {agent}\n"
     if "## Confirmed rules" not in body:
         body = body.rstrip() + "\n\n## Confirmed rules\n"
@@ -709,10 +771,17 @@ def cmd_upsert(a):
         v = getattr(a, k)
         if v:
             fields[{"platform": "platforms", "attach": "attachments", "link": "links", "tag": "tags"}.get(k, k)] = v
+    ctx = {"args": a, "fields": fields}   # UPSERT_HOOKS: "before" may edit fields; "after" sees the card; "done" runs outside the lock
     with mutate() as st:
         before = find_item(st, fields.get("id")) if fields.get("id") else None
         old_stage = before["stage"] if before else None
+        ctx.update(st=st, before=before)
+        for h in UPSERT_HOOKS:
+            h("before", ctx)
         it = upsert_item(st, fields, who=a.who)
+        ctx["item"] = it
+        for h in UPSERT_HOOKS:
+            h("after", ctx)
         for spec in a.ask or []:   # t-open-questions
             q, opts = parse_ask(spec)
             add_ask(it, a.who, q, opts)
@@ -724,6 +793,12 @@ def cmd_upsert(a):
         add_log(st, a.who, f"upsert {it['id']} [{it['stage']}] {it['title']}", it["id"])
         if a.who == "manager":
             ho_touch(st, it["id"], "manager")   # t-rb-build
+    ctx.pop("st", None)
+    for h in UPSERT_HOOKS:
+        try:
+            h("done", ctx)
+        except Exception as e:  # noqa: BLE001
+            print(f"upsert hook failed: {e!r}", file=sys.stderr)
     print(it["id"])
 
 
@@ -1094,6 +1169,8 @@ def main():
 
     _add_ask_parsers(sub)
     _add_schedule_parsers(sub)   # t-schedule-backend
+    for fn in CLI_EXT:   # core / local split: extension subcommands (local/ext/<name>/stateutil_ext.py)
+        fn(sub)
     s = sub.add_parser("handoff", help="t-rb-build: record that work on a card moves to another role (prints the entry)")
     s.add_argument("item"); s.add_argument("to"); s.add_argument("--from", dest="frm", help="previous holder (default: whoever last held the card)")
     s.add_argument("--via", default="dispatch", choices=["dispatch", "pickup", "reply", "reassign"]); s.set_defaults(fn=cmd_handoff)
@@ -1427,6 +1504,8 @@ def _need_rule(a):
     if not (a.rule or a.rule_json):
         raise SC.RuleError("要 --rule，例如 --rule 'in 1h' 或 --rule 'weekly mon 09:00'")
 
+
+load_ext("stateutil", sys.modules[__name__])   # core / local split: last, so an extension sees every function above
 
 if __name__ == "__main__":
     main()

@@ -23,6 +23,18 @@ import re
 import threading
 import time
 
+
+def _agent_role(t):
+    """A subagent's agentType -> roster id: the roster's agent_name first (installs may use another prefix), then "underthread-<id>"."""
+    try:
+        with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "roster.json"), encoding="utf-8") as f:
+            for r in json.load(f).get("roles", []):
+                if t and r.get("agent_name") == t:
+                    return r["id"]
+    except (OSError, ValueError, KeyError):
+        pass
+    return t[len("underthread-"):] if t.startswith("underthread-") else "other"
+
 KEEP_DAYS = 14
 CACHE_S = 60
 FIELDS = ("in", "cw", "cr", "out", "msgs")
@@ -76,7 +88,7 @@ class Roll:
         if "/" in key:   # "<session>/agent-xxx"
             meta = os.path.join(self.proj, key.split("/")[0], "subagents", key.split("/")[1] + ".meta.json")
             t = self._load(meta, {}).get("agentType") or ""
-            return t[len("underthread-"):] if t.startswith("underthread-") else "other"
+            return _agent_role(t)
         try:
             with open(os.path.join(self.proj, key, "custom-title.json"), encoding="utf-8") as f:
                 if "管家" in (json.load(f).get("customTitle") or ""):

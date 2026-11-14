@@ -29,10 +29,23 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 META = os.path.join(ROOT, "secrets_meta.json")
 HOST = os.environ.get("UNDERTHREAD_GH_HOST") or "github.com"
 API = (os.environ.get("UNDERTHREAD_GH_API") or "https://api.github.com").rstrip("/")
-FILE = os.path.expanduser(os.environ.get("UNDERTHREAD_GH_FILE") or "~/.config/underthread/git-credentials")
+
+
+def _cfg():
+    """config.json "github": {"cred_file", "user", "repo"} (all optional); the environment variables below win."""
+    try:
+        with open(os.path.join(ROOT, "config.json"), encoding="utf-8") as f:
+            g = json.load(f).get("github")
+        return g if isinstance(g, dict) else {}
+    except (OSError, ValueError, AttributeError):
+        return {}
+
+
+FILE = os.path.expanduser(os.environ.get("UNDERTHREAD_GH_FILE") or _cfg().get("cred_file") or "~/.config/underthread/git-credentials")
 PROBE_HOST = "underthread-probe.invalid"
-# open-source build: which repo to check push rights on comes from the environment (no author account baked in)
-DEF_USER, DEF_REPO = os.environ.get("UNDERTHREAD_GH_USER") or "", os.environ.get("UNDERTHREAD_GH_REPO") or ""
+# open-source build: which repo to check push rights on comes from the environment or config.json (no author account baked in)
+DEF_USER = os.environ.get("UNDERTHREAD_GH_USER") or _cfg().get("user") or ""
+DEF_REPO = os.environ.get("UNDERTHREAD_GH_REPO") or _cfg().get("repo") or ""
 TOKEN_RE = re.compile(r"^(github_pat_|ghp_)[A-Za-z0-9_]{20,255}$")
 GIT = "/usr/bin/git" if os.path.exists("/usr/bin/git") else "git"
 _lock = threading.Lock()

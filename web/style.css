@@ -2635,7 +2635,7 @@ html[data-theme="light"] .brand img.wm-l, html[data-theme="white"] .brand img.wm
 @media (min-width: 761px) and (max-width: 1200px) { .brand img { height: 24px; } }
 
 /* ===== t-hdr-trim (2026-11-05) ===== */
-/* ⑩ long names (Shorekeeper, Xiangli Yao) ellipsize; status word, 排队 chip and unread count never leave the row */
+/* ⑩ long English role names ellipsize; status word, 排队 chip and unread count never leave the row */
 .team-i > div:not(.av) { min-width: 0; }
 .team-i .nm { min-width: 0; }
 .team-i .nm .nmt { flex: 0 1 auto; min-width: 2em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -3136,7 +3136,7 @@ html[data-texture^="leather"] #wtoasts .wt { --dim: color-mix(in srgb, var(--lt-
 .cal-form input[type=date], .cal-form input[type=time] { width: auto; }
 .cal-form input[name=title], .cal-form input[type=date] { grid-column: 1 / -1; }
 .cal-form .btn-s { white-space: nowrap; }
-/* R3-15: a long label (「Until Shorekeeper replies」) was cut while its hint kept its full width; the hint now drops under the label instead */
+/* R3-15: a long label (「Until <a long name> replies」) was cut while its hint kept its full width; the hint now drops under the label instead */
 .snz-o { flex-wrap: wrap; row-gap: 2px; }
 .snz-o b { flex: 0 1 auto; max-width: 100%; }
 .snz-o span { margin-left: auto; text-align: right; }

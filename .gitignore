@@ -17,11 +17,16 @@ push_subs.json*
 manager-handoff.md
 *-handoff.md
 
+# ---- your own layer (rules, manager notes, extensions; see docs/local.md). Updates never touch it ----
+/local/
+
 # ---- runtime folders ----
 uploads/
 work/
 logs/
 rcshots/
+/.live/
+/archive/
 .demo/
 avatars/*
 # the Underthread needle-thread avatar set ships with the repo (shown under the 特典 palette)

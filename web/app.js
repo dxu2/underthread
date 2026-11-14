@@ -297,6 +297,8 @@
   }
   const toolWhat = a => String(a.activity || "").replace(new RegExp("^\\s*" + toolName(a.tool || "").replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + "\\s*[·:：-]\\s*", "i"), "");
   let TOOL_LAST = "";
+  /* core / local split: an extension (local/web/*.js) adds a button to a tool pill with App.addToolExtra((agent, toolKey, stale) => html) */
+  const TOOL_EXTRA = [];
   function toolLine(where) {   /* where: "d" = desktop header, "m" = phone home */
     const en = UI.lang === "en", list = agents().filter(a => a.enabled !== false);
     const fx = list.map(a => [a, toolFx(a)]), on = fx.filter(([, f]) => f.k);
@@ -311,10 +313,11 @@
       if (g.length > 1) return `<div class="${cls}"${dl} role="status"><span class="ic">${toolIc(k)}</span><b>${esc(nm)} ${en ? "conflict" : "冲突"}</b><i class="d">·</i><span class="what">${g.map(([x]) => esc(aname(x))).join(en ? ", " : "、")} ${en ? "are all using it" : "同时在用"}</span></div>`;
       const it = liveItem(a), since = a.tool_since, old = since && Date.now() - Date.parse(since) > TOOL_STALE, what = toolWhat(a);
       return `<div class="${cls}${old ? " stale" : ""}"${dl} role="button" tabindex="0" ${it ? `data-item="${esc(it.id)}"` : `data-chat="${esc(a.id)}"`} title="${esc(nm)} ${en ? "in use" : "使用中"} · ${esc(aname(a))}${what ? " · " + esc(what) : ""}">`
-        + `<span class="ic">${toolIc(k)}</span><b>${esc(nm)} ${en ? "in use" : "使用中"}</b><i class="d">·</i>`
-        + `<span class="who"><i style="background-image:url('${avatarUrl(a)}')"></i>${esc(aname(a))}</span>`
+        + `<span class="ic">${toolIc(k)}</span><b>${esc(nm)}<span class="iu"> ${en ? "in use" : "使用中"}</span></b><i class="d">·</i>`
+        + `<span class="who"><i style="background-image:url('${avatarUrl(a)}')"></i><span class="nm">${esc(aname(a))}</span></span>`
         + (what ? `<i class="d">·</i><span class="what">${esc(what)}</span>` : `<span class="what"></span>`)
-        + (since ? `<time class="wk-el" data-since="${esc(since)}">${wkDur(since)}</time>${old ? `<em>${en ? "maybe left on" : "可能忘了清"}</em>` : ""}` : "") + `</div>`;
+        + (since ? `<time class="wk-el" data-since="${esc(since)}">${wkDur(since)}</time>${old ? `<em>${en ? "maybe left on" : "可能忘了清"}</em>` : ""}` : "")
+        + TOOL_EXTRA.map(fn => { try { return fn(a, k, !!old) || ""; } catch (e) { return ""; } }).join("") + `</div>`;
     }).join("");
     TOOL_LAST = html.replace(/ tp-in| style="animation-delay:-\d+ms"/g, "");
     return html;
@@ -4913,7 +4916,7 @@
     utEmpty: (text, cls, h) => utEmpty(text, cls, h),   /* t-thread-motif ④ (widgets.js, palette.js, mobile.js) */
     rvApprove: id => rvApprove(id, null), rvCanApprove: it => rvCanApprove(it), awaitsUser: it => awaitsUser(it), busy: it => busy(it), onYou: it => onYou(it), onYouCard: it => onYouCard(it), grpOf: it => grpOf(it), newReplies: () => newReplies(), nrDot: id => nrDot(id), decisions: () => decisions(),   // t-imp-p5 (palette)
     /* t-chrome-badge (home.js .hd-tool) */
-    toolLine: w => toolLine(w), toolBadge: a => toolBadge(a), toolWhat: a => toolWhat(a),
+    toolLine: w => toolLine(w), toolBadge: a => toolBadge(a), toolWhat: a => toolWhat(a), addToolExtra: fn => { TOOL_EXTRA.push(fn); },
     wsheet: (a, sz) => wsheet(a, sz),   /* t-chibi-anim (home.js .hd-mini / .dp-uti) */
     hasArt: (a, k) => hasArt(a, k), tintOf: a => tintOf(a),   /* t-hr-registry (home.js, widgets.js) */
     UI, get ST() { return ST; }, roll, modalStatus: () => modalStatus(), ghOpen: () => ghOpen(), ghLabel: () => ghLabel(), statusSummary: () => statusSummary(statusRows()), loadHealth: a => loadHealth(a), refreshPage: () => renderPage(), phaseFree, avatarUrl, t, items, agent, aname, atitle, av, when, whenH, agoH, ago, byAct, PLAT, stageLabel,

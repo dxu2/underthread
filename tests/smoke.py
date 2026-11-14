@@ -15,9 +15,12 @@ so your own state.json, inbox and work/ are never touched. Checks:
   stateutil    upsert-item / say-mgr / log land in /api/state; a POST from the page shows up in the inbox
   demo         python3 tools/demo.py --fast starts, cards move, and the checkout's own state stays absent
   keepalive    tools/keepalive.sh is valid bash
+  local        a local/ layer: agents list local rules, the page gets local/ext.json files and ?v=N.<hash>, extension routes
+               and subcommands work, adopted rules land in local/roles/, the core rule files stay untouched
 """
 import glob
 import json
+import re
 import os
 import shutil
 import socket
@@ -48,6 +51,7 @@ def copy_tree(dst):
     def ignore(d, names):
         out = {n for n in names if n in SKIP or ".bak" in n}
         if os.path.abspath(d) == SRC:
+            out |= {n for n in names if n == "local"}   # your own layer stays out of the test copy
             out |= {n for n in names if n in RUNTIME or n.startswith(".state") or n.startswith(".inbox")}
         if os.path.basename(d) == ".claude":
             out |= {n for n in names if n in ("agents", "agent-memory", "settings.local.json")}
@@ -259,8 +263,52 @@ def t_keepalive(root):
     assert open(os.path.join(root, "tools", "keepalive.sh")).readline().strip() == "#!/usr/bin/env bash"
 
 
+def t_local(root):
+    L = os.path.join(root, "local")
+    core_common = open(os.path.join(root, "roles", "common.md"), encoding="utf-8").read()
+    files = {
+        "roles/common.md": "# common (local)\n\n## Confirmed rules\n- smoke local rule\n",
+        "ext.json": json.dumps({"css": [{"href": "smoke-ext.css", "after": "skin-ink.css"}], "js": [{"src": "smoke-ext.js"}], "drop": ["oss.css"]}),
+        "web/smoke-ext.css": "/* smoke */\n",
+        "web/smoke-ext.js": "/* smoke */\n",
+        "ext/smoke/server_ext.py": "def register(srv):\n    def route(h, u, q):\n        if u.path == '/api/smoke-ext':\n            return h._send(200, {'ok': True})\n    srv.EXT_GET.append(route)\n",
+        "ext/smoke/stateutil_ext.py": "def register(S):\n    def cli(sub):\n        sub.add_parser('smoke-ext').set_defaults(fn=lambda a: print('smoke-ext ok'))\n    S.CLI_EXT.append(cli)\n",
+    }
+    try:
+        for rel, body in files.items():
+            os.makedirs(os.path.dirname(os.path.join(L, rel)), exist_ok=True)
+            with open(os.path.join(L, rel), "w", encoding="utf-8") as f:
+                f.write(body)
+        r = subprocess.run([PY, "make_agents.py"], cwd=root, capture_output=True, text=True)
+        assert r.returncode == 0, r.stderr
+        ag = [f for f in glob.glob(os.path.join(root, ".claude", "agents", "*.md"))]
+        assert ag and all("`local/roles/common.md`" in open(f, encoding="utf-8").read() for f in ag), "agent files do not list local/roles/common.md"
+        assert os.path.exists(os.path.join(L, "dispatch.md")), "no local/dispatch.md"
+        assert "smoke-ext ok" in S(root, "smoke-ext")
+        r = subprocess.run([PY, "-c", "import stateutil as S; S._append_rule('manager', 'smoke lesson')"], cwd=root, capture_output=True, text=True)
+        assert r.returncode == 0, r.stderr
+        assert "smoke lesson" in open(os.path.join(L, "roles", "manager.md"), encoding="utf-8").read(), "adopted rule not in local/roles/"
+        assert open(os.path.join(root, "roles", "common.md"), encoding="utf-8").read() == core_common, "core roles/common.md changed"
+        srv = Server(root)
+        try:
+            code, html = req(srv.port, "/")
+            html = html.decode()
+            assert code == 200 and "/static/smoke-ext.js?v=1." in html and "/static/smoke-ext.css?v=1." in html, "ext.json files not injected"
+            assert html.index("smoke-ext.css") > html.index("skin-ink.css"), "css not placed after its anchor"
+            assert "/static/oss.css" not in html, "drop did not remove oss.css"
+            assert re.search(r"/static/app\.js\?v=\d+\.[0-9a-f]{8}", html), "no content hash on ?v="
+            assert req(srv.port, "/static/smoke-ext.js")[0] == 200
+            assert req(srv.port, "/api/smoke-ext")[0] == 200, "extension route missing"
+        finally:
+            srv.stop()
+    finally:
+        shutil.rmtree(L, ignore_errors=True)
+        subprocess.run([PY, "make_agents.py"], cwd=root, capture_output=True)
+
+
 CHECKS = [("compile", t_compile), ("json", t_json), ("agents", t_agents), ("preset", t_preset), ("server", t_server),
-          ("guard", t_guard), ("stateutil", t_stateutil), ("demo", t_demo), ("keepalive", t_keepalive)]
+          ("guard", t_guard), ("stateutil", t_stateutil), ("demo", t_demo), ("keepalive", t_keepalive),
+          ("local", t_local)]
 
 
 def main():

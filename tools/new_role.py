@@ -46,6 +46,18 @@ Safety:
 import argparse, datetime as dt, filecmp, glob, json, os, re, shutil, subprocess, sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+LOCAL = os.path.abspath(os.environ.get("UNDERTHREAD_LOCAL") or os.path.join(ROOT, "local"))   # core / local split (stateutil.LOCAL)
+
+
+def role_md(i):
+    """The rule file this tool reads and writes for role i: local/roles/<i>.md when the local layer exists (core rule files stay as
+    shipped), else roles/<i>.md. An existing core file with no local copy yet is still read from core (see role_md_read)."""
+    return os.path.join(LOCAL, "roles", f"{i}.md") if os.path.isdir(LOCAL) else os.path.join(ROOT, "roles", f"{i}.md")
+
+
+def role_md_read(i):
+    lp = os.path.join(LOCAL, "roles", f"{i}.md")
+    return lp if os.path.exists(lp) else os.path.join(ROOT, "roles", f"{i}.md")
 ROSTER = os.path.join(ROOT, "roster.json")
 TPL = os.path.join(ROOT, "templates", "roles")
 BASE_AV = os.path.join(TPL, "_default", "avatar.png")
@@ -413,7 +425,7 @@ def cmd_apply(args, dry):
         die(f"id {i!r} already exists in roster.json with different fields ({', '.join(diff)}); pick another id or retire it first")
     if have and have.get("enabled") is False:
         die(f"{i} exists but is soft-retired; use `rehire {i}`")
-    md = os.path.join(ROOT, "roles", f"{i}.md")
+    md = role_md(i)
     if not have and os.path.exists(md):
         die(f"{rel(md)} exists but {i} is not in roster.json (left over from an old role?); move it away first")
     drift = agent_drift(roster, i)
@@ -584,7 +596,7 @@ def cmd_retire(args, dry):
         return
     # hard: archive files, then drop the roster entry
     agent = (r or {}).get("agent_name") or agent_prefix(roster) + i
-    pats = set(ART) | {"roles/{id}.md", ".claude/agents/{agent}.md", "work/{id}-handoff.md"}   # t-ht-build: + the handoff note
+    pats = set(ART) | {"roles/{id}.md", "local/roles/{id}.md", ".claude/agents/{agent}.md", "work/{id}-handoff.md"}   # t-ht-build: + the handoff note
     files = sorted({f for p in pats for f in glob.glob(os.path.join(ROOT, p.format(id=i, agent=agent))) if os.path.isfile(f)})
     mem = os.path.join(ROOT, ".claude", "agent-memory", agent)
     if not r and not files and not os.path.isdir(mem):
@@ -778,8 +790,8 @@ def xfer_build(i, cid):
     if tj.get("target") not in (None, i):
         die(f"{rel(tp)} is for {tj.get('target')}, not {i}")
     before, after = tj.get("before") or {}, tj.get("after") or {}
-    md = os.path.join(ROOT, "roles", f"{i}.md")
-    old = read_text(md) or ""
+    md = role_md(i)
+    old = read_text(role_md_read(i)) or ""
     if before.get("roster") is not None and before["roster"] != r:
         die("roster.json changed since the transfer started (someone edited this role); HR has to redo the draft from the current file")
     if before.get("md_sha") and before["md_sha"] != sha(old):
@@ -920,7 +932,7 @@ def update_undo(args):
     for f, h in (u.get("sha") or {}).items():
         if sha(read_text(os.path.join(ROOT, f))) != h:
             die(f"{f} was changed again after the transfer; undo by hand from its .bak-newrole-{tag}")
-    md = os.path.join(ROOT, "roles", f"{i}.md")
+    md = role_md(i)
     roster = load_roster()
     drift = agent_drift(roster, i)
     if drift:

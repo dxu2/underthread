@@ -8,4 +8,10 @@ When compacting an Underthread steward session (the `manager`), the summary must
 - Any rule the user set or changed in this session that is not yet in manager.md, roles/*.md or manager-handoff.md.
 - The last stateutil commands that changed state (set-agent, upsert-item, ask) so the dashboard and the summary agree.
 
-After a compaction, re-read manager-handoff.md and manager.md before acting, then run `python3 stateutil.py inbox-pending`.
+After a compaction, re-read manager-handoff.md, manager.md and local/manager.md (if any) before acting, then run `python3 stateutil.py inbox-pending`.
+
+# Your own layer
+
+If local/CLAUDE.md exists it is imported below and wins where it differs.
+
+@local/CLAUDE.md
