@@ -52,12 +52,38 @@ def load(root):
     return merge(DEFAULTS, user(root))
 
 
-def roster(root):
-    """roster.json (after migrations) with ROLE_DEFAULTS filled into every role. Missing file -> {"roles": []}."""
-    data, _ = MG.migrate_file(root, "roster.json", "roster")
+def roster(root, example=False, strict=False):
+    """roster.json (after migrations) with ROLE_DEFAULTS filled into every role. Missing file -> {"roles": []}.
+    example=True: when there is no roster.json yet, read roster.example.json instead (never written back).
+    strict=True: a missing or broken file raises (OSError / ValueError) instead of giving an empty roster."""
+    name = "roster.json"
+    if example and not os.path.exists(os.path.join(root, name)) and os.path.exists(os.path.join(root, "roster.example.json")):
+        name = "roster.example.json"
+    if strict:
+        with open(os.path.join(root, name), encoding="utf-8") as f:
+            json.load(f)
+    data, _ = MG.migrate_file(root, name, "roster", write=name == "roster.json")
     out = {k: v for k, v in data.items() if k != "_schema"}
     out["roles"] = [merge(ROLE_DEFAULTS, r) if isinstance(r, dict) else r for r in data.get("roles") or []]
     return out
+
+
+def roster_file(root):
+    """roster.json for a tool that edits and writes it back (tools/new_role.py): migrated, but no ROLE_DEFAULTS filled in, and
+    "_schema" kept only when the file on disk already carries it, so a round trip changes nothing else. Raises when unreadable."""
+    path = os.path.join(root, "roster.json")
+    with open(path, encoding="utf-8") as f:
+        disk = json.load(f)   # an unreadable roster must stop the tool, as before
+    data, _ = MG.migrate_file(root, "roster.json", "roster")
+    if "_schema" not in disk:
+        try:
+            with open(path, encoding="utf-8") as f:
+                disk = json.load(f)   # a step may just have written it (with the stamp)
+        except (OSError, ValueError):
+            pass
+    if "_schema" not in disk:
+        data = {k: v for k, v in data.items() if k != "_schema"}
+    return data
 
 
 def sources(root):

@@ -74,8 +74,8 @@ def peaks_of(wav_path):
 def prompt():
     names = []
     try:
-        with open(os.path.join(ROOT, "roster.json"), encoding="utf-8") as f:
-            ro = json.load(f)
+        from core import config as C   # t-oss-struct B1
+        ro = C.roster(ROOT, strict=True)
         for r in (ro if isinstance(ro, list) else ro.get("roles") or ro.get("agents") or []):
             n = r.get("name") or r.get("display_name")
             if n:

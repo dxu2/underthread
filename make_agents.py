@@ -14,21 +14,20 @@ import re
 import sys
 
 ROOT = os.path.dirname(os.path.abspath(__file__))
-LOCAL = os.path.abspath(os.environ.get("UNDERTHREAD_LOCAL") or os.path.join(ROOT, "local"))   # core / local split (stateutil.LOCAL)
+if ROOT not in sys.path:
+    sys.path.insert(0, ROOT)
+from core import config as C   # noqa: E402  t-oss-struct B1: roster / config are read through core.config (migrated, defaults)
+from core.paths import LOCAL   # noqa: E402  core / local split
 OUT = os.path.join(ROOT, ".claude", "agents")
 S = "python3 stateutil.py"
 
 
 def dashboard_url():
     """The dashboard address agents are told about: config.json port (same default as server.py)."""
-    port = 8765
-    for name in ("config.json", "config.example.json"):
-        try:
-            with open(os.path.join(ROOT, name), encoding="utf-8") as f:
-                port = int(json.load(f).get("port") or port)
-            break
-        except (OSError, ValueError, TypeError):
-            continue
+    try:
+        port = int(C.load(ROOT).get("port") or 8765)   # no config.json yet: the default, same as config.example.json
+    except (ValueError, TypeError):
+        port = 8765
     return f"http://127.0.0.1:{port}"
 
 HARD_RULES = f"""## Hard rules (every role)
@@ -95,10 +94,8 @@ To talk to the user directly on an item: `{S} reply <item-id> {{id}} "..."`. For
 
 def load_roster():
     for name in ("roster.json", "roster.example.json"):
-        p = os.path.join(ROOT, name)
-        if os.path.exists(p):
-            with open(p, encoding="utf-8") as f:
-                return json.load(f), name
+        if os.path.exists(os.path.join(ROOT, name)):
+            return C.roster(ROOT, example=True, strict=True), name   # a broken roster stops here, as before
     sys.exit("no roster.json")
 
 

@@ -23,12 +23,10 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 
 def cfg():
-    for name in ("config.json", "config.example.json"):
-        p = os.path.join(ROOT, name)
-        if os.path.exists(p):
-            with open(p, encoding="utf-8") as f:
-                return json.load(f).get("comfy", {})
-    return {}
+    if ROOT not in sys.path:
+        sys.path.insert(0, ROOT)
+    from core import config as C   # t-oss-struct B1: no config.json yet = defaults, which have no comfy block
+    return C.load(ROOT).get("comfy", {})
 
 
 C = cfg()

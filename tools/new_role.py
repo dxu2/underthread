@@ -99,8 +99,10 @@ def rel(p):
 def load_roster():
     if not os.path.exists(ROSTER) and os.path.exists(ROSTER[:-5] + ".example.json"):
         shutil.copy(ROSTER[:-5] + ".example.json", ROSTER)   # fresh clone: same first-run copy server.py makes
-    with open(ROSTER, encoding="utf-8") as f:
-        return json.load(f)
+    if ROOT not in sys.path:
+        sys.path.insert(0, ROOT)
+    from core import config as C   # t-oss-struct B1: migrated, no defaults filled in, so the write-back changes nothing else
+    return C.roster_file(ROOT)
 
 
 def write_json_atomic(path, data):

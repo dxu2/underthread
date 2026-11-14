@@ -26,8 +26,8 @@ Read [docs/architecture.md](docs/architecture.md) first. In short:
 | Where | What |
 |---|---|
 | `server.py` | HTTP server, JSON API, timers. Standard library only |
-| `stateutil.py` | The only writer of `state.json` (file lock). Also the CLI the agents use |
-| `schedules.py` | Schedule parsing and next-run maths |
+| `stateutil.py` | The CLI the agents use, plus a re-export of every `core/` name for scripts that `import stateutil` |
+| `core/` | The only writer of `state.json` (`core/store.py`, file lock), the card, ask, chat and schedule logic, config defaults and migrations. Read `roster.json` / `config.json` through `core.config`, never with `json.load` (a unit test checks) |
 | `make_agents.py` | `roster.json` → `.claude/agents/*.md` |
 | `web/` | Plain HTML, CSS and JavaScript. No framework, no build step |
 | `tools/` | Helper scripts |

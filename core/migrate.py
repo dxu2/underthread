@@ -129,9 +129,10 @@ def backup(root, name, raw, old):
     return p
 
 
-def migrate_file(root, name, target, indent=2):
+def migrate_file(root, name, target, indent=2, write=True):
     """config.json / roster.json: read, migrate in memory, and write back (after a backup) only when a step changed something
-    besides the schema stamp. Returns (data, ran). A missing or unreadable file gives ({}, [])."""
+    besides the schema stamp. Returns (data, ran). A missing or unreadable file gives ({}, []).
+    write=False never touches the file (used for the shipped *.example.json files)."""
     path = os.path.join(root, name)
     try:
         with open(path, "rb") as f:
@@ -144,7 +145,7 @@ def migrate_file(root, name, target, indent=2):
     old = version(target, data)
     before = json.dumps({k: v for k, v in data.items() if k != "_schema"}, sort_keys=True)
     ran = run(target, data, root)
-    if json.dumps({k: v for k, v in data.items() if k != "_schema"}, sort_keys=True) != before:
+    if write and json.dumps({k: v for k, v in data.items() if k != "_schema"}, sort_keys=True) != before:
         backup(root, name, raw, old)
         tmp = path + ".tmp"
         with open(tmp, "w", encoding="utf-8") as f:

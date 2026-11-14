@@ -34,10 +34,13 @@ API = (os.environ.get("UNDERTHREAD_GH_API") or "https://api.github.com").rstrip(
 def _cfg():
     """config.json "github": {"cred_file", "user", "repo"} (all optional); the environment variables below win."""
     try:
-        with open(os.path.join(ROOT, "config.json"), encoding="utf-8") as f:
-            g = json.load(f).get("github")
+        import sys
+        if ROOT not in sys.path:
+            sys.path.insert(0, ROOT)
+        from core import config as C   # t-oss-struct B1
+        g = C.load(ROOT).get("github")
         return g if isinstance(g, dict) else {}
-    except (OSError, ValueError, AttributeError):
+    except (OSError, ValueError, AttributeError, ImportError):
         return {}
 
 

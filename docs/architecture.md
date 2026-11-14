@@ -42,7 +42,8 @@ flowchart LR
 | `roster.json` | One entry per teammate. Input to `make_agents.py` and to the dashboard |
 | `make_agents.py` | Turns `roster.json` + `roles/*.md` + shared hard rules into `.claude/agents/*.md` |
 | `roles/*.md` | Role notes. `common.md` is read by everyone; each ends in `## Confirmed rules` |
-| `schedules.py` | Parses and computes one-off and recurring schedules |
+| `stateutil.py` | The command line every agent uses (`python3 stateutil.py …`). It also re-exports every name from `core/`, so `import stateutil as S` keeps working |
+| `core/` | The code behind it: `paths` (file locations), `store` (lock, read, write, archive, inbox), `items`, `asks`, `chat`, `agents`, `handoffs`, `lessons`, `schedule_store` and `schedules` (parsing and next-run maths), `config` and `migrate` (defaults and data upgrades), `ext` (extension hooks). Other scripts read `roster.json` and `config.json` through `core.config` |
 | `web/` | Plain HTML, CSS and JavaScript. No build step |
 
 ## The loop

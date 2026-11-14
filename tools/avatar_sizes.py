@@ -71,7 +71,10 @@ def ut_missing():
     """ri1106-P5: roster roles with no avatars/ut/<id>.* file. Under 特典 such a role silently shows its normal avatar, so say it here.
     'me' is not a roster role and has no needle-thread version on purpose."""
     try:
-        roles = [r.get("id") for r in json.load(open(os.path.join(ROOT, "roster.json"))).get("roles", [])]
+        if ROOT not in sys.path:
+            sys.path.insert(0, ROOT)
+        from core import config as C   # t-oss-struct B1
+        roles = [r.get("id") for r in C.roster(ROOT, strict=True).get("roles", [])]
     except Exception as e:
         print("! UT check skipped: roster.json unreadable (%s)" % e)
         return []

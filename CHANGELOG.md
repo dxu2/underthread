@@ -13,6 +13,27 @@ Versions follow [semantic versioning](https://semver.org) and the `VERSION` file
 
 Work in progress goes under `## Unreleased`; the release renames it to `## [X.Y.Z] - YYYY-MM-DD`. Sections dated before 0.1.0 are from before versioning.
 
+## Unreleased
+
+### Added
+- **Golden API snapshots**: `tests/api/test_golden.py` records every GET endpoint, every dashboard action, every `stateutil.py` command and the hire calls on the fixture board with a frozen clock, and fails on any difference (`GOLDEN_UPDATE=1` rewrites them on purpose).
+- **Export check**: `tests/unit/test_exports.py` lists every `stateutil` name other scripts and extensions use, and checks that they are all still there and are the same objects as in `core/`.
+
+### Changed
+- **Code moved into `core/`**: the functions behind `stateutil.py` now live in `core/` (`paths`, `store`, `items`, `asks`, `chat`, `agents`, `handoffs`, `lessons`, `schedule_store`, `ext`), and `schedules.py` moved to `core/schedules.py`. `stateutil.py` is the same command line and re-exports every old name, and `import schedules` still works, so nothing changes for agents, scripts or `local/ext/` extensions.
+- **One way to read settings**: `make_agents.py`, `tools/new_role.py`, `tools/avatar_sizes.py`, `tools/transcribe.py`, `tools/comfy.py`, `tools/ghcred.py`, `tools/ensure_server.py`, `tools/statusline.py` and `usage_roll.py` read `roster.json`, `config.json` and `state.json` through `core.config` / `core.store`, so they see migrated data and the config defaults.
+
+### Fixed
+- Nothing.
+
+### Upgrade notes
+- Migrations: none
+- New config keys: none
+- Extension API: unchanged (every `stateutil` name is still exported; `tests/unit/test_exports.py`)
+- Manual steps: none
+
+需要手动做的事：无。
+
 ## [0.1.0] - 2026-11-14
 
 ### Added

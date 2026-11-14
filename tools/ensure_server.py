@@ -6,7 +6,6 @@
 Order: already answering → nothing to do; launchd service installed (macOS) → kickstart it;
 otherwise start tools/keepalive.sh with bash, detached, logging to logs/server.log (macOS and Linux).
 """
-import json
 import os
 import shutil
 import subprocess
@@ -19,9 +18,12 @@ LABEL = "com.underthread.server"
 
 def port():
     try:
-        with open(os.path.join(ROOT, "config.json")) as f:
-            return int(json.load(f).get("port", 8765))
-    except (OSError, ValueError):
+        import sys
+        if ROOT not in sys.path:
+            sys.path.insert(0, ROOT)
+        from core import config as C   # t-oss-struct B1: config.json through core.config (defaults, migrations)
+        return int(C.load(ROOT).get("port", 8765))
+    except (OSError, ValueError, TypeError, ImportError):
         return 8765
 
 

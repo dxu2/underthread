@@ -15,7 +15,7 @@ import os
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-import stateutil as S  # noqa: E402
+from core import store as S  # noqa: E402  t-oss-struct B1: read / mutate / now straight from core (no CLI, no extensions)
 
 
 def _iso(v):

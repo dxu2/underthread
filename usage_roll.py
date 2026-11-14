@@ -27,11 +27,11 @@ import time
 def _agent_role(t):
     """A subagent's agentType -> roster id: the roster's agent_name first (installs may use another prefix), then "underthread-<id>"."""
     try:
-        with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "roster.json"), encoding="utf-8") as f:
-            for r in json.load(f).get("roles", []):
-                if t and r.get("agent_name") == t:
-                    return r["id"]
-    except (OSError, ValueError, KeyError):
+        from core import config as C   # t-oss-struct B1 (server.py and this file sit next to core/)
+        for r in C.roster(os.path.dirname(os.path.abspath(__file__))).get("roles", []):
+            if t and r.get("agent_name") == t:
+                return r["id"]
+    except (OSError, ValueError, KeyError, ImportError):
         pass
     return t[len("underthread-"):] if t.startswith("underthread-") else "other"
 
