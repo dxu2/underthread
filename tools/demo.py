@@ -124,6 +124,7 @@ def build():
         os.symlink(os.path.join(ROOT, d), os.path.join(DEMO, d))
     shutil.copytree(os.path.join(ROOT, "roles"), os.path.join(DEMO, "roles"))
     shutil.copytree(os.path.join(ROOT, "core"), os.path.join(DEMO, "core"), ignore=shutil.ignore_patterns("__pycache__"))   # t-oss-struct S3
+    shutil.copytree(os.path.join(ROOT, "api"), os.path.join(DEMO, "api"), ignore=shutil.ignore_patterns("__pycache__"))   # t-oss-struct S7
     shutil.copy(os.path.join(ROOT, "roster.example.json"), os.path.join(DEMO, "roster.json"))
     with open(os.path.join(DEMO, "config.json"), "w", encoding="utf-8") as f:
         json.dump({"owner": {"display_name": "You"}, "port": PORT, "report_time": "18:00", "routines": []}, f, indent=2)
