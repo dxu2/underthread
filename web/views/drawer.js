@@ -13,7 +13,10 @@ import { ARCH, ST, UI, archItem, archKnown, fullItem, grpOf, items, snoozed, snz
 import { agent, agents, aname, atitle, av, ringOnce } from "../core/av.js";
 import { api, closeBtn, closeModal, modalClose, modalReject, openModal, stillUploading, toast } from "../core/ui.js";
 import { chatPop } from "./chat.js";
-import { ATT, ATT_IC, MB, MOBQ, RMQ, askBlock, askFold, askFoldWire, askGuard, askRow, attHTML, attTiles, attTitle, awaitsUser, closeMailbox, copyText, hooks, itemMailRead, nrMail, nrRead, okAria, okDockIn, okDone, okLabel, okShort, openAsks, renderPage, wireUploads, wkTag, workersOf } from "../app.js";
+import { MOBQ } from "./pages/common.js";
+import { renderPage } from "./pages/index.js";
+import { askBlock, askFold, askFoldWire, askGuard, askRow, awaitsUser, okAria, okDockIn, okDone, okLabel, okShort, openAsks } from "./pages/review.js";
+import { ATT, ATT_IC, MB, RMQ, attHTML, attTiles, attTitle, closeMailbox, copyText, hooks, itemMailRead, nrMail, nrRead, wireUploads, wkTag, workersOf } from "../app.js";
 const drawerAtt = [];
 const DW = { to: null, pop: [], sel: 0, open: new Set(), n: 0, fresh: false, stampPre: null, askOpen: new Set(), sumOpen: new Set() };   // askOpen / sumOpen: item ids (t-ui-next 1, 4)
 const PHONE = matchMedia("(max-width: 760px)");
