@@ -9,13 +9,15 @@ import { $, DRAFT, LS } from "../core/util.js";
 import { t, whenH } from "../core/i18n.js";
 import { HIST, ST, UI, chatOlder, histAll, olderN, poll, qBadge, queueOf } from "../core/store.js";
 import { agent, agents, aname, atitle, av, avatarUrl } from "../core/av.js";
-import { orn, postAct, stillUploading, toast, wireUi } from "../core/ui.js";
+import { orn, postAct, stillUploading, toast } from "../core/ui.js";
+import { ATT_IC, attHTML, attTiles, attTitle, wireUploads } from "./attach.js";
 import { deskFit, openItem } from "./drawer.js";
 import { mgrState } from "./header.js";
 import { renderLeft } from "./left.js";
+import { chatMailRead, seenOf, unreadOf, unreadTag } from "./mail.js";
 import { MOBQ } from "./pages/common.js";
 import { MSEL, chipParens, msendBtn, optChips, optDone } from "./pages/review.js";
-import { ATT_IC, attHTML, attTiles, attTitle, chatMailRead, hooks, seenOf, typingOn, typingUntil, unreadOf, unreadTag, wireUploads } from "../app.js";
+import { hooks, typingOn, typingUntil } from "../app.js";
 const chatAtt = [];
 let chatBuilt = false, chatRenderedFor = null, chatCount = 0, chatLang = null;
 function setChatCount(v) { return chatCount = v; }   /* S10: other modules assign chatCount through this */
@@ -479,7 +481,6 @@ function wireChat() {
   }, true);
   document.addEventListener("keydown", e => { if (e.key === "Escape" && $(".aq-pop")) { e.stopPropagation(); aqClose(); } }, true);
   window.addEventListener("scroll", aqClose, { capture: true, passive: true });
-  wireUi();
 }
 
 export { chatAtt, chatBuilt, chatRenderedFor, chatCount, chatLang, setChatCount, CHN, CP, CHAT_N, chatFrom, chatHold, chatBottom, chatMore, setChatFrom, setChat, chatDraftLoad, chatList, CRS, crsLive, crsEdges, crsStops, crsGlide, crsSnap, crsShow, crsAfter, crsWire, buildChat, autoFold, NARROWQ, chatPop, chatCap, applyChatW, foldChat, PEND, isoNow, sendChat, pendPost, pendPaint, pendSync, pendOf, RQ, askSeek, rqLine, rqSeek, deskStamp, deskMeAv, deskMeName, decorateDesk, moreChat, phz, setSrc, deco, chatPatch, renderChat, chatPinWatch, newSepPlace, aqWait, aqClose, wireChat };

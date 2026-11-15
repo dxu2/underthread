@@ -12,11 +12,13 @@ import { CATS, PLAT, STAGES, dayKey, hm, rowLabel, srvT, stageLabel, t, when, wh
 import { ARCH, ST, UI, archItem, archKnown, fullItem, grpOf, items, snoozed, snzEnd } from "../core/store.js";
 import { agent, agents, aname, atitle, av, ringOnce } from "../core/av.js";
 import { api, closeBtn, closeModal, modalClose, modalReject, openModal, stillUploading, toast } from "../core/ui.js";
+import { ATT, ATT_IC, attHTML, attTiles, attTitle, copyText, wireUploads } from "./attach.js";
 import { chatPop } from "./chat.js";
+import { MB, closeMailbox, itemMailRead, nrMail, nrRead } from "./mail.js";
 import { MOBQ } from "./pages/common.js";
 import { renderPage } from "./pages/index.js";
 import { askBlock, askFold, askFoldWire, askGuard, askRow, awaitsUser, okAria, okDockIn, okDone, okLabel, okShort, openAsks } from "./pages/review.js";
-import { ATT, ATT_IC, MB, RMQ, attHTML, attTiles, attTitle, closeMailbox, copyText, hooks, itemMailRead, nrMail, nrRead, wireUploads, wkTag, workersOf } from "../app.js";
+import { RMQ, hooks, wkTag, workersOf } from "../app.js";
 const drawerAtt = [];
 const DW = { to: null, pop: [], sel: 0, open: new Set(), n: 0, fresh: false, stampPre: null, askOpen: new Set(), sumOpen: new Set() };   // askOpen / sumOpen: item ids (t-ui-next 1, 4)
 const PHONE = matchMedia("(max-width: 760px)");

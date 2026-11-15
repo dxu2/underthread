@@ -15,10 +15,11 @@ import { api, toast } from "../core/ui.js";
 import { go } from "../core/router.js";
 import { chatPop } from "./chat.js";
 import { rtShort, schToday } from "./left.js";
+import { MB, closeMailbox, openMailbox } from "./mail.js";
 import { MOBQ } from "./pages/common.js";
 import { renderPage } from "./pages/index.js";
 import { modalStatus } from "./status.js";
-import { MB, NV, RMQ, closeMailbox, isBusy, liveItem, openMailbox, render, roll, wkDur } from "../app.js";
+import { NV, RMQ, isBusy, liveItem, render, roll, wkDur } from "../app.js";
 const TOOL_IC = {
   chrome: `<svg viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="6.2"/><ellipse cx="8" cy="8" rx="2.6" ry="6.2"/><path d="M1.8 8h12.4"/></svg>`,
   computer: `<svg viewBox="0 0 16 16" aria-hidden="true"><rect x="1.8" y="2.5" width="12.4" height="8.6" rx="1.6"/><path d="M5.5 13.8h5M8 11.1v2.7"/></svg>`,

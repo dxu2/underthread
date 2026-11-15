@@ -8,9 +8,10 @@ import { ST, UI, byAct, items, onYou, onYouCard, poll, snoozed } from "../../cor
 import { agent, agents, aname, av, avatarUrl } from "../../core/av.js";
 import { api, closeModal, openModal, postAct, toast } from "../../core/ui.js";
 import { DW, jumpState, openItem, renderDrawer } from "../drawer.js";
+import { mailPv, nrDot } from "../mail.js";
 import { actRow } from "./common.js";
 import { renderPage } from "./index.js";
-import { MGR_ON, dcDur, liveItem, mailPv, mgrOnline, nrDot, workersOf } from "../../app.js";
+import { MGR_ON, dcDur, liveItem, mgrOnline, workersOf } from "../../app.js";
 function reviewRow(it, fresh) {
   const a = agent(it.owner), th = (it.thread || []).filter(x => x.kind !== "event").length;
   return actRow({ attr: `data-item="${it.id}"`, av: av(a, "", it.id), ws: workersOf(it.id), unread: fresh, name: aname(a), title: it.title, time: agoH(it.activity || it.updated),

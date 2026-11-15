@@ -13,10 +13,11 @@ import { go } from "../core/router.js";
 import { NARROWQ, chatPop, setChat, setSrc } from "./chat.js";
 import { openItem } from "./drawer.js";
 import { YARN, mgrState, runsLeft, toolWhat } from "./header.js";
+import { newReplies, unreadOf, unreadTag } from "./mail.js";
 import { MOBQ } from "./pages/common.js";
 import { isContent } from "./pages/pipe.js";
-import { askJump, wireReview } from "./pages/review.js";
-import { MGR_ON, MGR_WATCH, mgrOnline, newReplies, unreadOf, unreadTag } from "../app.js";
+import { askJump } from "./pages/review.js";
+import { MGR_ON, MGR_WATCH, mgrOnline } from "../app.js";
 function counts() {
   const c = { review: 0 }; for (const k of CATS) c[k] = 0;
   c.pipe = items().filter(i => i.stage !== "done" && isContent(i)).length;   // t-imp-p3
@@ -147,7 +148,6 @@ function wireLeft() {
     const aj = e.target.closest("[data-askjump]"); if (aj) { askJump(aj.dataset.askjump); return; }   /* t-ri1114-a P4 */
     const oi = e.target.closest("[data-item]"); if (oi && !e.target.closest("button")) { openItem(oi.dataset.item); return; }
   });
-  wireReview();
 }
 
 export { counts, rtShort, rtFull, schToday, CALPF, calFold, renderLeft, SET_TABS, STU, STU_L, NAV_IC, stuTabs, wireLeft };

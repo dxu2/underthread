@@ -9,15 +9,16 @@ import { ST, UI, byAct, byCreated, grpOf, idleDoing, items, logsFor, mailAll, on
 import { aduty, agent, agents, aname, atitle, av, hasArt, ringOnce } from "../../core/av.js";
 import { UE_ART, api, toast, utEmpty } from "../../core/ui.js";
 import { route } from "../../core/router.js";
-import { autoFold, setChat, wireChat } from "../chat.js";
-import { openItem, snzLine, wireDrawer } from "../drawer.js";
+import { autoFold, setChat } from "../chat.js";
+import { openItem, snzLine } from "../drawer.js";
 import { renderHeader, ruCard } from "../header.js";
 import { renderLeft } from "../left.js";
+import { homeCounts, logRows, logText, mailFiltered, mailGroups, mailPv, mailRep, mailRow, newReplies, nrBlock, nrRead, renderMailbox, wkFrom } from "../mail.js";
 import { MOBQ, card, lsSet, pageHead } from "./common.js";
 import { catPage, doneOpen, questsPage } from "./quests.js";
 import { RV, askGroups, askGuard, decHead, decRow, decisions, grpHTML, nowBlock, reviewCard, reviewRow, todayBlock } from "./review.js";
 import { ongoingPage, schedPage } from "./schedule.js";
-import { homeCounts, hooks, liveItem, logRows, logText, mailFiltered, mailGroups, mailPv, mailRep, mailRow, newReplies, nrBlock, nrRead, renderMailbox, wkAttr, wkFrom, wkFx, wkTag, workersOf } from "../../app.js";
+import { hooks, liveItem, wkAttr, wkFx, wkTag, workersOf } from "../../app.js";
 const PAGES = {
   quests() { return questsPage(); },
   market() { return window.Market ? Market.page(pageHead("market")) : pageHead("market"); },
@@ -256,8 +257,6 @@ function wirePages2() {
     if (to === "done") return askGuard(id, "done", skip => api("set_stage", { item: id, stage: to, skip_asks: skip || undefined }));
     api("set_stage", { item: id, stage: to });
   });
-  wireDrawer();
-  wireChat();
 }
 
 export { PAGES, rcLinks, rcTasks, rulesBlock, widgetHome, phaseFree, renderPage, docTop, wirePages, wirePages2 };
