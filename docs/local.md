@@ -11,18 +11,19 @@ local/
 ├─ CLAUDE.md         imported at the end of CLAUDE.md
 ├─ team.md policy.md read after the core files of the same name
 ├─ roles/<id>.md     your rules for a role; adopted lessons, hiring and transfers write here
-├─ ext.json          extra web files: {"css": [{"href": "x.css", "after": "skin-ink.css"}], "js": [{"src": "x.js"}], "drop": ["oss.css"]}
 ├─ web/              served at /static/, ahead of web/ (a file here overrides the core file of the same name)
-└─ ext/<name>/       Python extensions: stateutil_ext.py and/or server_ext.py with register(module)
+├─ ext/<name>/       extensions: ext.json + server_ext.py / stateutil_ext.py with register(R) + web/ (docs/extensions.md)
+└─ ext.json          the old way to add web files (until 0.3.0; put them in an extension's ext.json instead)
 ```
 
 - **Rules.** `make_agents.py` lists both layers in every agent file: `roles/common.md`, `local/roles/common.md`,
   `roles/<id>.md`, `local/roles/<id>.md` (missing files are skipped). The dashboard's 灵魂 viewer shows both.
-- **Web.** `server.py` adds the files from `local/ext.json` to the page and turns every `?v=N` into `?v=N.<content hash>`,
+- **Web.** `server.py` adds each extension's `web` files (and the old `local/ext.json`) to the page and turns every `?v=N` into `?v=N.<content hash>`,
   so a changed file always gets a new URL even when nobody bumped its number.
-- **Extensions.** `local/ext/<name>/` is put on `sys.path`. `stateutil_ext.py` can append to `CLI_EXT` (new subcommands),
-  `SET_AGENT_HOOKS` and `UPSERT_HOOKS`; `server_ext.py` can append to `EXT_GET` (new GET routes). A broken extension prints
-  one line and is skipped; it never takes the dashboard down.
+- **Extensions.** `local/ext/<name>/` with an `ext.json` manifest registers endpoints, actions, card kinds, scheduled jobs,
+  health lines, `stateutil.py` commands and page files through the extension registry; see `docs/extensions.md`. A broken or
+  mismatched extension is skipped with the reason on `/api/ext`; it never takes the dashboard down. A folder without
+  `ext.json` loads the old way (`register(module)`, `CLI_EXT` / `SET_AGENT_HOOKS` / `UPSERT_HOOKS` / `EXT_GET`) until 0.3.0.
 - **Another location.** Set `UNDERTHREAD_LOCAL=/path/to/layer` to keep the layer outside the checkout.
 - **Config.** `config.json` keys used by the layer: `legacy_headers` (extra request-guard header names, for pages opened
   before a rename) and `github` (`cred_file`, `user`, `repo` for the token check in 设置).

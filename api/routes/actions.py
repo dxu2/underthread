@@ -5,7 +5,7 @@ import datetime as dt
 import re
 
 from api.ctx import S
-from api.router import route, action, ACTIONS, ME, OpenAsks
+from api.router import route, action, ACTIONS, NOLOCK, ME, OpenAsks
 from api.routes.hr import HR_ID, XFER_MAX, _hire_apply
 
 TOUCH = ("approve", "reject", "done", "comment", "answer", "reopen", "set_stage", "archive")   # ri1103-P2: you dealt with it: the snooze ends
@@ -26,6 +26,8 @@ class Act:
 
 def act(body):
     k = body.get("kind")
+    if isinstance(k, str) and k in NOLOCK:
+        return _act_nolock(body)
     with S.mutate() as st:
         it = S.find_item(st, body["item"]) if body.get("item") else None
         if body.get("item") and not it:
@@ -52,7 +54,8 @@ def act(body):
     if a.later:
         key, go = a.later
         later = go()
-        inbox[key] = later
+        if inbox is not None:   # t-oss-struct S8: an extension job's 立即运行 has no inbox entry
+            inbox[key] = later
     if inbox and any(S.is_audio_path(p) for p in inbox.get("attachments") or []):
         with S.mutate() as st:   # t-voice-memo: transcripts already finished ride along with the message
             S.claim_transcripts(st, inbox)
@@ -62,6 +65,22 @@ def act(body):
     if a.later:
         out[a.later[0]] = later
     return out
+
+
+def _act_nolock(body):
+    """t-oss-struct S8: an extension action registered with lock=False. Its handler sees a read() copy (changes there are not saved;
+    it takes S.mutate() itself when it needs to write) and may still set a.inbox."""
+    st = S.read()
+    it = S.find_item(st, body["item"]) if body.get("item") else None
+    if body.get("item") and not it:
+        raise ValueError(f"no item {body['item']}")
+    a = Act(body, st, it, body.get("attachments") or [])
+    out = ACTIONS[body["kind"]](a)
+    inbox = S.inbox_append(a.inbox) if a.inbox else None
+    res = {"ok": True, "inbox": inbox["id"] if inbox else None}
+    if isinstance(out, dict):
+        res.update({k: v for k, v in out.items() if k not in res})
+    return res
 
 
 @route("POST", "/api/action")

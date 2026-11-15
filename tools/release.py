@@ -13,7 +13,9 @@ It refuses (exit 1, nothing written) unless all of these hold, cheapest first:
      upgrade notes have the four lines (format at the top of CHANGELOG.md):
        Migrations: every step added since the last tag, by number (or "none")
        New config keys: every key added to core/config.py DEFAULTS / ROLE_DEFAULTS since the last tag, in backticks (or "none")
-       Extension API: says something
+       Extension API: says something; and against the previous tag's core/registry.py (API number, SURFACE tuple):
+         a changed API number needs a major version; a name dropped from SURFACE needs a new API number; a name added to
+         SURFACE is named on the line (e.g. `R.job`); any registry change means the line cannot say "unchanged"
        Manual steps: none   (only a major version may say anything else)
   5. python3 tests/run.py all passes (the browser tests need Node; this is the slow part)
 Then: VERSION = X.Y.Z, core.manifest.json regenerated with version vX.Y.Z, one commit, annotated tag vX.Y.Z whose message
@@ -144,6 +146,46 @@ def config_keys(src):
     return keys
 
 
+def registry_api(src):
+    """(API, SURFACE) from core/registry.py source, read with ast; None when there is no registry (before 0.2)."""
+    if not src:
+        return None
+    api, surface = None, ()
+    for node in ast.parse(src).body:
+        if isinstance(node, ast.Assign) and len(node.targets) == 1 and isinstance(node.targets[0], ast.Name):
+            if node.targets[0].id == "API":
+                api = ast.literal_eval(node.value)
+            elif node.targets[0].id == "SURFACE":
+                surface = tuple(ast.literal_eval(node.value))
+    return (api, surface) if api is not None else None
+
+
+def ext_api_problems(line, ver, prev, now_src, old_src):
+    """S8 (t-oss-struct): the "Extension API:" upgrade note against the registry's API number and public surface."""
+    now, old = registry_api(now_src), registry_api(old_src)
+    if now is None:
+        return []
+    unchanged = line.lower().rstrip(".").startswith("unchanged")
+    major = prev is None or vtuple(ver)[0] > vtuple(prev)[0]
+    if old is None:
+        return ["Upgrade notes: Extension API says 'unchanged' but the extension registry (core/registry.py) is new since "
+                + (f"v{prev}" if prev else "the start")] if unchanged and prev else []
+    out = []
+    (api, surf), (api0, surf0) = now, old
+    if api != api0 and not major:
+        out.append(f"Extension API: core/registry.py API went {api0} -> {api}; only a major version may change it")
+    gone = [n for n in surf0 if n not in surf]
+    if gone and api == api0:
+        out.append("Extension API: SURFACE dropped " + ", ".join(gone) + f" without a new API number (still {api})")
+    added = [n for n in surf if n not in surf0]
+    missing = [n for n in added if n not in line]
+    if missing:
+        out.append("Upgrade notes: Extension API does not name the new registry call(s) " + ", ".join(f"`R.{n}`" for n in missing))
+    if unchanged and (api != api0 or gone or added):
+        out.append("Upgrade notes: Extension API says 'unchanged' but core/registry.py changed since v" + str(prev))
+    return out
+
+
 def changelog_section(ver):
     path = os.path.join(ROOT, "CHANGELOG.md")
     if not os.path.isfile(path):
@@ -209,6 +251,10 @@ def check_changelog(ver, prev, nums):
                 problems.append("Upgrade notes: New config keys does not name " + ", ".join(f"`{k}`" for k in missing))
             if not new and notes["new config keys"].lower().rstrip(".") != "none":
                 problems.append("Upgrade notes: New config keys should say 'none' (no key added to core/config.py)")
+        if notes.get("extension api"):
+            reg = os.path.join(ROOT, "core", "registry.py")
+            problems += ext_api_problems(notes["extension api"], ver, prev, read(reg) if os.path.isfile(reg) else "",
+                                         git("show", f"v{prev}:core/registry.py", check=False) if prev else "")
         manual = notes.get("manual steps", "")
         major = prev is None or vtuple(ver)[0] > vtuple(prev)[0]
         if manual and manual.lower().rstrip(".") != "none" and not (major and prev is not None):

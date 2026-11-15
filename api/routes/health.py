@@ -8,6 +8,7 @@ import time
 
 from api.ctx import S, MG, ROOT, CONFIG, START, USAGE, _comfy, _health
 from api.router import route
+from core import registry as REG
 from api.routes.push import _subs
 
 
@@ -57,7 +58,20 @@ def health():
         "report": {"time": CONFIG.get("report_time", "18:00"), "last_date": st["meta"].get("last_report_date"),
                    "queued": st["meta"].get("report_queued")},
         "disk": disk if disk.get("total") else None,
+        "ext": _ext_brief(),
     }
+
+
+def _ext_brief():
+    """t-oss-struct S8: registry API number, each extension's state and its R.health lines (full view: /api/ext)."""
+    v = REG.view()
+    return {"api": v["api"], "extensions": [{k: e[k] for k in ("name", "legacy", "skipped", "error")} for e in v["extensions"]],
+            "health": v["health"]}
+
+
+@route("GET", "/api/ext")
+def _ext(h, u, q):   # t-oss-struct S8: the registry (extensions, card kinds, jobs) for the page and docs
+    return h._send(200, REG.view())
 
 
 @route("GET", "/api/health")

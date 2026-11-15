@@ -81,7 +81,7 @@ Underthread uses semantic versioning (`VERSION`, tags `vX.Y.Z`). Within one majo
 - **`stateutil.py` subcommands and options are only added, never removed or renamed.** Every role's notes call them, and agents follow notes written for older versions.
 - **An `/api/...` endpoint that changes keeps its old behaviour for at least one minor version.** A page left open on a phone still runs the old JavaScript until it reloads (the "Dashboard updated · Tap to reload" banner asks it to).
 - **Data changes are add-only** (see "Changing the data or the config" above): new keys get defaults, everything else is a numbered migration that leaves the old key in place, so going back one version only swaps the code.
-- **The extension API** (`local/ext/`, `local/web/`, `local/ext.json`, see `docs/local.md`) keeps working within a major version; a change is written in the release's upgrade notes.
+- **The extension API** (`local/ext/<name>/ext.json` with `"api": 1` and `register(R)`, see `docs/extensions.md`; `local/web/`) keeps working within a major version: `API` in `core/registry.py` changes only in a major version, and every new registry call is named on the release's `Extension API:` line (`tools/release.py` checks both). The old way (`register(module)`, `local/ext.json`) keeps working until 0.3.0.
 - **Breaking any of these waits for the next major version**, and its CHANGELOG upgrade notes say exactly what changes.
 
 ## Releases (maintainers)

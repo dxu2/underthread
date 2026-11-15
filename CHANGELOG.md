@@ -16,6 +16,7 @@ Work in progress goes under `## Unreleased`; the release renames it to `## [X.Y.
 ## Unreleased
 
 ### Added
+- **Extension registry**: an extension in `local/ext/<name>/` with an `ext.json` manifest (`"api": 1`) can add GET and POST endpoints (`R.route`), `/api/action` kinds (`R.action`), card kinds (`R.card_kind` or `card_kinds` in the manifest; `stateutil.py --kind` accepts them), scheduled jobs that show up on the 定时 page where you can pause them, change their time or run them now (`R.job`), lines on `/api/health` (`R.health`), and its own page scripts and styles served from its `web/` folder. An extension written for another API number or Underthread version is skipped with one card on the board explaining why, and removing an extension leaves a working board. `GET /api/ext` lists the extensions, card kinds and jobs. See `docs/extensions.md`.
 - **Golden API snapshots**: `tests/api/test_golden.py` records every GET endpoint, every dashboard action, every `stateutil.py` command and the hire calls on the fixture board with a frozen clock, and fails on any difference (`GOLDEN_UPDATE=1` rewrites them on purpose).
 - **Export check**: `tests/unit/test_exports.py` lists every `stateutil` name other scripts and extensions use, and checks that they are all still there and are the same objects as in `core/`.
 
@@ -30,7 +31,7 @@ Work in progress goes under `## Unreleased`; the release renames it to `## [X.Y.
 ### Upgrade notes
 - Migrations: none
 - New config keys: none
-- Extension API: unchanged (every `stateutil` name is still exported, `tests/unit/test_exports.py`; every old `server` name too, `tests/unit/test_server_tables.py`; `EXT_GET` routes run at the same point as before; assigning `srv.<old name> = x` in an extension now only changes the `server` module, not the `api/` module that owns the name, so override behaviour through `srv.route` / `srv.action` instead)
+- Extension API: new registry, API 1 (`core/registry.py`, `docs/extensions.md`): `ext.json` manifests with `R.route`, `R.action`, `R.card_kind`, `R.job`, `R.cli`, `R.on_set_agent`, `R.on_upsert`, `R.health` and `web` files under `/static/ext/<name>/`. The old way (`register(module)` with `CLI_EXT` / `SET_AGENT_HOOKS` / `UPSERT_HOOKS` / `EXT_GET`, and `local/ext.json`) still works and is marked legacy in `/api/ext`; it goes away in 0.3.0. Otherwise unchanged (every `stateutil` name is still exported, `tests/unit/test_exports.py`; every old `server` name too, `tests/unit/test_server_tables.py`; `EXT_GET` routes run at the same point as before; assigning `srv.<old name> = x` in an extension now only changes the `server` module, not the `api/` module that owns the name, so override behaviour through `srv.route` / `srv.action` instead)
 - Manual steps: none
 
 需要手动做的事：无。

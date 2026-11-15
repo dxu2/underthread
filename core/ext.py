@@ -1,6 +1,9 @@
 """Extensions of the local/ layer (local/ext/<name>/stateutil_ext.py and server_ext.py) and the hook lists they fill.
 Moved from stateutil.py (t-oss-struct B1); stateutil re-exports these exact objects, so `S.UPSERT_HOOKS.append(fn)` in an
 extension reaches the code in core/ that runs the hooks.
+
+t-oss-struct S8: an extension with an ext.json manifest is checked against the registry API (core/registry.py) first and its
+register() gets a registry handle R; one without a manifest is the old way (register(module)), still loaded in 0.2.x.
 """
 import os
 import sys
@@ -26,9 +29,16 @@ def load_ext(kind, target):
     Each extension folder is also put on sys.path, so its plain modules import by name. A broken extension prints one line
     to stderr and is skipped: it must never take the CLI or the dashboard down."""
     import importlib.util
-    for d in ext_dirs():
+    from core import registry
+    dirs = ext_dirs()
+    registry.scan(dirs)
+    for d in dirs:
         name = os.path.basename(d)
         e = EXT.setdefault(name, {"dir": d, "stateutil": None, "server": None, "error": None})
+        info = registry.EXTS.get(name) or {}
+        if info.get("skipped"):   # api / requires mismatch or a broken ext.json: none of its code runs
+            e["error"] = "skipped: " + info["skipped"]
+            continue
         if d not in sys.path:
             sys.path.insert(0, d)
         f = os.path.join(d, f"{kind}_ext.py")
@@ -39,7 +49,7 @@ def load_ext(kind, target):
             m = importlib.util.module_from_spec(spec)
             spec.loader.exec_module(m)
             if hasattr(m, "register"):
-                m.register(target)
+                m.register(target if info.get("legacy", True) else registry.Reg(name, kind, target))
             e[kind] = m
         except Exception as ex:  # noqa: BLE001
             e["error"] = f"{kind}: {ex!r}"

@@ -3,6 +3,7 @@ view on the board, and the 定时 page / 常驻 card actions (schedule_*, routin
 import datetime as dt
 
 from api.ctx import S, CONFIG
+from core import registry as REG
 from api.router import action, ME
 
 
@@ -12,7 +13,10 @@ def schedules_fire(nowt=None):
     routine_due inbox entry, meta.routines_fired and the dated routines_log. `next` moves on in the same lock as the inbox append,
     so a restart never fires twice. nowt: aware datetime (tests). Returns the fired schedule ids."""
     nowt = nowt or dt.datetime.now().astimezone()
-    if not S.schedules_needs_tick(S.read(), nowt):
+    st0 = S.read()
+    if not S.schedules_needs_tick(st0, nowt):
+        if REG.jobs_pending(st0):
+            REG.run_pending(S)
         return []   # nothing due: skip the write so meta.rev doesn't bump every tick
     fired = []
     with S.mutate() as st:
@@ -21,10 +25,22 @@ def schedules_fire(nowt=None):
                 log_routine_run(st["meta"], sc["routine"], e["date"])   # t-ri1104-p3: dated run history for the 常驻活动 7-day row
             fired.append(sc["id"])
             print(f"schedules: fired {sc['id']} ({e['kind']}, late {e.get('late_min', 0)} min)")
+    REG.run_pending(S)   # t-oss-struct S8: extension jobs that just fired (or were fired from the CLI) run after the lock
     return fired
 
 
 routines_fire = schedules_fire   # old name
+
+
+def jobs_import():
+    """t-oss-struct S8: every registered extension job gets its schedule entry once (core/registry.py jobs_import)."""
+    if not REG.JOBS or all(j in (S.read()["meta"].get("jobs_imported") or []) for j in REG.JOBS):
+        return []
+    with S.mutate() as st:
+        added = REG.jobs_import(st)
+    if added:
+        print("schedules: added extension jobs", added)
+    return added
 
 
 def schedules_import():
@@ -133,3 +149,6 @@ def _schedule(a):   # t-schedule-backend: the 定时 page
     if sc.get("routine") and k in ("schedule_pause", "schedule_resume"):
         st["meta"].setdefault("routines_paused", {}).pop(sc["routine"], None)
     a.inbox = {"kind": k, "schedule": sc["id"], "title": sc.get("title"), "item": (sc.get("task") or {}).get("item")}
+    if k == "schedule_fire" and sc.get("kind") == "job":   # t-oss-struct S8: 立即运行 on an extension job runs it right after the lock
+        a.inbox = None
+        a.later = ("job", lambda: REG.run_pending(S))

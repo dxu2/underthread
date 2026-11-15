@@ -17,7 +17,10 @@ Actions. POST /api/action {"kind": k, ...}: @action("approve") registers the fun
 (api/routes/actions.py act() has the frame: find the card, call the handler, stamp the card, log, append the inbox entry).
 One function may take several kinds: @action("routine_pause", "routine_resume").
 
-Nothing here imports another api module.
+Extensions (core/registry.py, t-oss-struct S8) add to the same tables through R.route / R.action; an exact path or a kind that is
+already taken raises, so an extension can never replace a core endpoint.
+
+Nothing here imports another api module (only core/registry.py, to hand it these tables).
 """
 NEXT = object()   # a route handler's "not mine after all"
 ME = "me"         # who a click is from, in threads / logs / chat
@@ -28,6 +31,7 @@ EXT_GET = []
 
 _T = {}        # (method, late, raw) -> {"exact": {path: fn}, "prefix": [(path, fn)]}
 ACTIONS = {}   # action kind -> fn(a)
+NOLOCK = set()   # t-oss-struct S8: extension action kinds registered with lock=False (run on a read() copy, outside the state lock)
 
 
 class OpenAsks(Exception):
@@ -77,3 +81,11 @@ def table():
         rows += [(method, p, flags, fn.__module__) for p, fn in t["exact"].items()]
         rows += [(method, p + "*", flags, fn.__module__) for p, fn in t["prefix"]]
     return {"routes": rows, "actions": {k: fn.__module__ for k, fn in sorted(ACTIONS.items())}}
+
+
+def _bind():   # t-oss-struct S8: extensions register through core/registry.py, which reaches these tables only through this hook
+    from core import registry
+    registry.bind(route=route, action=action, nolock=NOLOCK, next=NEXT)
+
+
+_bind()

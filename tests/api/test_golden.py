@@ -35,6 +35,7 @@ VOLATILE = {
     "health": ("server.started", "server.uptime", "server.pid", "disk.free", "disk.total", "disk.work", "disk.work_at"),
     "push_key": ("key",),
     "usage": ("at",),   # usage_roll stamps its cache with the real clock (time.time)
+    "ext": ("version",),   # VERSION moves with every release
 }
 _V = re.compile(r"\?v=[0-9a-zA-Z._-]+")
 
@@ -157,7 +158,8 @@ class Golden(unittest.TestCase):
                      ("push_key", "/api/push/key"), ("push_latest", "/api/push/latest"), ("push_status", "/api/push/status"),
                      ("push_history", "/api/push/history"), ("index", "/"), ("sw", "/sw.js"), ("manifest", "/manifest.webmanifest"),
                      ("avatars_index", "/avatars/_s/index.json"), ("static_missing", "/static/nope.js"), ("static_escape", "/static/..%2fstate.json"),
-                     ("voice_off", "/api/voice/health"), ("not_found", "/nope")):
+                     ("voice_off", "/api/voice/health"), ("not_found", "/nope"),
+                     ("ext", "/api/ext"), ("static_ext_missing", "/static/ext/nope/x.js")):
             cls.get(k, p)
 
         # 2. actions, in an order where each one finds what it needs

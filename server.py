@@ -10,8 +10,9 @@ Serves web/, a JSON API over state.json, and turns your clicks into inbox.jsonl 
 The code lives in api/ (t-oss-struct S7): api/router.py is the route and action table, api/routes/* one module per feature,
 api/http.py the request handler, api/loops.py the background threads. This file is the entry point only.
 
-Extensions (local/ext/<name>/server_ext.py) get this module in register(srv): srv.S, srv.EXT_GET, srv.route, srv.action and
-every name the old single-file server had (they are re-exported below) keep working.
+Extensions (local/ext/<name>/server_ext.py): with an ext.json manifest, register(R) gets a registry handle (core/registry.py,
+docs/extensions.md). Without one (the old way, until 0.3.0) register(srv) gets this module: srv.S, srv.EXT_GET, srv.route,
+srv.action and every name the old single-file server had (they are re-exported below) keep working.
 """
 import os
 import sys
@@ -21,6 +22,7 @@ import api.routes  # noqa: F401  (registers every route and action)
 from api.routes import schedules, snooze, state, push, health as _health_mod, secret, hr, actions, media, docs, voice, web
 
 from api.ctx import S, C, MG, ROOT, CONFIG, _comfy
+from core import registry as REG
 from api.http import H, QuietServer
 from api.routes.schedules import schedules_import
 from api.routes.state import sync_roster
@@ -43,7 +45,8 @@ def main():
     CONFIG.clear()
     CONFIG.update(C.load(ROOT))   # migrated in memory; config.json is rewritten only when a migration changes it
     if S.EXT:
-        print("extensions: " + ", ".join(f"{n}" + (f" (error: {e['error']})" if e.get("error") else "") for n, e in S.EXT.items()), flush=True)
+        print("extensions: " + ", ".join(f"{n}" + (" [legacy]" if (REG.EXTS.get(n) or {}).get("legacy") else "")
+                                         + (f" (error: {e['error']})" if e.get("error") else "") for n, e in S.EXT.items()), flush=True)
     _comfy["configured"] = bool(CONFIG.get("comfy"))
     sync_roster()
     st0 = S.read()   # t-oss-struct E1: the first read after an update runs the state migrations (backup in local/backups/migrate)
@@ -53,6 +56,11 @@ def main():
         schedules_import()   # t-schedule-backend: also with NO_LOOPS, so a scratch copy shows the imported routines
     except Exception as e:
         print("schedules_import:", e)
+    try:
+        schedules.jobs_import()   # t-oss-struct S8: extension jobs get their 定时 entry once
+        REG.notice_skipped(S)   # an extension whose api / requires does not match: one card says why
+    except Exception as e:
+        print("extensions:", e)
     port = int(os.environ.get("PORT") or CONFIG.get("port") or 8765)
     if not os.environ.get("NO_LOOPS"):
         loops.start()

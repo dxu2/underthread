@@ -77,13 +77,15 @@ class Repo:
         self.git("add", "-A")
         self.git("commit", "-q", "-m", msg)
 
-    def changelog(self, ver="0.1.0", mig="0001, 0002", manual="none", cfg=None, drop=None):
+    def changelog(self, ver="0.1.0", mig="0001, 0002", manual="none", cfg=None, drop=None, ext=None):
         if cfg is None:
             cfg = ("`owner.display_name` = \"\", `port` = 8765, `report_time`, `routines`, `allowed_hosts`, "
                    "`legacy_headers`, `role.enabled`")
         text = GOOD.format(ver=ver, mig=mig, manual=manual, cfg=cfg)
         if drop:
             text = text.replace(drop, "")
+        if ext:
+            text = text.replace("- Extension API: unchanged", "- Extension API: " + ext)
         self.write("CHANGELOG.md", text)
 
     def release(self, ver="0.1.0", *extra):
@@ -194,6 +196,30 @@ class ReleaseTest(unittest.TestCase):
             rc, out = r.release("0.2.0")
             self.assertEqual(rc, 0, out)
             self.assertEqual(sorted(r.tags()), ["v0.1.0", "v0.2.0"])
+
+    def test_extension_api(self):
+        """t-oss-struct S8: the Extension API line is checked against core/registry.py API and SURFACE of the last tag."""
+        with Repo() as r:
+            self.assertEqual(r.release()[0], 0)
+            reg = os.path.join(r.d, "core", "registry.py")
+            src = read(reg)
+            r.write("core/registry.py", src.replace('SURFACE = ("route",', 'SURFACE = ("widget", "route",'))
+            r.changelog(ver="0.2.0", mig="none", cfg="none")
+            r.commit("surface grows, notes say unchanged")
+            self.refused(r, "does not name the new registry call(s) `R.widget`", ver="0.2.0")
+            r.write("core/registry.py", src.replace('"health")', ')'))
+            r.changelog(ver="0.2.0", mig="none", cfg="none", ext="R.health removed")
+            r.commit("surface shrinks, same API")
+            self.refused(r, "SURFACE dropped health without a new API number", ver="0.2.0")
+            r.write("core/registry.py", src.replace("API = 1", "API = 2"))
+            r.changelog(ver="0.2.0", mig="none", cfg="none", ext="api 2")
+            r.commit("api bump in a minor")
+            self.refused(r, "only a major version may change it", ver="0.2.0")
+            r.write("core/registry.py", src.replace('SURFACE = ("route",', 'SURFACE = ("widget", "route",'))
+            r.changelog(ver="0.2.0", mig="none", cfg="none", ext="new `R.widget(...)`")
+            r.commit("surface grows, named")
+            rc, out = r.release("0.2.0")
+            self.assertEqual(rc, 0, out)
 
 
 if __name__ == "__main__":

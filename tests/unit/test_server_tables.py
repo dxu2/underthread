@@ -42,7 +42,7 @@ urlparse usage_roll uuid wake_loop web_file""".split()
 # (method, path, flags, module). "*" = path prefix. flags: raw = the handler reads the body; late = after the extension routes.
 ROUTES = [
     ("GET", "/", "", "api.routes.web"), ("GET", "/api/archive", "", "api.routes.state"), ("GET", "/api/doc", "", "api.routes.docs"),
-    ("GET", "/api/docs", "", "api.routes.docs"), ("GET", "/api/handoffs", "", "api.routes.state"),
+    ("GET", "/api/docs", "", "api.routes.docs"), ("GET", "/api/ext", "", "api.routes.health"), ("GET", "/api/handoffs", "", "api.routes.state"),
     ("GET", "/api/health", "", "api.routes.health"), ("GET", "/api/history", "", "api.routes.state"),
     ("GET", "/api/item", "", "api.routes.state"), ("GET", "/api/memory", "", "api.routes.docs"),
     ("GET", "/api/push/history", "", "api.routes.push"), ("GET", "/api/push/key", "", "api.routes.push"),

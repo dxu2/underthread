@@ -26,7 +26,7 @@ def schedule_new(st, title, kind, rule, tz=None, text="", agent=None, item=None,
     """Build (not store) a schedule entry with its first `next`. Raises SC.RuleError."""
     tz = tz or SC.local_tz_name()
     SC.zone(tz); SC.check_rule(rule)
-    if kind not in SC.KINDS:
+    if kind not in SC.KINDS and kind != "job":   # "job" = an extension's scheduled job (core/registry.py jobs_import), never typed by hand
         raise SC.RuleError(f"kind 只能是 remind 或 task，收到 {kind!r}")
     if not (title or "").strip():
         raise SC.RuleError("要有标题（--title）")
@@ -42,6 +42,10 @@ def schedule_new(st, title, kind, rule, tz=None, text="", agent=None, item=None,
 def schedule_emit(st, s, for_iso, late, manual=False, skipped=0):
     """What a run produces. Called inside mutate() so a failed inbox append also drops the state change."""
     tk = s.get("task") or {}
+    if s.get("kind") == "job":   # t-oss-struct S8: no inbox entry; the server runs the extension's function (registry.run_pending)
+        s["job_pending"] = {"for": for_iso, "manual": bool(manual)}
+        return {"kind": "job_due", "schedule": s["id"], "job": s.get("job"), "title": s["title"], "for": for_iso, "late_min": late,
+                **({"manual": True} if manual else {}), **({"skipped": skipped} if skipped else {})}
     day = (SC.parse_iso(for_iso) or _aware_now(s.get("tz"))).astimezone(SC.zone(s.get("tz"))).date().isoformat()
     if s.get("routine"):   # imported config routine: same entry as before, so manager.md's routine_due handling is unchanged
         e = {"kind": "routine_due", "routine": s["routine"], "label": s["title"], "time": s["rule"].get("at"), "date": day,

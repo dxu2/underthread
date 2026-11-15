@@ -306,9 +306,133 @@ def t_local(root):
         subprocess.run([PY, "make_agents.py"], cwd=root, capture_output=True)
 
 
+def t_registry(root):
+    """t-oss-struct S8: an extension with an ext.json manifest adds a GET and a POST route, a locked and an unlocked action, a card kind,
+    a scheduled job, a health line, a CLI command, an upsert hook and web files; one with the wrong api is skipped with a card; the old
+    way (no manifest) still loads; an extension cannot replace a core route; removing the extension leaves a working board."""
+    L = os.path.join(root, "local")
+    srv_demo = """import os
+def register(R):
+    R.route("GET", "/api/ext/demo/hi", lambda h, u, q: h._send(200, {"hi": R.name, "api": R.api}))
+    R.route("POST", "/api/ext/demo/echo", lambda h, u, body: h._send(200, {"echo": body.get("x")}))
+    def ping(a):
+        R.S.add_thread(a.it, "me", "demo ping", "event")
+        a.inbox = {"kind": "demo_ping", "item": a.it["id"]}
+    R.action("demo_ping", ping)
+    R.action("demo_peek", lambda a: {"items": len(a.st["items"])}, lock=False)
+    def tick(ctx):
+        with open(os.path.join(R.S.ROOT, "demo-job.txt"), "w") as f:
+            f.write(ctx["job"] + " " + str(ctx["manual"]))
+        return "done"
+    R.job("demo.tick", tick, "daily 09:00", label="Demo tick")
+    R.health(lambda: {"demo": "ok"})
+"""
+    su_demo = """def register(R):
+    R.card_kind("note", "笔记", "Note")
+    R.cli(lambda sub: sub.add_parser("demo-hi").set_defaults(fn=lambda a: print("demo-hi ok")))
+    def hook(phase, ctx):
+        if phase == "before" and ctx.get("before") is None:
+            ctx["fields"]["demo_tag"] = "yes"
+    R.on_upsert(hook)
+"""
+    files = {
+        "ext/demo/ext.json": json.dumps({"name": "demo", "api": 1, "requires": ">=0.1", "card_kinds": [{"id": "clip", "label": ["剪辑", "Clip"]}],
+                                         "web": {"js": ["demo.js"], "css": [{"href": "demo.css", "after": "style.css"}]}}),
+        "ext/demo/server_ext.py": srv_demo,
+        "ext/demo/stateutil_ext.py": su_demo,
+        "ext/demo/web/demo.js": "/* demo */\n",
+        "ext/demo/web/demo.css": "/* demo */\n",
+        "ext/old/ext.json": json.dumps({"name": "old", "api": 99}),
+        "ext/old/server_ext.py": "def register(R):\n    R.route('GET', '/api/old', lambda h, u, q: h._send(200, {}))\n",
+        "ext/old/web/x.js": "/* old */\n",
+        "ext/legacy/server_ext.py": "def register(srv):\n    def route(h, u, q):\n        if u.path == '/api/legacy-hi':\n            return h._send(200, {'ok': True})\n    srv.EXT_GET.append(route)\n",
+        "ext/clash/ext.json": json.dumps({"name": "clash", "api": 1}),
+        "ext/clash/server_ext.py": "def register(R):\n    R.route('GET', '/api/health', lambda h, u, q: h._send(200, {'hijacked': True}))\n",
+    }
+    J = {"Content-Type": "application/json"}
+    try:
+        for rel, body in files.items():
+            os.makedirs(os.path.dirname(os.path.join(L, rel)), exist_ok=True)
+            with open(os.path.join(L, rel), "w", encoding="utf-8") as f:
+                f.write(body)
+        assert "demo-hi ok" in S(root, "demo-hi")
+        S(root, "upsert-item", "--id", "t-clip", "--title", "a clip card", "--kind", "clip")
+        S(root, "upsert-item", "--id", "t-note", "--title", "a note card", "--kind", "note")
+        st = json.load(open(os.path.join(root, "state.json"), encoding="utf-8"))
+        clip = next(i for i in st["items"] if i["id"] == "t-clip")
+        assert clip["kind"] == "clip" and clip.get("demo_tag") == "yes", clip
+        srv = Server(root)
+        try:
+            p = srv.port
+            c, b = req(p, "/api/ext/demo/hi")
+            assert c == 200 and json.loads(b) == {"hi": "demo", "api": 1}, (c, b)
+            c, b = req(p, "/api/ext/demo/echo", "POST", {"x": 5}, J)
+            assert c == 200 and json.loads(b) == {"echo": 5}, (c, b)
+            c, b = req(p, "/api/action", "POST", {"kind": "demo_ping", "item": "t-clip"}, J)
+            assert c == 200 and json.loads(b)["inbox"], (c, b)
+            c, b = req(p, "/api/action", "POST", {"kind": "demo_peek"}, J)
+            assert c == 200 and json.loads(b)["items"] >= 2, (c, b)
+            c, b = req(p, "/api/item?id=t-clip")
+            assert "demo ping" in b.decode(), "locked extension action did not write the card"
+            x = json.loads(req(p, "/api/ext")[1])
+            ex = {e["name"]: e for e in x["extensions"]}
+            assert x["api"] == 1 and not ex["demo"]["legacy"] and not ex["demo"]["skipped"] and not ex["demo"]["error"], ex["demo"]
+            assert ex["old"]["skipped"] and "api" in ex["old"]["skipped"], ex["old"]
+            assert ex["legacy"]["legacy"], ex["legacy"]
+            assert "registered twice" in (ex["clash"]["error"] or ""), ex["clash"]
+            assert {"clip", "note"} <= {k["id"] for k in x["card_kinds"]}, x["card_kinds"]
+            assert [j["id"] for j in x["jobs"]] == ["demo.tick"], x["jobs"]
+            h = json.loads(req(p, "/api/health")[1])
+            assert "hijacked" not in h and {"ext": "demo", "value": {"demo": "ok"}} in h["ext"]["health"], h.get("ext")
+            assert req(p, "/api/old")[0] == 404, "a skipped extension's code ran"
+            assert req(p, "/api/legacy-hi")[0] == 200, "old-style extension not loaded"
+            html = req(p, "/")[1].decode()
+            assert re.search(r"/static/ext/demo/demo\.js\?v=1\.[0-9a-f]{8}", html), "manifest js not injected"
+            assert html.index("/static/ext/demo/demo.css") > html.index("/static/style.css"), "manifest css not after its anchor"
+            assert "/static/ext/old/" not in html
+            assert req(p, "/static/ext/demo/demo.js")[0] == 200 and req(p, "/static/ext/old/x.js")[0] == 404
+            assert req(p, "/static/ext/demo/..%2fext.json")[0] in (403, 404)
+            st = json.loads(req(p, "/api/state")[1])
+            assert any(i["id"] == "t-ext-old" for i in st["items"]), "no card for the skipped extension"
+            sc = next(s for s in st["schedules"] if s["id"] == "s-job-demo.tick")
+            assert sc["kind"] == "job" and sc["rule"] == {"type": "daily", "at": "09:00"}, sc
+            c, b = req(p, "/api/action", "POST", {"kind": "schedule_fire", "schedule": "s-job-demo.tick"}, J)
+            assert c == 200, (c, b)
+            out = os.path.join(root, "demo-job.txt")
+            for _ in range(50):
+                if os.path.exists(out):
+                    break
+                time.sleep(0.1)
+            assert open(out).read() == "demo.tick True", "job did not run"
+        finally:
+            srv.stop()
+        # the extension goes away: the board still works, its cards are ordinary cards, its job entry stays (and does nothing)
+        shutil.rmtree(os.path.join(L, "ext", "demo"))
+        srv = Server(root)
+        try:
+            p = srv.port
+            assert req(p, "/api/ext/demo/hi")[0] == 404
+            st = json.loads(req(p, "/api/state")[1])
+            assert next(i for i in st["items"] if i["id"] == "t-clip")["kind"] == "clip"
+            assert req(p, "/api/action", "POST", {"kind": "schedule_fire", "schedule": "s-job-demo.tick"}, J)[0] == 200
+            assert req(p, "/api/action", "POST", {"kind": "demo_ping", "item": "t-clip"}, J)[0] == 400
+            assert req(p, "/")[0] == 200
+        finally:
+            srv.stop()
+        S(root, "upsert-item", "--id", "t-clip", "--title", "still editable")
+        S(root, "show", "t-clip")
+    finally:
+        shutil.rmtree(L, ignore_errors=True)
+        for f in ("demo-job.txt",):
+            try:
+                os.remove(os.path.join(root, f))
+            except OSError:
+                pass
+
+
 CHECKS = [("compile", t_compile), ("json", t_json), ("agents", t_agents), ("preset", t_preset), ("server", t_server),
           ("guard", t_guard), ("stateutil", t_stateutil), ("demo", t_demo), ("keepalive", t_keepalive),
-          ("local", t_local)]
+          ("local", t_local), ("registry", t_registry)]
 
 
 def main():
