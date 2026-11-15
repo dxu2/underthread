@@ -41,9 +41,11 @@ html[data-skin="ink"]:not([data-ut]) .office .hd { overflow: visible; }
 #drawer .dw-askbar:not(.fold) .ask-opts.sm { max-height: none; overflow: visible; }   /* R4-15: one scroller (the bar), not two */
 
 /* ===== t-ui-fix-r5 (phone) =====
-   R5-06: the card id chip keeps its full text; the stage tag gives way first (ellipsis, full label in its title), paddings tighten under 400px */
-#drawer .dw-lead .dw-id { flex: none; }
-#drawer .dw-lead .tag { min-width: 0; flex: 0 1 auto; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; display: block; line-height: 38px; }
+   R5-06: paddings tighten under 400px. t-ui-polish-1115 flipped who gives way: the stage pill keeps its whole label and the card id
+   truncates (its span has the ellipsis, 08-asks-search-snooze.css; tapping it still copies the full id). Before,
+   a long id squeezed the pill to "I…". */
+#drawer .dw-lead .dw-id { flex: 0 1 auto; min-width: 0; }
+#drawer .dw-lead .tag { flex: none; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; display: block; line-height: 38px; }
 @media (max-width: 400px) {
   #drawer .dw-lead { gap: 6px; }
   #drawer .dw-lead .tag { padding: 0 12px; }

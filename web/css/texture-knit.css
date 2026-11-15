@@ -40,7 +40,10 @@ html[data-texture^="knit"] :is(.toc-box, .dw-dock) { outline-offset: -4px !impor
 /* 2：卡片底边一条罗纹收边，面板微微鼓起 */
 
 /* ---- 按钮：毛毡底 + 内侧缝线 + 一点鼓 ---- */
-html[data-texture^="knit"] :is(.ab, .hc-mail, .dw-stamp, .tb-row, .hd-chip, .dw-back, .dw-file, #drawer select, .cm-to, .rq) {
+/* #drawer select stays out of the shared :is(): an id inside :is() lifts every member to id specificity, and then the
+   "no stitch" line below and the knit focus ring lose on .dw-back / .dw-file / .cm-to / .rq (t-ui-polish-1115) */
+html[data-texture^="knit"] :is(.ab, .hc-mail, .dw-stamp, .tb-row, .hd-chip, .dw-back, .dw-file, .cm-to, .rq),
+html[data-texture^="knit"] #drawer select {
   background-image: var(--kn-felt) !important;
   background-size: var(--kn-felt-size) !important;
   background-repeat: repeat !important;
@@ -49,7 +52,8 @@ html[data-texture^="knit"] :is(.ab, .hc-mail, .dw-stamp, .tb-row, .hd-chip, .dw-
   outline-offset: -3px !important;
 }
 html[data-texture^="knit"] :is(.dw-back, .dw-file, .cm-to, .rq) { outline: none !important; }   /* 太小的圆钮只要毛毡，不缝 */
-html[data-texture^="knit"] :is(.ab, .dw-stamp, .hd-chip) { outline-color: var(--kn-thread-acc) !important; }
+/* was `:is(.ab, .dw-stamp, .hd-chip) { outline-color: var(--kn-thread-acc) }`: it never applied (the felt rule above outranked it
+   while #drawer select sat in its :is()), so it is left out to keep today's look; an accent stitch on these is a separate design call. */
 /* 首页右侧那列小卡本身就是按钮：同面板处理，但也给鼓起 */
 
 /* ---- 分隔线：实线换成针脚 ---- */
