@@ -313,21 +313,33 @@ def _chat_seen(a):   # t-ri1113-a P1: how far the user has read each chat / DM, 
 
 @action("widget_layout")
 def _widget_layout(a):   # t-widget-drag: the desktop widget home's order / sizes, shared by every browser (meta.widgets)
+    """S8: ids may be an extension's widget ([a-z][a-z0-9_-]{0,23}, web/ext.js). "seen" = every widget id this board has met, so a new one
+    (core or extension) is put into the layout once and removing it sticks; it survives a reset and an update without it."""
     body, st = a.body, a.st
+    idre = r"[a-z][a-z0-9_-]{0,23}"
+    old = st["meta"].get("widgets") if isinstance(st["meta"].get("widgets"), dict) else {}
+    seen = body.get("seen", old.get("seen"))
+    if seen is not None:
+        if not (isinstance(seen, list) and len(seen) <= 64 and all(isinstance(x, str) and re.fullmatch(idre, x) for x in seen)):
+            raise ValueError("bad seen")
+        seen = sorted(set(seen))
     if body.get("reset"):
-        st["meta"]["widgets"] = {"layout": None, "at": S.now()}   # explicit default: an old per-browser layout must not re-upload over it
+        w = {"layout": None, "at": S.now()}   # explicit default: an old per-browser layout must not re-upload over it
     else:
         lay = body.get("layout")
         if not isinstance(lay, list) or not 0 < len(lay) <= 24:
             raise ValueError("bad layout")
-        out, seen = [], set()
+        out, ids = [], set()
         for x in lay:
-            if not (isinstance(x, list) and len(x) == 2 and isinstance(x[0], str) and re.fullmatch(r"[a-z]{1,16}", x[0])
-                    and x[1] in ("s", "m", "l") and x[0] not in seen):
+            if not (isinstance(x, list) and len(x) == 2 and isinstance(x[0], str) and re.fullmatch(idre, x[0])
+                    and x[1] in ("s", "m", "l") and x[0] not in ids):
                 raise ValueError("bad layout entry")
-            seen.add(x[0])
+            ids.add(x[0])
             out.append([x[0], x[1]])
-        st["meta"]["widgets"] = {"layout": out, "at": S.now()}
+        w = {"layout": out, "at": S.now()}
+    if seen is not None:
+        w["seen"] = seen
+    st["meta"]["widgets"] = w
 
 
 @action("stamina")

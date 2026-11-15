@@ -102,7 +102,7 @@
       docs_pick: "Pick a doc", ch_none: "No platform",
     },
   };
-  const t = (k, vars) => { let s = (T[UI.lang] && T[UI.lang][k]) ?? T.zh[k] ?? k; for (const [a, b] of Object.entries(vars || {})) s = s.replace("{" + a + "}", b); return s; };
+  const t = (k, vars) => { let s = (T[UI.lang] && T[UI.lang][k]) ?? T.zh[k] ?? (window.UTExt && UTExt.label(k, UI.lang)) ?? k;   /* S8: a registered card kind (web/ext.js) */ for (const [a, b] of Object.entries(vars || {})) s = s.replace("{" + a + "}", b); return s; };
   const EN_SUB = { settings: "SETTINGS", review: "HOME", main: "MAIN QUEST", side: "SIDE QUEST", daily: "DAILY COMMISSIONS", urgent: "URGENT EVENTS",
     ongoing: "SCHEDULES", studio: "STUDIO", market: "HIRING MARKET", crew: "TEAM", pipe: "PRODUCTION LINE", board: "COMMISSION BOARD", logs: "JOURNAL", reports: "REPORTS", channels: "CHANNELS", docs: "ARCHIVE", assets: "ASSET LIBRARY", roles: "ROSTER", mail: "MAILBOX" };
   const CATS = ["main", "side", "daily", "urgent", "ongoing"];
@@ -2730,7 +2730,7 @@
   }
   function schRow(s) {
     const zh = schZh(), a = schWho(s), r = schRt(s), fin = schFin(s), late = schLate(s), it = s.task && s.task.item;
-    const kind = s.kind === "remind" ? (zh ? "提醒" : "Reminder") : (zh ? "派活" : "Task");
+    const kind = s.kind === "remind" ? (zh ? "提醒" : "Reminder") : s.kind === "job" ? (zh ? "扩展任务" : "Extension job") : (zh ? "派活" : "Task");   /* S8: kind "job" = an extension's scheduled function (docs/extensions.md) */
     const sw = fin ? "" : `<button type="button" class="rs-tg sc-tg" data-sct="${esc(s.id)}" role="switch" aria-checked="${!!s.enabled}" aria-label="${s.enabled ? (zh ? "暂停" : "Pause") : (zh ? "开启" : "Turn on")}"><i></i></button>`;
     return `<div class="rs-row sc-row${s.enabled ? "" : " rs-off"}${fin ? " sc-fin" : ""}" data-sc="${esc(s.id)}"${it ? ` data-item="${esc(it)}"` : ""}>
         <div class="rs-t">${esc(schAt(s))}</div>
@@ -2807,7 +2807,7 @@
   function schMenu(b) {
     const s = schById(b.dataset.scm); if (!s) return;
     const zh = schZh(), fin = schFin(s);
-    const fireSub = s.kind === "remind" ? (zh ? "现在就发一条提醒" : "Send the reminder now") : (zh ? "现在就交给管家派活" : "Hand it to the manager now");
+    const fireSub = s.kind === "remind" ? (zh ? "现在就发一条提醒" : "Send the reminder now") : s.kind === "job" ? (zh ? "现在就跑一次" : "Run it now") : (zh ? "现在就交给管家派活" : "Hand it to the manager now");
     const pop = snzOpen(`<div class="snz-h"><b>${esc(schName(s, schWho(s)))}</b><small>${esc(schRule(s.rule))}</small></div>` +
       (fin ? "" : `<button type="button" class="snz-o" role="menuitem" data-sc-fire><b>${zh ? "立即运行" : "Run now"}</b><span>${fireSub}</span></button>`) +
       `<button type="button" class="snz-o sc-del" role="menuitem" data-sc-del><b>${zh ? "删除" : "Delete"}</b><span>${zh ? "5 秒内可撤销" : "undo within 5 s"}</span></button>`, b, null, true);
@@ -2815,7 +2815,7 @@
       if (e.target.closest("[data-sc-fire]")) {
         pop.classList.add("busy");
         api("schedule_fire", { schedule: s.id })
-          .then(() => { snzClose(false); toast(s.kind === "remind" ? (zh ? "已发出提醒 · 在信箱里" : "Reminder sent") : (zh ? "已触发 · 管家会接着派活" : "Fired · the manager takes it from here")); })
+          .then(() => { snzClose(false); toast(s.kind === "remind" ? (zh ? "已发出提醒 · 在信箱里" : "Reminder sent") : s.kind === "job" ? (zh ? "已开始跑 · 在后台" : "Running in the background") : (zh ? "已触发 · 管家会接着派活" : "Fired · the manager takes it from here")); })
           .catch(() => pop.classList.remove("busy"));
       } else if (e.target.closest("[data-sc-del]")) { snzClose(false); schDelStart(s); }
     });
@@ -4730,6 +4730,14 @@
       rows.push({ k: "disk", t: en ? "Disk" : "磁盘", lv: d.free < 10e9 || pct < .05 ? "bad" : d.free < 30e9 || pct < .1 ? "warn" : "ok",
         s: (en ? `${gb(d.free)} free of ${gb(d.total)}` : `剩 ${gb(d.free)} / 共 ${gb(d.total)}`) + (d.work != null ? ` · work/ ${gb(d.work)}` : "") });
     }
+    // 8. extensions (t-oss-struct S8, needs /api/health): only when one is skipped, broken or on the old (pre-manifest) way, plus rows an extension adds
+    if (H && H.ext && H.ext.extensions) {
+      const X = H.ext.extensions, bad = X.filter(e => e.skipped || e.error), old = X.filter(e => e.legacy && !e.skipped && !e.error);
+      if (bad.length || old.length) rows.push({ k: "ext", t: en ? "Extensions" : "扩展", lv: bad.length ? "warn" : "ok",
+        s: [bad.length && (en ? `not loaded: ${bad.map(e => e.name).join(", ")}` : `没有加载：${bad.map(e => e.name).join("、")}`),
+          old.length && (en ? `old style (no ext.json, works until 0.3.0): ${old.map(e => e.name).join(", ")}` : `旧写法（没有 ext.json，0.3.0 前还能用）：${old.map(e => e.name).join("、")}`)].filter(Boolean).join(" · ") });
+    }
+    if (window.UTExt) UTExt.statusRows(en).forEach((r, i) => rows.push({ k: "x" + i, t: r.t, s: r.s || "", lv: ["ok", "warn", "bad"].includes(r.lv) ? r.lv : "ok" }));
     return rows;
   }
   function statusSummary(rows) {
@@ -4954,7 +4962,7 @@
     utEmpty: (text, cls, h) => utEmpty(text, cls, h),   /* t-thread-motif ④ (widgets.js, palette.js, mobile.js) */
     rvApprove: id => rvApprove(id, null), rvCanApprove: it => rvCanApprove(it), awaitsUser: it => awaitsUser(it), busy: it => busy(it), onYou: it => onYou(it), onYouCard: it => onYouCard(it), grpOf: it => grpOf(it), newReplies: () => newReplies(), nrDot: id => nrDot(id), decisions: () => decisions(),   // t-imp-p5 (palette)
     /* t-chrome-badge (home.js .hd-tool) */
-    toolLine: w => toolLine(w), toolBadge: a => toolBadge(a), toolWhat: a => toolWhat(a), addToolExtra: fn => { TOOL_EXTRA.push(fn); },
+    toolLine: w => toolLine(w), toolBadge: a => toolBadge(a), toolWhat: a => toolWhat(a), addToolExtra: fn => { if (!TOOL_EXTRA.includes(fn)) TOOL_EXTRA.push(fn); }, ext: window.UTExt,   /* S8: App.ext = web/ext.js */
     wsheet: (a, sz) => wsheet(a, sz),   /* t-chibi-anim (home.js .hd-mini / .dp-uti) */
     hasArt: (a, k) => hasArt(a, k), tintOf: a => tintOf(a),   /* t-hr-registry (home.js, widgets.js) */
     UI, get ST() { return ST; }, roll, modalStatus: () => modalStatus(), ghOpen: () => ghOpen(), ghLabel: () => ghLabel(), statusSummary: () => statusSummary(statusRows()), loadHealth: a => loadHealth(a), refreshPage: () => renderPage(), phaseFree, avatarUrl, t, items, agent, aname, atitle, av, when, whenH, agoH, ago, byAct, PLAT, stageLabel,

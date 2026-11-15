@@ -2419,7 +2419,7 @@
      "to": 2
     }
    ],
-   "rev": 117,
+   "rev": 119,
    "routines_log": {},
    "schema": 2,
    "stamina": {
@@ -2443,7 +2443,12 @@
    },
    "widgets": {
     "at": "2026-01-20T10:00:00+00:00",
-    "layout": null
+    "layout": null,
+    "seen": [
+     "demo-ext_1",
+     "team",
+     "usage"
+    ]
    }
   },
   "notices": [

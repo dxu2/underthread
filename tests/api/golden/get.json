@@ -582,6 +582,7 @@
     "/static/md.js?v=<h>",
     "/static/fx.js?v=<h>",
     "/static/diff.js?v=<h>",
+    "/static/ext.js?v=<h>",
     "/static/app.js?v=<h>",
     "/static/market.js?v=<h>",
     "/static/transfer.js?v=<h>",
@@ -3898,7 +3899,7 @@
     ],
     "owner": "You",
     "report_time": "18:00",
-    "rev": 117,
+    "rev": 119,
     "routines": [],
     "routines_log": {},
     "schema": 2,
@@ -3962,7 +3963,12 @@
     },
     "widgets": {
      "at": "2026-01-20T10:00:00+00:00",
-     "layout": null
+     "layout": null,
+     "seen": [
+      "demo-ext_1",
+      "team",
+      "usage"
+     ]
     }
    },
    "notices": [

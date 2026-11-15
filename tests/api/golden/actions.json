@@ -1783,5 +1783,28 @@
   },
   "code": 200,
   "inbox": []
+ },
+ "widget_layout_reset_keeps_seen": {
+  "body": {
+   "inbox": null,
+   "ok": true
+  },
+  "code": 200,
+  "inbox": []
+ },
+ "widget_layout_seen": {
+  "body": {
+   "inbox": null,
+   "ok": true
+  },
+  "code": 200,
+  "inbox": []
+ },
+ "widget_layout_seen_bad": {
+  "body": {
+   "error": "bad seen"
+  },
+  "code": 400,
+  "inbox": []
  }
 }

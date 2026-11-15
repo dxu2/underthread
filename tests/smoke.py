@@ -404,6 +404,13 @@ def register(R):
                     break
                 time.sleep(0.1)
             assert open(out).read() == "demo.tick True", "job did not run"
+            # an extension widget id fits the home layout; "seen" survives an update without it and a reset
+            c, b = req(p, "/api/action", "POST", {"kind": "widget_layout", "layout": [["team", "m"], ["demo-w", "s"]], "seen": ["team", "demo-w"]}, J)
+            assert c == 200, (c, b)
+            req(p, "/api/action", "POST", {"kind": "widget_layout", "layout": [["team", "l"]]}, J)
+            req(p, "/api/action", "POST", {"kind": "widget_layout", "reset": True}, J)
+            w = json.loads(req(p, "/api/state")[1])["meta"]["widgets"]
+            assert w["layout"] is None and w["seen"] == ["demo-w", "team"], w
         finally:
             srv.stop()
         # the extension goes away: the board still works, its cards are ordinary cards, its job entry stays (and does nothing)

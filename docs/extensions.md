@@ -70,6 +70,32 @@ def register(R):
     R.job("clips.sweep", lambda ctx: print("sweep", ctx["for"]), "daily 07:30", label="Clip sweep")
 ```
 
+## In the page: App.ext
+
+`web/ext.js` loads before every other page script and is `window.UTExt` (also `App.ext`). Core registers its own nine home
+widgets through it, so a widget from an extension sizes, moves, drags and hides like a core one.
+
+```js
+UTExt.widget({
+  id: "clips",                         // a-z, 0-9, - and _, up to 24 characters
+  name: ["剪辑", "Clips"],              // [Chinese, English]
+  sizes: ["s", "m"], size: "m",        // which sizes 编辑小组件 offers, and the size it starts at
+  html: (size, D, kit) => kit.eb("clips", 3) + "<div class=\"wg-row\">…</div>",   // the tile's inside
+  empty: D => false,                   // true: the tile leaves the grid and `calm` becomes one quiet line above it
+  calm: ["没有剪辑", "No clips"],
+  first: false,                        // true: a new widget goes in at the front instead of the end
+});
+UTExt.cardKind({ id: "clip", label: ["剪辑", "Clip"] });   // kinds from ext.json "card_kinds" are loaded for you
+UTExt.toolPill((agent, toolKey, stale) => "");            // extra HTML in a working teammate's tool pill
+UTExt.statusRow(en => ({ t: "Clips", s: "3 today", lv: "ok" }));   // one more row in 系统状态 (ok / warn / bad)
+```
+
+`D` is the data core widgets draw from (`waiting`, `busy`, `nr`, `shipped`, `days`, `ongoing`, `imgs`); `kit` has `eb` (the
+widget's title line), `esc`, `ago`, `hm` and `en`. A widget that throws shows a short error in its tile instead of breaking the
+home. The home layout lives on the server (`meta.widgets`), with `seen`: every widget id this board has met. A widget that is
+new to the board goes into the layout once; if you remove it, it stays removed. When its extension goes away, its tile drops out.
+Register at the top level of your script (it runs before the first draw); registering later redraws the page.
+
 ## Safety and versions
 
 - A broken extension never takes the dashboard down: an error while loading is shown under `ext` in `/api/health` and in

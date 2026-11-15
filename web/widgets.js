@@ -15,17 +15,22 @@
   const WD = "日一二三四五六";
 
   // ---------- layout ----------
-  const SIZES = { usage: ["m", "l"], review: ["m", "l"], busy: ["m", "l"], replies: ["m", "l"], today: ["s", "m", "l"], week: ["s", "m"], ongoing: ["s", "m"], media: ["s", "m"], team: ["s", "m", "l"] };   /* t-rb-build: 团队交接 (web/team.js) */
-  const NAME = { usage: ["各角色用量", "Usage by role"], review: ["等你拍板", "Waiting on you"], busy: ["此刻在忙", "Working now"], replies: ["新回复", "New replies"], today: ["今天交付", "Shipped today"],
-    week: ["本周进度", "This week"], ongoing: ["每日", "Dailies"], media: ["最近素材", "Recent media"], team: ["团队交接", "Team handoffs"] };
-  const DEF = [["team", "m"], ["usage", "l"], ["review", "l"], ["busy", "l"], ["replies", "l"], ["today", "m"], ["week", "m"], ["ongoing", "m"], ["media", "m"]];
+  /* t-oss-struct S8: every widget, core ones included, is registered with UTExt.widget (web/ext.js; the core nine at the bottom of this file).
+     SIZES / nm() read the registry, so an extension's widget sizes, names, edits and drags like a core one. */
+  const REG = () => window.UTExt ? UTExt.widgetOf : () => null;
+  const SIZES = new Proxy({}, { get: (_, k) => { const w = REG()(k); return w ? w.sizes : undefined; } });
+  const allIds = () => window.UTExt ? UTExt.widgets().map(w => w.id) : [];
+  /* the default layout: the core nine in this order, then any extension widget at its own size; 恢复默认 shows this */
+  const DEF_CORE = [["team", "m"], ["usage", "l"], ["review", "l"], ["busy", "l"], ["replies", "l"], ["today", "m"], ["week", "m"], ["ongoing", "m"], ["media", "m"]];
+  const defL = () => [...DEF_CORE.filter(x => REG()(x[0])), ...(window.UTExt ? UTExt.widgets().filter(w => !w.core) : []).map(w => [w.id, w.size])];
+  const DEF = { map: f => defL().map(f) };   // DEF.map(x => x.slice()) as before
   const KEY = "rt.widgets";
-  const loadLocal = () => { try { const v = JSON.parse(localStorage.getItem(KEY) || "null"); if (Array.isArray(v) && v.every(x => SIZES[x[0]])) {
-      // t-home-usage: a layout saved before the usage widget existed gets it once, first (removing it later sticks)
+  const loadLocal = () => { try { let v = JSON.parse(localStorage.getItem(KEY) || "null"); if (Array.isArray(v) && v.length && v.every(x => Array.isArray(x) && typeof x[0] === "string")) {
+      v = v.filter(x => SIZES[x[0]]);   // S8: an id whose widget is not registered (an extension that is gone) drops out
+      // t-home-usage / t-rb-build: a browser-only layout from before 用量 / 团队交接 existed gets them once (the server path uses meta.widgets.seen)
       if (!v.some(x => x[0] === "usage") && !localStorage.getItem("rt.wgUsage")) { v.unshift(["usage", "l"]); localStorage.setItem("rt.wgUsage", "1"); localStorage.setItem(KEY, JSON.stringify(v)); }
-      /* t-rb-build: the same once for 团队交接 (P1: a small home card, size M) */
       if (!v.some(x => x[0] === "team") && !localStorage.getItem("rt.wgTeam")) { v.unshift(["team", "m"]); localStorage.setItem("rt.wgTeam", "1"); localStorage.setItem(KEY, JSON.stringify(v)); }
-      return v; } } catch { } return DEF.map(x => x.slice()); };
+      if (v.length) return v; } } catch { } return DEF.map(x => x.slice()); };
   const saveLocal = L => { try { localStorage.setItem(KEY, JSON.stringify(L)); } catch { } };
   /* t-widget-drag (11-11, option a): the layout lives on the server (meta.widgets, action widget_layout), so every computer you open it on shows the
      same home. localStorage stays as this browser's cache. meta.widgets missing = never saved: this browser's old layout is uploaded once.
@@ -33,8 +38,10 @@
   let PEND = null;
   const known = v => Array.isArray(v) ? v.filter(x => Array.isArray(x) && SIZES[x[0]] && SIZES[x[0]].includes(x[1])) : null;
   const srv = () => { const m = A() && A().ST && A().ST.meta; return m ? m.widgets : undefined; };   // undefined = no state yet, null = never saved
-  const push = L => { PEND = { L: L ? JSON.stringify(L) : null, t: Date.now() };
-    fetch("/api/action", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(L ? { kind: "widget_layout", layout: L } : { kind: "widget_layout", reset: true }) })
+  const seenNow = () => { const w = srv(); return [...new Set([...(w && Array.isArray(w.seen) ? w.seen : []), ...allIds()])].sort(); };
+  const push = L => send(L ? { kind: "widget_layout", layout: L, seen: seenNow() } : { kind: "widget_layout", reset: true, seen: seenNow() }, L);
+  const send = (body, L) => { PEND = { L: L ? JSON.stringify(L) : null, t: Date.now() };
+    fetch("/api/action", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) })
       .then(r => { if (!r.ok) throw new Error(r.status); }).catch(() => { PEND = null; if (A() && A().toast) A().toast(en() ? "Layout not saved on the server" : "布局没存到服务器，只存在了这个浏览器", true); }); };
   const load = () => {
     const w = srv(), now = Date.now();
@@ -43,7 +50,7 @@
       if (w && got === PEND.L || now - PEND.t > 15000) PEND = null;
       else return PEND.L ? JSON.parse(PEND.L) : DEF.map(x => x.slice());
     }
-    if (w && typeof w === "object") { const v = known(w.layout); const L = v && v.length ? v : DEF.map(x => x.slice()); saveLocal(L); return L; }
+    if (w && typeof w === "object") { const v = known(w.layout); let L = v && v.length ? v : DEF.map(x => x.slice()); L = meet(w, L, !!(v && v.length)); saveLocal(L); return L; }
     const L = loadLocal();
     if (w === null || (A() && A().ST && A().ST.meta && !("widgets" in A().ST.meta))) {   // first load against a server that has no layout yet: upload this browser's once
       let had = null; try { had = localStorage.getItem(KEY); } catch { }
@@ -51,9 +58,29 @@
     }
     return L;
   };
+  /* S8 (the server path; replaces rt.wgUsage / rt.wgTeam there): meta.widgets.seen lists every widget id this board has met. No list yet = everything
+     registered now counts as met (the upgrade inserts nothing). A registered id not on it is new: it goes into a saved layout once
+     (first: true = at the front, else at the end) and joins seen; removing it later sticks. A default layout (null) shows it anyway. */
+  let MET = "";
+  function meet(w, L, saved) {
+    const ids = allIds();
+    if (!ids.length || document.readyState === "loading") return L;   // extension scripts (after this file) have not registered yet
+    const seen = Array.isArray(w.seen) ? w.seen : null, fresh = seen ? ids.filter(k => !seen.includes(k)) : [];
+    if (seen && !fresh.length) return L;
+    const all = [...new Set([...(seen || []), ...ids])].sort(), key = all.join(",");
+    if (MET === key) return L;   // sent once already; PEND keeps it on screen until the poll brings it back
+    MET = key;
+    if (saved && fresh.length) {
+      L = L.slice();
+      fresh.forEach(k => { if (L.some(x => x[0] === k)) return; const x = REG()(k), e = [k, x.size]; if (x.first) L.unshift(e); else L.push(e); });
+      L = L.slice(0, 24);
+    }
+    send(saved ? { kind: "widget_layout", layout: L, seen: all } : { kind: "widget_layout", reset: true, seen: all }, saved ? L : null);
+    return L;
+  }
   const save = L => { saveLocal(L); push(L); };
   const reset = () => { try { localStorage.removeItem(KEY); } catch { } push(null); };
-  const nm = k => NAME[k][en() ? 1 : 0];
+  const nm = k => { const w = REG()(k), n = w && w.name; return n ? (en() ? n[1] || n[0] : n[0]) : k; };
   let EDIT = false;
 
   // ---------- data ----------
@@ -71,9 +98,10 @@
     const imgs = []; its.slice().sort((a, b) => ms(b.activity) - ms(a.activity)).forEach(i => [...(i.draft_attachments || []), ...(i.attachments || [])].forEach(p => { if (/\.(png|jpe?g|webp|gif)$/i.test(p) && !imgs.some(x => x.p === p) && imgs.length < 6) imgs.push({ p, it: i }); }));
     return { waiting, busy, nr, shipped, days, doing: live.filter(i => app.grpOf(i) === "doing").length, todo: live.filter(i => app.grpOf(i) === "todo").length, ongoing, rp, imgs };
   }
-  const isEmpty = (k, D) => ({ team: false, usage: false, review: !D.waiting.length, busy: !D.busy.length, replies: !D.nr.length, today: !D.shipped.length, ongoing: !D.ongoing.length, media: !D.imgs.length, week: false })[k];
-  const calmText = k => ({ review: ["没有等你拍板的", "Nothing waiting on you"], busy: ["大家都在待机", "Everyone is idle"], replies: ["没有新回复", "No new replies"], today: ["今天还没有交付", "Nothing shipped today"],
-    ongoing: ["没有每日的活", "No dailies"], media: ["还没有素材", "No media yet"] })[k][en() ? 1 : 0];
+  const isEmpty = (k, D) => { const w = REG()(k); try { return !!(w && w.empty && w.empty(D)); } catch (e) { return false; } };
+  const calmText = k => { const c = (REG()(k) || {}).calm || [nm(k), nm(k)]; return en() ? c[1] || c[0] : c[0]; };
+  /* html(size, D, kit): kit = the helpers core widgets use (eb = the eyebrow line). A widget that throws draws a quiet line instead of breaking the home. */
+  const tileHTML = (k, s, D) => { try { return REG()(k).html(s, D, { eb, esc, ago, hm, en: en() }); } catch (e) { console.warn("widget " + k, e); return eb(k) + `<div class="wg-calm-in">${en() ? "This widget failed to draw" : "这个小组件出错了"}</div>`; } };
 
   // ---------- widgets ----------
   /* t-widget-num-b: number + unit split so the desk leather tab (widgets.css .wnb-num) wraps only the digits */
@@ -205,11 +233,11 @@
     L.forEach(([k, s0], i) => {
       const s = !EDIT && s0 === "l" && count[k] != null && count[k] <= 2 ? "m" : s0;   // a big widget with one or two rows drops to M so the grid stays tight
       if (!EDIT && isEmpty(k, D)) { calm.push(calmText(k)); return; }
-      const inner = EDIT && isEmpty(k, D) ? eb(k) + `<div class="wg-calm-in">${calmText(k)}</div>` : W[k](s, D);
+      const inner = EDIT && isEmpty(k, D) ? eb(k) + `<div class="wg-calm-in">${calmText(k)}</div>` : tileHTML(k, s, D);
       const multi = k === "busy" && D.busy.length > 1 ? " multi" : "";
       tiles.push([k, `<section class="wg wg-${k} sz-${s}${k === "busy" && !isEmpty(k, D) ? (document.documentElement.dataset.ut ? " utav" : " hero") + multi : ""}" data-wg="${k}">${inner}${EDIT ? editBar(k, s0, i, L.length) : ""}</section>`]);
     });
-    const hidden = Object.keys(SIZES).filter(k => !L.some(x => x[0] === k));
+    const hidden = allIds().filter(k => !L.some(x => x[0] === k));
     const P = { edit: EDIT, tiles,
       hd: `<div class="wg-hd">${calm.length ? `<span class="wg-calm">✓ ${calm.map(esc).join(" · ")}</span>` : ""}${A().snzLine ? A().snzLine() : ""}<span class="sp"></span>${EDIT ? `<button type="button" class="wg-btn" data-wg-reset>${en() ? "Reset" : "恢复默认"}</button>` : ""}<button type="button" class="wg-btn${EDIT ? " on" : ""}" data-wg-edit>${EDIT ? (en() ? "Done" : "完成") : (en() ? "Edit widgets" : "编辑小组件")}</button></div>`,
       tail: tail ? `<div class="wg-tail">${tail}</div>` : "",
@@ -235,7 +263,7 @@
     else if (t.dataset.wgReset != null) reset();
     else if (t.dataset.wgHide) { save(L.filter(x => x[0] !== t.dataset.wgHide));   /* t-ui-fix-r5 R5-04: a keyboard remove keeps focus on the next tile's − (or 完成) */
       if (document.activeElement === t) { const i = [...document.querySelectorAll("[data-wg-hide]")].indexOf(t); setTimeout(() => { const H = document.querySelectorAll("[data-wg-hide]"), n = H[Math.min(i, H.length - 1)] || document.querySelector("[data-wg-edit]"); if (n) n.focus({ preventScroll: true }); }, 80); } }
-    else if (t.dataset.wgAdd) { const x = [t.dataset.wgAdd, SIZES[t.dataset.wgAdd].includes("m") ? "m" : SIZES[t.dataset.wgAdd][0]]; if (x[0] === "team") L.unshift(x); else L.push(x); save(L); }   /* t-rb-build: 团队交接 comes back first */
+    else if (t.dataset.wgAdd) { const x = [t.dataset.wgAdd, SIZES[t.dataset.wgAdd].includes("m") ? "m" : SIZES[t.dataset.wgAdd][0]]; if (REG()(x[0]).first) L.unshift(x); else L.push(x); save(L); }   /* t-rb-build: 团队交接 comes back first (first: true) */
     else if (t.dataset.wgSize) { const [k, z] = t.dataset.wgSize.split(":"); const x = L.find(y => y[0] === k); if (x) x[1] = z; save(L); }
     else if (t.dataset.wgMove) { const [k, d] = t.dataset.wgMove.split(":"); const i = L.findIndex(y => y[0] === k), j = i + +d; if (i >= 0 && j >= 0 && j < L.length) { [L[i], L[j]] = [L[j], L[i]]; save(L); } }
     redraw();
@@ -384,6 +412,19 @@
   }
   const vis = () => document.documentElement.classList.toggle("wg-paused", document.hidden);   // the flow sweep pauses while the page is hidden
   document.addEventListener("visibilitychange", vis); vis();
+  /* S8: the core nine, registered the way an extension registers its own (docs/extensions.md) */
+  const CORE = [
+    ["team", ["团队交接", "Team handoffs"], ["s", "m", "l"], "m", null, null, true],
+    ["usage", ["各角色用量", "Usage by role"], ["m", "l"], "l"],
+    ["review", ["等你拍板", "Waiting on you"], ["m", "l"], "l", D => !D.waiting.length, ["没有等你拍板的", "Nothing waiting on you"]],
+    ["busy", ["此刻在忙", "Working now"], ["m", "l"], "l", D => !D.busy.length, ["大家都在待机", "Everyone is idle"]],
+    ["replies", ["新回复", "New replies"], ["m", "l"], "l", D => !D.nr.length, ["没有新回复", "No new replies"]],
+    ["today", ["今天交付", "Shipped today"], ["s", "m", "l"], "m", D => !D.shipped.length, ["今天还没有交付", "Nothing shipped today"]],
+    ["week", ["本周进度", "This week"], ["s", "m"], "m"],
+    ["ongoing", ["每日", "Dailies"], ["s", "m"], "m", D => !D.ongoing.length, ["没有每日的活", "No dailies"]],
+    ["media", ["最近素材", "Recent media"], ["s", "m"], "m", D => !D.imgs.length, ["还没有素材", "No media yet"]],
+  ];
+  if (window.UTExt) CORE.forEach(([id, name, sizes, size, empty, calm, first]) => UTExt.widget({ id, name, sizes, size, html: W[id], empty, calm, first: !!first, core: true }));
   window.Widgets = { html, editing: () => EDIT };
   if (A() && A().refreshPage && document.documentElement.dataset.home === "widgets") A().refreshPage();   /* app.js rendered before this file parsed */
 })();
