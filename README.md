@@ -118,7 +118,7 @@ Something not working? See [Troubleshooting](docs/troubleshooting.md). The long 
 
 ## A day with your crew
 
-<p align="center"><img src="docs/img/hero-home.png" alt="The Widgets home: waiting on you, working now, new replies, shipped today, this week, daily, recent media" width="820"></p>
+<p align="center"><img src="docs/img/hero-home.png" alt="The Widgets home: team handoffs, waiting on you, usage, working now, shipped today, this week, dailies" width="820"></p>
 
 **09:10 · Just say it.** You type a sentence into the chat. The steward answers, a new card appears, and a teammate gets to work. No form, no template.
 
@@ -155,7 +155,7 @@ Something not working? See [Troubleshooting](docs/troubleshooting.md). The long 
 - **Your mail in the steward's inbox.** Connect Gmail in Settings → Connections (app password, stored in the keychain) and new mail arrives as one headers-only entry every few minutes, sorted into "needs you / can draft / FYI". Read-only: nothing is ever sent or deleted. Slack is next. See [Feeds](docs/feeds.md).
 - **Your look.** The Underthread palette in coffee and cream, or Ink. Night, day or follow the system, plus textures: Stitch and Leather.
 
-  <p align="center"><img src="docs/img/textures.gif" alt="Switching textures in Settings: off, Stitch, Sweater, Leather, Saddle" width="720"></p>
+  <p align="center"><img src="docs/img/textures.gif" alt="Switching textures in Settings: Off, Stitch, Leather" width="720"></p>
 
 - **English or Chinese** interface, switchable in Settings.
 - **Archive.** Old finished cards move out of the way so the dashboard stays quick; search still finds them.

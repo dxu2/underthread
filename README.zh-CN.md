@@ -118,7 +118,7 @@ claude "Start the manager per manager.md"
 
 ## 和小队过一天
 
-<p align="center"><img src="docs/img/hero-home.png" alt="小组件首页：等你处理、正在干活、新回复、今日完成、本周、每日、最近媒体" width="820"></p>
+<p align="center"><img src="docs/img/hero-home.png" alt="小组件首页：团队交接、等你处理、用量、正在干活、今日完成、本周、每日" width="820"></p>
 
 **09:10 · 张口就来。** 在聊天里打一句话。管家回你，一张新卡出现，有个队员开始干活。不用填表，不用选模板。
 
@@ -155,7 +155,7 @@ claude "Start the manager per manager.md"
 - **邮件进管家的收件箱。** 在「设置 → 连接」里连上 Gmail（应用专用密码，存在钥匙串里），新邮件每隔几分钟汇成一条只有标题的消息，分成「要你处理 / 可起草 / 知悉」。只读：什么都不会发出或删除。Slack 随后支持。见 [Feeds](docs/feeds.md)（英文）。
 - **换个样子。** Underthread 的咖啡奶油配色，或者 Ink 黑玻璃；夜间、日间或跟随系统；再叠一层质感：针脚、软皮。
 
-  <p align="center"><img src="docs/img/textures.gif" alt="在设置里切换质感：无、针脚、毛衣、软皮、马鞍" width="720"></p>
+  <p align="center"><img src="docs/img/textures.gif" alt="在设置里切换质感：关、针脚、软皮" width="720"></p>
 
 - **中文或英文界面**，在设置里切换。
 - **自动归档。** 完成很久的卡会挪走，看板保持轻快，搜索照样找得到。
