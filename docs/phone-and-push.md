@@ -16,7 +16,7 @@ The dashboard works on a phone as a home-screen app, with push notifications for
 
 The dashboard accepts any `*.ts.net` host name. For another host name (your own reverse proxy, say), add it to `allowed_hosts` in `config.json`.
 
-**Do not use Tailscale Funnel** or any other way of putting the dashboard on the public internet. It has no login. See [SECURITY.md](../SECURITY.md).
+**Do not use Tailscale Funnel** or any other way of putting the dashboard on the public internet. It has no login. See [SECURITY.md](../.github/SECURITY.md).
 
 ## 2. Add it to your home screen
 

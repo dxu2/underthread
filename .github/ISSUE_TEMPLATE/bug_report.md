@@ -34,4 +34,4 @@ labels: bug
 
 **Screenshot** (optional)
 
-Before you send: I checked [docs/troubleshooting.md](../../docs/troubleshooting.md), and this is not a security problem (those go to [SECURITY.md](../../SECURITY.md)).
+Before you send: I checked [docs/troubleshooting.md](../../docs/troubleshooting.md), and this is not a security problem (those go to [SECURITY.md](../SECURITY.md)).

@@ -1,6 +1,6 @@
 # Underthread setup guide
 
-The long version of the README's [Try it in 5 minutes](README.md#try-it-in-5-minutes). Read that first; come here when you want to change something or something needs explaining.
+The long version of the README's [Try it in 5 minutes](../README.md#try-it-in-5-minutes). Read that first; come here when you want to change something or something needs explaining.
 
 Words used here:
 - **Steward**: the long-running Claude Code session that runs the team. Its id in files and commands is `manager`.
@@ -8,7 +8,7 @@ Words used here:
 - **Card**: one piece of work on the dashboard (called an *item* in `state.json` and `stateutil.py`).
 - `S` below is short for `python3 stateutil.py`.
 
-How the pieces fit together is in [docs/architecture.md](docs/architecture.md). Problems: [docs/troubleshooting.md](docs/troubleshooting.md).
+How the pieces fit together is in [docs/architecture.md](architecture.md). Problems: [docs/troubleshooting.md](troubleshooting.md).
 
 ---
 
@@ -37,7 +37,7 @@ On first start, `server.py` copies each template to its live name if the live fi
 | Template | Live file | What to fill in |
 |---|---|---|
 | `config.example.json` | `config.json` | See the table below |
-| `roster.example.json` | `roster.json` | Your teammates. See [docs/custom-crew.md](docs/custom-crew.md) |
+| `roster.example.json` | `roster.json` | Your teammates. See [docs/custom-crew.md](custom-crew.md) |
 | `state.example.json` | `state.json` | Nothing. It seeds four example cards you can archive |
 
 `config.json` keys (`config.example.json` holds only the first four; add the others when you need them):
@@ -101,7 +101,7 @@ The server log is `logs/server.log`.
 
 **Just looking?** `python3 server.py --demo` (same as `python3 tools/demo.py`) shows the dashboard with a crew at work, without Claude Code. It runs in a separate `.demo/` folder that is rebuilt on every start and never touches your `state.json`, `inbox.jsonl`, `work/` or `uploads/`. `PORT=8766` picks another port, `--lang zh|en` sets the language of the steward's chat lines (default: from `$LANG`), Ctrl-C stops it.
 
-**Testing a change to the dashboard?** Copy the folder and run `PORT=8799 NO_LOOPS=1 python3 server.py` in the copy, so your real `state.json` is never touched. See [CONTRIBUTING.md](CONTRIBUTING.md).
+**Testing a change to the dashboard?** Copy the folder and run `PORT=8799 NO_LOOPS=1 python3 server.py` in the copy, so your real `state.json` is never touched. See [CONTRIBUTING.md](../.github/CONTRIBUTING.md).
 
 ---
 
@@ -124,7 +124,7 @@ On startup the steward (all of this is `manager.md` section 1):
 
 The steward's status in the header turns to online once step 4 runs. Leave this terminal open; you talk to the steward through the dashboard, not here.
 
-**Monitors expire** after about 30 minutes; the steward re-arms them. If the header shows the steward offline while you have unread requests, see [troubleshooting](docs/troubleshooting.md).
+**Monitors expire** after about 30 minutes; the steward re-arms them. If the header shows the steward offline while you have unread requests, see [troubleshooting](troubleshooting.md).
 
 ---
 
@@ -149,7 +149,7 @@ With no usage feed at all, the widget says "no usage data" and these brakes cann
 ## 8. Phone, push, schedules, archive
 
 ### Phone and push
-The dashboard works as a home-screen app on iPhone and Android, with push notifications. That needs https, which the easiest way to get is Tailscale Serve. Step by step: [docs/phone-and-push.md](docs/phone-and-push.md).
+The dashboard works as a home-screen app on iPhone and Android, with push notifications. That needs https, which the easiest way to get is Tailscale Serve. Step by step: [docs/phone-and-push.md](phone-and-push.md).
 
 ### Schedules
 Tell the steward in one sentence: "remind me tomorrow at 9 to call the bank", "every weekday at 9, ask Scout for trends". It checks the parse with a dry run, confirms recurring ones with you, and creates the schedule. The **Schedules** page lists every schedule with on/off switches, the next runs and a week of history. A reminder pushes a notification; a task schedule opens a card for the right teammate.
@@ -160,7 +160,7 @@ From the command line: `S schedule add|list|show|pause|resume|rm|fire|edit` (run
 Finished cards that haven't moved for 3 days are moved from `state.json` to `archive.json` once an hour, so every poll stays small. Search still finds them. `S archive list` shows them; `S archive unarchive-all` puts everything back. Environment variables: `ARCHIVE_DAYS` (default 3), `ARCHIVE_OFF=1` to stop archiving.
 
 ### Hiring market, transfer, retire
-See [docs/custom-crew.md](docs/custom-crew.md).
+See [docs/custom-crew.md](custom-crew.md).
 
 ### Presets
 A preset swaps in a whole team. `presets/content-zh/` is a Chinese content-creator team (B站 / YouTube / 小红书).
@@ -196,7 +196,7 @@ For a teammate that makes images on your own GPU machine:
 | `tools/webpush.py` | Standard-library Web Push. `python3 tools/webpush.py selftest` checks signing (needs `openssl`) |
 | `tools/transcribe.py` | Optional voice memo transcription with whisper.cpp |
 | `tools/ghcred.py` | Optional: store a GitHub push token once (mode 600) |
-| `usage_roll.py` | Tokens per role per day, read from Claude Code's local transcripts |
+| `core/usage_roll.py` | Tokens per role per day, read from Claude Code's local transcripts |
 
 `S` itself: run `python3 stateutil.py` with no arguments for the full command list (cards, chat, questions, lessons, reports, schedules, archive, usage, handoffs).
 
@@ -206,8 +206,8 @@ For a teammate that makes images on your own GPU machine:
 
 | You changed | Needed |
 |---|---|
-| Files in `web/` | Bump the `?v=N` on that file's tag in `web/index.html`, then reload the tab |
-| `server.py`, `stateutil.py`, `schedules.py` | Restart `server.py` (the server imports `stateutil.py`) |
+| Files in `web/` | Reload the tab (the server versions every file by its content; no `?v=` to bump) |
+| `server.py`, `stateutil.py`, `core/`, `api/` | Restart `server.py` (the server imports `stateutil.py`) |
 | `roster.json` | The dashboard updates by itself. Run `python3 make_agents.py`, then restart the steward |
 | `manager.md` | Restart the steward |
 | `policy.md`, `roles/*.md`, `team.md` | Nothing. They are read on every triage or dispatch |
@@ -228,4 +228,4 @@ If you share a copy, share code and templates only. Never share `state.json`, `a
 - If the steward dies, your clicks still queue in `inbox.jsonl`. The dashboard warns you, and the next steward session handles the backlog.
 - `S inbox-ack` is what stops the steward handling an entry twice after a restart.
 - Approving a **plan** moves the card to in progress. Approving a **deliverable** closes it.
-- More in [docs/troubleshooting.md](docs/troubleshooting.md).
+- More in [docs/troubleshooting.md](troubleshooting.md).

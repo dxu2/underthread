@@ -8,7 +8,7 @@ from core.store import inbox_append, new_id, now, push_mail
 # ---------- t-schedule-backend: one-sentence schedules (state.schedules) ----------
 # The manager turns "一小时后提醒我 X" / "以后每周一 9 点跑 Y" into `schedule add`. server.py schedule_loop (30 s) calls schedules_due():
 # a due entry drops an inbox entry for the manager (kind schedule_due; imported config routines keep kind routine_due), and a reminder
-# also goes into the mailbox, which push_loop sends to the phone with no manager needed. Rule maths live in schedules.py.
+# also goes into the mailbox, which push_loop sends to the phone with no manager needed. Rule maths live in core/schedules.py.
 
 SCHED_PURGE_DAYS = 30   # soft-deleted entries are dropped after this
 

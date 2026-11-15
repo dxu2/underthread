@@ -21,7 +21,7 @@ PORT=8799 NO_LOOPS=1 python3 server.py      # http://127.0.0.1:8799
 
 ## How the code is laid out
 
-Read [docs/architecture.md](docs/architecture.md) first. In short:
+Read [docs/architecture.md](../docs/architecture.md) first. In short:
 
 | Where | What |
 |---|---|
@@ -95,8 +95,8 @@ Underthread uses semantic versioning (`VERSION`, tags `vX.Y.Z`). Within one majo
 1. Fork, branch from `main`, keep one topic per PR.
 2. Fill in the PR template: what changed, why, how you tested it, screenshots for UI changes.
 3. Run `python3 tests/run.py quick` and `python3 tests/smoke.py`; both must pass.
-4. Add a line under **Unreleased** in [CHANGELOG.md](CHANGELOG.md) for anything a user would notice, in the right part (Added, Changed, Fixed). A new migration or config key also goes into that section's **Upgrade notes**.
+4. Add a line under **Unreleased** in [CHANGELOG.md](../CHANGELOG.md) for anything a user would notice, in the right part (Added, Changed, Fixed). A new migration or config key also goes into that section's **Upgrade notes**.
 5. Make sure no personal data slipped in: no `state.json`, `config.json`, `roster.json`, `work/`, `uploads/`, logs, keys or tokens.
 
 
-By contributing you agree that your contribution is licensed under the [MIT License](LICENSE), and you agree to follow the [Code of Conduct](CODE_OF_CONDUCT.md).
+By contributing you agree that your contribution is licensed under the [MIT License](../LICENSE), and you agree to follow the [Code of Conduct](CODE_OF_CONDUCT.md).

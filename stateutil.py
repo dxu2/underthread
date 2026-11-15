@@ -31,7 +31,9 @@ if _HERE not in sys.path:   # core/ lives next to this file; tools import stateu
 
 # ---------- re-exports (t-oss-struct B1): every name below used to be defined in this file ----------
 from core import migrate as MG   # noqa: E402,F401
-import schedules as SC   # noqa: E402  (schedules.py = core/schedules.py, same module object)
+from core import schedules as SC   # noqa: E402
+sys.modules.setdefault("schedules", SC)   # t-oss-tidy: the root schedules.py shim is gone; an old `import schedules` (local extension,
+#                                          your own script that imports stateutil first) still gets core/schedules.py, same module object
 from core.paths import (ARCHIVE, INBOX, INBOX_LOCK, LOCAL, ROLES_DIR, ROOT, STATE, STATE_LOCK,  # noqa: E402,F401
                         has_local, local_path, role_md)
 from core.ext import CLI_EXT, EXT, SET_AGENT_HOOKS, UPSERT_HOOKS, ext_dirs, load_ext  # noqa: E402,F401

@@ -22,7 +22,7 @@ Start with the log: `tail -n 80 logs/server.log`. Most problems show up there fi
 | The phone can't open the dashboard | The dashboard only listens on `127.0.0.1` | Use Tailscale Serve: [phone-and-push.md](phone-and-push.md) |
 | Push notifications don't arrive | Not served over https, or on iPhone not opened from the home screen | [phone-and-push.md](phone-and-push.md#if-push-doesnt-work) |
 | ComfyUI shows offline | SSH tunnel down | `python3 tools/comfy.py tunnel`, then `python3 tools/comfy.py ping` |
-| No ComfyUI line in the status popover at all | `config.json` has no `comfy` block (that's the default) | Only needed for image generation: [SETUP-GUIDE section 9](../SETUP-GUIDE.md#9-comfyui-optional) |
+| No ComfyUI line in the status popover at all | `config.json` has no `comfy` block (that's the default) | Only needed for image generation: [SETUP-GUIDE section 9](setup-guide.md#9-comfyui-optional) |
 | The dashboard stops when you close the terminal (Linux) | `tools/install_service.sh` is macOS only | Run `bash tools/keepalive.sh` instead (for example under `nohup`, `tmux` or your own systemd user unit) |
 | A finished card disappeared | It was archived after 3 quiet days | Search still finds it. `python3 stateutil.py archive list`; `archive unarchive-all` restores everything |
 | `state.json` looks broken | Hand edits, or a crash mid-write elsewhere | Don't edit it by hand. Stop the server and the steward, keep a copy, and open an issue with the server log |

@@ -17,7 +17,7 @@ module.exports = {
     await c.shot("list");
     const btns = await p.evaluate(() => [...document.querySelectorAll(".docs [data-doc]")].map(b => b.dataset.doc));
     /* t-phone-docs v2: SETUP-GUIDE.md has a wide table that stretched the 1fr column past the screen on the iPhone; v1 only opened a table-free doc */
-    const pick = btns.find(b => /SETUP-GUIDE/.test(b)) || btns[Math.min(4, btns.length - 1)];
+    const pick = btns.find(b => /setup-guide/i.test(b)) || btns[Math.min(4, btns.length - 1)];
     await c.tap(`.docs [data-doc="${pick}"]`); await c.sleep(2500);
     const a = await vis(p);
     c.check(`tap ${pick}: its text is on screen`, a.md && a.inView, a);

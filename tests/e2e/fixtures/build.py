@@ -91,7 +91,7 @@ def build(out):
     demo = _demo()
     work = tempfile.mkdtemp(prefix="rt-fixture-")
     try:
-        for f in ("stateutil.py", "schedules.py"):
+        for f in ("stateutil.py",):
             shutil.copy(os.path.join(ROOT, f), work)
         shutil.copytree(os.path.join(ROOT, "core"), os.path.join(work, "core"), ignore=shutil.ignore_patterns("__pycache__"))
         shutil.copy(os.path.join(ROOT, "roster.example.json"), os.path.join(work, "roster.json"))

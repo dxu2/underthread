@@ -7,7 +7,7 @@ from api.router import route
 
 
 DOC_DIRS = ["roles", "docs", ".claude/agents", ".claude/skills", "local/roles"]   # local/: your own layer (stateutil.LOCAL)
-DOC_FILES = ["SETUP-GUIDE.md", "team.md", "policy.md", "manager.md", "manager-handoff.md",
+DOC_FILES = ["team.md", "policy.md", "manager.md", "manager-handoff.md",
              "local/manager.md", "local/dispatch.md", "local/team.md", "local/policy.md", "local/CLAUDE.md"]
 
 

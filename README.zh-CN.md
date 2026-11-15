@@ -108,7 +108,7 @@ claude "Start the manager per manager.md"
 **4. 说句话。** 在聊天框里打一句需求，就像给同事发消息。
 *你应该看到：* 出现一张新卡，某个队员的徽章亮起来，开始干活。
 
-哪一步不对？看[排障](docs/troubleshooting.md)。完整安装（手机 App、推送、ComfyUI）见 [SETUP-GUIDE.md](SETUP-GUIDE.md)（英文）。
+哪一步不对？看[排障](docs/troubleshooting.md)。完整安装（手机 App、推送、ComfyUI）见 [docs/setup-guide.md](docs/setup-guide.md)（英文）。
 
 **以后怎么升级。** 有新版时，设置 → 系统 → 更新 会提示；点「更新」，会先在一份数据副本上试跑，再换到新版并重启看板，卡片、设置和 `local/` 都原样保留。「退回」回到更新前的版本。也可以在终端跑 `python3 tools/update.py check | apply | rollback`。前提是用上面的 `git clone` 安装：下载 zip 解压的目录不能自己升级（重新 clone 一份，把 `local/` 和 `*.json` 数据文件拷过去）。
 
@@ -185,7 +185,7 @@ Underthread 不在乎你做什么工作。管家、卡片、审核、规则、�
 4. **数据留在家里。** 卡片、聊天、上传、日志、记忆都是项目目录里的文件，全部被 git 忽略。看板只监听 `127.0.0.1`。推送密钥和 token 在本机生成、权限 600，不会发给网页。用量数据从本机的 Claude Code 读取，也只留在本机。
 5. **实话实说。** 每次交付都写明有几成把握、哪些没核实。
 
-更多见 [SECURITY.md](SECURITY.md)（英文）。
+更多见 [.github/SECURITY.md](.github/SECURITY.md)（英文）。
 
 ---
 
@@ -219,13 +219,13 @@ flowchart LR
 
 | | |
 |---|---|
-| [SETUP-GUIDE.md](SETUP-GUIDE.md) | 完整安装：配置、roster、重启、ComfyUI、工具 |
+| [docs/setup-guide.md](docs/setup-guide.md) | 完整安装：配置、roster、重启、ComfyUI、工具 |
 | [docs/architecture.md](docs/architecture.md) | 各部分怎么配合、卡片生命周期、记忆 |
 | [docs/custom-crew.md](docs/custom-crew.md) | 增加、修改、退休队员 |
 | [docs/phone-and-push.md](docs/phone-and-push.md) | 手机 App、Tailscale Serve、推送 |
 | [docs/troubleshooting.md](docs/troubleshooting.md) | 排障和常见问题 |
-| [CONTRIBUTING.md](CONTRIBUTING.md) | 参与开发 |
-| [SECURITY.md](SECURITY.md) | 安全模型和漏洞报告 |
+| [.github/CONTRIBUTING.md](.github/CONTRIBUTING.md) | 参与开发 |
+| [.github/SECURITY.md](.github/SECURITY.md) | 安全模型和漏洞报告 |
 | [CHANGELOG.md](CHANGELOG.md) | 更新记录 |
 
 ---

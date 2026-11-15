@@ -92,5 +92,5 @@ All of these except `roles/`, `policy.md` and `team.md` are ignored by git.
 
 ## Safety lines
 
-- The dashboard binds to `127.0.0.1`, checks the `Host` header (localhost, this machine's names, `*.ts.net`, plus `allowed_hosts`), and rejects cross-site POSTs. See [SECURITY.md](../SECURITY.md).
+- The dashboard binds to `127.0.0.1`, checks the `Host` header (localhost, this machine's names, `*.ts.net`, plus `allowed_hosts`), and rejects cross-site POSTs. See [SECURITY.md](../.github/SECURITY.md).
 - Teammates produce drafts only and never post anywhere. Big work needs an approved plan. These rules are written into every agent file by `make_agents.py`.

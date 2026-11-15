@@ -12,7 +12,7 @@ Underthread runs on one machine for one person. Its safety rests on a few lines:
 
 ## What you should do
 
-- **Never expose the dashboard to the internet.** No port forwarding, no Tailscale Funnel, no public reverse proxy. For your phone, use a private network such as Tailscale Serve ([docs/phone-and-push.md](docs/phone-and-push.md)).
+- **Never expose the dashboard to the internet.** No port forwarding, no Tailscale Funnel, no public reverse proxy. For your phone, use a private network such as Tailscale Serve ([docs/phone-and-push.md](../docs/phone-and-push.md)).
 - Keep `.claude/settings.json` permissions narrow. They decide which commands teammates may run without asking you.
 - Don't share `state.json`, `inbox.jsonl`, `work/`, `uploads/`, `logs/`, `config.json`, keys or agent memories. `.gitignore` keeps them out of git.
 - Remember that the work runs through Claude Code, so card contents and files the teammates read are sent to Anthropic like any Claude Code session.

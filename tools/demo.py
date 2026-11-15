@@ -50,7 +50,7 @@ def who(rid):
     except (OSError, ValueError, AttributeError):
         return rid
 
-COPY = ["server.py", "stateutil.py", "schedules.py", "usage_roll.py", "make_agents.py", "team.md", "policy.md", "manager.md"]
+COPY = ["server.py", "stateutil.py", "make_agents.py", "team.md", "policy.md", "manager.md"]
 LINK = ["web", "avatars", "templates", "tools"]
 
 # Jobs the script cycles through: (owner, kind, category, title zh, title en, summary en, log lines, draft)

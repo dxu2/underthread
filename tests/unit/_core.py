@@ -6,7 +6,7 @@ import sys
 import tempfile
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-CORE = ("stateutil.py", "schedules.py")
+CORE = ("stateutil.py",)   # t-oss-tidy: no root schedules.py; `import schedules` is the alias stateutil sets
 MODS = ("stateutil", "schedules", "core")   # and every core.* submodule: core/ is copied too, the copy must import its own
 
 

@@ -27,8 +27,9 @@ import time
 def _agent_role(t):
     """A subagent's agentType -> roster id: the roster's agent_name first (installs may use another prefix), then "underthread-<id>"."""
     try:
-        from core import config as C   # t-oss-struct B1 (server.py and this file sit next to core/)
-        for r in C.roster(os.path.dirname(os.path.abspath(__file__))).get("roles", []):
+        from core import config as C
+        from core.paths import ROOT   # t-oss-tidy: this file moved into core/; the roster is still in the project root
+        for r in C.roster(ROOT).get("roles", []):
             if t and r.get("agent_name") == t:
                 return r["id"]
     except (OSError, ValueError, KeyError, ImportError):

@@ -1,7 +1,7 @@
 """t-schedule-backend: one-sentence schedules (state.schedules). Pure helpers: rule parsing, next-run maths, descriptions.
 
 No file I/O here. core/schedule_store.py owns the state writes (schedules_due, schedule_*), stateutil.py the schedule commands,
-and server.py runs schedule_loop. Moved from the root schedules.py (t-oss-struct B1), which still imports as this module.
+and server.py runs schedule_loop. Moved from the root schedules.py (t-oss-struct B1); since t-oss-tidy `import schedules` is an alias stateutil.py sets.
 
 Rules (stored as dicts, written on the command line as a short string):
   once 2026-11-08 02:50 | in 90m / in 1h / in 2d   -> {"type": "once", "at": "2026-11-08T02:50"}

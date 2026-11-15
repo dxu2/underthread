@@ -72,7 +72,7 @@ CONFIG = {}   # filled in place by server.main()
 _comfy = {"online": None, "at": None, "configured": False}   # configured: config.json has a "comfy" block (otherwise the UI hides the row); set in load_config
 START = time.time()  # t-imp-p4: server uptime for /api/health
 try:   # t-home-usage: per-role token rollup; a broken module must not stop the dashboard
-    import usage_roll
+    from core import usage_roll   # t-oss-tidy: moved from the project root
     USAGE = usage_roll.Roll(ROOT)
 except Exception as e:  # noqa: BLE001
     print("usage_roll:", e)

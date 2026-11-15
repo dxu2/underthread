@@ -27,10 +27,6 @@
   "body": [
    {
     "group": "core",
-    "path": "SETUP-GUIDE.md"
-   },
-   {
-    "group": "core",
     "path": "team.md"
    },
    {
@@ -92,6 +88,10 @@
    {
     "group": "docs",
     "path": "docs/phone-and-push.md"
+   },
+   {
+    "group": "docs",
+    "path": "docs/setup-guide.md"
    },
    {
     "group": "docs",

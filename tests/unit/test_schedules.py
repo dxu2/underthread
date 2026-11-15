@@ -1,4 +1,4 @@
-"""schedules.py: rule parsing and the next-run maths."""
+"""core/schedules.py: rule parsing and the next-run maths."""
 import datetime as dt
 import unittest
 

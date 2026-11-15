@@ -108,7 +108,7 @@ There's nothing to copy: the repository ships `.claude/settings.json`. It lets t
 **4. Say something.** Type a request into the chat, the way you'd text a colleague.
 *You should see:* a new card appears, and a teammate's patch lights up as they start on it.
 
-Something not working? See [Troubleshooting](docs/troubleshooting.md). The long version of setup, including the phone app, push notifications and ComfyUI, is in [SETUP-GUIDE.md](SETUP-GUIDE.md).
+Something not working? See [Troubleshooting](docs/troubleshooting.md). The long version of setup, including the phone app, push notifications and ComfyUI, is in [docs/setup-guide.md](docs/setup-guide.md).
 
 **Updating later.** Settings → System → Updates says when a new version is out; click **Update**, and it is tried on a copy of your data first, then the dashboard restarts on the new version with your cards, settings and `local/` layer as they were. **Go back** returns to the version before. Or from a terminal: `python3 tools/update.py check | apply | rollback`. This needs the `git clone` install above: a folder downloaded as a zip cannot update itself (clone again and copy `local/` and your `*.json` data files over).
 
@@ -185,7 +185,7 @@ Full guide, with every roster field and a worked example: [docs/custom-crew.md](
 4. **Your data stays home.** Cards, chats, uploads, logs and memories are files in the project folder, all ignored by git. The dashboard only listens on `127.0.0.1`. Push keys and tokens are created on your machine with mode 600 and never sent to the page. Usage numbers are read from Claude Code on this machine and stay here.
 5. **Straight answers.** Every delivery says how sure the teammate is and what they didn't check.
 
-More in [SECURITY.md](SECURITY.md).
+More in [.github/SECURITY.md](.github/SECURITY.md).
 
 ---
 
@@ -217,13 +217,13 @@ The full loop, the card lifecycle and where memory lives: [docs/architecture.md]
 
 | | |
 |---|---|
-| [SETUP-GUIDE.md](SETUP-GUIDE.md) | Full setup: config, roster, restarts, ComfyUI, tools |
+| [docs/setup-guide.md](docs/setup-guide.md) | Full setup: config, roster, restarts, ComfyUI, tools |
 | [docs/architecture.md](docs/architecture.md) | How the pieces talk, card lifecycle, memory |
 | [docs/custom-crew.md](docs/custom-crew.md) | Add, change or retire teammates |
 | [docs/phone-and-push.md](docs/phone-and-push.md) | Phone app, Tailscale Serve, push notifications |
 | [docs/troubleshooting.md](docs/troubleshooting.md) | Troubleshooting and FAQ |
-| [CONTRIBUTING.md](CONTRIBUTING.md) | Working on Underthread itself |
-| [SECURITY.md](SECURITY.md) | Threat model and how to report a problem |
+| [.github/CONTRIBUTING.md](.github/CONTRIBUTING.md) | Working on Underthread itself |
+| [.github/SECURITY.md](.github/SECURITY.md) | Threat model and how to report a problem |
 | [CHANGELOG.md](CHANGELOG.md) | What changed and when |
 
 ---

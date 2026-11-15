@@ -80,7 +80,7 @@ def _health_route(h, u, q):
 
 
 @route("GET", "/api/usage")
-def _usage(h, u, q):   # t-home-usage: per-role tokens today from the local transcripts (usage_roll.py, 60 s cache)
+def _usage(h, u, q):   # t-home-usage: per-role tokens today from the local transcripts (core/usage_roll.py, 60 s cache)
     if not USAGE:
         return h._send(503, {"error": "usage_roll not loaded"})
     d = q.get("day", [""])[0]
