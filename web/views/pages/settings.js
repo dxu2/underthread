@@ -58,7 +58,69 @@ function stSystem() {
   const rows = stRow(en ? "System status" : "系统状态", `<span class="sy-sum-t ${SY.lv}">${esc(SY.txt)}</span>`, `<em class="st-go">›</em>`, `data-set="status"`)
     + (typeof ghOpen === "function" ? stRow(en ? "GitHub push token" : "GitHub 推送令牌", esc(ghLabel()), `<em class="st-go">›</em>`, `data-set="ghtok"`) : "")
     + stRow(en ? "Wake the manager" : "唤醒管家", en ? "Drops a ping in the inbox; use it when the manager is asleep or offline" : "往收件箱发一条 ping，管家休眠或离线时用", `<em class="st-act" aria-hidden="true">${en ? "Ping" : "叫醒"}</em>`, `data-h="wake"`);   /* t-ui-fix-r6 R6-07: acts at once, so an action pill instead of the 「›」 that the dialog rows use */
-  return stSec(en ? "System" : "系统", rows) + `<section class="st-sec st-ru"><h4>${en ? "Usage by role · today" : "各角色用量 · 今天"}</h4>${ruHTML(99, { tot: true, quota: true })}</section>`;
+  return stSec(en ? "System" : "系统", rows) + stUpdate(en) + `<section class="st-sec st-ru"><h4>${en ? "Usage by role · today" : "各角色用量 · 今天"}</h4>${ruHTML(99, { tot: true, quota: true })}</section>`;
+}
+/* t-oss-struct S5: 系统 -> 更新. GET /api/update (every 60 s, every 2.5 s while an update runs); the buttons POST /api/update {op}
+   and tools/update.py does the work in its own process (the server restarts under it; the "Dashboard updated" pill then reloads the page). */
+const UPD = { d: null, t: 0, busy: false, notes: false };
+function loadUpdate(age) {
+  if (UPD.busy || Date.now() - UPD.t < age) return;
+  UPD.busy = true;
+  fetch("/api/update").then(r => r.ok ? r.json() : null).then(d => {
+    if (!d) return;
+    const ch = JSON.stringify(d) !== JSON.stringify(UPD.d); UPD.d = d; UPD.t = Date.now();
+    if (ch && UI.page === "settings" && UI.setTab === "system") renderPage();
+  }).catch(() => { }).finally(() => { UPD.busy = false; });
+}
+const updWhy = (b, en) => (b || []).map(x => x.code === "call" ? (en ? "a voice call is on" : "正在语音通话")
+  : x.code === "agents" ? (en ? `working now: ${x.text}` : `${x.text} 正在干活`) : x.code === "running" ? (en ? "an update is running" : "正在更新")
+  : x.code === "zip" ? (en ? "not a git install" : "不是 git 安装") : x.text).join(en ? "; " : "；");
+const updHeads = t => (String(t || "").match(/^- \*\*[^*]+\*\*/gm) || []).map(s => s.slice(4, -2)).slice(0, 12);
+function stUpdate(en) {
+  const d = UPD.d, run = d && d.run && !d.run.done ? d.run : null;
+  loadUpdate(run ? 2500 : 60000);
+  if (!d) return "";
+  const T = (zh, e) => en ? e : zh, H = s => esc(String(s || ""));
+  if (!d.git) return stSec(T("更新", "Updates"), stRow(`${T("当前版本", "Version")} v${H(d.version)}`,
+    T("这份不是用 git 装的，不能一键更新；请用 git clone 重新装一份（见 README），再把 local/ 和数据文件拷过去", "This copy was not installed with git, so it cannot update itself. Reinstall with git clone (see README) and copy local/ and your data files over"), "", "", "div"));
+  const c = d.check || {}, why = updWhy((d.blockers || []).filter(x => x.code !== "running"), en), dis = why || run ? ' aria-disabled="true"' : "";
+  const when = c.at ? c.at.slice(5, 16).replace("T", " ") : "";
+  const sub = c.error ? `<span class="upd-err">${T("上次检查没成功：", "Last check failed: ")}${H(c.error)}</span>`
+    : c.at ? `${T("上次检查 ", "Checked ")}${when}${d.available ? "" : T(" · 已是最新", " · up to date")}` : T("还没检查过", "Not checked yet");
+  let rows = stRow(`${T("当前版本", "Version")} v${H(d.version)}`, `<span class="upd-c">${H(d.commit)}</span> · ${sub}`,
+    `<em class="st-act" aria-hidden="true">${T("检查更新", "Check")}</em>`, `data-upd="check"` + (run ? ' aria-disabled="true"' : ""));
+  if (run) {
+    rows += `<div class="st-row upd-run" role="status"><span class="st-tx"><b>${run.op === "rollback" ? T("正在回退…", "Going back…") : T("正在更新…", "Updating…")}</b><small>${H(run.step)}</small></span><span class="upd-spin" aria-hidden="true"></span></div>`;
+  } else if (d.available) {
+    rows += stRow(`${T("有新版 ", "New version ")}v${H(c.latest)}`, why ? `${T("先等一下：", "Waiting: ")}${H(why)}`
+      : T("先在一份副本上试跑，再换到新版；数据、设置和 local/ 都保留，出问题会自己退回", "Tried on a copy first, then switched; your data, settings and local/ stay, and it goes back by itself if anything fails"),
+      `<em class="st-act" aria-hidden="true">${T("更新", "Update")}</em>`, `data-upd="apply"` + dis);
+    const notes = (d.notes || []).map(n => `<li><b>v${H(n.version)}</b> <span>${H(n.date)}</span>${updHeads(n.text).map(h => `<i>${H(h)}</i>`).join("")}</li>`).join("");
+    if (notes) rows += `<div class="upd-notes${UPD.notes ? " open" : ""}"><button type="button" class="upd-nt" data-upd-notes aria-expanded="${UPD.notes}">${T("这次更新了什么", "What's new")} <em aria-hidden="true">›</em></button>${UPD.notes ? `<ul>${notes}</ul>` : ""}</div>`;
+  }
+  if (!run && d.rollback) rows += stRow(`${T("退回 ", "Go back to ")}v${H(d.rollback.version)}`, why ? `${T("先等一下：", "Waiting: ")}${H(why)}`
+    : T("代码回到上一个版本，数据不动", "The code goes back to the previous version; your data stays"), `<em class="st-act" aria-hidden="true">${T("退回", "Go back")}</em>`, `data-upd="rollback"` + dis);
+  const r = d.run;
+  if (!run && r && r.done && r.message && r.ended && Date.now() - Date.parse(r.ended) < 86400000)
+    rows += `<div class="upd-last ${r.ok ? "ok" : "bad"}">${r.ok ? "✓" : "!"} ${H(r.ended.slice(5, 16).replace("T", " "))} · ${H(r.message)}</div>`;
+  return stSec(T("更新", "Updates"), rows);
+}
+function updClick(e) {
+  const n = e.target.closest("[data-upd-notes]");
+  if (n) { UPD.notes = !UPD.notes; renderPage(); return; }
+  const b = e.target.closest("[data-upd]"); if (!b || b.getAttribute("aria-disabled") === "true") return;
+  const op = b.dataset.upd, en = UI.lang === "en", d = UPD.d || {};
+  if (op === "apply" && !confirm(en ? `Update to v${(d.check || {}).latest}? The dashboard restarts once (a few seconds).` : `更新到 v${(d.check || {}).latest}？看板会重启一次（几秒钟）。`)) return;
+  if (op === "rollback" && !confirm(en ? `Go back to v${(d.rollback || {}).version}? The dashboard restarts once.` : `退回到 v${(d.rollback || {}).version}？看板会重启一次。`)) return;
+  b.setAttribute("aria-disabled", "true");
+  fetch("/api/update", { method: "POST", headers: { "Content-Type": "application/json", "X-Underthread": "1" }, body: JSON.stringify({ op }) })
+    .then(r => r.json().then(j => ({ ok: r.ok, j })))
+    .then(({ ok, j }) => {
+      if (!ok) toast((en ? "Not now: " : "现在不行：") + (j.blockers ? updWhy(j.blockers, en) : j.error || ""), true);
+      else toast(op === "check" ? (en ? "Checking…" : "正在检查…") : op === "apply" ? (en ? "Updating… the dashboard restarts in a moment" : "开始更新…看板稍后会重启") : (en ? "Going back…" : "开始退回…"));
+    })
+    .catch(err => toast(String(err), true))
+    .finally(() => { UPD.t = 0; setTimeout(() => loadUpdate(0), 800); });
 }
 /* t-power-toggle: 省电模式 (rt.powerSave, kept by fx.js). The click flips the switch in place (no re-render) so the knob slide and the caption fade are seen. */
 const psNow = () => !(window.FX && FX.power) || FX.power.isOn();
@@ -107,6 +169,7 @@ const plSL = {};   // polls re-render the page; keep each sideways row where you
 
 function wireSettings() {
   document.addEventListener("click", e => { const b = e.target.closest("[data-settab]"); if (b) setTab(b.dataset.settab); });
+  document.addEventListener("click", updClick);
   /* t-nav-shoot: 制作 sub tabs. Fade the page out (90 ms), switch, slide the new page in from the side you moved to; reduced motion = just switch. */
   document.addEventListener("click", e => {
     const b = e.target.closest("[data-stutab]"); if (!b) return;
@@ -199,4 +262,4 @@ function wireSettings() {
   document.addEventListener("click", e => { const g = e.target.closest("[data-ui12go]"); if (g) { e.preventDefault(); go(g.dataset.ui12go); } });
 }
 
-export { themeMode, RMQ_S, ST_L, setTab, stRow, stSeg, stSw, stSec, stGeneral, stSystem, psNow, psSub, spOn, spSub, utNow, stageSaved, stageSub, utRow, TEXTURES, texNow, texRow, spRow, spPaint, RI8, plFade, plSL, wireSettings };
+export { UPD, loadUpdate, stUpdate, themeMode, RMQ_S, ST_L, setTab, stRow, stSeg, stSw, stSec, stGeneral, stSystem, psNow, psSub, spOn, spSub, utNow, stageSaved, stageSub, utRow, TEXTURES, texNow, texRow, spRow, spPaint, RI8, plFade, plSL, wireSettings };

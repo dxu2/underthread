@@ -110,6 +110,8 @@ claude "Start the manager per manager.md"
 
 哪一步不对？看[排障](docs/troubleshooting.md)。完整安装（手机 App、推送、ComfyUI）见 [SETUP-GUIDE.md](SETUP-GUIDE.md)（英文）。
 
+**以后怎么升级。** 有新版时，设置 → 系统 → 更新 会提示；点「更新」，会先在一份数据副本上试跑，再换到新版并重启看板，卡片、设置和 `local/` 都原样保留。「退回」回到更新前的版本。也可以在终端跑 `python3 tools/update.py check | apply | rollback`。前提是用上面的 `git clone` 安装：下载 zip 解压的目录不能自己升级（重新 clone 一份，把 `local/` 和 `*.json` 数据文件拷过去）。
+
 > **想改看板本身？** 先复制一份目录，在副本里跑 `PORT=8799 NO_LOOPS=1 python3 server.py`，别碰你真实的卡片。
 
 ---

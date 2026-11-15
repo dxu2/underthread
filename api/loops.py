@@ -12,6 +12,7 @@ from api.routes.push import PUSH_SUBS, push_tick
 from api.routes.schedules import schedules_fire
 from api.routes.snooze import snooze_tick
 from api.routes.state import sync_roster
+from api.routes.update import run_check as update_run_check
 
 
 def comfy_probe_loop():
@@ -110,6 +111,18 @@ def wake_loop():
             print("wake_loop:", e)
 
 
+def update_check_loop():
+    """t-oss-struct S5: once a day, `tools/update.py check` (fetch the release tags) for Settings -> Updates.
+    config update.check = false turns it off. First run 10 minutes after the start, so a restart loop never hammers the remote."""
+    time.sleep(600)
+    while True:
+        try:
+            update_run_check()
+        except Exception as e:
+            print("update_check_loop:", e)
+        time.sleep(3600)
+
+
 def roster_watch_loop():
     while True:
         try:
@@ -119,7 +132,7 @@ def roster_watch_loop():
         time.sleep(5)
 
 
-LOOPS = (comfy_probe_loop, report_loop, roster_watch_loop, push_loop, wake_loop, schedule_loop, snooze_loop)
+LOOPS = (comfy_probe_loop, report_loop, roster_watch_loop, push_loop, wake_loop, schedule_loop, snooze_loop, update_check_loop)
 
 
 def start():

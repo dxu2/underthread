@@ -57,6 +57,19 @@ class Api(unittest.TestCase):
         self.assertTrue(any(e.get("text") == "api test comment" for e in it["thread"]))
         self.assertTrue(any(e.get("item") == "fx-5" and e.get("kind") == "comment" for e in self.s.inbox()))
 
+    def test_update_page_on_a_copy_without_git(self):
+        v = self.s.json("/api/update")
+        self.assertFalse(v["git"])
+        self.assertEqual([b["code"] for b in v["blockers"]], ["zip"])
+        self.assertIsNone(v["rollback"])
+        o = f"http://127.0.0.1:{self.s.port}"
+        hd = {"Content-Type": "application/json", "Origin": o, "X-Underthread": "1"}
+        c, _ = self.s.req("/api/update", "POST", {"op": "nuke"}, hd)
+        self.assertEqual(c, 400)
+        c, b = self.s.req("/api/update", "POST", {"op": "apply"}, hd)
+        self.assertEqual(c, 409, b)
+        self.assertEqual(json.loads(b)["blockers"][0]["code"], "zip")
+
     def test_stateutil_write_shows_up_with_a_higher_rev(self):
         rev = self.s.json("/api/state")["meta"]["rev"]
         self.s.su("say-mgr", "api test line")

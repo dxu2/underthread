@@ -29,6 +29,7 @@ DEFAULTS = {
     "routines": [],          # legacy: imported once into schedules (stateutil.schedules_import_routines)
     "allowed_hosts": [],     # extra Host names the server answers (e.g. a Tailscale name); 127.0.0.1 / localhost always work
     "legacy_headers": [],    # extra CSRF header names accepted besides X-Underthread
+    "update": {"remote": "", "check": True},   # tools/update.py: git remote to update from ("" = upstream / origin), daily check
 }
 EXAMPLE = {"owner": {"display_name": "<your name>"}}   # placeholders shown only in config.example.json
 ROLE_DEFAULTS = {"enabled": True}

@@ -51,6 +51,7 @@ ROUTES = [
     ("GET", "/api/secret/github", "", "api.routes.secret"), ("GET", "/api/state", "", "api.routes.state"),
     ("GET", "/api/templates", "", "api.routes.hr"), ("GET", "/api/thumb", "", "api.routes.media"),
     ("GET", "/api/tpl-av", "", "api.routes.hr"), ("GET", "/api/transfer-plan", "", "api.routes.hr"),
+    ("GET", "/api/update", "", "api.routes.update"), ("POST", "/api/update", "", "api.routes.update"),
     ("GET", "/api/usage", "", "api.routes.health"), ("GET", "/api/voice/*", "", "api.routes.voice"),
     ("GET", "/index.html", "", "api.routes.web"), ("GET", "/manifest.webmanifest", "", "api.routes.web"),
     ("GET", "/sw.js", "", "api.routes.web"),
@@ -117,7 +118,7 @@ class ServerTables(unittest.TestCase):
 
     def test_loops(self):
         self.assertEqual(self.info["loops"], ["comfy_probe_loop", "report_loop", "roster_watch_loop", "push_loop", "wake_loop",
-                                              "schedule_loop", "snooze_loop"])
+                                              "schedule_loop", "snooze_loop", "update_check_loop"])
 
     def test_import_rule(self):
         """core/ never imports api/ or server; api/ never imports server (server.py is the entry point, not a library)."""

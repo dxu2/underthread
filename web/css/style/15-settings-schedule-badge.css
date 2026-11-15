@@ -190,3 +190,24 @@ html[data-theme="light"] .brand img.wm-d, html[data-theme="white"] .brand img.wm
 html[data-theme="light"] .brand img.wm-l, html[data-theme="white"] .brand img.wm-l { display: block; }
 @media (min-width: 761px) and (max-width: 1200px) { .brand img { height: 24px; } }
 
+/* t-oss-struct S5: 系统 -> 更新 (web/views/pages/settings.js stUpdate) */
+.st-row[aria-disabled="true"] { cursor: default; }
+button.st-row[aria-disabled="true"] .st-act { opacity: .45; }
+button.st-row[aria-disabled="true"]:hover, button.st-row[aria-disabled="true"]:hover .st-act { background: none; }
+.upd-c { font-family: var(--f-mono, ui-monospace, monospace); }
+.upd-err { color: var(--warn); }
+.upd-spin { flex: none; width: 18px; height: 18px; border-radius: 50%; border: 2px solid color-mix(in srgb, var(--accent) 25%, transparent); border-top-color: var(--accent); animation: upd-spin .9s linear infinite; }
+@keyframes upd-spin { to { transform: rotate(360deg); } }
+.upd-notes { padding: 2px 16px 10px; }
+.upd-nt { border: 0; background: none; padding: 4px 0; font: inherit; font-size: var(--fs-12); color: var(--accent); cursor: pointer; transition: color .2s; }
+.upd-nt:hover { color: var(--ink); }
+.upd-nt em { display: inline-block; font-style: normal; transition: transform .2s var(--ease); }
+.upd-notes.open .upd-nt em { transform: rotate(90deg); }
+.upd-notes ul { margin: 4px 0 0; padding: 0; list-style: none; font-size: var(--fs-12); color: var(--dim); animation: upd-in .2s var(--ease); }
+.upd-notes li { margin: 0 0 8px; }
+.upd-notes li b { color: var(--ink2); font-weight: 600; }
+.upd-notes li i { display: block; font-style: normal; padding-left: 10px; line-height: 1.6; }
+@keyframes upd-in { from { opacity: 0; transform: translateY(-3px); } }
+.upd-last { padding: 6px 16px 12px; font-size: var(--fs-12); color: var(--dim); }
+.upd-last.bad { color: var(--warn); }
+@media (prefers-reduced-motion: reduce) { .upd-spin { animation-duration: 3s; } .upd-notes ul { animation: none; } }

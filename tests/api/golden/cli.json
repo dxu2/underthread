@@ -21,12 +21,12 @@
  },
  "config_show": {
   "err": [],
-  "out": "owner.display_name           \"You\"                                                        你改的\nport                         8765                                                         默认\nreport_time                  \"18:00\"                                                      你改的\nroutines                     []                                                           你改的\nallowed_hosts                []                                                           默认\nlegacy_headers               []                                                           默认\n",
+  "out": "owner.display_name           \"You\"                                                        你改的\nport                         8765                                                         默认\nreport_time                  \"18:00\"                                                      你改的\nroutines                     []                                                           你改的\nallowed_hosts                []                                                           默认\nlegacy_headers               []                                                           默认\nupdate.remote                \"\"                                                           默认\nupdate.check                 true                                                         默认\n",
   "rc": 0
  },
  "config_show_json": {
   "err": [],
-  "out": "[\n {\n  \"key\": \"owner.display_name\",\n  \"value\": \"You\",\n  \"from\": \"yours\"\n },\n {\n  \"key\": \"port\",\n  \"value\": 8765,\n  \"from\": \"default\"\n },\n {\n  \"key\": \"report_time\",\n  \"value\": \"18:00\",\n  \"from\": \"yours\"\n },\n {\n  \"key\": \"routines\",\n  \"value\": [],\n  \"from\": \"yours\"\n },\n {\n  \"key\": \"allowed_hosts\",\n  \"value\": [],\n  \"from\": \"default\"\n },\n {\n  \"key\": \"legacy_headers\",\n  \"value\": [],\n  \"from\": \"default\"\n }\n]\n",
+  "out": "[\n {\n  \"key\": \"owner.display_name\",\n  \"value\": \"You\",\n  \"from\": \"yours\"\n },\n {\n  \"key\": \"port\",\n  \"value\": 8765,\n  \"from\": \"default\"\n },\n {\n  \"key\": \"report_time\",\n  \"value\": \"18:00\",\n  \"from\": \"yours\"\n },\n {\n  \"key\": \"routines\",\n  \"value\": [],\n  \"from\": \"yours\"\n },\n {\n  \"key\": \"allowed_hosts\",\n  \"value\": [],\n  \"from\": \"default\"\n },\n {\n  \"key\": \"legacy_headers\",\n  \"value\": [],\n  \"from\": \"default\"\n },\n {\n  \"key\": \"update.remote\",\n  \"value\": \"\",\n  \"from\": \"default\"\n },\n {\n  \"key\": \"update.check\",\n  \"value\": true,\n  \"from\": \"default\"\n }\n]\n",
   "rc": 0
  },
  "dm_cli": {

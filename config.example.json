@@ -7,5 +7,9 @@
   "report_time": "18:00",
   "routines": [],
   "allowed_hosts": [],
-  "legacy_headers": []
+  "legacy_headers": [],
+  "update": {
+    "remote": "",
+    "check": true
+  }
 }
