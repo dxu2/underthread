@@ -48,6 +48,9 @@ _VH = {}   # (path, mtime_ns, size) -> short content hash
 
 def _vhash(rel):
     p = web_file(rel)
+    if not os.path.isfile(p) and css_parts(rel):   # S11: a split sheet's old name = its joined parts
+        import hashlib
+        return hashlib.sha1(css_bundle(rel)).hexdigest()[:8]
     try:
         st = os.stat(p)
     except OSError:
@@ -59,6 +62,36 @@ def _vhash(rel):
         with open(p, "rb") as f:
             h = _VH[k] = hashlib.sha1(f.read()).hexdigest()[:8]
     return h
+
+
+CSS_GROUPS = ("style.css", "mobile.css")   # t-oss-struct S11: cut into web/css/<stem>/NN-<section>.css; the parts in file-name order = the old file
+
+
+def css_parts(name):
+    """t-oss-struct S11: the section files of a split stylesheet, in cascade order, as /static/ paths (web/css/<stem>/*.css plus
+    local/web/css/<stem>/*.css, where a same-named local file replaces one section and a new name slots in by its number).
+    None when <name> is not split, or when local/web/<name> exists: an old whole-file override still replaces the whole sheet."""
+    if name not in CSS_GROUPS or os.path.isfile(os.path.join(S.LOCAL, "web", name)):
+        return None
+    sub, names = f"css/{name[:-4]}", set()
+    for base in (WEB, os.path.join(S.LOCAL, "web")):
+        d = os.path.join(base, "css", name[:-4])
+        if os.path.isdir(d):
+            names.update(f for f in os.listdir(d) if f.endswith(".css") and not f.startswith("."))
+    return [f"{sub}/{f}" for f in sorted(names)] or None
+
+
+def css_bundle(name):
+    """/static/style.css (or mobile.css) after the split: the parts joined, byte-identical to the old file (an old cached page, a link
+    from outside). None when it is not a split sheet."""
+    parts = css_parts(name)
+    if not parts:
+        return None
+    out = []
+    for r in parts:
+        with open(web_file(r), "rb") as f:
+            out.append(f.read())
+    return b"".join(out)
 
 
 _SKIP_DIRS = ("art", "fonts", "brand", "knit", "leather")   # image / font folders: no scripts, not worth walking on every page load
@@ -124,6 +157,8 @@ def index_html():
       js after its "after" file as a plain <script> (it runs while the page parses, like before), else at <!-- EXT:JS --> after the
       module entry as <script defer> (it runs after the page modules, in order; "module": true makes it a <script type="module">);
       "drop" removes a line;
+    - a split stylesheet (style.css, mobile.css; S11) becomes one <link> per section file, same attributes (media) and same place, so an
+      extension anchored "after": "style.css" still lands after the whole sheet;
     - every /static/<file> reference gets ?v=<content hash> (js / css are cached for a year as immutable, so a changed file always gets a
       new URL; nobody writes ?v= by hand any more);
     - <!-- IMPORTMAP --> becomes <meta name="ut-build"> (a hash of the whole page, read by the 'board updated' pill), the import map
@@ -153,6 +188,12 @@ def index_html():
                 if at is None:
                     at = next((i - 1 for i, ln in enumerate(lines) if mark in ln), len(lines) - 1)
                 lines.insert(at + 1, tag + f"   <!-- {note} -->")
+    for name in CSS_GROUPS:
+        parts = css_parts(name)
+        at = next((i for i, ln in enumerate(lines) if parts and "<link" in ln and on(ln, name)), None)
+        if at is not None:
+            ln = lines[at]
+            lines[at:at + 1] = [ln.replace(f"/static/{name}", f"/static/{r}", 1) for r in parts]
     html = _STATIC_REF.sub(lambda m: f"/static/{m.group(1)}?v={_ver(m.group(1), m.group(2) or '')}" if _ver(m.group(1), m.group(2) or "") else m.group(0),
                            "\n".join(lines))
     imports = {f"/static/{r}": f"/static/{r}?v={_vhash(r)}" for r in _js_files() if _vhash(r)}
@@ -201,6 +242,10 @@ def _files(prefix, base):
                 p = lp   # t-voice-memo: %-encoded names (新录音_12.m4a) 404ed before
         if not p:
             return h._send(403, {"error": "forbidden"})
+        if prefix == "/static/" and not os.path.isfile(p):
+            b = css_bundle(unquote(u.path[len(prefix):]))   # S11: the old name of a split sheet
+            if b is not None:
+                return h._send(200, b, "text/css; charset=utf-8", {"Cache-Control": "no-cache"})
         return h._file(p, media="static" if prefix == "/static/" else True)
     route("GET", prefix, prefix=True, late=True)(serve)
 
