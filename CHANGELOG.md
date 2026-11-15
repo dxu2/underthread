@@ -30,7 +30,7 @@ Work in progress goes under `## Unreleased`; the release renames it to `## [X.Y.
 ### Upgrade notes
 - Migrations: none
 - New config keys: none
-- Extension API: unchanged (every `stateutil` name is still exported, `tests/unit/test_exports.py`; every old `server` name too, `tests/unit/test_server_tables.py`; `EXT_GET` routes run at the same point as before)
+- Extension API: unchanged (every `stateutil` name is still exported, `tests/unit/test_exports.py`; every old `server` name too, `tests/unit/test_server_tables.py`; `EXT_GET` routes run at the same point as before; assigning `srv.<old name> = x` in an extension now only changes the `server` module, not the `api/` module that owns the name, so override behaviour through `srv.route` / `srv.action` instead)
 - Manual steps: none
 
 需要手动做的事：无。
