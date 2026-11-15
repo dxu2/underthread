@@ -18,8 +18,9 @@ local/
 
 - **Rules.** `make_agents.py` lists both layers in every agent file: `roles/common.md`, `local/roles/common.md`,
   `roles/<id>.md`, `local/roles/<id>.md` (missing files are skipped). The dashboard's 灵魂 viewer shows both.
-- **Web.** `server.py` adds each extension's `web` files (and the old `local/ext.json`) to the page and turns every `?v=N` into `?v=N.<content hash>`,
-  so a changed file always gets a new URL even when nobody bumped its number.
+- **Web.** `server.py` adds each extension's `web` files (and the old `local/ext.json`) to the page and gives every `/static/` file a
+  `?v=<content hash>` (scripts through the page's import map), so a changed file, a `local/web/` override included, always gets a new URL.
+  A `local/web/` copy of a core page script is loaded as an ES module (strict mode), like the core file.
 - **Extensions.** `local/ext/<name>/` with an `ext.json` manifest registers endpoints, actions, card kinds, scheduled jobs,
   health lines, `stateutil.py` commands and page files through the extension registry; see `docs/extensions.md`. A broken or
   mismatched extension is skipped with the reason on `/api/ext`; it never takes the dashboard down. A folder without

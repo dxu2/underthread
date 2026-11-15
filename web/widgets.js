@@ -62,9 +62,13 @@
      registered now counts as met (the upgrade inserts nothing). A registered id not on it is new: it goes into a saved layout once
      (first: true = at the front, else at the end) and joins seen; removing it later sticks. A default layout (null) shows it anyway. */
   let MET = "";
+  /* S9: the page scripts are modules and extension scripts are deferred after them, so readyState is already "interactive" here while
+     extensions are still to come: DOMContentLoaded is the first moment every script has run */
+  let BOOTED = document.readyState === "complete";
+  document.addEventListener("DOMContentLoaded", () => { BOOTED = true; if (A() && A().ST && document.documentElement.dataset.home === "widgets") A().refreshPage(); });
   function meet(w, L, saved) {
     const ids = allIds();
-    if (!ids.length || document.readyState === "loading") return L;   // extension scripts (after this file) have not registered yet
+    if (!ids.length || !BOOTED) return L;   // extension scripts (after this file) have not registered yet
     const seen = Array.isArray(w.seen) ? w.seen : null, fresh = seen ? ids.filter(k => !seen.includes(k)) : [];
     if (seen && !fresh.length) return L;
     const all = [...new Set([...(seen || []), ...ids])].sort(), key = all.join(",");

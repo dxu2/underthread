@@ -15,7 +15,7 @@ so your own state.json, inbox and work/ are never touched. Checks:
   stateutil    upsert-item / say-mgr / log land in /api/state; a POST from the page shows up in the inbox
   demo         python3 tools/demo.py --fast starts, cards move, and the checkout's own state stays absent
   keepalive    tools/keepalive.sh is valid bash
-  local        a local/ layer: agents list local rules, the page gets local/ext.json files and ?v=N.<hash>, extension routes
+  local        a local/ layer: agents list local rules, the page gets local/ext.json files, ?v=<hash> and the import map, extension routes
                and subcommands work, adopted rules land in local/roles/, the core rule files stay untouched
 """
 import glob
@@ -120,6 +120,8 @@ def t_compile(root):
             bad.append(r.stderr.strip())
     if shutil.which("node"):
         for f in sorted(glob.glob(os.path.join(root, "web", "*.js"))):
+            if os.path.basename(f) == "main.js":
+                continue   # import statements: parsed as a module by tests/unit/test_web_modules.py
             r = subprocess.run(["node", "--check", f], capture_output=True, text=True)
             if r.returncode:
                 bad.append(f"{os.path.basename(f)}: {r.stderr.strip()[:300]}")
@@ -187,6 +189,16 @@ def t_server(root):
         import re
         for path in sorted(set(re.findall(r'"/static/([^"?]+)\?v=', idx))):
             assert req(s.port, "/static/" + path)[0] == 200, f"/static/{path} missing"
+        # t-oss-struct S9: the import map versions every page script; the module entry and its imports are preloaded
+        imports = json.loads(re.search(r'<script type="importmap">(.*?)</script>', idx).group(1))["imports"]
+        mains = re.findall(r'^import\s+"\./([\w./-]+\.js)";', open(os.path.join(root, "web", "main.js"), encoding="utf-8").read(), re.M)
+        for f in ["main.js"] + mains:
+            assert re.fullmatch(rf"/static/{re.escape(f)}\?v=[0-9a-f]{{8}}", imports.get(f"/static/{f}", "")), f"{f} not versioned in the import map"
+            assert f == "main.js" or f'<link rel="modulepreload" href="{imports["/static/" + f]}">' in idx, f"no modulepreload for {f}"
+        assert "/static/sw.js" not in imports
+        assert idx.index('<script type="importmap">') < idx.index('<script type="module" src="/static/main.js?v='), "import map after the module entry"
+        assert re.search(r'<meta name="ut-build" content="[0-9a-f]{12}">', idx), "no ut-build stamp"
+        assert not re.findall(r'/static/[\w./@-]+\.(?:js|css|png|ico)(?=["\s,])', re.sub(r'<script type="importmap">.*?</script>', '', idx)), "a /static/ file without ?v="
     finally:
         s.stop()
 
@@ -293,10 +305,13 @@ def t_local(root):
         try:
             code, html = req(srv.port, "/")
             html = html.decode()
-            assert code == 200 and "/static/smoke-ext.js?v=1." in html and "/static/smoke-ext.css?v=1." in html, "ext.json files not injected"
+            assert code == 200 and re.search(r'<script defer src="/static/smoke-ext\.js\?v=[0-9a-f]{8}"', html) and re.search(r"/static/smoke-ext\.css\?v=[0-9a-f]{8}", html), "ext.json files not injected"
+            assert html.index('<script defer src="/static/smoke-ext.js') > html.index('<script type="module" src="/static/main.js'), "extension script must come after the module entry"
             assert html.index("smoke-ext.css") > html.index("skin-ink.css"), "css not placed after its anchor"
             assert "/static/oss.css" not in html, "drop did not remove oss.css"
-            assert re.search(r"/static/app\.js\?v=\d+\.[0-9a-f]{8}", html), "no content hash on ?v="
+            assert re.search(r'"/static/app\.js":"/static/app\.js\?v=[0-9a-f]{8}"', html), "no content hash for app.js in the import map"
+            assert html.index('<script type="importmap">') < html.index('<script type="module"'), "import map must come before the module entry"
+            assert re.search(r'<meta name="ut-build" content="\w+">', html) and 'rel="modulepreload" href="/static/app.js?v=' in html
             assert req(srv.port, "/static/smoke-ext.js")[0] == 200
             assert req(srv.port, "/api/smoke-ext")[0] == 200, "extension route missing"
         finally:
@@ -387,7 +402,8 @@ def register(R):
             assert req(p, "/api/old")[0] == 404, "a skipped extension's code ran"
             assert req(p, "/api/legacy-hi")[0] == 200, "old-style extension not loaded"
             html = req(p, "/")[1].decode()
-            assert re.search(r"/static/ext/demo/demo\.js\?v=1\.[0-9a-f]{8}", html), "manifest js not injected"
+            assert re.search(r'<script defer src="/static/ext/demo/demo\.js\?v=[0-9a-f]{8}"', html), "manifest js not injected"
+            assert '"/static/ext/demo/demo.js":"/static/ext/demo/demo.js?v=' in html, "extension js not in the import map"
             assert html.index("/static/ext/demo/demo.css") > html.index("/static/style.css"), "manifest css not after its anchor"
             assert "/static/ext/old/" not in html
             assert req(p, "/static/ext/demo/demo.js")[0] == 200 and req(p, "/static/ext/old/x.js")[0] == 404

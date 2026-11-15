@@ -3,18 +3,19 @@
 <head>
 <script>/* t-csrf-live: every same-origin non-GET fetch carries X-Underthread: 1 (server.py refuses browser POSTs without it) */(function(){var f=window.fetch;if(!f||f.__xr)return;var w=function(i,o){try{var m=String((o&&o.method)||(i&&typeof i==="object"&&i.method)||"GET").toUpperCase();var u=new URL(typeof i==="string"?i:(i&&i.url)||String(i),location.href);if(m!=="GET"&&m!=="HEAD"&&u.origin===location.origin){var h=new Headers((o&&o.headers)||(i&&typeof i==="object"&&i.headers)||undefined);h.set("X-Underthread","1");o=Object.assign({},o,{headers:h});}}catch(e){}return f.call(this,i,o);};w.__xr=1;window.fetch=w;})();</script>
 <meta charset="utf-8">
-<script src="/static/lsmigrate.js?v=1"></script>   <!-- t-oss-struct E1: localStorage migrations, before any script reads rt.* -->
+<script src="/static/lsmigrate.js"></script>   <!-- t-oss-struct E1: localStorage migrations, before any script reads rt.* -->
+<!-- IMPORTMAP --> <!-- t-oss-struct S9: the server puts <meta name="ut-build">, the import map (every page script to its ?v=<content hash> URL) and modulepreload links here -->
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Underthread">
 <meta name="theme-color" content="#040404">
-<link rel="icon" type="image/png" sizes="32x32" href="/static/favicon-32.png?v=4">
-<link rel="icon" type="image/png" sizes="16x16" href="/static/favicon-16.png?v=4">
-<link rel="icon" type="image/png" sizes="192x192" href="/static/icon-192.png?v=4">
-<link rel="shortcut icon" href="/static/favicon.ico?v=4">
-<link rel="apple-touch-icon" href="/static/icon-180.png?v=3">
+<link rel="icon" type="image/png" sizes="32x32" href="/static/favicon-32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="/static/favicon-16.png">
+<link rel="icon" type="image/png" sizes="192x192" href="/static/icon-192.png">
+<link rel="shortcut icon" href="/static/favicon.ico">
+<link rel="apple-touch-icon" href="/static/icon-180.png">
 <link rel="manifest" href="/manifest.webmanifest">
 <title>Underthread</title>
 <!-- t-visual-ink: 墨刊 skin, set before first paint. t-theme-trim: always on (rt.skin="classic" and #skin=classic are ignored, the switches are gone); t-theme-trim2: rt.inkLight is ignored too (neutral paper, its switch is gone). -->
@@ -37,24 +38,24 @@ if(m==="off"||document.visibilityState==="hidden"||/[#&](nosplash|push=)/.test(l
 try{var r=JSON.parse(L.getItem("rt.theme"));if(r)t=r;}catch(e){}h=/[#&]theme=(\w+)/.exec(location.hash);if(h)t=h[1];
 d.dataset.splash="1";d.style.setProperty("--ut-guard",t==="white"?"#ffffff":t==="light"?"#e8e0cc":"#040404");setTimeout(function(){d.removeAttribute("data-splash");},4000);})();</script>
 <style>html[data-splash="1"] body::before{content:"";position:fixed;inset:0;z-index:2147483000;background:var(--ut-guard,#040404)}</style>
-<link rel="stylesheet" href="/static/splash.css?v=1">
-<script src="/static/splash.js?v=1" defer></script>
+<link rel="stylesheet" href="/static/splash.css">
+<script src="/static/splash.js" defer></script>
 <!-- ri1106-P1: no Google Fonts request any more; Cinzel (latin) is self-hosted in web/fonts, see style.css @font-face -->
-<link rel="stylesheet" href="/static/style.css?v=189">
-<link rel="stylesheet" href="/static/mobile.css?v=148" media="(max-width: 760px)">
-<link rel="stylesheet" href="/static/team.css?v=6">   <!-- t-rb-build -->
-<link rel="stylesheet" href="/static/widgets.css?v=28">   <!-- t-home-widgets: desktop widget 首页 (scoped to html[data-home=widgets]) -->
-<link rel="stylesheet" href="/static/skin-ink.css?v=10">   <!-- t-visual-ink: 墨刊 skin, every rule scoped to html[data-skin="ink"] -->
-<link rel="stylesheet" href="/static/glass.css?v=11">   <!-- t-glass-system: shared glass + motion tokens; card / rail / TOC glass. <html data-glass="0"> turns it off -->
-<link rel="stylesheet" href="/static/theme-ut.css?v=20">   <!-- t-theme-ut: Underthread 特典配色, only under html[data-ut] -->
-<link rel="stylesheet" href="/static/texture-knit.css?v=6">   <!-- t-theme-knit: 质感「针织」, only under html[data-texture^=knit] (rt.texture, 设置 → 外观 → 质感) -->
-<link rel="stylesheet" href="/static/texture-leather.css?v=7">   <!-- t-theme-leather: 质感「皮革」, only under html[data-texture^=leather] (leather1 软皮 / leather2 马鞍) -->
-<link rel="stylesheet" href="/static/oss.css?v=6">   <!-- open-source build: text wordmark, hides switches for parts not shipped (stage art, voice) -->
+<link rel="stylesheet" href="/static/style.css">
+<link rel="stylesheet" href="/static/mobile.css" media="(max-width: 760px)">
+<link rel="stylesheet" href="/static/team.css">   <!-- t-rb-build -->
+<link rel="stylesheet" href="/static/widgets.css">   <!-- t-home-widgets: desktop widget 首页 (scoped to html[data-home=widgets]) -->
+<link rel="stylesheet" href="/static/skin-ink.css">   <!-- t-visual-ink: 墨刊 skin, every rule scoped to html[data-skin="ink"] -->
+<link rel="stylesheet" href="/static/glass.css">   <!-- t-glass-system: shared glass + motion tokens; card / rail / TOC glass. <html data-glass="0"> turns it off -->
+<link rel="stylesheet" href="/static/theme-ut.css">   <!-- t-theme-ut: Underthread 特典配色, only under html[data-ut] -->
+<link rel="stylesheet" href="/static/texture-knit.css">   <!-- t-theme-knit: 质感「针织」, only under html[data-texture^=knit] (rt.texture, 设置 → 外观 → 质感) -->
+<link rel="stylesheet" href="/static/texture-leather.css">   <!-- t-theme-leather: 质感「皮革」, only under html[data-texture^=leather] (leather1 软皮 / leather2 马鞍) -->
+<link rel="stylesheet" href="/static/oss.css">   <!-- open-source build: text wordmark, hides switches for parts not shipped (stage art, voice) -->
 <!-- EXT:CSS --> <!-- core / local split: server.py puts local/ext.json stylesheets here (or after their "after" file) -->
 </head>
 <body>
 <header id="top">
-  <div class="brand" id="brand" role="link" aria-label="Underthread"><img class="wm-d" src="/static/brand/wordmark-on-dark@2x.png?v=4" srcset="/static/brand/wordmark-on-dark@2x.png?v=4 2x, /static/brand/wordmark-on-dark@3x.png?v=4 3x" alt="Underthread" width="180" height="32" decoding="async"><img class="wm-l" src="/static/brand/wordmark-on-light@2x.png?v=4" srcset="/static/brand/wordmark-on-light@2x.png?v=4 2x, /static/brand/wordmark-on-light@3x.png?v=4 3x" alt="" aria-hidden="true" width="180" height="32" decoding="async"></div>
+  <div class="brand" id="brand" role="link" aria-label="Underthread"><img class="wm-d" src="/static/brand/wordmark-on-dark@2x.png" srcset="/static/brand/wordmark-on-dark@2x.png 2x, /static/brand/wordmark-on-dark@3x.png 3x" alt="Underthread" width="180" height="32" decoding="async"><img class="wm-l" src="/static/brand/wordmark-on-light@2x.png" srcset="/static/brand/wordmark-on-light@2x.png 2x, /static/brand/wordmark-on-light@3x.png 3x" alt="" aria-hidden="true" width="180" height="32" decoding="async"></div>
   <div class="sync" id="sync"></div>
   <div class="toolbar" id="toolbar"></div>
   <!-- t-topbar-soul-off: the usage orb is gone from the top bar; quota lives in the home Usage widget and the phone usage card -->
@@ -77,24 +78,9 @@ d.dataset.splash="1";d.style.setProperty("--ut-guard",t==="white"?"#ffffff":t===
 <script>try{var l=JSON.parse(localStorage.getItem("rt.lang"));if(/[#&]lang=en\b/.test(location.hash)||l==="en"||(!l&&!/^zh/i.test(navigator.language||"")))document.getElementById("boot-sk").setAttribute("aria-label","Loading");}catch(e){}</script>
 <div id="modal" hidden></div>
 <div id="toast" hidden></div>
-<script src="/static/md.js?v=6"></script>
-<script src="/static/fx.js?v=13"></script>
-<script src="/static/diff.js?v=1"></script>
-<script src="/static/ext.js?v=1"></script>   <!-- t-oss-struct S8: extension registry, front-end side (App.ext) -->
-<script src="/static/app.js?v=234"></script>
-<script src="/static/market.js?v=6"></script>
-<script src="/static/transfer.js?v=3"></script>   <!-- t-ht-build: 调岗 / 退休 -->
-<script src="/static/preview.js?v=1"></script>
-<script src="/static/palette.js?v=19"></script>
-<script src="/static/home.js?v=26"></script>
-<script src="/static/team.js?v=7"></script>   <!-- t-rb-build: 团队交接 widget + 团队 page -->
-<script src="/static/widgets.js?v=35"></script>   <!-- t-home-widgets -->
-<script src="/static/toast.js?v=1"></script>   <!-- t-web-toast: desktop in-app notice -->
-<script src="/static/rolefiles.js?v=4"></script>
-<script src="/static/viewer.js?v=9"></script>
-<script src="/static/glass.js?v=3"></script>   <!-- t-glass-system: sliding nav pill, TOC indicator / close animation -->
-<script src="/static/mobile.js?v=103"></script>
-<script src="/static/push.js?v=6"></script>
+<!-- t-oss-struct S9: the page scripts are ES modules. main.js imports them in order (md, fx, diff, ext, app, ... push); the server writes
+     the import map above, so every file gets ?v=<content hash> on its own. Extension scripts (EXT:JS) come after it as defer scripts. -->
+<script type="module" src="/static/main.js"></script>
 <!-- EXT:JS --> <!-- core / local split: local/ext.json scripts -->
 </body>
 </html>

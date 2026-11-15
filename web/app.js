@@ -4896,8 +4896,10 @@
   // ===== t-new-ver: the page keeps running the JS/CSS it loaded; after a web/ release (?v bump in index.html) it says so with a pill.
   // Checks when the page comes back to the foreground and every 5 min while visible; never reloads on its own (drafts survive anyway). =====
   const VER = { mine: "", t: 0, shown: false };
-  const verSig = html => (String(html).match(/\/static\/[\w.-]+\.(?:js|css)\?v=[\w.]+/g) || []).sort().join(" ");
-  const verMine = () => VER.mine || (VER.mine = verSig([...document.querySelectorAll("script[src],link[rel=stylesheet][href]")].map(e => e.getAttribute("src") || e.getAttribute("href")).join(" ")));   // read after load: the scripts below app.js are not parsed yet when it runs
+  /* S9: the server stamps <meta name="ut-build"> (a hash of the whole page: every file's ?v= and the import map); an older server has none,
+     so fall back to the list of ?v= script / stylesheet URLs */
+  const verSig = html => { const b = /<meta name="ut-build" content="(\w+)"/.exec(String(html)); return b ? "b:" + b[1] : (String(html).match(/\/static\/[\w.-]+\.(?:js|css)\?v=[\w.]+/g) || []).sort().join(" "); };
+  const verMine = () => VER.mine || (VER.mine = (m => m ? "b:" + m.content : verSig([...document.querySelectorAll("script[src],link[rel=stylesheet][href]")].map(e => e.getAttribute("src") || e.getAttribute("href")).join(" ")))(document.querySelector('meta[name="ut-build"]')));   // read after load: the scripts below app.js are not parsed yet when it runs
   async function verCheck(force) {
     if (document.readyState !== "complete") return;
     if (VER.shown || !verMine() || document.visibilityState !== "visible" || (!force && Date.now() - VER.t < 60e3)) return;

@@ -1,4 +1,4 @@
-"""Page and files: index.html (with local/ext.json applied and ?v= content hashes), sw.js, the manifest, and the file routes
+"""Page and files: index.html (extension web files, ?v= content hashes, the import map), sw.js, the manifest, and the file routes
 /static/ (local/web/ wins over web/), /uploads/, /avatars/, /work/."""
 import json
 import os
@@ -61,15 +61,57 @@ def _vhash(rel):
     return h
 
 
+_SKIP_DIRS = ("art", "fonts", "brand", "knit", "leather")   # image / font folders: no scripts, not worth walking on every page load
+
+
+def _js_files():
+    """t-oss-struct S9: every page script a module may import, as /static/ paths: web/**.js, local/web/**.js (which win), and each loaded
+    extension's web/*.js as ext/<name>/... sw.js is the service worker (its own route), not a module."""
+    out = set()
+    for base in (WEB, os.path.join(S.LOCAL, "web")):
+        if not os.path.isdir(base):
+            continue
+        for d, dirs, files in os.walk(base):
+            rel = os.path.relpath(d, base)
+            dirs[:] = [x for x in dirs if not x.startswith(".") and not (rel == "." and x in _SKIP_DIRS)]
+            for fn in files:
+                if fn.endswith(".js") and not (rel == "." and fn == "sw.js"):
+                    out.add(fn if rel == "." else f"{rel}/{fn}".replace(os.sep, "/"))
+    for name in sorted(REG.EXTS):
+        d = REG.web_dir(name)
+        if d:
+            for fn in sorted(os.listdir(d)):
+                if fn.endswith(".js"):
+                    out.add(f"ext/{name}/{fn}")
+    return sorted(out)
+
+
+def _ver(rel, n=""):
+    """?v= for /static/<rel>: the content hash, or N.<hash> when the reference still has a hand-written ?v=N (old local/ext.json, an old override)."""
+    h = _vhash(rel)
+    return (f"{n}.{h}" if n else h) if h else n
+
+
+_STATIC_REF = re.compile(r'/static/([\w./@-]+\.[A-Za-z0-9]+)(?:\?v=(\d+))?(?=["\s,])')
+
+
 def index_html():
-    """web/index.html with local/ext.json applied (<!-- EXT:CSS --> / <!-- EXT:JS --> or after an anchor file; "drop" removes a line),
-    and every /static/<f>?v=N turned into ?v=N.<content hash>: js / css are cached as immutable, so a file that changes without a
-    ?v= bump (an update, a local override) still gets a new URL."""
+    """web/index.html as the browser gets it (t-oss-struct S9):
+    - extension web files (ext.json "web" blocks, and the old local/ext.json) added: css at <!-- EXT:CSS --> or after their "after" file;
+      js after its "after" file as a plain <script> (it runs while the page parses, like before), else at <!-- EXT:JS --> after the
+      module entry as <script defer> (it runs after the page modules, in order; "module": true makes it a <script type="module">);
+      "drop" removes a line;
+    - every /static/<file> reference gets ?v=<content hash> (js / css are cached for a year as immutable, so a changed file always gets a
+      new URL; nobody writes ?v= by hand any more);
+    - <!-- IMPORTMAP --> becomes <meta name="ut-build"> (a hash of the whole page, read by the 'board updated' pill), the import map
+      (/static/<f>.js -> /static/<f>.js?v=<hash> for every page script, so relative imports between modules are versioned too) and one
+      modulepreload per main.js import (fetched in parallel instead of after main.js)."""
     with open(os.path.join(WEB, "index.html"), encoding="utf-8") as f:
         lines = f.read().split("\n")
     blocks = REG.web_blocks()   # t-oss-struct S8: local/ext.json (as _legacy) first, then every loaded extension's ext.json "web"
+    on = lambda ln, ref: f"/static/{ref}?" in ln or f'/static/{ref}"' in ln
     drop = [d for _, b in blocks for d in b.get("drop") or [] if isinstance(d, str) and d]
-    lines = [ln for ln in lines if not any(f"/static/{d}?" in ln or f'/static/{d}"' in ln for d in drop)]
+    lines = [ln for ln in lines if not any(on(ln, d) for d in drop)]
     for kind, mark in (("css", "<!-- EXT:CSS -->"), ("js", "<!-- EXT:JS -->")):
         for name, ext in blocks:
             for e in ext.get(kind) or []:
@@ -77,15 +119,31 @@ def index_html():
                 if not isinstance(ref, str) or not re.fullmatch(r"[\w./-]+", ref) or ".." in ref:
                     continue
                 note = "local/ext.json" if name == "_legacy" else f"ext:{name}"
-                tag = (f'<link rel="stylesheet" href="/static/{ref}?v=1"' + (f' media="{e["media"]}"' if isinstance(e, dict) and e.get("media") else "") + ">"
-                       if kind == "css" else f'<script src="/static/{ref}?v=1"></script>') + f"   <!-- {note} -->"
                 after = e.get("after") if isinstance(e, dict) else None
-                at = next((i for i, ln in enumerate(lines) if after and f"/static/{after}?" in ln), None)
+                at = next((i for i, ln in enumerate(lines) if after and on(ln, after)), None)
+                if kind == "css":
+                    tag = f'<link rel="stylesheet" href="/static/{ref}"' + (f' media="{e["media"]}"' if isinstance(e, dict) and e.get("media") else "") + ">"
+                elif isinstance(e, dict) and e.get("module") is True:
+                    tag = f'<script type="module" src="/static/{ref}"></script>'
+                else:
+                    tag = f'<script src="/static/{ref}"></script>' if at is not None else f'<script defer src="/static/{ref}"></script>'
                 if at is None:
                     at = next((i - 1 for i, ln in enumerate(lines) if mark in ln), len(lines) - 1)
-                lines.insert(at + 1, tag)
-    html = "\n".join(lines)
-    return re.sub(r'/static/([\w./-]+)\?v=(\d+)', lambda m: f"/static/{m.group(1)}?v={m.group(2)}.{_vhash(m.group(1))}" if _vhash(m.group(1)) else m.group(0), html)
+                lines.insert(at + 1, tag + f"   <!-- {note} -->")
+    html = _STATIC_REF.sub(lambda m: f"/static/{m.group(1)}?v={_ver(m.group(1), m.group(2) or '')}" if _ver(m.group(1), m.group(2) or "") else m.group(0),
+                           "\n".join(lines))
+    imports = {f"/static/{r}": f"/static/{r}?v={_vhash(r)}" for r in _js_files() if _vhash(r)}
+    pre = []
+    try:
+        with open(web_file("main.js"), encoding="utf-8") as f:
+            pre = [r for r in re.findall(r'^import\s+"\./([\w./-]+\.js)";', f.read(), re.M) if f"/static/{r}" in imports]
+    except OSError:
+        pass
+    head = (f'<script type="importmap">{json.dumps({"imports": imports}, ensure_ascii=False, separators=(",", ":"))}</script>\n'
+            + "".join(f'<link rel="modulepreload" href="{imports["/static/" + r]}">\n' for r in pre))
+    import hashlib
+    build = hashlib.sha1((html + head).encode("utf-8")).hexdigest()[:12]
+    return html.replace("<!-- IMPORTMAP -->", f'<meta name="ut-build" content="{build}">\n' + head.rstrip("\n"), 1)
 
 
 @route("GET", "/sw.js")

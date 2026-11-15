@@ -96,6 +96,9 @@ class Golden(unittest.TestCase):
             t = raw.decode("utf-8", "replace")
             if "<html" in t[:200].lower() or "<!doctype" in t[:200].lower():   # index.html: which scripts / styles, not their hashes
                 b = {"html_refs": [_V.sub("?v=<h>", m) for m in re.findall(r'(?:src|href)="([^"]+)"', t)]}
+                im = re.search(r'<script type="importmap">(.*?)</script>', t)   # S9: which scripts the import map versions
+                if im:
+                    b["import_map"] = {k: _V.sub("?v=<h>", v) for k, v in sorted(json.loads(im.group(1))["imports"].items())}
             else:
                 b = {"bytes": len(raw)}
         return {"code": code, "body": b}

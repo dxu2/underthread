@@ -157,7 +157,8 @@ class H(BaseHTTPRequestHandler):
             self.wfile.write(body)
 
     def _static(self, path, ctype, extra):
-        """ri1105-P2: web/ files. A ?v= js / css / font never changes under the same URL (every edit bumps ?v=): cached for a year, immutable.
+        """ri1105-P2: web/ files. A ?v= js / css / font never changes under the same URL (?v= is the content hash the server writes into
+        the page and its import map, S9): cached for a year, immutable.
         Everything else (images, ?v= images too, files without ?v=): ETag + 304. index.html and sw.js stay no-store (their own routes).
         Gzip is done once per file version and kept in memory."""
         st = os.stat(path)
@@ -168,7 +169,7 @@ class H(BaseHTTPRequestHandler):
             k, sig = (path, v), (st.st_mtime_ns, st.st_size)
             old = _SV.setdefault(k, sig)
             if old != sig:   # the file changed but the URL did not: browsers that cached it keep the old copy
-                print(f"[{S.now()}] static: {os.path.relpath(path, WEB)} changed under the same ?v={v} — bump ?v= in index.html", flush=True)
+                print(f"[{S.now()}] static: {os.path.relpath(path, WEB)} changed under the same ?v={v} (an open page asked for an old version)", flush=True)
                 _SV[k] = sig
         hdr = {"ETag": etag, "Cache-Control": "public, max-age=31536000, immutable" if imm else "no-cache"}
         hdr.update(extra or {})
