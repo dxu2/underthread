@@ -92,6 +92,29 @@ def _ver(rel, n=""):
     return (f"{n}.{h}" if n else h) if h else n
 
 
+_IMPORT = re.compile(r'^import\s+(?:[^"\n]*?\bfrom\s+)?"(\.{1,2}/[\w./-]+\.js)";', re.M)
+
+
+def _module_graph(entry):
+    """t-oss-struct S10: every page script reachable from main.js through static imports (main.js's own imports first, in order, then the
+    files they import, e.g. core/*.js), so each gets a modulepreload and the browser fetches them in parallel instead of one level at a time."""
+    out, queue = [], [entry]
+    while queue:
+        rel = queue.pop(0)
+        try:
+            with open(web_file(rel), encoding="utf-8") as f:
+                src = f.read()
+        except (OSError, ValueError):
+            continue
+        for spec in _IMPORT.findall(src):
+            r = os.path.normpath(os.path.join(os.path.dirname(rel), spec)).replace(os.sep, "/")
+            if r.startswith("..") or r in out or r == entry:
+                continue
+            out.append(r)
+            queue.append(r)
+    return out
+
+
 _STATIC_REF = re.compile(r'/static/([\w./@-]+\.[A-Za-z0-9]+)(?:\?v=(\d+))?(?=["\s,])')
 
 
@@ -133,12 +156,7 @@ def index_html():
     html = _STATIC_REF.sub(lambda m: f"/static/{m.group(1)}?v={_ver(m.group(1), m.group(2) or '')}" if _ver(m.group(1), m.group(2) or "") else m.group(0),
                            "\n".join(lines))
     imports = {f"/static/{r}": f"/static/{r}?v={_vhash(r)}" for r in _js_files() if _vhash(r)}
-    pre = []
-    try:
-        with open(web_file("main.js"), encoding="utf-8") as f:
-            pre = [r for r in re.findall(r'^import\s+"\./([\w./-]+\.js)";', f.read(), re.M) if f"/static/{r}" in imports]
-    except OSError:
-        pass
+    pre = [r for r in _module_graph("main.js") if f"/static/{r}" in imports]
     head = (f'<script type="importmap">{json.dumps({"imports": imports}, ensure_ascii=False, separators=(",", ":"))}</script>\n'
             + "".join(f'<link rel="modulepreload" href="{imports["/static/" + r]}">\n' for r in pre))
     import hashlib
