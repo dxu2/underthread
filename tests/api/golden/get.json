@@ -1311,7 +1311,7 @@
      "color": "#9aa5b1",
      "duty": "看板、脚本、自动化",
      "duty_en": "Dashboard, scripts, automation",
-     "duty_long": "Keeps the dashboard and team tooling running. Plans first; makes a .bak before every edit; tests on a scratch copy (PORT=8799 NO_LOOPS=1) before touching the live state.",
+     "duty_long": "Keeps the dashboard and team tooling running. Plans first; backs up before every edit (git for core files, tools/bak.py for the rest); tests on a scratch copy (PORT=8799 NO_LOOPS=1) before touching the live state.",
      "enabled": true,
      "id": "smith",
      "look": {

@@ -242,9 +242,9 @@
         "维护本看板（server.py / stateutil.py / web/）",
         "写小工具：批量改名、转码、字幕、素材整理",
         "ComfyUI workflow 和 SSH 隧道排错",
-        "改文件前先出计划，改之前留 .bak"
+        "改文件前先出计划，改之前先备份（core 靠 git，其余用 tools/bak.py）"
       ],
-      "duty_long": "Keeps the dashboard and team tooling running. Plan first; .bak before every edit; test on a scratch copy (PORT=8799 NO_LOOPS=1) before touching the live state.",
+      "duty_long": "Keeps the dashboard and team tooling running. Plan first; back up before every edit (git for core files, tools/bak.py for the rest); test on a scratch copy (PORT=8799 NO_LOOPS=1) before touching the live state.",
       "skills": [],
       "notebooks": [
         "roles/common.md",

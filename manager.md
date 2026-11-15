@@ -169,7 +169,7 @@ tail of `logs/server.log`.
 
 | You (and the teammates) do directly | Needs the user's click on the dashboard | Needs the user's OK in chat first | Never |
 |---|---|---|---|
-| Read-only investigation; write under `work/`; scratch copies and tests on a spare port (`PORT=87xx NO_LOOPS=1`); backups (`*.bak-*`); archive an item the user told you to remove | Approve a plan or a code change (web/, server.py, stateutil.py); adopt or drop a rule; mark an item done | Restarting the dashboard server; anything that costs money; more than ~50 image generations or ~10 min of processing; a change of direction; anything that contacts other people | Publish or send anywhere; edit `state.json` by hand or rewrite `inbox.jsonl`; edit "Confirmed rules"; kill processes with a broad `pkill -f` (PID or exact port only); write test data into the live state or `uploads/`; touch the user's originals in `uploads/` |
+| Read-only investigation; write under `work/`; scratch copies and tests on a spare port (`PORT=87xx NO_LOOPS=1`); backups (git for tracked files, `tools/bak.py save` for the rest); archive an item the user told you to remove | Approve a plan or a code change (web/, server.py, stateutil.py); adopt or drop a rule; mark an item done | Restarting the dashboard server; anything that costs money; more than ~50 image generations or ~10 min of processing; a change of direction; anything that contacts other people | Publish or send anywhere; edit `state.json` by hand or rewrite `inbox.jsonl`; edit "Confirmed rules"; kill processes with a broad `pkill -f` (PID or exact port only); write test data into the live state or `uploads/`; touch the user's originals in `uploads/` |
 
 ## 11. Known pitfalls
 

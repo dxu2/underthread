@@ -172,7 +172,7 @@ python3 tools/preset.py apply content-zh
 python3 make_agents.py
 ```
 
-Then restart the steward. `apply` replaces `roster.json`, `team.md`, `policy.md` and `roles/*.md`, and adds `platforms` and a placeholder `comfy` block to `config.json` (your port, owner and times stay). Every file it replaces is first copied to `<file>.bak-preset-<time>`; to undo, copy those back and run `make_agents.py` again.
+Then restart the steward. `apply` replaces `roster.json`, `team.md`, `policy.md` and `roles/*.md`, and adds `platforms` and a placeholder `comfy` block to `config.json` (your port, owner and times stay). Every file it replaces is first backed up under the tag `preset-<time>` (in `local/backups/bak/`, see `tools/bak.py`); to undo, run the `tools/bak.py restore …` line it prints, then `make_agents.py` again.
 
 ---
 

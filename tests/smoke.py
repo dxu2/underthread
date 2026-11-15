@@ -159,12 +159,15 @@ def t_preset(root):
     assert r.returncode == 0, r.stderr
     with open(os.path.join(root, "roster.json"), encoding="utf-8") as f:
         assert "B站" in json.load(f).get("team", "")
-    assert glob.glob(os.path.join(root, "roles", "writer.md.bak-preset-*")), "no backup of the replaced role notes"
+    has_local = os.path.isdir(os.path.join(root, "local"))
+    bk = os.path.join(root, "local", "backups", "bak") if has_local else os.path.join(root, ".backups", "bak")   # core/backup.py
+    assert glob.glob(os.path.join(bk, "roles", "writer.md.bak-preset-*")), "no backup of the replaced role notes"
+    assert not glob.glob(os.path.join(root, "roles", "*.bak*")), "backups must not land next to the files"
     r = subprocess.run([PY, "make_agents.py"], cwd=root, capture_output=True, text=True)
     assert r.returncode == 0, r.stderr
     # put the default crew back for the next checks
-    for f in glob.glob(os.path.join(root, "*.bak-preset-*")) + glob.glob(os.path.join(root, "roles", "*.bak-preset-*")):
-        shutil.move(f, f.split(".bak-preset-")[0])
+    for f in glob.glob(os.path.join(bk, "*.bak-preset-*")) + glob.glob(os.path.join(bk, "roles", "*.bak-preset-*")):
+        shutil.move(f, os.path.join(root, os.path.relpath(f, bk).split(".bak-preset-")[0]))
     for f, was in before.items():
         if not was and os.path.exists(os.path.join(root, f)):
             os.remove(os.path.join(root, f))

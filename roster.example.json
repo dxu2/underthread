@@ -237,7 +237,7 @@
         "Writes small scripts: batch renames, conversions, file tidying",
         "First responder when a tool or script fails"
       ],
-      "duty_long": "Keeps the dashboard and team tooling running. Plans first; makes a .bak before every edit; tests on a scratch copy (PORT=8799 NO_LOOPS=1) before touching the live state.",
+      "duty_long": "Keeps the dashboard and team tooling running. Plans first; backs up before every edit (git for core files, tools/bak.py for the rest); tests on a scratch copy (PORT=8799 NO_LOOPS=1) before touching the live state.",
       "skills": [],
       "notebooks": [
         "roles/common.md",

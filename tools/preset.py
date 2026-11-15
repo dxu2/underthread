@@ -11,8 +11,9 @@ A preset is a folder under presets/<name>/ with any of:
     roles/*.md             -> roles/
     config.json            -> merged into config.json (only the keys it lists; your port, owner and times stay)
 
-Every file that gets replaced is first copied to <file>.bak-preset-<time>. Afterwards run
-`python3 make_agents.py` and restart the steward session. Undo: copy the .bak files back.
+Every file that gets replaced is first backed up under the tag preset-<time> (core/backup.py: local/backups/bak/, or
+.backups/bak/ without a local/ folder). Afterwards run `python3 make_agents.py` and restart the steward session.
+Undo: the restore command apply prints (python3 tools/bak.py restore preset-<time> <files>), then make_agents.py.
 """
 import json
 import os
@@ -21,6 +22,9 @@ import sys
 import time
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if ROOT not in sys.path:
+    sys.path.insert(0, ROOT)
+from core import backup as BK  # noqa: E402
 PRESETS = os.path.join(ROOT, "presets")
 
 
@@ -45,11 +49,7 @@ def plan(name):
 
 
 def backup(path, tag):
-    if os.path.exists(path):
-        b = f"{path}.bak-preset-{tag}"
-        shutil.copy2(path, b)
-        return b
-    return None
+    return BK.save(path, f"preset-{tag}", root=ROOT)
 
 
 def apply(name, dry):
@@ -87,6 +87,11 @@ def apply(name, dry):
             print(f"config.json: set {', '.join(add)}")
     if not dry:
         print("next: python3 make_agents.py, then restart the steward session")
+        saved = [os.path.relpath(b, ROOT) for _, b in files if BK.find(b, f"preset-{tag}", root=ROOT)]
+        if os.path.exists(cj) and BK.find(os.path.join(ROOT, "config.json"), f"preset-{tag}", root=ROOT):
+            saved.append("config.json")
+        if saved:
+            print(f"undo: python3 tools/bak.py restore preset-{tag} {' '.join(saved)}")
 
 
 def main():

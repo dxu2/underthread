@@ -13,7 +13,7 @@ python3 tools/preset.py apply content-zh
 python3 make_agents.py
 ```
 
-Then restart the steward. `apply` replaces `roster.json`, `team.md`, `policy.md` and `roles/*.md`, and merges only the keys the preset lists into `config.json` (here `platforms` and a placeholder `comfy` block; your port, owner and times stay). Every replaced file is first copied to `<file>.bak-preset-<time>`. To undo, copy those `.bak-preset-*` files back over the originals and run `python3 make_agents.py` again.
+Then restart the steward. `apply` replaces `roster.json`, `team.md`, `policy.md` and `roles/*.md`, and merges only the keys the preset lists into `config.json` (here `platforms` and a placeholder `comfy` block; your port, owner and times stay). Every replaced file is first backed up under the tag `preset-<time>` (in `local/backups/bak/`, or `.backups/bak/` without a `local/` folder). To undo, run the `python3 tools/bak.py restore preset-<time> …` line `apply` prints, then `python3 make_agents.py` again.
 
 A preset is just a folder under `presets/<name>/`, so you can make your own the same way.
 

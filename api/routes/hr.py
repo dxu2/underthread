@@ -236,7 +236,7 @@ def _hire_apply(cid):
             h.update(status="transferred", at=S.now(), backup_tag=j.get("backup_tag"))
             it["stage"], it["closed"] = "done", S.now()
             keys = "、".join(c["key"] for c in j.get("changes") or []) or "无"
-            S.add_thread(it, "me", f"已调岗 · {j.get('name') or h.get('target')}：改了 {keys}。备份 .bak-newrole-{j.get('backup_tag')}；10 分钟内可在卡上「撤回调岗」", "done")
+            S.add_thread(it, "me", f"已调岗 · {j.get('name') or h.get('target')}：改了 {keys}。备份 newrole-{j.get('backup_tag')}（tools/bak.py list）；10 分钟内可在卡上「撤回调岗」", "done")
             for x in j.get("lessons") or []:
                 _ht_lesson(st, h.get("target"), x, cid)
             if j.get("lessons"):

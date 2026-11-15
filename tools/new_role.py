@@ -38,7 +38,8 @@ Safety:
     - idempotent: running apply again with the same input fills in whatever is missing and changes nothing else
     - make_agents.py rewrites every agent file, so apply/retire first checks that no OTHER role's agent file would change
       (someone hand-edited it?) and stops if one would
-    - roster.json / manager.md / the agent file get a .bak-newrole-<id>-<time> copy before every change
+    - roster.json / manager.md / the agent file are copied first with core/backup.py, tag newrole-<id>-<time>
+      (local/backups/bak/<file>.bak-newrole-<tag>; tools/bak.py list shows them)
     - --hard never deletes: files move to archive/roles/<id>-<time>/ with their relative paths
     - never edits state.json (the server syncs roster.json on its own; a no-op stateutil.mutate() only wakes the poll), other roles' roles/*.md, common.md, config.json
     - every apply / retire is logged to logs/new_role.jsonl
@@ -47,6 +48,9 @@ import argparse, datetime as dt, filecmp, glob, json, os, re, shutil, subprocess
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 LOCAL = os.path.abspath(os.environ.get("UNDERTHREAD_LOCAL") or os.path.join(ROOT, "local"))   # core / local split (stateutil.LOCAL)
+if ROOT not in sys.path:
+    sys.path.insert(0, ROOT)
+from core import backup as BK   # noqa: E402  t-oss-struct S1: backups go to local/backups/bak/, not next to the file
 
 
 def role_md(i):
@@ -114,15 +118,17 @@ def write_json_atomic(path, data):
 
 
 def backup(path, tag, dry):
-    """<file>.bak-newrole-<tag>; refuses to overwrite an existing backup (checked and copied in one step)."""
-    if not os.path.exists(path):
-        return None
-    b = f"{path}.bak-newrole-{tag}"
-    if os.path.exists(b):
-        die(f"backup {rel(b)} already exists; not overwriting it")
-    if not dry:
-        shutil.copy2(path, b)
-    return b
+    """Copy path to local/backups/bak/<file>.bak-newrole-<tag> (core/backup.py); refuses to overwrite an existing backup
+    (checked and copied in one step)."""
+    try:
+        return BK.save(path, f"newrole-{tag}", root=ROOT, dry=dry)
+    except FileExistsError as e:
+        die(f"backup {rel(str(e))} already exists; not overwriting it")
+
+
+def bak_of(path, tag):
+    """The newrole backup of path: the backups folder, or next to the file for backups made before 0.2."""
+    return BK.find(path, f"newrole-{tag}", root=ROOT)
 
 
 def pick_tag(i, op):
@@ -130,9 +136,9 @@ def pick_tag(i, op):
     base = f"{i}-{op}-{now_tag()}"
     for n in range(1, 100):
         tag = base if n == 1 else f"{base}-{n}"
-        if not any(
-                os.path.exists(f"{p}.bak-newrole-{tag}") for p in (ROSTER, os.path.join(ROOT, "manager.md"))) and not glob.glob(
-                os.path.join(ROOT, ".claude", "agents", f"*.bak-newrole-{tag}")):
+        if not any(BK.exists(p, f"newrole-{tag}", root=ROOT) for p in (ROSTER, os.path.join(ROOT, "manager.md"))) and not glob.glob(
+                os.path.join(ROOT, ".claude", "agents", f"*.bak-newrole-{tag}")) and not glob.glob(
+                os.path.join(BK.root_dir(ROOT), "bak", ".claude", "agents", f"*.bak-newrole-{tag}")):
             return tag
     die("could not find a free backup tag")
 
@@ -910,7 +916,7 @@ def out_update(res):
     for x in res["lessons"]:
         print("  · rule proposal (you approve it on the review page): " + x)
     if res.get("backup_tag"):
-        print(f"  backups: .bak-newrole-{res['backup_tag']}")
+        print(f"  backups: tag newrole-{res['backup_tag']} (python3 tools/bak.py list)")
 
 
 def update_undo(args):
@@ -933,27 +939,26 @@ def update_undo(args):
         die(f"{cid} changed {i}, not {args.id}")
     for f, h in (u.get("sha") or {}).items():
         if sha(read_text(os.path.join(ROOT, f))) != h:
-            die(f"{f} was changed again after the transfer; undo by hand from its .bak-newrole-{tag}")
+            die(f"{f} was changed again after the transfer; undo by hand: python3 tools/bak.py restore newrole-{tag} {f}")
     md = role_md(i)
     roster = load_roster()
     drift = agent_drift(roster, i)
     if drift:
         die("agent files differ from make_agents.py output:\n  " + "\n  ".join(drift))
     for p in (ROSTER, md):
-        b = f"{p}.bak-newrole-{tag}"
-        if not os.path.exists(b):
-            die(f"backup {rel(b)} is missing")
+        if not bak_of(p, tag):
+            die(f"backup of {rel(p)} tagged newrole-{tag} is missing")
     t2 = pick_tag(i, "undo")
     for p in (ROSTER, md, os.path.join(ROOT, "manager.md")):
         backup(p, t2, False)
     for p in (ROSTER, md):
-        shutil.copy2(f"{p}.bak-newrole-{tag}", p)
+        shutil.copy2(bak_of(p, tag), p)
     out = run_make_agents() + "\n" + nudge()
     log({"op": "update_undo", "id": i, "item": cid, "restored_from": tag, "backup_tag": t2})
     if JSON_OUT:
         print(json.dumps({"ok": True, "id": i, "item": cid, "restored_from": tag}, ensure_ascii=False))
     else:
-        print(f"UNDONE update of {i} ({cid}): roster.json + {rel(md)} back from .bak-newrole-{tag}\n  " + out.replace("\n", "\n    "))
+        print(f"UNDONE update of {i} ({cid}): roster.json + {rel(md)} back from backup newrole-{tag}\n  " + out.replace("\n", "\n    "))
 
 
 def main(argv):
