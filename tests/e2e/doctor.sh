@@ -25,6 +25,6 @@ print(("ok    " if not s["loops"] else "FAIL  ") + "loops=%s (NO_LOOPS must be s
 print(("ok    " if h["push"]["devices"]==0 else "FAIL  ") + "push devices=%d" % h["push"]["devices"])
 print("info  rev=%s uptime=%ss" % (s["rev"], s["uptime"]))' | tee /dev/stderr | grep -q '^FAIL' && bad=1
 else fail "/api/health did not answer on $PORT"; fi
-A="app.js $(shasum "$ROOT/web/app.js" 2>/dev/null | cut -c1-8)"; B="app.js $(shasum "$S/web/app.js" 2>/dev/null | cut -c1-8)"   # S9: no ?v= in index.html any more
+A="app.js $(shasum "$ROOT/web/js/app.js" 2>/dev/null | cut -c1-8)"; B="app.js $(shasum "$S/web/js/app.js" 2>/dev/null | cut -c1-8)"   # S9: no ?v= in index.html any more
 [ "$A" = "$B" ] && ok "scratch web matches project ($A)" || warn "scratch $B vs project $A: scratch is stale or carries an unlanded change (intended?)"
 exit $bad

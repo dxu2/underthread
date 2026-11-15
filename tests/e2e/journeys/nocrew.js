@@ -1,5 +1,5 @@
 /* t-drop-team-tab: the 团队 (crew) page is gone from the desk rail and the phone 更多 list; #page=team / crew and a stored
- * rt.page "crew" land on 首页; the 团队交接 widget (web/team.js) still draws and links nowhere.
+ * rt.page "crew" land on 首页; the 团队交接 widget (web/js/team.js) still draws and links nowhere.
  *   node tests/e2e/drive.js run tests/e2e/journeys/nocrew.js --out work/<item>/verify/<run> --views desk,phone --engines chromium,webkit
  */
 const ready = async c => { await c.p.waitForFunction(() => window.App && App.ST && App.ST.meta && !document.getElementById("ut-splash"), null, { timeout: 15000 }); await c.sleep(1500); };

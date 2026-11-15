@@ -1,4 +1,4 @@
-/* t-oss-struct S8: the front-end extension registry (web/ext.js, App.ext). The nine core home widgets come from the registry; a board with a saved
+/* t-oss-struct S8: the front-end extension registry (web/js/ext.js, App.ext). The nine core home widgets come from the registry; a board with a saved
  * layout and no "seen" list gets one on first load without its layout changing; a widget registered by an extension appears once, can be removed,
  * and stays removed after a reload; a registered card kind gets its label; an extension 系统状态 row is collected.
  *   node tests/e2e/drive.js run tests/e2e/journeys/extwidget.js --out <dir> --views desk --engines chromium,webkit

@@ -1,4 +1,4 @@
-/* t-web-toast: desktop in-app notice. Real path: stateutil writes in the scratch copy (reply / ask / dm) -> long poll -> render -> web/toast.js.
+/* t-web-toast: desktop in-app notice. Real path: stateutil writes in the scratch copy (reply / ask / dm) -> long poll -> render -> web/js/toast.js.
  * Checks: reply / ask / dm each pop a card top right; hover pauses the 5 s auto-hide; at most 3 stacked; click opens the card; nothing for the open card;
  * reduced motion = no slide; phone shows nothing.
  *   node tests/e2e/drive.js run tests/e2e/journeys/wtoast.js --out work/<item>/verify/<run> --views desk,phone --engines chromium,webkit --theme dark

@@ -54,7 +54,7 @@ def push_status(endpoint=None):
 
 
 def pending_count(st):
-    """t-app-badge: the app-icon badge = the home page's 「等你拍板」 count. Mirrors web/app.js counts().review
+    """t-app-badge: the app-icon badge = the home page's 「等你拍板」 count. Mirrors web/js/app.js counts().review
     (stage review, or awaitsUser(): waiting + kind plan/question; archived items excluded). Change both together."""
     on = {i["id"] for i in st.get("items", []) if not i.get("archived") and not snooze_active(i)   # ri1103-P2: snoozed cards don't count
           and (i.get("stage") == "review" or (i.get("stage") == "waiting" and i.get("kind") in ("plan", "question")))}
@@ -216,7 +216,7 @@ def _agent_name(st, aid, en=False):
 
 # t-i18n-b: each push_subs.json row carries the device's UI language ("lang": zh|en, sent by push.js on subscribe and on a switch).
 # Mailbox text is stored in Chinese (push_class / _mail_target branch on the prefixes), so English pushes translate the known
-# server-written shapes here; web/app.js srvT() does the same for the page. Anything else (agents' own words) passes through.
+# server-written shapes here; web/js/app.js srvT() does the same for the page. Anything else (agents' own words) passes through.
 PUSH_EN = [
     (re.compile(r"^待审核\s*[:：]\s*(.*?)(（(?:(\d+) 天没回复|推迟到点)）)?$", re.S),
      lambda m: m.group(1) + ((f" (no reply in {m.group(3)} days)" if m.group(3) else " (snooze over)") if m.group(2) else "")),

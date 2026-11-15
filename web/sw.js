@@ -1,4 +1,4 @@
-// sw v6 · Service worker for the home-screen app: shows pushes and opens the right screen when tapped.
+// sw v7 · Service worker for the home-screen app: shows pushes and opens the right screen when tapped.
 // Pushes arrive empty; the text is fetched from the dashboard so nothing needs encrypting.
 self.addEventListener("install", () => self.skipWaiting());
 self.addEventListener("activate", e => e.waitUntil(self.clients.claim()));
@@ -30,7 +30,7 @@ self.addEventListener("push", e => {
     try {
       await self.registration.showNotification(n.title || "Underthread", {
         body: n.body || "", tag, renotify: true,
-        icon: "/static/icon-192.png", badge: "/static/icon-192.png", data: { url: n.url || "/" },
+        icon: "/static/icons/icon-192.png", badge: "/static/icons/icon-192.png", data: { url: n.url || "/" },
       });
     } catch (_) {
       await self.registration.showNotification(n.title || "Underthread", { body: n.body || "", data: { url: n.url || "/" } });

@@ -220,6 +220,7 @@ flowchart LR
 | | |
 |---|---|
 | [docs/setup-guide.md](docs/setup-guide.md) | 完整安装：配置、roster、重启、ComfyUI、工具 |
+| [docs/layout.md](docs/layout.md) | 目录一览：每个文件和文件夹是什么、哪些是你自己的（英文） |
 | [docs/architecture.md](docs/architecture.md) | 各部分怎么配合、卡片生命周期、记忆 |
 | [docs/custom-crew.md](docs/custom-crew.md) | 增加、修改、退休队员 |
 | [docs/phone-and-push.md](docs/phone-and-push.md) | 手机 App、Tailscale Serve、推送 |

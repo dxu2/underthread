@@ -313,7 +313,7 @@ def _chat_seen(a):   # t-ri1113-a P1: how far the user has read each chat / DM, 
 
 @action("widget_layout")
 def _widget_layout(a):   # t-widget-drag: the desktop widget home's order / sizes, shared by every browser (meta.widgets)
-    """S8: ids may be an extension's widget ([a-z][a-z0-9_-]{0,23}, web/ext.js). "seen" = every widget id this board has met, so a new one
+    """S8: ids may be an extension's widget ([a-z][a-z0-9_-]{0,23}, web/js/ext.js). "seen" = every widget id this board has met, so a new one
     (core or extension) is put into the layout once and removing it sticks; it survives a reset and an update without it."""
     body, st = a.body, a.st
     idre = r"[a-z][a-z0-9_-]{0,23}"

@@ -266,7 +266,7 @@ console.log(JSON.stringify({ store: Object.fromEntries(store), n: window.RT_LS_S
 """
 
     def run_js(self, store):
-        r = subprocess.run(["node", "-e", self.JS, os.path.join(ROOT, "web", "lsmigrate.js"), json.dumps(store)],
+        r = subprocess.run(["node", "-e", self.JS, os.path.join(ROOT, "web", "js", "lsmigrate.js"), json.dumps(store)],
                            capture_output=True, text=True, check=True)
         return json.loads(r.stdout)
 
@@ -280,7 +280,7 @@ console.log(JSON.stringify({ store: Object.fromEntries(store), n: window.RT_LS_S
 
     def test_loaded_first(self):
         html = readb(os.path.join(ROOT, "web", "index.html")).decode("utf-8")
-        self.assertLess(html.index("/static/lsmigrate.js"), html.index("localStorage"), "lsmigrate.js must run before any inline script reads rt.*")
+        self.assertLess(html.index("/static/js/lsmigrate.js"), html.index("localStorage"), "lsmigrate.js must run before any inline script reads rt.*")
 
 
 if __name__ == "__main__":

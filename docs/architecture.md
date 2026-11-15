@@ -46,7 +46,7 @@ flowchart LR
 | `core/` | The code behind it: `paths` (file locations), `store` (lock, read, write, archive, inbox), `items`, `asks`, `chat`, `agents`, `handoffs`, `lessons`, `schedule_store` and `schedules` (parsing and next-run maths), `config` and `migrate` (defaults and data upgrades), `ext` (extension loading and hooks), `registry` (the extension registry: API number, card kinds, jobs, extension web files; `docs/extensions.md`). Other scripts read `roster.json` and `config.json` through `core.config` |
 | `server.py` | The entry point only: `python3 server.py` (`PORT`, `NO_LOOPS`, `--demo`). It re-exports every `api/` name, so `local/ext` server extensions that use `srv.<name>` keep working |
 | `api/` | The server code. `router.py` holds the route table (`@route("GET", "/api/health")`) and the action table (`@action("approve")`, one function per `/api/action` kind); `routes/` has one module per feature (`state`, `actions`, `schedules`, `snooze`, `push`, `health`, `secret`, `hr`, `media`, `docs`, `voice`, `update`, `web`); `http.py` is the request handler (guards, gzip, files) and dispatches through the table; `loops.py` holds the background threads; `ctx.py` the shared paths and config. `core/` never imports `api/` |
-| `web/` | Plain HTML, CSS and JavaScript. No build step |
+| `web/` | Plain HTML, CSS and JavaScript. No build step: `index.html` + `main.js`, scripts in `web/js/`, stylesheets in `web/css/`, icons in `web/icons/` ([layout.md](layout.md)) |
 
 ## The loop
 

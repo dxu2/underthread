@@ -218,6 +218,7 @@ The full loop, the card lifecycle and where memory lives: [docs/architecture.md]
 | | |
 |---|---|
 | [docs/setup-guide.md](docs/setup-guide.md) | Full setup: config, roster, restarts, ComfyUI, tools |
+| [docs/layout.md](docs/layout.md) | Folder map: what every file and folder is, which ones are yours |
 | [docs/architecture.md](docs/architecture.md) | How the pieces talk, card lifecycle, memory |
 | [docs/custom-crew.md](docs/custom-crew.md) | Add, change or retire teammates |
 | [docs/phone-and-push.md](docs/phone-and-push.md) | Phone app, Tailscale Serve, push notifications |

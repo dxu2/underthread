@@ -15,7 +15,7 @@ SNOOZE_REPLY_DAYS = 3   # 「等专员回复」 also ends after 3 days with no r
 
 
 def _on_user(it):
-    """Mirrors web/app.js onYou(): review, a waiting plan / question, or open asks (busy is web-only and ignored here)."""
+    """Mirrors web/js/app.js onYou(): review, a waiting plan / question, or open asks (busy is web-only and ignored here)."""
     if it.get("archived") or it.get("stage") == "done":
         return False
     return (it.get("stage") == "review" or (it.get("stage") == "waiting" and it.get("kind") in ("plan", "question"))

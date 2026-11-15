@@ -76,7 +76,7 @@ def register(R):
 
 ## In the page: App.ext
 
-`web/ext.js` loads before every other core page script and is `window.UTExt` (also `App.ext`); extension scripts run after all of them. Core registers its own nine home
+`web/js/ext.js` loads before every other core page script and is `window.UTExt` (also `App.ext`); extension scripts run after all of them. Core registers its own nine home
 widgets through it, so a widget from an extension sizes, moves, drags and hides like a core one.
 
 ```js

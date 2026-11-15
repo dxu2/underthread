@@ -34,13 +34,54 @@ def ext_file(rel):
     return p if p.startswith(os.path.realpath(d) + os.sep) else ""
 
 
+# t-oss-tidy: web/ was sorted into js/, css/ and icons/. Old /static/ names keep working: an old open page or home-screen app, an
+# extension's "after" / "drop" anchor ("skin-ink.css", "icon-180.png") and a local/web/ override saved under the old name all resolve.
+_MOVED_JS = ("app diff ext fx glass home lsmigrate market md mobile palette preview push rolefiles splash team toast transfer viewer "
+             "widgets").split()
+_MOVED_CSS = "glass oss skin-ink splash team texture-knit texture-leather theme-ut widgets".split()
+MOVED = {**{f"{n}.js": f"js/{n}.js" for n in _MOVED_JS}, **{f"{n}.css": f"css/{n}.css" for n in _MOVED_CSS},
+         **{f: f"icons/{f}" for f in ("favicon-16.png", "favicon-32.png", "favicon.ico", "icon-180.png", "icon-192.png", "icon-512.png")}}
+MOVED_DIRS = {"core/": "js/core/", "views/": "js/views/", "phone/": "js/phone/"}
+
+
+def moved(rel):
+    """The new /static/ path of an old (pre t-oss-tidy) one, or None."""
+    if rel in MOVED:
+        return MOVED[rel]
+    return next((new + rel[len(old):] for old, new in MOVED_DIRS.items() if rel.startswith(old)), None)
+
+
+def _was(rel):
+    """The old name of a moved /static/ path (for local/web/ overrides saved before the move), or None."""
+    for old, new in MOVED.items():
+        if new == rel:
+            return old
+    return next((old + rel[len(new):] for old, new in MOVED_DIRS.items() if rel.startswith(new)), None)
+
+
+def _local_web(rel):
+    lw = os.path.join(S.LOCAL, "web")
+    for r in (rel, _was(rel)):
+        if r:
+            lp = os.path.join(lw, r)
+            if os.path.isfile(lp) and os.path.realpath(lp).startswith(os.path.realpath(lw) + os.sep):
+                return lp
+    return None
+
+
 def web_file(rel):
-    """/static/<rel>: local/web/<rel> wins over web/<rel> (core / local split); ext/<name>/... is an extension's web/ folder."""
+    """/static/<rel>: local/web/<rel> wins over web/<rel> (core / local split); ext/<name>/... is an extension's web/ folder.
+    A pre-tidy name (app.js, skin-ink.css, core/x.js) resolves to where the file lives now."""
     xf = ext_file(rel)
     if xf is not None:
         return xf
-    lp = os.path.join(S.LOCAL, "web", rel)
-    return lp if os.path.isfile(lp) and os.path.realpath(lp).startswith(os.path.realpath(os.path.join(S.LOCAL, "web")) + os.sep) else os.path.join(WEB, rel)
+    lp = _local_web(rel)
+    if lp:
+        return lp
+    p = os.path.join(WEB, rel)
+    if not os.path.exists(p) and moved(rel):
+        return web_file(moved(rel))
+    return p
 
 
 _VH = {}   # (path, mtime_ns, size) -> short content hash
@@ -94,7 +135,7 @@ def css_bundle(name):
     return b"".join(out)
 
 
-_SKIP_DIRS = ("art", "fonts", "brand", "knit", "leather")   # image / font folders: no scripts, not worth walking on every page load
+_SKIP_DIRS = ("art", "fonts", "brand", "knit", "leather", "icons")   # image / font folders: no scripts, not worth walking on every page load
 
 
 def _js_files():
@@ -167,7 +208,7 @@ def index_html():
     with open(os.path.join(WEB, "index.html"), encoding="utf-8") as f:
         lines = f.read().split("\n")
     blocks = REG.web_blocks()   # t-oss-struct S8: local/ext.json (as _legacy) first, then every loaded extension's ext.json "web"
-    on = lambda ln, ref: f"/static/{ref}?" in ln or f'/static/{ref}"' in ln
+    on = lambda ln, ref: any(f"/static/{r}?" in ln or f'/static/{r}"' in ln for r in (ref, moved(ref)) if r)   # t-oss-tidy: old names match
     drop = [d for _, b in blocks for d in b.get("drop") or [] if isinstance(d, str) and d]
     lines = [ln for ln in lines if not any(on(ln, d) for d in drop)]
     for kind, mark in (("css", "<!-- EXT:CSS -->"), ("js", "<!-- EXT:JS -->")):
@@ -240,8 +281,18 @@ def _files(prefix, base):
             lp = h._safe(os.path.join(S.LOCAL, "web"), unquote(u.path[len(prefix):]))
             if lp and os.path.isfile(lp):
                 p = lp   # t-voice-memo: %-encoded names (新录音_12.m4a) 404ed before
+            else:
+                lp = _local_web(unquote(u.path[len(prefix):]))   # t-oss-tidy: an override saved under the pre-tidy name
+                if lp:
+                    p = lp
         if not p:
             return h._send(403, {"error": "forbidden"})
+        if prefix == "/static/" and not os.path.isfile(p):
+            new = moved(unquote(u.path[len(prefix):]))   # t-oss-tidy: a pre-tidy path (old page, old home-screen app, bookmark)
+            if new and ".." not in new.split("/"):
+                np = web_file(new)
+                if np and os.path.isfile(np):
+                    p = np
         if prefix == "/static/" and not os.path.isfile(p):
             b = css_bundle(unquote(u.path[len(prefix):]))   # S11: the old name of a split sheet
             if b is not None:

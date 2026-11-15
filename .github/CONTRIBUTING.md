@@ -39,7 +39,7 @@ Read [docs/architecture.md](../docs/architecture.md) first. In short:
 - **Python standard library only.** No `pip install` for the core. An optional tool may need an external program (ffmpeg, cwebp, whisper.cpp); say so at the top of the file and fail with a clear message when it's missing.
 - **No build step** for `web/`. The page scripts are ES modules: `web/main.js` imports them in order, and the server writes an import map that gives every file a `?v=<content hash>`, so a changed file always gets a new URL. Never write `?v=` by hand; a new page script is one `import` line in `web/main.js`. Modules run in strict mode.
 - **All state goes through `stateutil.py`.** Never write `state.json` directly, and never rewrite or truncate `inbox.jsonl`.
-- **Both languages.** Every user-facing string needs English and Chinese (look for the `en() ? "…" : "…"` pattern and the string tables in `web/app.js`).
+- **Both languages.** Every user-facing string needs English and Chinese (look for the `en() ? "…" : "…"` pattern and the string tables in `web/js/app.js`).
 - **Desktop and phone.** Check a UI change at desktop width and at about 390px wide, in light and dark.
 - **Local only.** Don't add anything that binds to `0.0.0.0`, calls out to a third-party service by default, or sends data off the machine.
 - Keep comments about *why*, not *what*.
@@ -50,7 +50,7 @@ Updates must never need a manual step from the user, so every change to the shap
 
 - **New key with a sensible default:** nothing else to do. Missing top-level state keys are filled by `stateutil._shape`; missing config keys come from `DEFAULTS` in `core/config.py` (defaults are never written into the user's `config.json`; regenerate the example with `python3 -m core.config example --write`).
 - **Anything else** (rename, move, backfill, new meaning): add the next numbered step in `core/migrations/` (`NNNN_<name>.py` with `TARGETS` and `up(data, ctx)`). It runs once, in order, on the first read after the update, after the old file is saved under `local/backups/migrate/` (`.backups/migrate/` without a `local/` folder). A step must be idempotent and, within a minor version, add-only: leave the old key in place so a rollback to the previous code still works.
-- **Browser storage** (`rt.*` keys in localStorage): add a step at the end of `STEPS` in `web/lsmigrate.js`; never edit or reorder a shipped one.
+- **Browser storage** (`rt.*` keys in localStorage): add a step at the end of `STEPS` in `web/js/lsmigrate.js`; never edit or reorder a shipped one.
 - `python3 stateutil.py schema` shows the numbers and the migration log; `python3 stateutil.py config show` shows each effective config value and whether it is a default.
 
 ## Changing prompts

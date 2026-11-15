@@ -119,7 +119,7 @@ def t_compile(root):
         if r.returncode:
             bad.append(r.stderr.strip())
     if shutil.which("node"):
-        for f in sorted(glob.glob(os.path.join(root, "web", "*.js"))):
+        for f in sorted(glob.glob(os.path.join(root, "web", "*.js")) + glob.glob(os.path.join(root, "web", "js", "*.js"))):   # t-oss-tidy: page scripts in web/js/
             if os.path.basename(f) == "main.js":
                 continue   # import statements: parsed as a module by tests/unit/test_web_modules.py
             r = subprocess.run(["node", "--check", f], capture_output=True, text=True)
@@ -298,6 +298,7 @@ def t_local(root):
         "web/mobile.css": "/* smoke: an old whole-file override */\n",
         "web/css/style/99-smoke.css": "/* smoke: a local section */\n",
         "web/smoke-ext.js": "/* smoke */\n",
+        "web/toast.js": "/* smoke: an override saved under the pre-tidy name */\n",
         "ext/smoke/server_ext.py": "def register(srv):\n    def route(h, u, q):\n        if u.path == '/api/smoke-ext':\n            return h._send(200, {'ok': True})\n    srv.EXT_GET.append(route)\n",
         "ext/smoke/stateutil_ext.py": "def register(S):\n    def cli(sub):\n        sub.add_parser('smoke-ext').set_defaults(fn=lambda a: print('smoke-ext ok'))\n    S.CLI_EXT.append(cli)\n",
     }
@@ -323,15 +324,19 @@ def t_local(root):
             assert code == 200 and re.search(r'<script defer src="/static/smoke-ext\.js\?v=[0-9a-f]{8}"', html) and re.search(r"/static/smoke-ext\.css\?v=[0-9a-f]{8}", html), "ext.json files not injected"
             assert html.index('<script defer src="/static/smoke-ext.js') > html.index('<script type="module" src="/static/main.js'), "extension script must come after the module entry"
             assert html.index("smoke-ext.css") > html.index("skin-ink.css"), "css not placed after its anchor"
-            assert "/static/oss.css" not in html, "drop did not remove oss.css"
+            assert "/static/css/oss.css" not in html, "drop did not remove oss.css"
             # t-oss-struct S11: a whole local/web/mobile.css still wins (no section links); a local section joins style.css by its number
             assert "/static/css/mobile/" not in html and re.search(r'href="/static/mobile\.css\?v=[0-9a-f]{8}" media="\(max-width: 760px\)"', html), "local mobile.css override lost"
             assert html.index("/static/css/style/99-smoke.css") == html.rindex("/static/css/style/"), "local section not last"
             assert req(srv.port, "/static/style.css")[1].endswith(b"/* smoke: a local section */\n"), "joined style.css misses the local section"
-            assert re.search(r'"/static/app\.js":"/static/app\.js\?v=[0-9a-f]{8}"', html), "no content hash for app.js in the import map"
+            assert re.search(r'"/static/js/app\.js":"/static/js/app\.js\?v=[0-9a-f]{8}"', html), "no content hash for app.js in the import map"
             assert html.index('<script type="importmap">') < html.index('<script type="module"'), "import map must come before the module entry"
-            assert re.search(r'<meta name="ut-build" content="\w+">', html) and 'rel="modulepreload" href="/static/app.js?v=' in html
+            assert re.search(r'<meta name="ut-build" content="\w+">', html) and 'rel="modulepreload" href="/static/js/app.js?v=' in html
             assert req(srv.port, "/static/smoke-ext.js")[0] == 200
+            # t-oss-tidy: web/ sorted into js/ css/ icons/; old names still answer (old page, home-screen app, local/web/ override)
+            assert req(srv.port, "/static/js/toast.js")[1].startswith(b"/* smoke: an override saved under the pre-tidy name"), "old-name local/web override lost"
+            for old in ("/static/app.js", "/static/js/core/util.js", "/static/core/util.js", "/static/skin-ink.css", "/static/icon-192.png", "/static/favicon.ico"):
+                assert req(srv.port, old)[0] == 200, f"{old} not served"
             assert req(srv.port, "/api/smoke-ext")[0] == 200, "extension route missing"
         finally:
             srv.stop()

@@ -4,21 +4,21 @@
    Versions: the server writes an import map into the page (api/routes/web.py) that maps every /static/<file>.js to /static/<file>.js?v=<content
    hash>, so a relative import here gets a new URL exactly when that file changes. Never write ?v= by hand.
    Adding a file: import it here at the right place. Modules run in strict mode (a typo'd variable throws instead of making a global). */
-import "./md.js";
-import "./fx.js";
-import "./diff.js";
-import "./ext.js";
-import "./app.js";
-import "./market.js";
-import "./transfer.js";
-import "./preview.js";
-import "./palette.js";
-import "./home.js";
-import "./team.js";
-import "./widgets.js";
-import "./toast.js";
-import "./rolefiles.js";
-import "./viewer.js";
-import "./glass.js";
-import "./mobile.js";
-import "./push.js";
+import "./js/md.js";
+import "./js/fx.js";
+import "./js/diff.js";
+import "./js/ext.js";
+import "./js/app.js";
+import "./js/market.js";
+import "./js/transfer.js";
+import "./js/preview.js";
+import "./js/palette.js";
+import "./js/home.js";
+import "./js/team.js";
+import "./js/widgets.js";
+import "./js/toast.js";
+import "./js/rolefiles.js";
+import "./js/viewer.js";
+import "./js/glass.js";
+import "./js/mobile.js";
+import "./js/push.js";
