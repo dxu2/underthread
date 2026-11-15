@@ -16,7 +16,7 @@ What every top-level folder and file is, and which ones are yours. Two rules cov
 | `README.md`, `README.zh-CN.md`, `CHANGELOG.md`, `LICENSE`, `VERSION` | The usual |
 | `*.example.json` | The seeds a fresh install copies: `config.example.json`, `roster.example.json`, `state.example.json` |
 | `core.manifest.json` | Every core file with its checksum (written by `tools/release.py`), so updates can tell your edits from ours |
-| **Your data** (not in git) | `state.json` (cards, chat, schedules), `archive.json`, `inbox.jsonl` (your clicks for the steward), `config.json`, `roster.json`, `manager-handoff.md`, `push_subs.json` / `vapid.json` (phone push keys), `secrets_meta.json` |
+| **Your data** (not in git) | `state.json` (cards, chat, schedules), `archive.json`, `inbox.jsonl` (your clicks for the steward), `config.json`, `roster.json`, `manager-handoff.md`, `push_subs.json` / `vapid.json` (phone push keys), `secrets_meta.json`, `feeds.json` (connected mailboxes and where the collector is; the passwords are in the keychain, see [feeds.md](feeds.md)) |
 
 The data files stay in the root on purpose: scripts and extensions that read them by that path keep working across every update.
 
@@ -24,7 +24,7 @@ The data files stay in the root on purpose: scripts and extensions that read the
 
 | Folder | What it is |
 |---|---|
-| `core/` | The state store and everything behind `stateutil.py`: paths, store, items, asks, chat, schedules, config defaults, data migrations (`core/migrations/`), extension loading, token usage (`usage_roll.py`) |
+| `core/` | The state store and everything behind `stateutil.py`: paths, store, items, asks, chat, schedules, config defaults, data migrations (`core/migrations/`), extension loading, token usage (`usage_roll.py`), the mail feed collector (`core/feeds/`) |
 | `api/` | The server code: `router.py` (route + action tables), `routes/` (one module per feature), `http.py`, `loops.py` (background threads), `ctx.py` |
 | `web/` | The page. Plain HTML, CSS and JavaScript, no build step (below) |
 | `roles/` | One rule file per teammate (`roles/<id>.md`); your own rules go in `local/roles/` |

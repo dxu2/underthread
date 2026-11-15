@@ -152,6 +152,7 @@ claude "Start the manager per manager.md"
 - **招聘市场。** 24 个岗位模板，每个三种性格，一键雇佣。
 - **⌘K，或者直接按 `/`。** 搜索所有卡片和聊天记录。
 - **一个信箱。** 回复、交付和通知都在这里，可筛选。
+- **邮件进管家的收件箱。** 在「设置 → 连接」里连上 Gmail（应用专用密码，存在钥匙串里），新邮件每隔几分钟汇成一条只有标题的消息，分成「要你处理 / 可起草 / 知悉」。只读：什么都不会发出或删除。Slack 随后支持。见 [Feeds](docs/feeds.md)（英文）。
 - **换个样子。** Underthread 的咖啡奶油配色，或者 Ink 黑玻璃；夜间、日间或跟随系统；再叠一层质感：针脚、毛衣、软皮、马鞍。
 
   <p align="center"><img src="docs/img/textures.gif" alt="在设置里切换质感：无、针脚、毛衣、软皮、马鞍" width="720"></p>
@@ -224,6 +225,7 @@ flowchart LR
 | [docs/architecture.md](docs/architecture.md) | 各部分怎么配合、卡片生命周期、记忆 |
 | [docs/custom-crew.md](docs/custom-crew.md) | 增加、修改、退休队员 |
 | [docs/phone-and-push.md](docs/phone-and-push.md) | 手机 App、Tailscale Serve、推送 |
+| [docs/feeds.md](docs/feeds.md) | 连接 Gmail：信息流收集、收件箱里的格式、密码存在哪 |
 | [docs/troubleshooting.md](docs/troubleshooting.md) | 排障和常见问题 |
 | [.github/CONTRIBUTING.md](.github/CONTRIBUTING.md) | 参与开发 |
 | [.github/SECURITY.md](.github/SECURITY.md) | 安全模型和漏洞报告 |

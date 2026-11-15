@@ -152,6 +152,7 @@ Something not working? See [Troubleshooting](docs/troubleshooting.md). The long 
 - **Hiring market.** 24 job templates, three personalities each. Hire in one click.
 - **⌘K, or just `/`.** Search every card and everything said in chat.
 - **One mailbox** for replies, deliveries and notices, with filters.
+- **Your mail in the steward's inbox.** Connect Gmail in Settings → Connections (app password, stored in the keychain) and new mail arrives as one headers-only entry every few minutes, sorted into "needs you / can draft / FYI". Read-only: nothing is ever sent or deleted. Slack is next. See [Feeds](docs/feeds.md).
 - **Your look.** The Underthread palette in coffee and cream, or Ink. Night, day or follow the system, plus textures: Stitch, Sweater, Leather, Saddle.
 
   <p align="center"><img src="docs/img/textures.gif" alt="Switching textures in Settings: off, Stitch, Sweater, Leather, Saddle" width="720"></p>
@@ -222,6 +223,7 @@ The full loop, the card lifecycle and where memory lives: [docs/architecture.md]
 | [docs/architecture.md](docs/architecture.md) | How the pieces talk, card lifecycle, memory |
 | [docs/custom-crew.md](docs/custom-crew.md) | Add, change or retire teammates |
 | [docs/phone-and-push.md](docs/phone-and-push.md) | Phone app, Tailscale Serve, push notifications |
+| [docs/feeds.md](docs/feeds.md) | Connect Gmail: the feed collector, its inbox entries and where the password lives |
 | [docs/troubleshooting.md](docs/troubleshooting.md) | Troubleshooting and FAQ |
 | [.github/CONTRIBUTING.md](.github/CONTRIBUTING.md) | Working on Underthread itself |
 | [.github/SECURITY.md](.github/SECURITY.md) | Threat model and how to report a problem |

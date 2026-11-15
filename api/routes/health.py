@@ -59,7 +59,17 @@ def health():
                    "queued": st["meta"].get("report_queued")},
         "disk": disk if disk.get("total") else None,
         "ext": _ext_brief(),
+        "feeds": _feeds(),
     }
+
+
+def _feeds():
+    """t-feed-inbox: connected sources, how many are on, which have an error, messages today."""
+    try:
+        from core.feeds import collector
+        return collector.summary()
+    except Exception:  # noqa: BLE001
+        return None
 
 
 def _ext_brief():

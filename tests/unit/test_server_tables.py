@@ -42,7 +42,7 @@ urlparse usage_roll uuid wake_loop web_file""".split()
 # (method, path, flags, module). "*" = path prefix. flags: raw = the handler reads the body; late = after the extension routes.
 ROUTES = [
     ("GET", "/", "", "api.routes.web"), ("GET", "/api/archive", "", "api.routes.state"), ("GET", "/api/doc", "", "api.routes.docs"),
-    ("GET", "/api/docs", "", "api.routes.docs"), ("GET", "/api/ext", "", "api.routes.health"), ("GET", "/api/handoffs", "", "api.routes.state"),
+    ("GET", "/api/docs", "", "api.routes.docs"), ("GET", "/api/ext", "", "api.routes.health"), ("GET", "/api/feeds", "", "api.routes.feeds"), ("GET", "/api/handoffs", "", "api.routes.state"),
     ("GET", "/api/health", "", "api.routes.health"), ("GET", "/api/history", "", "api.routes.state"),
     ("GET", "/api/item", "", "api.routes.state"), ("GET", "/api/memory", "", "api.routes.docs"),
     ("GET", "/api/push/history", "", "api.routes.push"), ("GET", "/api/push/key", "", "api.routes.push"),
@@ -62,7 +62,7 @@ ROUTES = [
     ("POST", "/api/push/prefs", "", "api.routes.push"), ("POST", "/api/push/subscribe", "", "api.routes.push"),
     ("POST", "/api/push/test", "", "api.routes.push"), ("POST", "/api/push/unsubscribe", "", "api.routes.push"),
     ("POST", "/api/transcribe", "", "api.routes.media"), ("POST", "/api/upload", "", "api.routes.media"),
-    ("POST", "/api/memo", "raw", "api.routes.media"), ("POST", "/api/secret/github", "raw", "api.routes.secret"),
+    ("POST", "/api/memo", "raw", "api.routes.media"), ("POST", "/api/feeds", "raw", "api.routes.feeds"), ("POST", "/api/secret/github", "raw", "api.routes.secret"),
     ("POST", "/api/upload/raw", "raw", "api.routes.media"), ("POST", "/api/voice/*", "raw", "api.routes.voice"),
 ]
 
@@ -118,7 +118,7 @@ class ServerTables(unittest.TestCase):
 
     def test_loops(self):
         self.assertEqual(self.info["loops"], ["comfy_probe_loop", "report_loop", "roster_watch_loop", "push_loop", "wake_loop",
-                                              "schedule_loop", "snooze_loop", "update_check_loop"])
+                                              "schedule_loop", "snooze_loop", "update_check_loop", "feeds_loop"])
 
     def test_import_rule(self):
         """core/ never imports api/ or server; api/ never imports server (server.py is the entry point, not a library)."""

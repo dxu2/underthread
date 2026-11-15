@@ -13,6 +13,7 @@ from api.routes.schedules import schedules_fire
 from api.routes.snooze import snooze_tick
 from api.routes.state import sync_roster
 from api.routes.update import run_check as update_run_check
+from core.feeds import collector as feeds_collector
 
 
 def comfy_probe_loop():
@@ -123,6 +124,18 @@ def update_check_loop():
         time.sleep(3600)
 
 
+def feeds_loop():
+    """t-feed-inbox: every 30 s, poll each connected feed source that is switched on and due (Settings -> Connections).
+    Nothing connected = nothing happens. The work and its rules live in core/feeds/collector.py."""
+    time.sleep(20)
+    while True:
+        try:
+            feeds_collector.tick()
+        except Exception as e:
+            print("feeds_loop:", type(e).__name__)   # never the message: it could carry text from the mail server
+        time.sleep(30)
+
+
 def roster_watch_loop():
     while True:
         try:
@@ -132,13 +145,16 @@ def roster_watch_loop():
         time.sleep(5)
 
 
-LOOPS = (comfy_probe_loop, report_loop, roster_watch_loop, push_loop, wake_loop, schedule_loop, snooze_loop, update_check_loop)
+LOOPS = (comfy_probe_loop, report_loop, roster_watch_loop, push_loop, wake_loop, schedule_loop, snooze_loop, update_check_loop, feeds_loop)
 
 
-def start():
-    """One daemon thread per loop (server.main(), unless NO_LOOPS). Returns the threads."""
+def start(only=None):
+    """One daemon thread per loop (server.main(), unless NO_LOOPS). Returns the threads.
+    only: names to start (NO_LOOPS=1 FEEDS_LOOP=1 starts just feeds_loop, for a scratch copy)."""
     out = []
     for fn in LOOPS:
+        if only and fn.__name__ not in only:
+            continue
         t = threading.Thread(target=fn, daemon=True, name=fn.__name__)
         t.start()
         out.append(t)

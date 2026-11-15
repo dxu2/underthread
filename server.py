@@ -4,6 +4,7 @@
     python3 server.py            # http://127.0.0.1:8765
     PORT=8799 python3 server.py  # scratch copy for UI testing
     NO_LOOPS=1 python3 server.py # no background threads (report, schedules, push, ...)
+    NO_LOOPS=1 FEEDS_LOOP=1 ...  # ... except the feed collector (core/feeds)
     python3 server.py --demo     # sample crew in .demo/ (tools/demo.py)
 
 Serves web/, a JSON API over state.json, and turns your clicks into inbox.jsonl entries the manager session watches.
@@ -64,6 +65,8 @@ def main():
     port = int(os.environ.get("PORT") or CONFIG.get("port") or 8765)
     if not os.environ.get("NO_LOOPS"):
         loops.start()
+    elif os.environ.get("FEEDS_LOOP"):
+        loops.start(only=("feeds_loop",))   # t-feed-inbox: a scratch copy that tests the collector
     try:
         srv = QuietServer(("127.0.0.1", port), H)
     except OSError as e:   # audit SM-14: a clear line instead of a traceback when the port is taken

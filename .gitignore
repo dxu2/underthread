@@ -12,6 +12,7 @@ push_subs.json*
 /state.json*
 /archive.json*
 /inbox.jsonl*
+/feeds.json*
 *.lock
 .*.lock
 manager-handoff.md

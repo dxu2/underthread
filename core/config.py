@@ -30,6 +30,10 @@ DEFAULTS = {
     "allowed_hosts": [],     # extra Host names the server answers (e.g. a Tailscale name); 127.0.0.1 / localhost always work
     "legacy_headers": [],    # extra CSRF header names accepted besides X-Underthread
     "update": {"remote": "", "check": True},   # tools/update.py: git remote to update from ("" = upstream / origin), daily check
+    # t-feed-inbox (docs/feeds.md): tunables only. Which sources are connected, on/off and their interval live in feeds.json (set on
+    # Settings -> Connections); passwords live in the keychain. classifier: "auto" (claude if on PATH) | "claude" | "off"
+    "feeds": {"interval_min": 5, "max_per_poll": 30, "snippet_chars": 120, "primary_only": True, "classifier": "auto",
+              "classifier_model": "haiku"},
 }
 EXAMPLE = {"owner": {"display_name": "<your name>"}}   # placeholders shown only in config.example.json
 ROLE_DEFAULTS = {"enabled": True}

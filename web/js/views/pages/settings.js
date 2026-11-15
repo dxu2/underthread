@@ -4,6 +4,7 @@
 
 // ===== t-settings-tab (approved 11-04, plan v1.1): one 设置 page. Tabs 通用 / 角色 / 文档 / 日志 / 系统; the old 角色 / 文档 / 日志 pages are drawn
 // inside their tab (UI.noHead drops their masthead). 通用 gathers the phone 更多 settings + theme mode; 系统 = status, role usage, GitHub token, 唤醒管家.
+// t-feed-inbox: 连接 = feed sources (Gmail, Slack), drawn by ./connections.js.
 // Theme mode (rt.themeMode auto | manual) is decided before first paint in index.html and kept live in mobile.js ui13.
 import { $, LS } from "../../core/util.js";
 import { srvLocal } from "../../core/i18n.js";
@@ -18,9 +19,10 @@ import { PAGES, renderPage } from "./index.js";
 import { PIPE, contentRoles, isContent, pipeCard, pipeName, pipeOf, pipeWeek, pipeWho } from "./pipe.js";
 import { ghLabel, ghOpen, loadHealth, statusRows, statusSummary } from "../status.js";
 import { hooks, render } from "../../app.js";
+import { stConnections, wireConnections } from "./connections.js";
 const themeMode = () => LS.get("themeMode", "manual") === "auto" ? "auto" : "manual";
 const RMQ_S = matchMedia("(prefers-reduced-motion: reduce)");
-const ST_L = { general: ["通用", "General"], roles: ["角色", "Roster"], docs: ["文档", "Docs"], logs: ["日志", "Log"], system: ["系统", "System"] };
+const ST_L = { general: ["通用", "General"], connections: ["连接", "Connections"], roles: ["角色", "Roster"], docs: ["文档", "Docs"], logs: ["日志", "Log"], system: ["系统", "System"] };
 function setTab(k, dir) {
   if (!SET_TABS.includes(k)) return;
   const was = UI.setTab; UI.setTab = k; LS.set("setTab", k);
@@ -168,6 +170,7 @@ const plFade = el => el.classList.toggle("more", el.scrollWidth - el.clientWidth
 const plSL = {};   // polls re-render the page; keep each sideways row where you left it (phones open the week strip at today)
 
 function wireSettings() {
+  wireConnections();   // t-feed-inbox
   document.addEventListener("click", e => { const b = e.target.closest("[data-settab]"); if (b) setTab(b.dataset.settab); });
   document.addEventListener("click", updClick);
   /* t-nav-shoot: 制作 sub tabs. Fade the page out (90 ms), switch, slide the new page in from the side you moved to; reduced motion = just switch. */
@@ -198,7 +201,7 @@ function wireSettings() {
     const tabs = `<div class="st-tabs"><div class="seg" data-seg="settab" role="tablist">${SET_TABS.map(x => `<button type="button" class="seg-i ${x === k ? "on" : ""}" role="tab" aria-selected="${x === k}" data-settab="${x}">${ST_L[x][en ? 1 : 0]}</button>`).join("")}</div></div>`;
     let body;
     UI.noHead = true;
-    try { body = k === "general" ? stGeneral() : k === "system" ? stSystem() : PAGES[k](); } finally { UI.noHead = false; }
+    try { body = k === "general" ? stGeneral() : k === "system" ? stSystem() : k === "connections" ? stConnections() : PAGES[k](); } finally { UI.noHead = false; }
     return pageHead("settings") + tabs + `<div class="st-pane st-p-${k}${UI.stDir ? " st-in-" + UI.stDir : ""}" role="tabpanel">${body || ""}</div>`;
   };
   document.addEventListener("click", e => {

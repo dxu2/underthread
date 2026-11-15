@@ -11,5 +11,13 @@
   "update": {
     "remote": "",
     "check": true
+  },
+  "feeds": {
+    "interval_min": 5,
+    "max_per_poll": 30,
+    "snippet_chars": 120,
+    "primary_only": true,
+    "classifier": "auto",
+    "classifier_model": "haiku"
   }
 }

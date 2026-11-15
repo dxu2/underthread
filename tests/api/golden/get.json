@@ -83,6 +83,10 @@
    },
    {
     "group": "docs",
+    "path": "docs/feeds.md"
+   },
+   {
+    "group": "docs",
     "path": "docs/layout.md"
    },
    {
@@ -189,6 +193,9 @@
     "api": 1,
     "extensions": [],
     "health": []
+   },
+   "feeds": {
+    "connected": 0
    },
    "now": "2026-01-20T10:00:00+00:00",
    "push": {
@@ -614,6 +621,7 @@
     "/static/js/phone/hello.js?v=<h>",
     "/static/js/views/pages/pipe.js?v=<h>",
     "/static/js/views/pages/quests.js?v=<h>",
+    "/static/js/views/pages/connections.js?v=<h>",
     "/static/icons/favicon-32.png?v=<h>",
     "/static/icons/favicon-16.png?v=<h>",
     "/static/icons/icon-192.png?v=<h>",
@@ -641,6 +649,7 @@
     "/static/css/style/16-topbar-mailbox-fonts.css?v=<h>",
     "/static/css/style/17-avatar-row-market-hr.css?v=<h>",
     "/static/css/style/18-fixes-1108-1112.css?v=<h>",
+    "/static/css/style/19-connections.css?v=<h>",
     "/static/css/mobile/00-layout.css?v=<h>",
     "/static/css/mobile/01-polish-tabbar.css?v=<h>",
     "/static/css/mobile/02-chat.css?v=<h>",
@@ -708,6 +717,7 @@
     "/static/js/views/left.js": "/static/js/views/left.js?v=<h>",
     "/static/js/views/mail.js": "/static/js/views/mail.js?v=<h>",
     "/static/js/views/pages/common.js": "/static/js/views/pages/common.js?v=<h>",
+    "/static/js/views/pages/connections.js": "/static/js/views/pages/connections.js?v=<h>",
     "/static/js/views/pages/index.js": "/static/js/views/pages/index.js?v=<h>",
     "/static/js/views/pages/library.js": "/static/js/views/pages/library.js?v=<h>",
     "/static/js/views/pages/pipe.js": "/static/js/views/pages/pipe.js?v=<h>",
