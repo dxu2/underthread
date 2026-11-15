@@ -25,7 +25,8 @@ Read [docs/architecture.md](docs/architecture.md) first. In short:
 
 | Where | What |
 |---|---|
-| `server.py` | HTTP server, JSON API, timers. Standard library only |
+| `server.py` | Entry point of the HTTP server (`PORT`, `NO_LOOPS`, `--demo`). Standard library only |
+| `api/` | The server: a new endpoint is a function with `@route(...)` in the matching `api/routes/<feature>.py`, a new `/api/action` kind a function with `@action("<kind>")`, a new timer a loop in `api/loops.py`. `tests/unit/test_server_tables.py` lists every route and action, so add yours there too |
 | `stateutil.py` | The CLI the agents use, plus a re-export of every `core/` name for scripts that `import stateutil` |
 | `core/` | The only writer of `state.json` (`core/store.py`, file lock), the card, ask, chat and schedule logic, config defaults and migrations. Read `roster.json` / `config.json` through `core.config`, never with `json.load` (a unit test checks) |
 | `make_agents.py` | `roster.json` → `.claude/agents/*.md` |

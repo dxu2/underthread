@@ -20,6 +20,7 @@ Work in progress goes under `## Unreleased`; the release renames it to `## [X.Y.
 - **Export check**: `tests/unit/test_exports.py` lists every `stateutil` name other scripts and extensions use, and checks that they are all still there and are the same objects as in `core/`.
 
 ### Changed
+- **Server split by feature**: `server.py` is now only the entry point (same command, same `PORT`, `NO_LOOPS` and `--demo`). The endpoints live in `api/routes/` (one module per feature) and register in a route table, each `/api/action` kind is one function in an action table, and the background timers (daily report, schedules, snoozes, push, wake, roster watch, ComfyUI probe) are in `api/loops.py`. Every answer is unchanged (the golden snapshots match byte for byte), and `server.<name>` still reaches every old name for `local/ext/` server extensions. `tests/unit/test_server_tables.py` lists every route and action kind.
 - **Code moved into `core/`**: the functions behind `stateutil.py` now live in `core/` (`paths`, `store`, `items`, `asks`, `chat`, `agents`, `handoffs`, `lessons`, `schedule_store`, `ext`), and `schedules.py` moved to `core/schedules.py`. `stateutil.py` is the same command line and re-exports every old name, and `import schedules` still works, so nothing changes for agents, scripts or `local/ext/` extensions.
 - **One way to read settings**: `make_agents.py`, `tools/new_role.py`, `tools/avatar_sizes.py`, `tools/transcribe.py`, `tools/comfy.py`, `tools/ghcred.py`, `tools/ensure_server.py`, `tools/statusline.py` and `usage_roll.py` read `roster.json`, `config.json` and `state.json` through `core.config` / `core.store`, so they see migrated data and the config defaults.
 
@@ -29,7 +30,7 @@ Work in progress goes under `## Unreleased`; the release renames it to `## [X.Y.
 ### Upgrade notes
 - Migrations: none
 - New config keys: none
-- Extension API: unchanged (every `stateutil` name is still exported; `tests/unit/test_exports.py`)
+- Extension API: unchanged (every `stateutil` name is still exported, `tests/unit/test_exports.py`; every old `server` name too, `tests/unit/test_server_tables.py`; `EXT_GET` routes run at the same point as before)
 - Manual steps: none
 
 需要手动做的事：无。

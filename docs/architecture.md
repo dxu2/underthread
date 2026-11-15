@@ -31,7 +31,7 @@ flowchart LR
 
 | File | What it is |
 |---|---|
-| `server.py` | Standard-library HTTP server for the dashboard and its JSON API. Also runs timers: daily report, schedules, archive sweep, ComfyUI probe (only when `config.json` has a `comfy` block), roster sync, push. `NO_LOOPS=1` turns the timers off |
+| `server.py` | Standard-library HTTP server for the dashboard and its JSON API (the code is in `api/`, below). Also runs timers: daily report, schedules, archive sweep, ComfyUI probe (only when `config.json` has a `comfy` block), roster sync, push. `NO_LOOPS=1` turns the timers off |
 | `stateutil.py` | The only writer of `state.json`. Every change goes through it under an exclusive file lock, so the server, the steward and every teammate can write at the same time. Run it with no arguments for the command list |
 | `state.json` | The single source of truth: cards, agents' statuses, chat, DMs, mail, lessons, reports, schedules, usage. Never hand-edit it |
 | `archive.json` | Finished cards moved out of `state.json` after 3 quiet days |
@@ -44,6 +44,8 @@ flowchart LR
 | `roles/*.md` | Role notes. `common.md` is read by everyone; each ends in `## Confirmed rules` |
 | `stateutil.py` | The command line every agent uses (`python3 stateutil.py …`). It also re-exports every name from `core/`, so `import stateutil as S` keeps working |
 | `core/` | The code behind it: `paths` (file locations), `store` (lock, read, write, archive, inbox), `items`, `asks`, `chat`, `agents`, `handoffs`, `lessons`, `schedule_store` and `schedules` (parsing and next-run maths), `config` and `migrate` (defaults and data upgrades), `ext` (extension hooks). Other scripts read `roster.json` and `config.json` through `core.config` |
+| `server.py` | The entry point only: `python3 server.py` (`PORT`, `NO_LOOPS`, `--demo`). It re-exports every `api/` name, so `local/ext` server extensions that use `srv.<name>` keep working |
+| `api/` | The server code. `router.py` holds the route table (`@route("GET", "/api/health")`) and the action table (`@action("approve")`, one function per `/api/action` kind); `routes/` has one module per feature (`state`, `actions`, `schedules`, `snooze`, `push`, `health`, `secret`, `hr`, `media`, `docs`, `voice`, `web`); `http.py` is the request handler (guards, gzip, files) and dispatches through the table; `loops.py` holds the background threads; `ctx.py` the shared paths and config. `core/` never imports `api/` |
 | `web/` | Plain HTML, CSS and JavaScript. No build step |
 
 ## The loop
