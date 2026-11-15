@@ -22,7 +22,7 @@ Slack is listed as "coming soon".
 One check with new mail = one inbox entry. No new mail = nothing written.
 
 ```json
-{"kind": "feed", "source": "gmail", "account": "me@gmail.com", "untrusted": true,
+{"kind": "feed", "source": "gmail", "account": "me@example.com", "untrusted": true,
  "classifier": "claude", "n": 3, "more": 0,
  "counts": {"needs_user": 1, "can_draft": 0, "fyi": 2, "unsorted": 0},
  "mail": [{"thread": "gm:18c…", "from": "Bob <bob@example.com>", "subject": "Contract", "date": "…",
