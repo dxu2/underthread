@@ -3,7 +3,8 @@
 
 import { t } from "./i18n.js";
 import { ST, UI } from "./store.js";
-import { render, setChatCount, toolBadge } from "../app.js";
+import { setChatCount } from "../views/chat.js";
+import { render, toolBadge } from "../app.js";
 const agents = () => Object.values(ST.agents || {}).sort((a, b) => (a.order ?? 99) - (b.order ?? 99));
 // q-1030-2214: a thread/log "who" that is not a roster id but a role's own name (e.g. its name_en, "steward" for manager) resolves to that role,
 // so the row gets its real avatar and name instead of the pixel fallback.

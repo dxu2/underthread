@@ -12,7 +12,8 @@ import { CATS, PLAT, STAGES, dayKey, hm, rowLabel, srvT, stageLabel, t, when, wh
 import { ARCH, ST, UI, archItem, archKnown, fullItem, grpOf, items, snoozed, snzEnd } from "../core/store.js";
 import { agent, agents, aname, atitle, av, ringOnce } from "../core/av.js";
 import { api, closeBtn, closeModal, modalClose, modalReject, openModal, stillUploading, toast } from "../core/ui.js";
-import { ATT, ATT_IC, MB, MOBQ, RMQ, askBlock, askFold, askFoldWire, askGuard, askRow, attHTML, attTiles, attTitle, awaitsUser, chatPop, closeMailbox, copyText, hooks, itemMailRead, nrMail, nrRead, okAria, okDockIn, okDone, okLabel, okShort, openAsks, renderPage, wireUploads, wkTag, workersOf } from "../app.js";
+import { chatPop } from "./chat.js";
+import { ATT, ATT_IC, MB, MOBQ, RMQ, askBlock, askFold, askFoldWire, askGuard, askRow, attHTML, attTiles, attTitle, awaitsUser, closeMailbox, copyText, hooks, itemMailRead, nrMail, nrRead, okAria, okDockIn, okDone, okLabel, okShort, openAsks, renderPage, wireUploads, wkTag, workersOf } from "../app.js";
 const drawerAtt = [];
 const DW = { to: null, pop: [], sel: 0, open: new Set(), n: 0, fresh: false, stampPre: null, askOpen: new Set(), sumOpen: new Set() };   // askOpen / sumOpen: item ids (t-ui-next 1, 4)
 const PHONE = matchMedia("(max-width: 760px)");
