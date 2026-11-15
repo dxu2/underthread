@@ -36,7 +36,7 @@ Work in progress goes under `## Unreleased`; the release renames it to `## [X.Y.
 - **One way to read settings**: `make_agents.py`, `tools/new_role.py`, `tools/avatar_sizes.py`, `tools/transcribe.py`, `tools/comfy.py`, `tools/ghcred.py`, `tools/ensure_server.py`, `tools/statusline.py` and `usage_roll.py` read `roster.json`, `config.json` and `state.json` through `core.config` / `core.store`, so they see migrated data and the config defaults.
 
 ### Fixed
-- Nothing.
+- **Card detail back button (desktop)**: it borrowed the round ✕ close button's 28 px circle and 90° hover spin, so 返回 / Back stood on end and spilled out of the circle. It is now its own pill, a chevron plus 返回 / Back, the same height as ✕ and centred on the stage tag, felt-stitched under 针脚 and embossed under 软皮; on hover the chevron nudges left (held still under reduced motion), nothing spins, the hit area is 40 px tall and the keyboard focus ring shows under every texture. The phone keeps its 40 px round chevron; the phone docs page's 全部文档 back row uses the same chevron instead of a ‹ character. 需要手动做的事：无
 
 ### Upgrade notes
 - Migrations: none (browser side: `web/js/lsmigrate.js` step 2 maps `rt.texture` `knit2` → `knit1`, `leather2` → `leather1`)

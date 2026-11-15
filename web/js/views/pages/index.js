@@ -100,7 +100,7 @@ const PAGES = {
     const groups = {}; for (const d of UI.docs) (groups[d.group] = groups[d.group] || []).push(d);
     /* t-phone-docs: phones stack the panes, so the text landed under the long list. .has-doc hides the list there (mobile.css) and
        .doc-back returns to it; on desk the back button is hidden and both panes stay. */
-    const en = UI.lang === "en", back = UI.doc ? `<button type="button" class="doc-back" data-doc-back>‹ ${en ? "All docs" : "全部文档"}<span>${esc(UI.doc.split("/").pop())}</span></button>` : "";
+    const en = UI.lang === "en", back = UI.doc ? `<button type="button" class="doc-back" data-doc-back><svg viewBox="0 0 12 20" width="8" height="14" aria-hidden="true"><path d="M10 2 2 10l8 8" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>${en ? "All docs" : "全部文档"}<span>${esc(UI.doc.split("/").pop())}</span></button>` : "";
     return pageHead("docs") + `<div class="docs${UI.doc ? " has-doc" : ""}"><div class="dl">${Object.entries(groups).map(([g, ds]) => `<div class="g">${esc(g)}</div>` +
       ds.map(d => `<button class="${(UI.doc || UI.docLast) === d.path ? "on" : ""}" data-doc="${esc(d.path)}" title="${esc(d.path)}">${esc(d.path.split("/").pop())}</button>`).join("")).join("")}</div>
       <div class="md">${back}${UI.doc ? (UI.docText ? md(UI.docText) : `<div class="empty">${en ? "Loading…" : "加载中…"}</div>`) : `<div class="empty">${t("docs_pick")}</div>`}</div></div>`;
