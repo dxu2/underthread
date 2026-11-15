@@ -10,8 +10,9 @@ import { UI, idleDoing, pauseL } from "../../core/store.js";
 import { agent, aname, av } from "../../core/av.js";
 import { orn } from "../../core/ui.js";
 import { routineOf } from "../drawer.js";
+import { STU, stuTabs } from "../left.js";
 import { askRow, awaitsUser, waitTag } from "./review.js";
-import { STU, mailPv, nrDot, stuTabs, wkAttr, wkFx, wkTag, workersOf } from "../../app.js";
+import { mailPv, nrDot, wkAttr, wkFx, wkTag, workersOf } from "../../app.js";
 function inkEb(right) { const d = new Date(), en = UI.lang === "en";
   const day = en ? d.toLocaleDateString("en-US", { month: "short", day: "numeric", weekday: "short" }) : `${d.getMonth() + 1}月${d.getDate()}日 · 周${"日一二三四五六"[d.getDay()]}`;
   return `<div class="ink-eb">${day}<i></i>${right}</div>`; }

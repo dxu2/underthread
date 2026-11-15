@@ -11,9 +11,11 @@ import { HIST, ST, UI, chatOlder, histAll, olderN, poll, qBadge, queueOf } from 
 import { agent, agents, aname, atitle, av, avatarUrl } from "../core/av.js";
 import { orn, postAct, stillUploading, toast, wireUi } from "../core/ui.js";
 import { deskFit, openItem } from "./drawer.js";
+import { mgrState } from "./header.js";
+import { renderLeft } from "./left.js";
 import { MOBQ } from "./pages/common.js";
 import { MSEL, chipParens, msendBtn, optChips, optDone } from "./pages/review.js";
-import { ATT_IC, attHTML, attTiles, attTitle, chatMailRead, hooks, mgrState, renderLeft, seenOf, typingOn, typingUntil, unreadOf, unreadTag, wireUploads } from "../app.js";
+import { ATT_IC, attHTML, attTiles, attTitle, chatMailRead, hooks, seenOf, typingOn, typingUntil, unreadOf, unreadTag, wireUploads } from "../app.js";
 const chatAtt = [];
 let chatBuilt = false, chatRenderedFor = null, chatCount = 0, chatLang = null;
 function setChatCount(v) { return chatCount = v; }   /* S10: other modules assign chatCount through this */

@@ -11,11 +11,13 @@ import { UE_ART, api, toast, utEmpty } from "../../core/ui.js";
 import { route } from "../../core/router.js";
 import { autoFold, setChat, wireChat } from "../chat.js";
 import { openItem, snzLine, wireDrawer } from "../drawer.js";
+import { renderHeader, ruCard } from "../header.js";
+import { renderLeft } from "../left.js";
 import { MOBQ, card, lsSet, pageHead } from "./common.js";
 import { catPage, doneOpen, questsPage } from "./quests.js";
 import { RV, askGroups, askGuard, decHead, decRow, decisions, grpHTML, nowBlock, reviewCard, reviewRow, todayBlock } from "./review.js";
 import { ongoingPage, schedPage } from "./schedule.js";
-import { homeCounts, hooks, liveItem, logRows, logText, mailFiltered, mailGroups, mailPv, mailRep, mailRow, newReplies, nrBlock, nrRead, renderHeader, renderLeft, renderMailbox, ruCard, wkAttr, wkFrom, wkFx, wkTag, workersOf } from "../../app.js";
+import { homeCounts, hooks, liveItem, logRows, logText, mailFiltered, mailGroups, mailPv, mailRep, mailRow, newReplies, nrBlock, nrRead, renderMailbox, wkAttr, wkFrom, wkFx, wkTag, workersOf } from "../../app.js";
 const PAGES = {
   quests() { return questsPage(); },
   market() { return window.Market ? Market.page(pageHead("market")) : pageHead("market"); },

@@ -9,9 +9,10 @@ import { AVS, AVU, avsCheck } from "./av.js";
 import { toast } from "./ui.js";
 import { chatFrom, setChatFrom } from "../views/chat.js";
 import { routineOf } from "../views/drawer.js";
+import { syncPaint } from "../views/header.js";
 import { renderPage } from "../views/pages/index.js";
 import { awaitsUser, openAsks } from "../views/pages/review.js";
-import { doneMailRead, render, renderChrome, renderMailbox, syncPaint, workersOf } from "../app.js";
+import { doneMailRead, render, renderChrome, renderMailbox, workersOf } from "../app.js";
 const UI = {
   page: (p => p === "home" || p === "crew" || p === "team" ? "review" :   /* t-drop-team-tab */ ["roles", "docs", "logs"].includes(p) ? "settings" : p)(LS.get("page", "review")), setTab: (p => ["roles", "docs", "logs"].includes(p) ? p : LS.get("setTab", "general"))(LS.get("page", "review")),   /* t-settings-tab: 角色 / 文档 / 日志 live under 设置 */ item: null, chat: LS.get("chat", "manager"), home: "widgets",   /* t-home-style-trim (11-11): the web home is the widget home only; dense / app / classic and their switches are gone. rt.home3 is rewritten to "widgets" below */
   lang: LS.get("lang", /^zh/i.test(navigator.language || "") ? "zh" : "en"),   /* audit SM-03: first visit follows the browser language */ theme: LS.get("theme", "dark"), sort: LS.get("sort", "activity"),

@@ -6,8 +6,9 @@ import { ST, UI, archKnown } from "./store.js";
 import { api, closeModal } from "./ui.js";
 import { setChat } from "../views/chat.js";
 import { PHONE, closeItem, openItem } from "../views/drawer.js";
+import { STU, renderLeft } from "../views/left.js";
 import { renderPage } from "../views/pages/index.js";
-import { MB, STU, closeMailbox, renderLeft } from "../app.js";
+import { MB, closeMailbox } from "../app.js";
 const pageAlias = p => { if (p === "studio") { const l = LS.get("stuTab", "pipe"); return STU.includes(l) ? l : "pipe"; } if (["roles", "docs", "logs"].includes(p)) { UI.setTab = p; LS.set("setTab", p); return "settings"; } return p === "home" || p === "team" || p === "crew" ? "review" : p; };   /* t-drop-team-tab: old 团队 links land on 首页 */   // t-settings-tab: old pages = 设置 tabs   // r-improve-1102 P5: #page=home (the phone 首页 tab's name) = the 首页 page, key "review"
 function go(p) {
   p = pageAlias(p);
