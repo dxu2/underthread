@@ -583,6 +583,7 @@
     "/static/core/av.js?v=<h>",
     "/static/core/ui.js?v=<h>",
     "/static/core/router.js?v=<h>",
+    "/static/views/drawer.js?v=<h>",
     "/static/favicon-32.png?v=<h>",
     "/static/favicon-16.png?v=<h>",
     "/static/icon-192.png?v=<h>",
@@ -632,6 +633,7 @@
     "/static/toast.js": "/static/toast.js?v=<h>",
     "/static/transfer.js": "/static/transfer.js?v=<h>",
     "/static/viewer.js": "/static/viewer.js?v=<h>",
+    "/static/views/drawer.js": "/static/views/drawer.js?v=<h>",
     "/static/widgets.js": "/static/widgets.js?v=<h>"
    }
   },

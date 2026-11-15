@@ -6,7 +6,8 @@
 // ---------- i18n ----------
 import { ST, UI, busy, grpOf, idleDoing, pauseL, snoozed } from "./store.js";
 import { agent, aname } from "./av.js";
-import { render, routineOf, snzText } from "../app.js";
+import { routineOf, snzText } from "../views/drawer.js";
+import { render } from "../app.js";
 const T = {
   zh: { quests: "委托", all_quests: "全部", search_ph: "搜索条目和对话",
     review: "首页", main: "主线",   // t-nav-home: display name only (the page key stays "review")

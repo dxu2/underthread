@@ -5,7 +5,8 @@
 import { $, DRAFT } from "./util.js";
 import { srvT, t } from "./i18n.js";
 import { ST, UI, poll } from "./store.js";
-import { annClear, annWrap, openAsks } from "../app.js";
+import { annClear, annWrap } from "../views/drawer.js";
+import { openAsks } from "../app.js";
 function orn(w = 200) { return window.ORN.divider(w); }
 /* t-thread-motif ④: empty state with a spool drawing. The art and the headline are hidden by CSS unless html[data-ut] (特典), so other themes render exactly the old text.
    cls = the old class list (kept), h = headline override (search uses its own). */
