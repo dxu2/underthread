@@ -1,0 +1,190 @@
+/* =====================================================================
+   Polish pass (layout A): every pixel on the phone
+   ===================================================================== */
+:root { --tb-h: calc(66px + env(safe-area-inset-bottom)); }
+html, body { overscroll-behavior: none; }
+#page, #left, .ch-msgs, .dw-scroll, .mdl { overscroll-behavior: contain; -webkit-overflow-scrolling: touch; }
+button, .card, .nav-i, .team-i, .m-chip, #tabbar { -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
+@media (hover: none) {
+  .card:hover, .rc:hover, .mini:hover { transform: none; background: none; box-shadow: none; }
+  .card:hover .body h3 { color: inherit; text-shadow: none; }
+  .card:hover::after { transform: none; filter: none; }
+  .card:active { background: radial-gradient(circle 200px at var(--mx, 50%) var(--my, 50%), var(--glow-b), transparent 70%); transform: scale(.992); }
+  .nav-i:active, .team-i:active, .m-set:active { background: var(--glow-b); }
+  .btn-s:active, .btn:active { transform: scale(.96); }
+}
+
+/* header: one quiet line */
+#top { padding: calc(env(safe-area-inset-top) + 6px) max(16px, env(safe-area-inset-right)) 10px max(16px, env(safe-area-inset-left)); gap: 12px; }
+.brand { flex-direction: row; gap: .32em; font-size: 14px; letter-spacing: .14em; align-self: center; }
+.brand span::first-letter { font-size: 1.28em; }
+/* brand1 (t-brand-assets): image wordmark in the phone header (shrinks with the column, never touches orb / mail) */
+.brand img { height: 28px; width: auto; max-width: 100%; }   /* t-logo-v2: 5.6:1 wordmark (was 38px for the 2.5:1 one) */
+.hdr-ctrl button[data-h="theme"] { display: none; } .hdr-ctrl .hc-theme { display: none; }   /* D2: desktop header theme picker; the phone keeps its 菜单 theme row */
+.hdr-ctrl button[data-h="mail"] { width: 30px; height: 30px; justify-content: center; position: relative; }
+.hdr-ctrl button[data-h="mail"]::before { content: ""; width: 19px; height: 15px; background: currentColor;
+  -webkit-mask: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 16'><g fill='none' stroke='black' stroke-width='1.2' stroke-linejoin='round'><rect x='1' y='1' width='18' height='14' rx='1.5'/><path d='M1.5 2 L10 9 L18.5 2'/></g></svg>") center/contain no-repeat;
+          mask: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 16'><g fill='none' stroke='black' stroke-width='1.2' stroke-linejoin='round'><rect x='1' y='1' width='18' height='14' rx='1.5'/><path d='M1.5 2 L10 9 L18.5 2'/></g></svg>") center/contain no-repeat; }
+.hdr-ctrl button[data-h="mail"]::after { display: none; }
+.hdr-ctrl .badge { position: absolute; top: -2px; right: -5px; min-width: 15px; text-align: center; font-size: 9px; line-height: 15px; padding: 0 4px; }
+.stamina { gap: 7px; }
+.orb { width: 34px; height: 34px; }
+.stamina .pct b { font-size: var(--fs-17); } .stamina .pct b small { font-size: var(--fs-10); } .stamina .pct > small { font-size: 9px; letter-spacing: .02em; }
+.stamina .focus { left: 41px; height: 1.5px; bottom: -3px; }
+
+#ticker { padding: 6px max(16px, env(safe-area-inset-right)) 2px max(16px, env(safe-area-inset-left)); font-size: var(--fs-12); min-height: 28px; }
+#ticker .k { display: none; }
+#ticker .msg { font-weight: 500; color: var(--ink2); text-align: left; }
+#ticker .msg::before { content: "◆"; font-size: 7px; color: var(--glow); margin-right: 8px; vertical-align: 2px; text-shadow: 0 0 6px var(--glow); }
+#ticker button.dim { font-size: var(--fs-11); padding: 4px; }
+
+/* screens leave room for the bar */
+#page { padding: 6px max(16px, env(safe-area-inset-right)) calc(var(--tb-h) + 26px) max(16px, env(safe-area-inset-left)); }
+#left { padding: 4px 22px calc(var(--tb-h) + 26px); }
+.ch-comp { padding: 10px 14px calc(var(--tb-h) + 8px); }
+body.kb .ch-comp { padding-bottom: 10px; }
+body.kb #page, body.kb #left { padding-bottom: 24px; }
+#toast { bottom: calc(var(--tb-h) + 16px); }
+
+/* review page */
+.office { margin: -4px 0 16px; }
+.seat-name { font-size: 8px; padding: .05em .4em; }
+.ov-neon { white-space: nowrap; font-size: 6.5px; letter-spacing: 0; } .ov-screen b { font-size: 7px; letter-spacing: 0; white-space: nowrap; } .ov-screen span { font-size: 6px; text-align: center; text-wrap: balance; }
+.bubble { font-size: 7.5px; }
+.ph { margin: 14px 0 12px; } .ph h1 { font-size: 24px; } .ph .orn { width: 170px; margin-top: 6px; }
+.ph-bar { margin-bottom: 0; font-size: var(--fs-13); } .ph-bar .count b { font-size: var(--fs-24); }
+.grp-h { margin: 20px 0 8px; font-size: var(--fs-12); }
+.card { padding: 15px 14px 14px 16px; margin-bottom: 10px; }
+.card .body h3 { font-size: var(--fs-16); margin-bottom: 5px; }
+.card .meta { gap: 3px 9px; }
+.card .meta > span:nth-child(4) { display: none; }  /* "activity" timestamp: one time is enough on a phone */
+
+/* menu screen */
+.m-hero { padding: 18px 0 8px; }
+.m-hero .tc-sub { font-size: 9.5px; letter-spacing: .5em; color: var(--dim); }
+.m-hero .brand { font-size: 21px !important; margin-top: 6px; }
+.m-hero .orn { margin: 10px auto 2px; }
+#nav { margin-bottom: 18px; }
+.nav-i { padding: 11px 6px 11px 26px; font-size: var(--fs-17); border-bottom: 1px solid var(--line); }
+.nav-i.on { background: linear-gradient(90deg, var(--glow-b), transparent 70%); }
+.nav-sep { margin: 14px 0; height: 0; }
+.side-h { margin-top: 6px; }
+#cal { margin: 18px 0 22px; }
+.m-settings { margin-top: 26px; }
+.m-set { width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 13px 4px; border-bottom: 1px solid var(--line); text-align: left; }
+.m-set b { display: block; font-family: var(--f-cjk); font-size: var(--fs-15); font-weight: 600; letter-spacing: .04em; }
+.m-set small { display: block; font-size: var(--fs-12); color: var(--dim); margin-top: 2px; letter-spacing: .04em; }
+.m-set em { font-style: normal; color: var(--dim); font-size: var(--fs-20); }
+/* t-plain-toggle (user 11-10 23:54): a plain switch — round knob sliding in a pill track, track = accent when on. No glow, no diamond. Hit target = the whole row. */
+.sw { flex: none; position: relative; width: 44px; height: 26px; border-radius: 13px; border: 0; background: color-mix(in srgb, var(--ink) 20%, transparent); box-shadow: none; transition: background-color .25s var(--ease); }
+.sw i { position: absolute; top: 3px; left: 3px; width: 20px; height: 20px; border: 0; border-radius: 50%; transform: none; background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,.28), 0 0 0 .5px rgba(0,0,0,.06);
+  translate: 0 0; transition: translate .28s cubic-bezier(.3,1.3,.5,1); }
+.sw.on { background: var(--accent); }
+.sw.on i { translate: 18px 0; }
+html:not([data-ut]) .sw.on i { background: var(--bg); }   /* Ink: the accent is near-white at night, so the knob takes the page colour (dark on light, light on dark) */
+:focus-visible > .sw { outline: 2px solid var(--accent); outline-offset: 2px; }
+@media (prefers-reduced-motion: reduce) { .sw i { transition: none; } }
+.m-foot { text-align: center; font-family: var(--f-display); font-size: 9.5px; letter-spacing: .3em; color: var(--faint); margin: 26px 0 0; text-transform: uppercase; }
+
+/* item sheet */
+.dw-top { position: sticky; top: 0; background: var(--bg); z-index: 2; }
+.dw-top .tag { font-size: var(--fs-11); } .dw-top .mono { display: none; }
+.composer { padding: 8px max(16px, env(safe-area-inset-right)) 4px max(16px, env(safe-area-inset-left)); }
+.composer textarea { min-height: 42px; height: 42px; padding: 10px 12px; resize: none; transition: height .35s var(--ease), border-color .4s, box-shadow .4s; }
+.composer textarea:focus { height: 96px; }
+.composer .cm-row { margin-top: 6px; font-size: var(--fs-12); } .composer .cm-row > span:last-child { display: none; }
+.dw-acts { justify-content: space-between; gap: 6px; }
+.dw-acts .sp { display: none; }
+.dw-acts .btn.big { gap: 8px; } .dw-acts .btn.big::before { font-size: var(--fs-13); }
+body.kb .dw-acts { display: none; }
+
+/* chat */
+.ch-head { padding: 12px max(16px, env(safe-area-inset-right)) 0 max(16px, env(safe-area-inset-left)); }
+.ch-who { gap: 12px; } .ch-who .nm { font-size: var(--fs-20); letter-spacing: .04em; } .ch-who .ti { font-size: var(--fs-11); }
+.ch-roster button { width: 50px; } .ch-roster button > span:not(.av) { font-size: var(--fs-10); }
+.msg .mb { font-size: var(--fs-15); line-height: 1.65; }
+.msg.me { max-width: 84%; }
+.ch-comp textarea { min-height: 42px; border-radius: 0; }
+
+/* bottom sheets get an iOS grabber */
+.mdl::before { content: ""; display: block !important; position: absolute; left: 50%; top: 8px; width: 38px; height: 4px; border-radius: 2px; background: var(--line3);
+  transform: translateX(-50%); -webkit-mask: none; mask: none; }
+.mdl h2 { font-size: 21px; margin-top: 6px; }
+
+/* ---------- the tab bar ---------- */
+#tabbar { display: block; position: fixed; left: 0; right: 0; bottom: 0; z-index: 25; height: var(--tb-h);
+  padding: 0 max(8px, env(safe-area-inset-right)) env(safe-area-inset-bottom) max(8px, env(safe-area-inset-left));
+  background: linear-gradient(to top, rgba(3,3,3,.98) 0%, rgba(4,4,4,.94) 72%, rgba(4,4,4,.6) 100%);
+  -webkit-backdrop-filter: blur(18px) saturate(1.2); backdrop-filter: blur(18px) saturate(1.2);
+  transition: transform .45s var(--ease), opacity .3s; }
+[data-theme="light"] #tabbar { background: linear-gradient(to top, rgba(236,228,209,.98), rgba(236,228,209,.94) 72%, rgba(236,228,209,.6)); }
+body.kb #tabbar { transform: translateY(100%); opacity: 0; pointer-events: none; }
+/* filigree rule along the top, parting around the crest */
+#tabbar::before { content: ""; position: absolute; left: 0; right: 0; top: 0; height: 1px;
+  background: linear-gradient(90deg, transparent 0%, var(--line2) 14%, var(--line3) 36%, transparent 41%, transparent 59%, var(--line3) 64%, var(--line2) 86%, transparent 100%); }
+.tb-orn { position: absolute; left: 50%; top: -9px; width: 128px; height: 18px; transform: translateX(-50%); background: var(--ink2); pointer-events: none; opacity: .85;
+  -webkit-mask: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 128 18'><g fill='none' stroke='black' stroke-width='1.1' stroke-linecap='round'><path d='M0 9 H22 C28 9 31 4 35 4 C38.5 4 39.5 8 37 9.2 C35.3 10 34 8.8 34.6 7.6'/><path d='M22 9 C27 9 29 14 33.5 14.6'/><path d='M128 9 H106 C100 9 97 4 93 4 C89.5 4 88.5 8 91 9.2 C92.7 10 94 8.8 93.4 7.6'/><path d='M106 9 C101 9 99 14 94.5 14.6'/></g></svg>") center/contain no-repeat;
+          mask: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 128 18'><g fill='none' stroke='black' stroke-width='1.1' stroke-linecap='round'><path d='M0 9 H22 C28 9 31 4 35 4 C38.5 4 39.5 8 37 9.2 C35.3 10 34 8.8 34.6 7.6'/><path d='M22 9 C27 9 29 14 33.5 14.6'/><path d='M128 9 H106 C100 9 97 4 93 4 C89.5 4 88.5 8 91 9.2 C92.7 10 94 8.8 93.4 7.6'/><path d='M106 9 C101 9 99 14 94.5 14.6'/></g></svg>") center/contain no-repeat; }
+/* the soul-light that slides to the active tab */
+.tb-ind { position: absolute; top: -1px; width: 56px; height: 3px; transform: translateX(-50%); pointer-events: none; transition: left .6s var(--ease), opacity .3s; }
+.tb-ind::before { content: ""; position: absolute; inset: 1px 0; background: linear-gradient(90deg, transparent, var(--glow) 35%, var(--soul) 50%, var(--glow) 65%, transparent); box-shadow: 0 0 12px var(--glow); }
+.tb-ind b { position: absolute; left: 50%; top: 50%; width: 6px; height: 6px; transform: translate(-50%, -50%) rotate(45deg); background: var(--soul); box-shadow: 0 0 10px var(--glow), 0 0 2px #fff; }
+.tb-row { display: grid; height: 100%; height: 66px; align-items: center; }
+#tabbar button { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 5px; height: 100%; padding-top: 4px;
+  color: var(--dim); transition: color .4s; }
+#tabbar button svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 1.15; stroke-linecap: round; stroke-linejoin: round; transition: transform .5s var(--ease), filter .4s; }
+#tabbar button .l { font-family: var(--f-cjk); font-size: var(--fs-10); letter-spacing: .04em; padding-left: .32em; line-height: 1; transition: letter-spacing .5s var(--ease); }
+html[lang="en"] #tabbar button .l { font-family: var(--f-display); font-size: 8.5px; letter-spacing: .18em; padding-left: .18em; text-transform: uppercase; }
+#tabbar button.on { color: var(--ink); }
+#tabbar button.on svg { filter: drop-shadow(0 0 6px var(--glow-a)) drop-shadow(0 0 1px var(--glow)); transform: translateY(-1px); }
+#tabbar button.on .l { font-weight: 600; }
+#tabbar button:active svg { transform: scale(.88); }
+#tabbar .tb-badge { position: absolute; top: 10px; left: calc(50% + 7px); min-width: 15px; height: 15px; padding: 0 4px; border-radius: 8px; font-style: normal;
+  background: var(--urgent); color: #fff; font-family: var(--f-display); font-size: 9px; line-height: 15px; text-align: center; letter-spacing: 0; box-shadow: 0 0 0 2px var(--bg), 0 0 10px rgba(227,115,93,.55); }
+@keyframes crest { 50% { box-shadow: inset 0 0 0 1px var(--line3), inset 0 0 0 4px #060606, inset 0 0 0 5px var(--line2), 0 0 0 5px var(--bg), 0 10px 24px rgba(0,0,0,.55), 0 0 34px var(--glow-a); } }
+
+/* landscape / wide phones: keep content readable */
+@media (orientation: landscape) and (max-height: 500px) {
+  .office { display: none; }
+  #page { padding-left: max(24px, env(safe-area-inset-left)); padding-right: max(24px, env(safe-area-inset-right)); }
+}
+
+/* send buttons (phones have no ⌘+Enter) */
+.m-send { flex: none; width: 42px; height: 42px; display: grid; place-items: center; color: var(--ink); align-self: flex-end; }
+.m-send svg { width: 30px; height: 30px; fill: none; stroke: currentColor; stroke-width: 1.1; stroke-linecap: round; stroke-linejoin: round; filter: drop-shadow(0 0 6px var(--glow-a)); transition: transform .4s var(--ease); }
+.m-send:active svg { transform: scale(.86) rotate(45deg); }
+.composer .cm-row .m-send { margin-left: auto; width: 36px; height: 30px; } .composer .cm-row .m-send svg { width: 26px; height: 26px; }
+.ch-comp > button:first-child { padding-bottom: 10px; }
+
+/* an open item is a full-screen sheet: the tab bar steps aside */
+body.sheet #tabbar { transform: translateY(100%); opacity: 0; pointer-events: none; }
+#drawer { z-index: 35; }
+#tabbar .tb-badge { top: 9px; left: calc(50% + 5px); min-width: 13px; height: 13px; line-height: 13px; font-size: 8.5px; padding: 0 3px; box-shadow: 0 0 0 1.5px var(--bg), 0 0 8px rgba(227,115,93,.45); }
+@keyframes crest { 50% { box-shadow: inset 0 0 0 1px var(--line3), inset 0 0 0 4px #060606, inset 0 0 0 5px var(--line2), 0 0 0 3px var(--bg), 0 10px 24px rgba(0,0,0,.55), 0 0 34px var(--glow-a); } }
+
+/* long sheets: Cancel / Send stay pinned to the bottom */
+.mdl .foot { position: sticky; bottom: calc(-18px - env(safe-area-inset-bottom)); margin: 18px -18px calc(-18px - env(safe-area-inset-bottom));
+  padding: 12px 18px calc(12px + env(safe-area-inset-bottom)); background: linear-gradient(to top, var(--bg) 70%, transparent); z-index: 2; }
+
+/* iOS standalone: the viewport came up short by the safe areas; pin everything to the measured screen height (mobile.js sets --app-h, body.vp-fix) */
+html:has(body.vp-fix) { height: var(--app-h); background: var(--bg); }
+body.vp-fix { height: var(--app-h); }
+body.vp-fix #tabbar { bottom: auto; top: calc(var(--app-h) - var(--tb-h)); }
+body.vp-fix::after, body.vp-fix #ambience, body.vp-fix #modal, body.vp-fix #drawer, body.vp-fix .title-card { bottom: auto; height: var(--app-h); }
+body.vp-fix #toast { bottom: auto; top: calc(var(--app-h) - var(--tb-h) - 56px); }
+
+/* B: clean top on phones. No fog or light shafts, solid header strip; motes + grain stay */
+#ambience .fog, #ambience .shafts { display: none; }
+#ambience { background: var(--bg); }
+#top, #ticker { background: var(--bg); }
+
+/* Top-right corner, phones only (user chose all four, 2026-10-27) */
+/* A: the vignette no longer darkens the status bar / header / ticker strip */
+body::after { -webkit-mask-image: linear-gradient(to bottom, transparent calc(env(safe-area-inset-top) + 90px), black calc(env(safe-area-inset-top) + 150px));
+                      mask-image: linear-gradient(to bottom, transparent calc(env(safe-area-inset-top) + 90px), black calc(env(safe-area-inset-top) + 150px)); }
+/* B: mail badge is plain red, no glow or pulse */
+.hdr-ctrl .badge { box-shadow: none; animation: none; } .hdr-ctrl .badge::after { display: none; }
+/* C: no glow around the orb */
+.orb { filter: none; }
+/* D: (t-stamina-stale) the old "% stays bright when stale" rule is gone; stale greys out everywhere (style.css) */
+

@@ -1,0 +1,187 @@
+/* ===== t-ri1108-a (r-improve-1108 v2) ===== */
+/* P2: the folded desktop rail hides the name label, so the 「排队 N」 badge's bottom:16px put it on the unread count. Bottom-right corner instead. */
+body.chat-folded .ch-roster .aq-n { bottom: -3px; right: -4px; }
+/* P5: 制作 page skipped cards: one line + 展开; open = one card per line */
+.pl-skip .ri8-skip-h { display: flex; align-items: baseline; gap: 10px; min-width: 0; }
+.pl-skip .ri8-skip-h > span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ri8-skip-t { flex: none; padding: 2px 8px; margin: -2px 0; border: 0; border-radius: 999px; background: none; color: var(--ink2); font: inherit; font-weight: 600; cursor: pointer;
+  transition: background-color .18s ease, color .18s ease, transform .12s ease; }
+.ri8-skip-t:hover { background: color-mix(in srgb, var(--ink) 8%, transparent); color: var(--ink); }
+.ri8-skip-t:active { transform: scale(.96); }
+.pl-skip .ri8-skip-l { display: grid; grid-template-rows: 0fr; opacity: 0; transition: grid-template-rows .24s ease, opacity .2s ease; }
+.pl-skip .ri8-skip-l > div { min-height: 0; overflow: hidden; display: flex; flex-direction: column; }
+.pl-skip.ri8-open .ri8-skip-l { grid-template-rows: 1fr; opacity: 1; }
+.pl-skip .ri8-skip-l a { display: block; padding: 3px 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-decoration: none; transition: color .15s ease; }
+.pl-skip .ri8-skip-l a:first-child { margin-top: 6px; }
+.pl-skip .ri8-skip-l a:hover { color: var(--ink); text-decoration: underline; }
+.pl-skip:not(.ri8-open) .ri8-skip-l a { visibility: hidden; transition: visibility 0s .24s; }
+@media (prefers-reduced-motion: reduce) { .ri8-skip-t, .pl-skip .ri8-skip-l, .pl-skip .ri8-skip-l a { transition: none; } }
+/* t-detail-bubble-color: outside Underthread my thread comments take a soft accent fill (the DM "me" bubble there is solid --accent; a solid fill would shout in a long thread) */
+html:not([data-ut]) #drawer .cs-me { background: color-mix(in srgb, var(--accent) 15%, transparent); }
+
+/* t-web-toast: desktop in-app notice (web/toast.js). Top right under the header, newest on top, at most 3; slides in from the right edge.
+   Leather: the same grain + stitched edge as the widgets, dyed like the widget it belongs to (reply = 新回复 oxblood, review / question = 等你拍板 caramel). */
+#wtoasts { position: fixed; top: 78px; right: 20px; z-index: 66; width: 344px; display: flex; flex-direction: column; gap: 10px; pointer-events: none; }
+#wtoasts .wt { pointer-events: auto; position: relative; display: grid; grid-template-columns: 40px minmax(0, 1fr) auto; gap: 11px; align-items: start; padding: 13px 12px 13px 14px; border-radius: 16px; cursor: pointer;
+  background: var(--panel); color: var(--ink); border: 1px solid var(--line); box-shadow: var(--shadow, 0 14px 36px rgba(0,0,0,.4));
+  opacity: 0; transform: translateX(calc(100% + 28px)); transition: transform .34s cubic-bezier(.2, .8, .2, 1), opacity .24s ease; }
+#wtoasts .wt.in { opacity: 1; transform: none; }
+#wtoasts .wt.out { opacity: 0; transform: translateX(calc(100% + 28px)); transition: transform .26s cubic-bezier(.4, 0, 1, 1), opacity .2s ease; }
+#wtoasts .wt:focus-visible { outline: 2px solid var(--accent, var(--glow)); outline-offset: 2px; }
+#wtoasts .wt-av { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; }
+#wtoasts .wt-b { min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+#wtoasts .wt-h { display: flex; align-items: baseline; gap: 8px; min-width: 0; }
+#wtoasts .wt-h b { font-size: var(--fs-14); font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#wtoasts .wt-h em { font-style: normal; font-size: var(--fs-11); color: var(--dim); letter-spacing: .04em; white-space: nowrap; }
+#wtoasts .wt-ask .wt-h em, #wtoasts .wt-decide .wt-h em { color: var(--warn); }
+#wtoasts .wt p { margin: 0; font-size: var(--fs-13); line-height: 1.45; color: var(--ink2); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; overflow-wrap: anywhere; }
+#wtoasts .wt small { font-size: var(--fs-12); color: var(--dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#wtoasts .wt-x { width: 24px; height: 24px; margin: -4px -2px 0 0; border: 0; border-radius: 50%; background: transparent; color: var(--dim); font-size: 17px; line-height: 1; cursor: pointer; opacity: 0; transition: opacity .2s; }
+#wtoasts .wt:hover .wt-x, #wtoasts .wt:focus-within .wt-x { opacity: 1; }
+#wtoasts .wt-x:hover { color: var(--ink); background: color-mix(in srgb, var(--ink) 10%, transparent); }
+@media (max-width: 760px) { #wtoasts { display: none; } }
+@media (prefers-reduced-motion: reduce) {
+  #wtoasts .wt, #wtoasts .wt.out { transform: none; transition: opacity .2s linear; }
+}
+html[data-texture^="leather"] #wtoasts .wt { --dye: #4A4541; border-color: transparent;
+  background-color: color-mix(in srgb, var(--dye) var(--dye-amt, 52%), var(--panel)) !important;
+  background-image: var(--lt-st-h), var(--lt-st-h), var(--lt-st-v), var(--lt-st-v), var(--lt-grain) !important;
+  background-size: calc(100% - 2 * var(--lt-r)) var(--lt-sw), calc(100% - 2 * var(--lt-r)) var(--lt-sw), var(--lt-sw) calc(100% - 2 * var(--lt-r)), var(--lt-sw) calc(100% - 2 * var(--lt-r)), var(--lt-grain-size) !important;
+  background-position: left var(--lt-r) top var(--lt-in), left var(--lt-r) bottom var(--lt-in), left var(--lt-in) top var(--lt-r), right var(--lt-in) top var(--lt-r), 0 0 !important;
+  background-repeat: no-repeat, no-repeat, no-repeat, no-repeat, repeat !important; background-origin: border-box !important;
+  box-shadow: inset 0 0 0 1px var(--lt-burn), inset 0 0 12px -2px var(--lt-burn), var(--lt-sh), 0 14px 30px rgba(0,0,0,.35) !important;
+  --lt-thread: color-mix(in srgb, color-mix(in srgb, var(--dye) 55%, #fff) 80%, transparent);
+  --lt-st-h: repeating-linear-gradient(90deg, var(--lt-thread) 0 var(--lt-dash), transparent var(--lt-dash) var(--lt-pitch));
+  --lt-st-v: repeating-linear-gradient(180deg, var(--lt-thread) 0 var(--lt-dash), transparent var(--lt-dash) var(--lt-pitch)); }
+html[data-texture^="leather"] #wtoasts .wt-reply { --dye: #6A1F1C; }
+html[data-texture^="leather"] #wtoasts :is(.wt-decide, .wt-ask) { --dye: #B4642A; --dye-amt: 38.5%; }
+html[data-texture^="leather"] #wtoasts .wt-remind { --dye: #66692E; --dye-amt: 38.5%; }
+html[data-texture^="leather"][data-theme="white"] #wtoasts .wt { --dye-amt: 24%; --lt-thread: color-mix(in srgb, color-mix(in srgb, var(--dye) 80%, #000) 75%, transparent); }
+html[data-texture^="leather"] #wtoasts .wt { --dim: color-mix(in srgb, var(--lt-dim0, #AF9273) 50%, var(--ink)); }
+/* t-topbar-soul-off (11-11): #stamina left the top bar, so the right-hand controls (信箱 / 聊天) pin to the last column on every desk page, the same
+   placement the widget home has used since t-soul-widget (widgets.css). */
+@media (min-width: 761px) { #top > #hdrctrl { grid-column: -2 / -1; } }
+
+/* ===== t-ui-fix-p1 P1-6 (2026-11-12): the desktop chat header never pushes the call button out. At the default 420 px column the row
+   (name, role, Queued pill, status, call) was ~48 px wider than its box, and narrower columns cut the call button off. The row is now a
+   size container: the role ellipsizes first, then the pill drops its 「Queued」 word, then the status label goes, then the role.
+   The name and the call button always stay; the collapse arrow (.ch-fold) is absolute and was never affected. ===== */
+@media (min-width: 761px) {
+  #right .ch-who { container-type: inline-size; min-width: 0; }
+  #right .ch-who > * { flex: none; }
+  #right .ch-who .nm { flex: 0 1 auto; min-width: 2.5em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  #right .ch-who .ti { flex: 0 100 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+  #right .ch-who .sp { flex: 1 1 0; min-width: 0; }
+  #right .ch-who .aq { margin-left: 0; }
+  @container (max-width: 380px) { html[lang="en"] #right .ch-who .aq-w { display: none; } }   /* 「Queued」 is long; 「排队」 stays until 300 */
+  @container (max-width: 300px) { #right .ch-who .aq-w { display: none; } }
+  @container (max-width: 300px) { #right .ch-who .on, #right .ch-who .off, #right .ch-who .idle, #right .ch-who .zz { display: none; } }
+  @container (max-width: 250px) { #right .ch-who .ti { display: none; } }   /* the name wins over the role at the 300 px minimum */
+}
+
+/* ===== t-ui-fix-r3 (2026-11-12): round-3 overflow fixes ===== */
+/* R3-02: a narrow drawer (main column at its 460 floor) wraps the action row instead of pushing 「Accept & close」 past the edge; one row whenever it fits */
+#drawer .dw-acts { flex-wrap: wrap; row-gap: 8px; }
+#drawer .dw-acts .ab { max-width: 100%; }
+#drawer .dw-acts .ab.ok { flex: 2 0 auto; }   /* content basis: it wraps to its own row rather than shrinking past its label */
+/* R3-08: the folded 目录 pill steps aside (app.js tocSync .away) once the draft has scrolled above the view, instead of sitting on the thread */
+.dw-toc { transition: opacity .2s var(--ease), transform .2s var(--ease); }
+.dw-toc.away:not(.open) { opacity: 0; transform: translateY(-6px); }
+.dw-toc.away:not(.open), .dw-toc.away:not(.open) .toc-box { pointer-events: none; }
+@media (prefers-reduced-motion: reduce) { .dw-toc { transition: none; } }
+/* R3-10: the round ↑ / ↓ buttons sat 10px into the text column; desk keeps a 44px right gutter for them (the wrap moves with it, so the buttons stay put) */
+@media (min-width: 761px) {
+  #drawer .dw-scroll { padding-right: 44px; }
+  #drawer .cs-jump .wrap { right: -40px; }
+}
+/* R3-06: 今日日程 + used one 216px row (date 「11/12/2」, time 「12:3」, an 8px title box). Now three short rows: what, then the date, then time | 添加 */
+.cal-form { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; align-items: end; }
+.cal-form input { width: auto; min-width: 0; }
+.cal-form input[type=date], .cal-form input[type=time] { width: auto; }
+.cal-form input[name=title], .cal-form input[type=date] { grid-column: 1 / -1; }
+.cal-form .btn-s { white-space: nowrap; }
+/* R3-15: a long label (「Until <a long name> replies」) was cut while its hint kept its full width; the hint now drops under the label instead */
+.snz-o { flex-wrap: wrap; row-gap: 2px; }
+.snz-o b { flex: 0 1 auto; max-width: 100%; }
+.snz-o span { margin-left: auto; text-align: right; }
+.snz-r .snz-o span { margin-left: 0; text-align: left; }
+/* R3-12: the 排队 popover is opaque (it was 94% bg with its blur switched off, so chat avatars and text read through the rows) */
+.aq-pop { background: var(--solid); }
+
+/* ===== t-ui-fix-r4 (2026-11-12) =====
+   R4-01/02/03/14: one shared rule: long unbroken tokens (URLs, long English words) wrap inside their box; flex/grid children may shrink below their content. */
+.ask-q > span:not(.n), .ask-o, .ask-rt, .ask-rt span, #modal .cl-t, .mdl h2, .card .body h3, .card .body p, .cs-line .tx, .log-i > span:last-child { overflow-wrap: anywhere; }
+.ask, .ask-q, .ask-q > span:not(.n), .ask-opts, .ask-rt, .ask-row, .card > *, .log-i > * { min-width: 0; }
+.ask-opts, .ask-row .ask-opts.sm { max-width: 100%; }
+.ask-o { max-width: 100%; min-width: 0; text-align: start; }
+/* R4-14: role names stay on one line in fixed slots and ellipsize */
+.card .owner { min-width: 0; } .card .owner > span:not(.av) { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cs-h { min-width: 0; } .cs-h .nm { flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.cm-to { min-width: 0; max-width: 100%; } .cm-to b { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#drawer .cm-row > .cm-to { flex: 0 1 auto; }
+.lib-seg button { max-width: 100%; overflow: hidden; text-overflow: ellipsis; }
+.ch-roster button > span:not(.av) { max-width: 100%; overflow: hidden; text-overflow: ellipsis; }
+@media (min-width: 761px) { body:not(.chat-folded) .ch-roster button > span:not(.av) { max-width: 78px; overflow: hidden; text-overflow: ellipsis; } }
+/* R4-04: 日志 — the message column takes what is left; under ~560px the time/name sit on one line above the message */
+.log-i { grid-template-columns: 110px 26px minmax(0, 90px) minmax(0, 1fr); }
+.log-i > span:nth-child(3) { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#pagebody { container: pb / inline-size; }
+@container pb (max-width: 560px) {
+  .log-i { grid-template-columns: auto 22px minmax(0, 1fr); row-gap: 3px; column-gap: 8px; }
+  .log-i > span:last-child { grid-column: 1 / -1; }
+  .log-i .av.sm { width: 22px; height: 22px; }
+}
+/* R4-15: open question bar: the question gets its own full-width line under 「N 个问题要你选」 */
+.dw-askbar:not(.fold) .ask-rt { flex-wrap: wrap; }
+.dw-askbar:not(.fold) .ask-rt .ask-cv { order: 2; }
+.dw-askbar:not(.fold) .ask-rt > span { order: 3; flex: 1 1 100%; padding-left: 12px; margin-top: 2px; }
+.dw-askbar:not(.fold) .ask-rt > span .ask-sep { display: none; }
+/* R4-13: the 已同步 pill shows keyboard focus */
+#sync.sy1:focus-visible { outline: none; } #sync.sy1:focus-visible .sy-pill { box-shadow: 0 0 0 2px var(--bg), 0 0 0 4px var(--accent); }
+/* R4-17: 「我」 avatar: the user's own picture (avatars/me.*) or their initial */
+.av.av-me { display: inline-grid; place-items: center; background: linear-gradient(160deg, color-mix(in srgb, var(--accent) 22%, var(--panel, var(--bg))), var(--panel2, var(--bg))) ; box-shadow: inset 0 0 0 1px var(--line3); background-size: cover; background-position: center; }
+.av.av-me b { font: 600 calc(var(--av-s, 28px) * .5)/1 var(--f-cjk); color: var(--ink); }
+.av.av-me.sm b { font-size: var(--fs-11); }
+.av.av-me.img { background-color: transparent; box-shadow: none; }
+.dw-askbar .ask-rt span.ask-sep { padding: 0; }
+/* R4-08/09 contrast: quiet text uses the --dim token at full opacity instead of fading the whole element */
+.cs-line.event { opacity: 1; } .cs-line.event, .cs-line.event .nm, .cs-line.event .tx, .cs-line.event .tm { color: var(--dim); }
+.pl-day.past { opacity: 1; } .pl-day.past .pl-dh, .pl-day.past .pl-dh span { color: var(--dim); } .pl-day.past .mini { opacity: .78; }
+.pl-col.none .pl-d { opacity: 1; color: var(--dim); }
+.ask-o { border-radius: 16px; }   /* R4-01: a wrapped option stays a rounded box (still a full pill when it is one line) */
+.mk-chips button.on b { opacity: .85; }   /* t-ui-fix-r4: the count on the selected chip (was .65 = 3.9–4.3:1) */
+/* t-ri1113-a P3: 等你拍板 group row = the same sweep question on 3+ cards (app.js askGroups / grpHTML; widget home .wg, phone home .rv) */
+.ri13-grp { border: 1px dashed var(--line3); border-radius: 16px; padding: 10px 12px; background: var(--accent-soft); transition: background-color .2s, opacity .2s; }
+.ri13-grp.pend { opacity: .72; }
+.ri13-hd { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.ri13-n { flex: none; display: inline-grid; place-items: center; min-width: 26px; height: 26px; padding: 0 6px; border-radius: 13px; background: var(--accent); color: var(--accent-ink); font-size: var(--fs-13); font-weight: 600; font-variant-numeric: tabular-nums; }
+.ri13-t { flex: 1; min-width: 0; }
+.ri13-t b { display: block; font-size: var(--fs-14); font-weight: 600; line-height: 1.35; color: var(--ink); overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+.ri13-t small { display: block; margin-top: 2px; font-size: var(--fs-12); color: var(--dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ri13-acts { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0 0 36px; align-items: center; }
+.ri13-o, .ri13-x { border: 1px solid var(--line3); border-radius: 999px; padding: 4px 11px; font: inherit; font-size: var(--fs-13); line-height: 1.3; color: var(--ink); background: transparent; cursor: pointer; transition: background-color .2s, color .2s, border-color .2s, transform 90ms ease-out; }
+.ri13-o:hover, .ri13-x:hover { border-color: var(--ink2); }
+.ri13-o:active, .ri13-x:active { transform: scale(.97); }
+.ri13-o.rec { border-color: var(--accent); box-shadow: inset 0 0 0 .5px var(--accent); }
+.ri13-o .rec-b { font-style: normal; margin-left: 6px; padding: 1px 5px; border-radius: 6px; font-size: var(--fs-11); line-height: 1.3; background: var(--accent); color: var(--accent-ink); vertical-align: 1px; }
+.ri13-x { border-style: dashed; color: var(--ink2); }
+.ri13-pend { font-size: var(--fs-13); color: var(--dim); }
+.ri13-grp.open { border-style: solid; }
+@media (prefers-reduced-motion: reduce) { .ri13-grp, .ri13-o, .ri13-x { transition: none; } }
+/* t-ri1113-a P2: the dock's question bar folds away while the same question is on screen above (app.js askDup) */
+.dw-askbar { display: grid; grid-template-rows: minmax(0, 1fr); overflow: hidden; transition: grid-template-rows var(--m-base, .28s) var(--m-ease, ease), padding var(--m-base, .28s) var(--m-ease, ease), margin var(--m-base, .28s) var(--m-ease, ease), opacity .2s ease; }
+.dw-askbar > * { min-height: 0; }
+.dw-askbar.dup { grid-template-rows: minmax(0, 0fr); padding-top: 0; padding-bottom: 0; opacity: 0; pointer-events: none; }
+@media (max-width: 760px) { #drawer .dw-askbar.dup { margin-bottom: -10px; } }   /* the dock's 10px gap goes with it */
+@media (prefers-reduced-motion: reduce) { .dw-askbar { transition: none; } }
+/* t-ri1113-a P4: 今日日程 — today's dispatched routines folded into one row (app.js calFold) */
+.cal-pf .cal-avs { display: inline-flex; flex: none; }
+.cal-pf .cal-avs .av.cal-av + .av.cal-av { margin-left: -10px; }
+.cal-pf .cal-avs .av.cal-av { box-shadow: 0 0 0 1.5px var(--bg, transparent); }
+.cal-pf .cal-pf-cv { display: inline-block; font-style: normal; margin-left: 2px; transition: rotate var(--m-base, .28s) var(--m-ease, ease); }
+.cal-pf.open .cal-pf-cv { rotate: 90deg; }
+.cal-pf:hover .cal-nm, .cal-pf:focus-visible .cal-nm { color: var(--ink); }
+.cal-pf:active { opacity: .7; }
+.cal-i.cal-pf-in { animation: cal-pf-in var(--m-base, .28s) var(--m-ease, ease) both; }
+@keyframes cal-pf-in { from { opacity: 0; translate: 0 -4px; } }
+@media (prefers-reduced-motion: reduce) { .cal-pf .cal-pf-cv { transition: none; } .cal-i.cal-pf-in { animation: none; } }

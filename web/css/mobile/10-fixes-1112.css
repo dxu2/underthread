@@ -1,0 +1,62 @@
+/* ===== t-ui-fix-p1 (2026-11-12): UI audit P1-3 / P1-4, phone only (this file loads below 761px) ===== */
+/* P1-4: the DM header band was 55% → transparent behind the pills, so message text read through between them. Solid down to the pill
+   bottom, then a short fade. The unread count sits out on the back button's corner with a bg ring instead of over the chevron. */
+body[data-cv="thread"] .cl-back { background: linear-gradient(to bottom, var(--bg) 0, var(--bg) env(safe-area-inset-top), var(--bg) calc(env(safe-area-inset-top) + 44px), transparent 100%); }
+.cl-back button .n { top: -8px; right: auto; left: -9px; box-shadow: 0 0 0 2px var(--bg); }
+/* P1-3: tap targets. List rows (今日日程 in 更多, 设置 → 文档) get taller; card ids in 日志 get vertical padding (inline span: no reflow).
+   Small chips and pills keep their look and get an invisible ::before hit slop (none of these used ::before, checked 11-12). */
+#cal .cal-i { min-height: 36px; }
+.docs .dl button { padding-top: 10px; padding-bottom: 10px; }
+.log-i .it { padding: 12px 6px; margin: 0 -6px; }
+#cal .side-h > button, .hd-srch, .a2-stack, .ph-bar > button, .mk-chips > button, .mk-sw > button, .pl-add, .lib-seg > button, .st-prev, .ask-o, .sy-btn, .sy-x, .dw-id { position: relative; }
+#cal .side-h > button::before, .hd-srch::before, .a2-stack::before, .ph-bar > button::before, .mk-chips > button::before, .mk-sw > button::before, .pl-add::before,
+.lib-seg > button::before, .st-prev::before, .ask-o::before, .sy-btn::before, .sy-x::before, .dw-id::before { content: ""; position: absolute; inset: -7px -2px; }
+#cal .side-h > button::before { inset: -10px -15px -10px -15px; }
+.hd-srch::before { inset: -7px; }
+/* the 职位 chip row is a sideways scroller, which clips the slop: give it 7 px of room above and below, taken back by margins (no visual change) */
+.mk-chips { padding-top: 7px; padding-bottom: 7px; margin-top: -7px; margin-bottom: 9px; }
+
+/* ===== t-ui-fix-r3 (2026-11-12) ===== */
+/* R3-09: scrolled card header: the strip behind the pills is near-solid (80% let lines read through, worse where blur is off), and the id chip gets a pill fill like 待验收 / 杂活 */
+#drawer .dw-top::after { background: color-mix(in srgb, var(--bg) 93%, transparent); }
+#drawer .dw-lead .dw-id { padding: 4px 10px; border-radius: 999px; transition: background-color var(--m-base) var(--m-ease-std); }
+#drawer.dw-scrolled .dw-lead .dw-id { background: var(--glass-lite); }
+/* R3-16: more small phone targets get the same invisible ::before slop as P1-3 (none of these used ::before, checked 11-12):
+   全部标为已读 (19px), the 定时 on/off switch (24px), reply-quote chips (25px), 私用录音 … 显示 (21px) */
+.nr-all, .nr-more, .rs-tg, .rq, .lib-pvt { position: relative; }
+.nr-all::before, .nr-more::before, .rs-tg::before, .rq::before, .lib-pvt::before { content: ""; position: absolute; inset: -12px -6px; }
+.rs-tg::before { inset: -10px -4px; }
+.rq::before { inset: -6px -2px; }
+/* R3-17: plain 墨刊 flattens the home board (transparent, padding 0) but kept .hd's overflow:hidden, so the hero avatar ring was cut at the
+   page gutter; with no card edge to respect, let it paint */
+html[data-skin="ink"]:not([data-ut]) .office .hd { overflow: visible; }
+
+/* ===== t-ui-fix-r4 (phone) =====
+   R4-15: an open question bar never takes more than ~40% of the screen; the long question scrolls inside it (full width, under 「N 个问题要你选」). */
+#drawer .dw-askbar:not(.fold) .ask-row { max-height: 40vh; overflow-y: auto; overscroll-behavior: contain; }
+#drawer .dw-askbar:not(.fold) .ask-rt > span { padding-left: 12px; }
+/* R4-16: the four hero stat labels are centred even when one wraps (en 「7-day shipped」) */
+.hd-stat span { text-align: center; line-height: 1.25; }
+.cl-p em { color: var(--dim); }   /* t-ui-fix-r4: role line under a DM name (was --faint, 3.3:1) */
+#drawer .dw-askbar:not(.fold) .ask-opts.sm { max-height: none; overflow: visible; }   /* R4-15: one scroller (the bar), not two */
+
+/* ===== t-ui-fix-r5 (phone) =====
+   R5-06: the card id chip keeps its full text; the stage tag gives way first (ellipsis, full label in its title), paddings tighten under 400px */
+#drawer .dw-lead .dw-id { flex: none; }
+#drawer .dw-lead .tag { min-width: 0; flex: 0 1 auto; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; display: block; line-height: 38px; }
+@media (max-width: 400px) {
+  #drawer .dw-lead { gap: 6px; }
+  #drawer .dw-lead .tag { padding: 0 12px; }
+  #drawer .dw-lead .dw-id { padding: 4px 6px; }
+  #drawer .dw-top .r select[data-f="category"], #drawer.dw-scrolled .dw-top .r select[data-f="category"] { padding: 0 24px 0 10px; background-position: right 9px center; }
+  html[lang="en"] #drawer .dw-lead { gap: 4px; }
+  html[lang="en"] #drawer .dw-lead .tag { padding: 0 10px; font-size: var(--fs-11); }
+  html[lang="en"] #drawer .dw-lead .dw-id svg { display: none; }   /* the whole chip still copies (title says so); en labels are ~30px longer */
+}
+/* R5-07: 墨刊 + a texture (针脚/毛衣, also 皮革) paints the hero .hd as a stitched card again, so it needs the card padding and clip back (R3-17's overflow:visible
+   stays for plain 墨刊, where the board has no card edge) */
+html[data-skin="ink"]:not([data-ut]):is([data-texture^="knit"], [data-texture^="leather"]) .office .hd { overflow: hidden; padding: 12px; }
+/* t-ri1113-a P3: phone home group card (base in style.css) */
+.rv-list .ri13-grp { margin: 0 0 14px; padding: 14px 16px; border-radius: 22px; }
+.rv-list .ri13-acts { margin-left: 36px; gap: 8px; }
+.rv-list .ri13-o, .rv-list .ri13-x { padding: 7px 14px; font-size: var(--fs-14); }

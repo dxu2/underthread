@@ -1,0 +1,238 @@
+/* ===== t-agent-memory v2: pills tap target on phones (colours come from theme vars, so white/light need no extra rules) ===== */
+.rf-pill { min-height: 36px; padding: 0 16px; }
+.rf-tabs .rf-pill { min-height: 32px; padding: 0 12px; }
+.rf-pill.on b { color: inherit; }
+.rf-body { max-height: 52vh; }
+
+/* ===== mbx (t-mailbox-fix): 动态 (full mailbox page) no longer pans sideways, and loses its 信箱/MAILBOX masthead (the top bar already carries the logo; desktop keeps it).
+   Cause: .mail-i's last grid column was 1fr (= minmax(auto,1fr)), so one long URL/path in a message forced the whole row, and with it #page, wider than the screen.
+   Fix = minmax(0,1fr) + overflow-wrap on the text, and the page itself is locked sideways. The .seg filter keeps scrolling inside its own track. ===== */
+html, body { max-width: 100%; overflow-x: hidden; overscroll-behavior-x: none; }
+#page { overflow-x: hidden; overscroll-behavior-x: none; }
+#page > * { min-width: 0; max-width: 100%; }
+.mail-i { grid-template-columns: 8px 70px 22px minmax(0, 1fr); }
+.mail-i > * { min-width: 0; }
+.mail-i .tx { overflow-wrap: anywhere; word-break: break-word; }
+.mb-i { grid-template-columns: 22px minmax(0, 1fr) 8px; }
+.mb-i > * { min-width: 0; overflow-wrap: anywhere; }
+.filters { min-width: 0; max-width: 100%; }
+.filters .seg { max-width: 100%; }
+.ph-mail { display: none; }
+.ph-mail + .ph-bar { margin-top: 8px; }
+
+/* ===== tabmo (t-tabbar-motion): the bottom glass pill comes alive. Phone only. transform / opacity only; .tb-row's backdrop-filter is never touched or animated.
+   Final values: selection block = ONE element (.tb-sel) moved by translateX in JS (WAAPI, 330ms, damped-spring linear() easing ~4% overshoot, cubic-bezier(.2,.8,.2,1) fallback),
+   squash scale(1.05-1.14, .95-.94) at 42% of the move; press = scale .92 in 80ms, release 220ms with a light overshoot; icon pop 1 -> 1.12 -> 1 in 240ms;
+   label = two stacked text layers cross-fading in 240ms (width reserved by the bold layer, so no layout shift); dot pop 260ms in / fade 180ms out; page-in = 8px up + fade, 190ms (JS, WAAPI).
+   Colours all come from --sel / --selc / --glass-line / --dim (accent variables), so dark / 浅色 / 白 follow their theme. ===== */
+:root { --tbm-spring: var(--m-spring); }
+#tabbar .tb-sel { position: absolute; left: 0; top: 4px; bottom: 4px; width: 0; z-index: 0; pointer-events: none; border-radius: 24px; background: var(--sel); box-shadow: inset 0 0 0 1px var(--glass-line); transform: translateX(0); transform-origin: 50% 50%; scale: 1; transition: scale var(--m-release) var(--m-spring); }
+#tabbar .tb-sel.tbm-down { scale: .94; transition-duration: .08s; transition-timing-function: ease-out; }
+html[data-theme] #tabbar .tb-row button, html[data-theme] #tabbar .tb-row button.on { background: none; box-shadow: none; }   /* the highlight now lives on .tb-sel */
+#tabbar .tb-row button { z-index: 1; -webkit-tap-highlight-color: transparent; touch-action: manipulation; transition: color var(--m-base) ease, transform var(--m-release) var(--m-spring); }
+#tabbar .tb-row button.tbm-down { transform: scale(.92); transition: color var(--m-base) ease, transform .08s ease-out; }
+#tabbar .tb-row button svg { fill: currentColor; fill-opacity: 0; transition: fill-opacity var(--m-base) ease, stroke-width var(--m-base) ease; }
+#tabbar .tb-row button.on svg { fill-opacity: .16; }
+#tabbar .tb-row button[data-k="more"] svg { fill: none !important; }
+#tabbar .tb-row button:active svg { transform: none; }   /* replaces the old .88 svg-only press; the whole item scales now */
+#tabbar .tb-row button .l { position: relative; display: inline-block; white-space: nowrap; font-weight: 600; -webkit-text-fill-color: transparent; transition: none; }
+#tabbar .tb-row button .l::before, #tabbar .tb-row button .l::after { content: attr(data-t); position: absolute; left: 0; right: 0; top: 0; text-align: center; -webkit-text-fill-color: currentColor; transition: opacity var(--m-base) ease; }
+#tabbar .tb-row button .l::before { font-weight: 500; opacity: 1; }
+#tabbar .tb-row button .l::after { font-weight: 600; opacity: 0; }
+#tabbar .tb-row button.on .l::before { opacity: 0; }
+#tabbar .tb-row button.on .l::after { opacity: 1; }
+#tabbar .tb-dot.tbm-in { animation: tbm-dot-in .26s var(--tbm-spring) both; }
+#tabbar .tb-dot.tbm-out { animation: tbm-dot-out .18s ease-out both; }
+@keyframes tbm-dot-in { from { transform: scale(.2); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+@keyframes tbm-dot-out { to { transform: scale(.6); opacity: 0; } }
+@media (prefers-reduced-motion: reduce) {
+  #tabbar .tb-sel, #tabbar .tb-row button, #tabbar .tb-row button svg { transition: none; }
+  #tabbar .tb-sel.tbm-down { scale: 1; }
+  #tabbar .tb-row button.tbm-down { transform: none; }
+  #tabbar .tb-row button .l::before, #tabbar .tb-row button .l::after { transition: opacity .12s linear; }
+  #tabbar .tb-dot.tbm-in { animation: tbm-dot-fade .14s linear both; }
+  #tabbar .tb-dot.tbm-out { animation: tbm-dot-out-rm .14s linear both; }
+  @keyframes tbm-dot-fade { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes tbm-dot-out-rm { to { opacity: 0; } }
+}
+
+/* ===== p3 (t-slack-p3): Slack-Activity-style list rows for 动态 (mailbox page) and 审核 (home). Phone only; the markup is only emitted at <=760px.
+   Row = avatar (+unread dot) | line 1: bold name, item title, time on the right | line 2: one-line preview, stage chip, count pill. Hairline separators start under the text, not the avatar.
+   Everything is min-width:0 / ellipsis so a long URL or path can never widen the page (keeps the mbx lock). Colours are theme variables only, so dark / 浅色 / 白 follow. ===== */
+.act-list { margin-top: 4px; min-width: 0; }
+.act-row { position: relative; display: grid; grid-template-columns: 42px minmax(0, 1fr); gap: 12px; align-items: center; min-height: 64px; padding: 10px 0; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.act-row::after { content: ""; position: absolute; left: 54px; right: 0; bottom: 0; height: 1px; background: var(--line); }
+.act-row:last-child::after { display: none; }
+.act-row:active { background: var(--chip); }
+.act-av { position: relative; width: 42px; height: 42px; }
+.act-av .av { width: 42px; height: 42px; display: block; box-shadow: none; }
+.act-dot { position: absolute; top: -1px; right: -2px; width: 11px; height: 11px; border-radius: 50%; background: var(--dot); box-shadow: 0 0 0 1.5px var(--bg); }
+.act-main { min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.act-l1, .act-l2 { display: flex; align-items: baseline; gap: 6px; min-width: 0; }
+.act-l2 { align-items: center; gap: 6px; }
+.act-nm { flex: 0 1 auto; max-width: 46%; font-size: var(--fs-15); font-weight: 400; color: var(--ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.act-row.unread .act-nm { font-weight: 600; }
+.act-ti { flex: 1 1 0; min-width: 0; font-size: var(--fs-13); color: var(--dim); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.act-tm { flex: none; margin-left: auto; padding-left: 4px; font-size: var(--fs-12); color: var(--dim); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.act-row.unread .act-tm { color: var(--ink2); }
+.act-pv { flex: 1 1 0; min-width: 0; font-size: var(--fs-14); line-height: 1.35; color: var(--ink2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.act-row.unread .act-pv { color: var(--ink); }
+.act-chip { flex: none; max-width: 84px; padding: 0 8px; line-height: 18px; font-size: var(--fs-11); border-radius: 9px; border: 1px solid var(--line2); color: var(--ink2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.act-n { flex: none; min-width: 19px; padding: 0 6px; box-sizing: border-box; line-height: 18px; text-align: center; font-size: var(--fs-11); font-weight: 600; border-radius: 9px; border: 1px solid var(--line2); color: var(--ink2); }
+.act-n.on { background: var(--dotc); border-color: transparent; color: var(--accent-ink); }
+/* calm empty state: no ornament, no italics */
+.empty.calm { padding: 56px 0 40px; font-style: normal; letter-spacing: 0; font-size: var(--fs-14); }
+.empty.calm::before { display: none; }
+
+/* ===== t-done-splash: white theme. (1) the old title card (still used for the opening splash) had no white override: its dark radial backdrop turned into a grey blob under dark text.
+   (2) 委托完成 splash: dark-ink streaks and a dim shutter flash instead of white ones (white on white would be invisible). ===== */
+
+
+/* ===== mo1 (t-tabbar-motion M1): motion system foundations on the phone. Tokens live in style.css (--m-*). transform / opacity only; blur and backdrop-filter are never animated.
+   (1) list rows / category cards / pills get a press state: scale .98 + soft ring in 90ms, spring release in 220ms (iOS needs the no-op touchstart in mobile.js for :active)
+   (2) no more blurred, 55ms-stepped CSS entrance on phones for cards: fx.js rows() does the entrance (WAAPI, <= 8 rows, 30ms steps); headings keep a plain rise
+   (3) detail slide-over, search, inbox drop-down, composer + panel and the chat-thread push all use the spring tokens; CSS transitions retarget from the current value, so a tap or swipe mid-flight never snaps
+   (4) the page under the detail recedes 24% and dims while the detail slides over it. (White-theme needs no extra rules: only theme variables are used.) ===== */
+.act-row { transition: transform var(--m-release) var(--m-spring), background-color var(--m-quick) ease-out; }
+.act-row:active { transform: scale(var(--m-press-row)); background: var(--chip); transition-duration: var(--m-instant), var(--m-instant); transition-timing-function: ease-out; }
+.card { transition: transform var(--m-release) var(--m-spring), background-color var(--m-quick) ease-out, box-shadow var(--m-quick) ease-out; }
+.card:active { transform: scale(var(--m-press-card)); box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent) 24%, transparent), 0 10px 24px -14px color-mix(in srgb, var(--ink) 36%, transparent); transition-duration: var(--m-instant), var(--m-instant), var(--m-instant); transition-timing-function: ease-out; }
+.enter .card { animation: none; }   /* fx.js rows() animates cards on phones */
+.enter .grp-h, .enter .ph-bar, .enter .filters { animation: m-rise var(--m-base) var(--m-ease-emph) both; animation-delay: calc(min(var(--i, 0), 8) * var(--m-stagger) + 60ms); }
+@keyframes m-rise { from { opacity: 0; transform: translateY(var(--m-rise)); } }
+#drawer { transition: transform var(--m-quick) var(--m-ease-in); }
+#drawer.open { transition: transform var(--m-slow) var(--m-spring-soft); }
+#page { transition: transform var(--m-slow) var(--m-ease-ios), opacity var(--m-slow) var(--m-ease-ios); }
+body:has(#drawer.open) #page { transform: translateX(var(--m-recede)); opacity: .55; }   /* keyed to .open (not body.sheet): it returns as soon as the close starts, not after the 260ms hide */
+#mailbox { will-change: auto; transition: transform var(--m-quick) var(--m-ease-in), opacity var(--m-quick) linear; }
+#mailbox.open { transition: transform var(--m-base) var(--m-spring-soft), opacity var(--m-quick) linear; }
+#msearch:not([hidden]) { animation: m-sheet var(--m-base) var(--m-ease-emph) both; }
+@keyframes m-sheet { from { opacity: 0; transform: translateY(var(--m-rise-page)); } }
+.ui2-panel { transition: transform var(--m-base) var(--m-spring-soft), opacity var(--m-quick) var(--m-ease-emph), visibility 0s var(--m-base); }
+.ch-comp.panel-on .ui2-panel { transition-delay: 0s; }
+#layout > #right.cv-push { animation: cv-push var(--m-base) var(--m-ease-ios) both; }
+#layout > #right.cv-pop { animation: cv-pop var(--m-base) var(--m-ease-ios) both; }
+@media (prefers-reduced-motion: reduce) { #page { transition: none; } body:has(#drawer.open) #page { transform: none; opacity: 1; } #msearch:not([hidden]) { animation: none; } }
+
+/* ===== t-detail-bottom (B 行动优先): the detail page's composer + actions become ONE glass dock at the thumb. Phone only (this file is media-limited to <=760px).
+   Material = the live --glass-* tokens (one blurred layer; with the two header pills that is 3 on screen), accent = --accent / --accent-ink, motion = --m-* tokens.
+   Composer collapsed (nothing typed, not focused, default recipient) = a one-line pill; typing, focusing or picking an @ expands it: grid rows 0fr -> 1fr and the send column 0 -> 40px.
+   Where grid-template-rows cannot animate the two states simply swap (instant); reduced motion cuts every transition via the global rule. Done = the live stamp + 重开. ===== */
+#drawer .dw-dock { display: flex; flex-direction: column; gap: 10px; position: absolute; left: 0; right: 0; bottom: 0; z-index: 5;
+  padding: 10px max(12px, env(safe-area-inset-right)) calc(10px + env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left));
+  background: var(--glass-bg); border-top: 1px solid var(--glass-line); border-radius: 26px 26px 0 0; box-shadow: var(--glass-rim), 0 -10px 30px rgba(0,0,0,.18);
+  -webkit-backdrop-filter: var(--glass-bf); backdrop-filter: var(--glass-bf); }
+body.kb #drawer .dw-dock { padding-bottom: 10px; }
+#drawer .dw-scroll { padding-bottom: calc(var(--dock-h, 150px) + 22px); }
+/* floating TOP / LATEST ride above the dock; no blur of their own (blur budget) */
+#drawer .cs-jump { bottom: 10px; }   /* t-ui-fix-r3 R3-10: sticky already stops at the scroller's padding (which is dock-h + 22), so adding dock-h again parked the buttons near the top, over the header and text */
+#drawer .cs-jump button { background: var(--glass-solid); -webkit-backdrop-filter: none; backdrop-filter: none; border-color: var(--glass-line); box-shadow: var(--glass-shadow); }
+
+#drawer .composer { --r-to: 0fr; --r-att: 0fr; --c-send: 0px; position: relative; padding: 0; margin: 0; display: grid; grid-template-columns: 40px minmax(0, 1fr) var(--c-send); grid-template-rows: var(--r-to) var(--r-att) auto;
+  grid-template-areas: "to to to" "att att att" "plus ta send"; column-gap: 6px; align-items: end;
+  transition: grid-template-rows var(--m-base) var(--m-ease-emph), grid-template-columns var(--m-base) var(--m-ease-emph); }
+#drawer .composer::before { display: none; }
+#drawer .composer:focus-within, #drawer .composer.has, #drawer .composer.to-set { --r-to: 1fr; --c-send: 40px; }
+#drawer .composer:has(.pending-att.has) { --r-att: 1fr; }
+#drawer .composer .cm-row { display: contents; }
+#drawer .composer .cm-row > .dim, #drawer .composer .cm-row > span[style] { display: none; }
+#drawer .composer textarea, #drawer .composer textarea:focus { grid-area: ta; width: 100%; min-height: 0; height: 40px; padding: 10px 16px; border: 0; border-radius: 20px; box-shadow: none; resize: none; transition: none;
+  background: var(--glass-lite); color: var(--ink); font-size: var(--fs-16); line-height: 20px; }
+#drawer .composer textarea::placeholder { color: var(--dim); }
+#drawer .composer .dw-file { grid-area: plus; width: 40px; height: 40px; border-radius: 50%; background: var(--glass-lite); color: var(--ink); display: grid; place-items: center; font-size: 0; flex: none; }
+#drawer .composer .dw-file::before { content: "+"; font-size: var(--fs-24); font-weight: 300; line-height: 1; transform: translateY(-1px); }
+#drawer .composer .cm-to { grid-area: to; justify-self: start; min-height: 0; height: 26px; max-width: 100%; overflow: hidden; margin-bottom: 6px; opacity: 0; pointer-events: none; border: 0; border-radius: 13px; background: var(--glass-lite);
+  padding: 0 11px 0 10px; gap: 5px; font-size: var(--fs-13); color: var(--dim); white-space: nowrap; transition: opacity var(--m-base) var(--m-ease-emph), background-color .15s ease; }
+#drawer .composer:focus-within .cm-to, #drawer .composer.has .cm-to, #drawer .composer.to-set .cm-to { opacity: 1; pointer-events: auto; }   /* t-sendto-chip: an invisible chip can't be tapped */
+#drawer .composer .cm-to:active { background: color-mix(in srgb, var(--ink) 12%, transparent); }
+#drawer .composer .cm-to:has(button) { padding-right: 3px; }
+#drawer .composer .cm-to .av.sm { width: 20px; height: 20px; }
+#drawer .composer .cm-to button { width: 20px; height: 20px; border-radius: 50%; background: transparent; color: var(--dim); font-size: var(--fs-10); display: grid; place-items: center; margin-left: 1px; }
+#drawer .composer .pending-att { grid-area: att; min-height: 0; overflow: hidden; margin: 0 0 6px; padding: 2px 0; gap: 8px; flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; }
+#drawer .composer .pending-att::-webkit-scrollbar { display: none; }
+#drawer .composer .ap-tile { width: 60px; height: 60px; border-radius: 14px; border-color: var(--glass-line); }
+#drawer .composer .m-send { grid-area: send; flex: none; width: 40px; height: 40px; margin: 0; padding: 0; border-radius: 50%; background: var(--accent); color: var(--accent-ink); display: grid; place-items: center; font-size: 0; overflow: hidden;
+  transition: background-color var(--m-quick) ease-out, color var(--m-quick) ease-out, scale var(--m-release) var(--m-spring); }
+#drawer .composer .m-send svg { display: none; }
+#drawer .composer .m-send::after { content: ""; width: 18px; height: 18px; background: currentColor;
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 20V5M5.5 11.5 12 5l6.5 6.5'/%3E%3C/svg%3E") center/contain no-repeat;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 20V5M5.5 11.5 12 5l6.5 6.5'/%3E%3C/svg%3E") center/contain no-repeat; }
+#drawer .composer:not(.has) .m-send { background: var(--glass-lite); color: var(--dim); scale: .92; }
+#drawer .composer:not(:focus-within):not(.has):not(.to-set) .m-send { opacity: 0; visibility: hidden; }
+#drawer .at-pop { left: 0; right: 0; min-width: 0; bottom: calc(100% + 8px); border-radius: 20px; background: var(--glass-solid); border: 1px solid var(--glass-line); box-shadow: var(--glass-shadow); padding: 6px; }
+#drawer .at-pop div { border-radius: 14px; padding: 9px 12px; box-shadow: none; }
+
+/* actions */
+#drawer .dw-acts { display: flex; gap: 8px; justify-content: stretch; align-items: center; padding: 0; }
+#drawer .dw-acts::before { display: none; }
+body.kb #drawer .dw-acts { display: flex; }   /* keyboard up: the live rule hides the bar; B keeps a compact one so "write the reason, tap 驳回" works without closing the keyboard */
+#drawer .dw-acts .ab { position: relative; display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 54px; padding: 0 18px; border: 0; border-radius: 18px; background: transparent; color: var(--ink);
+  font: 600 var(--fs-16) var(--f-sys); letter-spacing: 0; -webkit-tap-highlight-color: transparent; touch-action: manipulation; transition: scale var(--m-release) var(--m-spring), background-color var(--m-quick) ease-out; }
+body.kb #drawer .dw-acts .ab { height: 46px; }
+#drawer .dw-acts .ab.no { flex: 1; color: var(--ink); border: 1px solid var(--line2); }
+#drawer .dw-acts .ab.ok { flex: 2; background: var(--accent); color: var(--accent-ink); }
+#drawer .dw-acts .ab.ok.solo { flex: 1; }
+#drawer .dw-acts .ab.ok b { font-weight: 600; font-size: var(--fs-17); letter-spacing: .02em; }
+#drawer .dw-acts .ab.re { flex: none; background: var(--chip2); }
+#drawer .dw-acts .ab.re span { font-size: var(--fs-17); line-height: 1; }
+#drawer .dw-acts .dw-stamp { flex: 1; min-width: 0; }
+/* press language of the live motion system: instant press, spring release */
+#drawer .dw-acts .ab:active, #drawer .composer .dw-file:active, #drawer .composer .m-send:active { scale: var(--m-press-pill); transition-duration: var(--m-instant); transition-timing-function: ease-out; }
+#drawer .composer .dw-file { transition: scale var(--m-release) var(--m-spring); }
+@media (prefers-reduced-transparency: reduce) { #drawer .dw-dock { -webkit-backdrop-filter: none; backdrop-filter: none; background: var(--glass-solid); } }
+
+/* ===== mp (t-mailbox-polish) =====
+   (4) chat composer: an EMPTY field is always one row, whatever JS did to the inline height (guard for the transition/scrollHeight ratchet fixed in mobile.js fit()).
+   (3) upload tiles sit INSIDE the glass pill, above the one-row field (mobile.js moves .pending-att in): the pill grows upward, --comp-h includes the strip, nothing covers the tab bar.
+   (1)(2) 动态: 全部已读 is a small pill on the filter row; the empty #ticker no longer reserves 28px under the header. ===== */
+body[data-cv] #right .ch-comp textarea:placeholder-shown, body[data-cv] #right .ch-comp textarea:placeholder-shown:focus { height: 40px !important; }
+body[data-cv] #right .ch-comp textarea::placeholder { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+body[data-cv] #right .ch-comp { flex-wrap: wrap; }
+body[data-cv] #right .ch-comp > textarea { min-width: 0; }
+body[data-cv] #right .ch-comp > .pending-att { order: -1; flex: 0 0 100%; box-sizing: border-box; min-width: 0; max-height: 72px; margin: 0; padding: 4px 6px !important; gap: 8px;
+  flex-wrap: nowrap; overflow-x: auto; overflow-y: hidden; scrollbar-width: none; overscroll-behavior-x: contain; }
+body[data-cv] #right .ch-comp > .pending-att::-webkit-scrollbar { display: none; }
+body[data-cv] #right .ch-comp > .pending-att .ap-tile { width: 60px; height: 60px; border-radius: 14px; border-color: var(--glass-line); }
+#ticker:empty { min-height: 0; height: 0; padding: 0; }   /* NOT display:none: body is a 3-row grid (top / ticker / layout) and layout would slide into the auto row */
+.filters.mb-row { display: flex; flex-wrap: nowrap; align-items: center; justify-content: flex-start; gap: 8px; margin: 8px 0 12px; }
+.filters.mb-row .seg { flex: 1 1 auto; min-width: 0; margin: 0; }
+.filters.mb-row .seg-i { padding: 0 10px; letter-spacing: .04em; }
+.filters.mb-row .mb-readall { flex: none; height: 36px; min-height: 0; padding: 0 12px; border-radius: 999px; font-size: var(--fs-12); white-space: nowrap; }
+
+/* ===== ct (t-chat-title): the 对话 list no longer repeats its 「对话」 title (the tab bar already names the page). Same as 菜单 (.m-hero) and 动态 (.ph-mail). Phone only (this file is max-width:760px). Hide only the .cl-h text row; .cl stays a flex column, so the search field and rows just move up. ===== */
+.cl-h { display: none !important; }
+.cl-search { margin-top: 8px; }
+
+/* ===== cnn (t-chat-nonav): inside a character chat thread the 5-tab bar slides down + fades out (phone). The 对话 list keeps it.
+   transform / opacity only, --m-* tokens, no blur animation; the bar's DOM and --tb-h are untouched (the bar is only translated, so nothing re-lays out).
+   Replaces the "thread keeps the bar" rule from ui P2. The composer drops to the bottom safe area; the list padding follows. body.kb keeps its own 8px rules. ===== */
+body[data-cv] #tabbar { transition: transform var(--m-base) var(--m-ease-ios), opacity var(--m-quick) linear; }
+body[data-mtab="chat"][data-cv="thread"] #tabbar { transform: translateY(110%); opacity: 0; pointer-events: none; }
+body[data-mtab="chat"][data-cv="thread"] #tabbar .tb-row { pointer-events: none; }
+body:not(.kb)[data-mtab="chat"][data-cv="thread"] #right .ch-comp { bottom: calc(env(safe-area-inset-bottom) + 8px); }
+body:not(.kb)[data-mtab="chat"][data-cv="thread"] #right .ch-msgs { padding-bottom: calc(env(safe-area-inset-bottom) + 8px + var(--comp-h, 66px)); }
+@media (prefers-reduced-motion: reduce) { body[data-cv] #tabbar { transition: opacity .12s linear; } }
+
+/* ===== css (t-chat-search-style): the 对话 search field joins the 动态 .seg pill family. Same track as .seg: full pill, --chip fill, inset --line2 ring, 42px (= 3px pad + 36px seg-i + 3px pad). No glass / blur layer.
+   Focus = the ring turns --accent-line (same accent family as the selected block), no outline. Clear (✕) shows only while there is text. White theme overrides live here (white vars exist only in this file). ===== */
+.cl-search { position: relative; box-sizing: border-box; height: 42px; padding: 0 6px 0 16px; gap: 8px; border: 0; border-radius: 999px; background: var(--chip); box-shadow: inset 0 0 0 1px var(--line2); transition: box-shadow var(--m-quick) var(--m-ease-std), color var(--m-quick) var(--m-ease-std); }
+.cl-search svg { width: 16px; height: 16px; stroke-width: 1.6; }
+.cl-search:focus-within { color: var(--ink2); box-shadow: inset 0 0 0 1px var(--accent-line); }
+.cl-x { display: none; flex: none; align-items: center; justify-content: center; width: 30px; height: 30px; padding: 0; border: 0; border-radius: 999px; background: var(--accent-soft); color: var(--ink2); -webkit-tap-highlight-color: transparent; touch-action: manipulation; transition: transform var(--m-release) var(--m-spring), background-color var(--m-quick) ease-out; }
+.cl-x svg { width: 12px; height: 12px; stroke-width: 1.8; }
+.cl-search.has-q .cl-x { display: inline-flex; }
+.cl-x:active { transform: scale(var(--m-press-pill)); }
+[data-theme="white"] .cl-search { background: #f0f0f0; box-shadow: none; }
+[data-theme="white"] .cl-search:focus-within { box-shadow: inset 0 0 0 1px var(--accent-line); }
+@media (prefers-reduced-motion: reduce) { .cl-search, .cl-x { transition: none !important; } }
+/* t-m-ut-white: 特典浅色 keeps the cream family -- the white-theme #f0f0f0 track (search pill + .seg filter bars) was a cold grey on the warm page. --panel2 (#EFE0C7) + a --line ring; focus still turns the ring --accent-line. Phone only (this file). */
+html[data-theme="white"][data-ut="light-warm"] .cl-search, html[data-theme="white"][data-ut="light-warm"] .seg { background: var(--panel2); box-shadow: inset 0 0 0 1px var(--line); }
+html[data-theme="white"][data-ut="light-warm"] .cl-search:focus-within { box-shadow: inset 0 0 0 1px var(--accent-line); }
+
+/* ===== ss (t-search-sheet-style): the 搜索 sheet input reuses .cl-search (class on the label), so pill / fill / ring / focus / ✕ / white overrides are shared with the 对话 list. Only the outer margins are reset (the sheet bar provides its own padding). ===== */
+.cl-search.ms-in { margin: 0; }
+
+/* ===== ht (t-home-title): phone pages no longer repeat their masthead (Chinese title + English small caps + ornament rule): the tab bar / pills / drawer already name the page. Phone only (this file is max-width:760px). Same as 动态 (.ph-mail). Applies to every pageHead() page: 审核(首页) / 主线 / 支线 / 日常委托 / 紧急活动 / 常驻活动 / 委托板 / 日志 / 报告 / 文档 / 角色 / 渠道. Scoped to #pagebody > .ph (NOT .m-meav.ph, the avatar placeholder). .ph is a plain block inside #pagebody (not a body grid row), so display:none collapses cleanly. The controls row that follows (pills / filters / .ph-bar) gets one consistent top gap. ===== */
+#pagebody > .ph { display: none; }
+#pagebody > .ph + .m-seg { margin-top: -2px; }
+

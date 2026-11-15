@@ -21,6 +21,9 @@ local/
 - **Web.** `server.py` adds each extension's `web` files (and the old `local/ext.json`) to the page and gives every `/static/` file a
   `?v=<content hash>` (scripts through the page's import map), so a changed file, a `local/web/` override included, always gets a new URL.
   A `local/web/` copy of a core page script is loaded as an ES module (strict mode), like the core file.
+  `style.css` and `mobile.css` are cut into sections (`web/css/style/NN-section.css`, `web/css/mobile/...`, file-name order = cascade
+  order): `local/web/css/style/<same name>` replaces one section, a new `NN-name.css` slots in by its number, and a whole
+  `local/web/style.css` (or `mobile.css`) still replaces the whole sheet.
 - **Extensions.** `local/ext/<name>/` with an `ext.json` manifest registers endpoints, actions, card kinds, scheduled jobs,
   health lines, `stateutil.py` commands and page files through the extension registry; see `docs/extensions.md`. A broken or
   mismatched extension is skipped with the reason on `/api/ext`; it never takes the dashboard down. A folder without

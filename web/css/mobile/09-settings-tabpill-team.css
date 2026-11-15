@@ -1,0 +1,245 @@
+/* ===== t-settings-tab: 设置 page on the phone. Tabs scroll sideways if they ever overflow; segmented controls drop under the label. ===== */
+.ph-settings + .st-tabs { margin: 0 0 14px; }
+.st-tabs .seg { max-width: 100%; }
+.st-tabs .seg-i { padding: 8px 13px; }
+.st-sec { padding: 2px 4px; border-radius: 16px; }
+.st-row { flex-wrap: wrap; row-gap: 10px; }
+.st-row > .st-seg { margin-left: auto; }
+/* t-theme-leather: 质感 has 5 options (关 / 针脚 / 毛衣 / 软皮 / 马鞍): give it its own full-width line with equal segments, so it neither squeezes the description into a 3-char column (390) nor overflows (320). */
+.st-row > .st-seg[data-seg="texture"] { flex: 1 0 100%; margin-left: 0; display: flex; }
+.st-seg[data-seg="texture"] .seg-i { flex: 1 1 0; min-width: 0; padding: 0 6px; }
+/* t-ui-fix-r2 B09: 主题 and 配色 squeezed their description into a 1/3-width column 4–5 lines tall; same full-width line as 质感 */
+.st-row > .st-seg:is([data-seg="ut"], [data-seg="tmode"]) { flex: 1 0 100%; margin-left: 0; display: flex; }
+.st-seg:is([data-seg="ut"], [data-seg="tmode"]) .seg-i { flex: 1 1 0; min-width: 0; padding: 0 6px; }
+.st-p-roles, .st-p-docs, .st-p-logs { margin: 0 -2px; }
+
+/* ===== t-ri1104-p1: the tab pill stays readable over content.
+   Headless Chromium showed page text straight through the pill (its blur did not take effect there; real iPhone unknown), and the pill tint was only 36-52%,
+   so labels sat on top of sharp text. The tint now carries readability on its own (84% of the page colour), and the scrim behind the pill starts 28px higher
+   so content fades out before it reaches the labels. Blur stays on top of that where it works. Reduced transparency keeps the solid fill. ===== */
+@supports ((-webkit-backdrop-filter: blur(1px)) or (backdrop-filter: blur(1px))) {
+  html[data-theme] #tabbar .tb-row { background: color-mix(in srgb, var(--bg) 84%, transparent); }
+}
+html[data-theme] #tabbar::before { top: -28px; background: linear-gradient(to top, var(--bg) 0, color-mix(in srgb, var(--bg) 72%, transparent) 45%, transparent 100%); }
+@media (prefers-reduced-transparency: reduce) {
+  html[data-theme] #tabbar .tb-row { background: var(--glass-solid); }
+}
+
+/* t-ri1104-p5: phone home with nothing to approve = one quiet line (app.js review()). No .top, so the ink skin's big empty-state art does not apply. */
+#pagebody .dc-none.dc-ok { display: flex; align-items: center; gap: 8px; margin: 12px 0 16px; padding: 10px 14px; border-radius: 14px; font-size: var(--fs-13); font-weight: 400; color: var(--fg); background: color-mix(in srgb, var(--ok) 10%, transparent); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ok) 22%, transparent); }
+#pagebody .dc-ok i { font-style: normal; font-weight: 600; color: var(--ok); }
+
+/* t-ri1104-p3: 常驻活动 schedule on phones: time column narrower, dots full width */
+.rs-row { grid-template-columns: minmax(52px, max-content) 1fr auto; gap: 4px 10px; padding: 14px; border-radius: 16px; }
+.rs-t { font-size: var(--fs-20); }
+.rs-dots, .rs-last { grid-column: 1 / 4; }
+.rs-dots { gap: 4px; }
+
+/* ===== t-attach-btn (batch 2, direction A), phone: same paperclip, 40px. The DM one still opens the 拍照 / 上传媒体 panel; while it is open the clip
+   turns accent instead of the old + -> x rotation (a rotated paperclip reads as nothing). ===== */
+html[data-theme] body #right .ch-comp > button.att, #drawer .composer .dw-file.att { width: 40px; height: 40px; border: 0; background: color-mix(in srgb, var(--ink) 8%, transparent); color: var(--ink); font-size: 0; }
+#drawer .composer .dw-file.att::before { content: none; }
+html[data-theme] body #right .ch-comp > button.att svg, #drawer .composer .dw-file.att svg { width: 19px; height: 19px; }
+html[data-theme] body #right .ch-comp.panel-on > button.att { transform: none; background: var(--accent-soft); color: var(--accent); }
+html[data-theme] body #right .ch-comp.panel-on > button.att .ic-clip { transform: rotate(-18deg); }
+
+#sync.sy1 { display: none; }   /* style.css #sync.sy1 is display:flex; the phone keeps the top bar clean */
+/* ===== t-sync-pill (batch 2), phone: #sync stays hidden; while disconnected (html[data-net="off"], app.js syncPaint) a pill slides down under the header. ===== */
+html[data-net="off"] #net-off { display: flex; position: fixed; z-index: 70; left: 50%; top: calc(env(safe-area-inset-top, 0px) + 58px); translate: -50% 0;
+  align-items: center; gap: 7px; height: 30px; padding: 0 14px 0 11px; border-radius: 999px; max-width: calc(100vw - 32px); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  background: var(--bg); color: var(--ink); font-size: var(--fs-12); border: 1px solid color-mix(in srgb, var(--urgent) 45%, transparent); box-shadow: 0 6px 18px rgba(0, 0, 0, .25);
+  animation: net-in .28s cubic-bezier(.22, .8, .24, 1) both; pointer-events: none; }
+html[data-net="off"] #net-off i { flex: none; width: 7px; height: 7px; border-radius: 50%; background: var(--urgent); }
+@keyframes net-in { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { html[data-net="off"] #net-off { animation: none; } }
+/* ri1105-P3: the same pill says 「同步中 · 上次 N 分钟前」 while the page shows its IndexedDB snapshot (amber, not red) */
+html[data-net="snap"] #net-off { display: flex; position: fixed; z-index: 70; left: 50%; top: calc(env(safe-area-inset-top, 0px) + 58px); translate: -50% 0;
+  align-items: center; gap: 7px; height: 30px; padding: 0 14px 0 11px; border-radius: 999px; max-width: calc(100vw - 32px); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  background: var(--bg); color: var(--ink); font-size: var(--fs-12); border: 1px solid color-mix(in srgb, var(--warn) 45%, transparent); box-shadow: 0 6px 18px rgba(0, 0, 0, .25);
+  animation: net-in .28s cubic-bezier(.22, .8, .24, 1) both; pointer-events: none; }
+html[data-net="snap"] #net-off i { flex: none; width: 7px; height: 7px; border-radius: 50%; background: var(--warn); }
+@media (prefers-reduced-motion: reduce) { html[data-net="snap"] #net-off { animation: none; } }
+
+/* ===== t-m-accept-btn / t-m-ask-sheet (2026-11-05) =====
+   main dock button: short label on one line + open-question badge (was: full label wrapped to 2 lines, subtitle cut, button past the dock edge at 390 px).
+   composer: the hidden 收件人 row really collapses (0fr could not shrink below the chip's fixed 26 px + 6 px margin: a 32 px hole above the reply box).
+   question bar: no extra bottom padding, smaller chips, at most ~2 rows of chips (scrolls inside). */
+#drawer .dw-acts .ab { min-width: 0; }
+#drawer .dw-acts .ab.has-ask { flex-direction: row; gap: 6px; line-height: inherit; }
+#drawer .dw-acts .ab.ok b { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#drawer .dw-acts .ab.ok .ok-x, #drawer .dw-acts .ab .ok-ask { display: none; }
+#drawer .dw-acts .ab .ok-n { flex: none; display: inline-grid; place-items: center; min-width: 20px; height: 20px; padding: 0 6px; box-sizing: border-box; border-radius: 10px;
+  background: var(--accent-ink); color: var(--accent); font: 600 var(--fs-12)/1 var(--f-sys); font-style: normal; font-variant-numeric: tabular-nums; }
+#drawer .composer { grid-template-rows: minmax(0, var(--r-to)) minmax(0, var(--r-att)) auto; }
+.dw-askbar { padding: 0; }
+#drawer .dw-askbar .ask-row { padding: 9px 14px; border-radius: 16px; }
+#drawer .dw-askbar:not(.fold) .ask-row { padding-bottom: 10px; }
+#drawer .dw-askbar .ask-opts.sm { margin-top: 8px; gap: 6px; max-height: 66px; overflow-y: auto; overscroll-behavior: contain; }
+#drawer .dw-askbar .ask-opts.sm .ask-o { padding: 4px 11px; font-size: var(--fs-13); line-height: 18px; }
+/* four buttons in a row (关单 · 驳回 · 稍后 · 验收): tighter side padding so the main label never truncates at 360 px */
+#drawer .dw-acts:is([data-st="deliverable"], [data-st="plan"]) { gap: 6px; }
+#drawer .dw-acts:is([data-st="deliverable"], [data-st="plan"]) .ab { padding: 0 10px; }
+#drawer .dw-acts:is([data-st="deliverable"], [data-st="plan"]) .ab.no { flex: 0 1 auto; }
+#drawer .dw-acts:is([data-st="deliverable"], [data-st="plan"]) .ab.ok { flex: 1 0 auto; padding: 0 14px; }   /* the main button never gives way first (flex: 2 had a 0 basis) */
+@media (max-width: 370px) { #drawer .dw-acts:is([data-st="deliverable"], [data-st="plan"]) .ab.sz .snz-ic { display: none; } }
+
+/* ===== tabB (t-m-tabbar-ig, direction B, 2026-11-05): the tab pill becomes a floating icon-only island (position / feel borrowed from iOS 26 apps, our own icons).
+   Narrower (40px side gutters), 54 tall, fully round, sitting 22px above the screen edge so the home indicator falls below it (max() keeps it clear of the indicator).
+   Labels are hidden (span.l stays in the DOM; mobile.js puts the name in aria-label / title and shows it on long-press as .tb-tip).
+   Selection = a neutral chip + solid icon; the colour of the selected icon still comes from --selc. 特典 (data-ut) keeps solid fills: see theme-ut.css. Rollback: delete this block. ===== */
+html[data-theme] #tabbar::before { background: linear-gradient(to top, color-mix(in srgb, var(--bg) 35%, transparent) 0, transparent 100%); }
+html[data-theme] #tabbar .tb-row { height: 54px; padding: 5px; border-radius: 999px;
+  margin: 0 max(40px, env(safe-area-inset-right)) max(22px, calc(env(safe-area-inset-bottom) - 12px)) max(40px, env(safe-area-inset-left)); }
+html[data-theme]:not([data-ut]) #tabbar .tb-row { border: .5px solid rgba(255,255,255,.55);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.85), inset 0 -1px 0 rgba(255,255,255,.3), 0 8px 28px rgba(0,0,0,.13), 0 1px 3px rgba(0,0,0,.06); }
+html[data-theme="dark"]:not([data-ut]) #tabbar .tb-row { border-color: rgba(255,255,255,.16); box-shadow: inset 0 1px 0 rgba(255,255,255,.18), 0 8px 28px rgba(0,0,0,.45); }
+html[data-theme] #tabbar .tb-sel { top: 5px; bottom: 5px; border-radius: 999px; }
+html[data-theme]:not([data-ut]) #tabbar .tb-sel { background: rgba(0,0,0,.065); box-shadow: none; }
+html[data-theme="dark"]:not([data-ut]) #tabbar .tb-sel { background: rgba(255,255,255,.12); }
+html[data-theme] #tabbar .tb-row button { gap: 0; }
+html[data-theme] #tabbar .tb-row button .l { display: none; }
+html[data-theme] #tabbar .tb-row button svg { width: 25px; height: 25px; }
+html[data-theme] #tabbar .tb-row button.on svg { fill-opacity: 1; stroke-width: 1.9; }
+html[data-theme] #tabbar .tb-row button[data-k="more"] svg { fill: none !important; }
+html[data-theme] #tabbar .tb-row button[data-k="dms"].on svg { fill-opacity: .24; }   /* a solid bubble would swallow its three dots */
+/* unread: a slightly bigger dot with a ring in the pill colour, so it reads against the icon without a label next to it */
+html[data-theme] #tabbar .tb-dot { top: 6px; left: calc(50% + 6px); width: 10px; height: 10px; box-shadow: 0 0 0 2px var(--tb-ring, var(--bg)); }
+/* long-press name tip (mobile.js tbmTip) */
+#tabbar .tb-tip { position: absolute; z-index: 2; bottom: 0; left: 0; transform: translate(-50%, 4px); opacity: 0; pointer-events: none; white-space: nowrap;
+  padding: 6px 12px; border-radius: 999px; font-family: var(--f-sys); font-size: var(--fs-13); font-weight: 600; line-height: 1.2; color: var(--ink);
+  background: var(--glass-solid, var(--bg)); box-shadow: inset 0 0 0 1px var(--glass-line), 0 6px 18px rgba(0,0,0,.16); transition: opacity var(--m-quick, .14s) ease, transform var(--m-quick, .14s) ease; }
+#tabbar .tb-tip.on { opacity: 1; transform: translate(-50%, 0); }
+@media (prefers-reduced-motion: reduce) { #tabbar .tb-tip { transition: opacity .12s linear; transform: translate(-50%, 0); } }
+/* ===== t-m-team-alt A2 (11-07 20:07): phone home team card. Rows for working members, idle members as a grey stack on the last line, no header.
+   Reuses .hd (card) and .hd-stats; the avatar is .hd-mini so the 特典 work-sheet rule in theme-ut.css (and its reduced-motion hold) applies. */
+.hd-a2 { padding: 14px 14px 10px; }
+.a2-rows { --a2: 60px; } .a2-rows[data-n="1"] { --a2: 92px; } .a2-rows[data-n="2"], .a2-rows[data-n="3"] { --a2: 72px; }
+.a2-r { display: grid; grid-template-columns: var(--a2) 1fr; gap: 12px; align-items: start; padding: 2px 0; border-radius: 12px; transition: transform var(--m-quick) var(--m-ease-std); }
+.a2-r + .a2-r { margin-top: 12px; } .a2-r:active { transform: scale(var(--m-press-row)); }
+.a2-av.hd-mini { width: var(--a2); height: var(--a2); }
+.a2-rows[data-n="1"] .a2-r { align-items: center; gap: 16px; }
+.a2-b { min-width: 0; }
+.a2-n { font-family: var(--f-cjk); font-size: var(--fs-15); font-weight: 600; color: var(--ink); line-height: 1.3; }
+.a2-t { font-family: var(--f-cjk); font-size: var(--fs-14); color: var(--ink2); line-height: 1.4; overflow-wrap: anywhere; }
+.a2-m { display: flex; align-items: baseline; gap: 8px; margin-top: 3px; }
+.a2-k { flex: 1; min-width: 0; font-family: var(--f-cjk); font-size: var(--fs-12); color: var(--dim); }
+.a2-lk { flex: none; padding: 4px 0 4px 8px; margin: -4px 0; background: none; border: 0; color: var(--accent); font-family: var(--f-cjk); font-size: var(--fs-13); white-space: nowrap; }
+.a2-lk[hidden] { display: none; }
+.a2-rest-t { font-family: var(--f-cjk); font-size: var(--fs-16); color: var(--ink); line-height: 1.4; }
+.a2-rest-k { margin-top: 2px; font-family: var(--f-cjk); font-size: var(--fs-12); color: var(--dim); line-height: 1.45; overflow-wrap: anywhere; }
+.a2-stack { display: inline-flex; align-items: center; margin-top: 12px; padding: 4px 6px 4px 0; background: none; border: 0; color: var(--dim); font-family: var(--f-cjk); font-size: var(--fs-12); }
+.a2-rows:empty + .a2-rest[hidden] + .a2-stack { margin-top: 0; }
+.a2-stack[hidden], .a2-rest[hidden] { display: none; }
+.a2-faces { display: inline-flex; margin-right: 6px; }
+.a2-faces i, .a2-g i { display: block; border-radius: 50%; background-size: cover; background-position: center; filter: grayscale(1) brightness(.8); opacity: .6; }
+.a2-faces i { width: 22px; height: 22px; box-shadow: 0 0 0 1.5px var(--panel); } .a2-faces i + i { margin-left: -7px; }
+/* idletap (user 20:19): idle parts get press feedback; the idle grid opens / closes with grid-rows 0fr -> 1fr, faces rise in one by one */
+.a2-exp { display: grid; grid-template-rows: 0fr; opacity: 0; visibility: hidden; transition: grid-template-rows var(--m-slow) var(--m-ease-ios), opacity var(--m-base) var(--m-ease-std), visibility 0s var(--m-slow); }
+.a2-exp.on { grid-template-rows: 1fr; opacity: 1; visibility: visible; transition: grid-template-rows var(--m-slow) var(--m-ease-ios), opacity var(--m-base) var(--m-ease-std); }
+.a2-ex-in { min-height: 0; overflow: hidden; }
+.a2-ex-in > .a2-eh { margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--line); }
+.a2-exp .a2-g { opacity: 0; transform: translateY(6px); transition: opacity var(--m-base) var(--m-ease-std), transform var(--m-base) var(--m-spring); }
+.a2-exp.on .a2-g { opacity: 1; transform: none; transition-delay: calc(var(--gi, 0) * 30ms); }
+.a2-stack { border-radius: 16px; margin-left: -6px; padding-left: 6px; transition: background var(--m-quick) var(--m-ease-std), transform var(--m-quick) var(--m-ease-std); }
+.a2-stack:active { background: var(--accent-soft); }   /* the scale comes from glass.js press (WAAPI, pointer events: works on iOS) */
+.a2-faces i { transition: margin var(--m-base) var(--m-spring); } .a2-stack.on .a2-faces i + i { margin-left: -3px; }
+.a2-rest.go { margin: -6px -8px; padding: 6px 8px; border-radius: 14px; transition: background var(--m-quick) var(--m-ease-std), transform var(--m-quick) var(--m-ease-std); }
+.a2-rest.go .a2-rest-k::after { content: " ›"; }
+.a2-rest.go:active { background: var(--accent-soft); }
+.a2-fold:active { opacity: .6; }
+@media (prefers-reduced-motion: reduce) { .a2-exp, .a2-exp.on, .a2-exp .a2-g, .a2-exp.on .a2-g, .a2-faces i, .a2-stack, .a2-rest.go { transition: none; } }
+.a2-eh { display: flex; align-items: center; justify-content: space-between; font-family: var(--f-cjk); font-size: var(--fs-12); color: var(--dim); }
+.a2-fold { background: none; border: 0; padding: 4px 0 4px 8px; color: var(--dim); font: inherit; }
+.a2-gr { display: grid; grid-template-columns: repeat(auto-fill, minmax(42px, 1fr)); gap: 8px 2px; margin-top: 8px; }
+.a2-g { display: flex; flex-direction: column; align-items: center; gap: 4px; background: none; border: 0; padding: 0; color: var(--dim); font-family: var(--f-cjk); font-size: var(--fs-11); min-width: 0; }
+.a2-g i { width: 32px; height: 32px; } .a2-g span { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.a2-g:active { transform: scale(var(--m-press-row)); }
+.a2-r:focus-visible, .a2-stack:focus-visible, .a2-g:focus-visible, .a2-lk:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+.a2-av.wsheet::before, .a2-av.wsheet::after { display: none; }   /* the moving chibi already says "working"; the spin ring stays on the static patch */
+/* ===== t-m-a2-restore (11-07): five D1 features back on the A2 card, kept small.
+   search = the D1 .hd-srch in the card's top-right corner; 「Chrome」 tag after a working name; long-press = the D1 quick sheet (home.js a2Wire);
+   dispatch = the new row fades in + the D1 halo (dp-halo / dp-lit) on .a2-glow, never on .a2-av (that would replace the chibi sheet animation);
+   completion = the D1 mission plate (dp-streak / dp-flash / dp-plate) on the finishing row, which stays 2.3 s. */
+.hd-a2 > .a2-srch { position: absolute; top: 8px; right: 8px; z-index: 2; width: 28px; height: 28px; margin: 0;
+  transition: transform var(--m-quick) var(--m-ease-std), background var(--m-quick) var(--m-ease-std); }
+.a2-rows > .a2-r:first-child .a2-b, .a2-rest { padding-right: 30px; }
+.a2-r, .a2-g, .a2-faces i { -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
+.a2-r { position: relative; }
+.a2-glow { position: relative; display: block; width: var(--a2); height: var(--a2); }
+.a2-glow > .a2-av { position: relative; z-index: 1; }
+.a2-n { display: flex; align-items: center; gap: 6px; min-width: 0; }
+.a2-tg { flex: none; padding: 1px 6px; border-radius: 6px; background: var(--accent-soft); color: var(--accent); font: 600 var(--fs-11)/1.45 var(--f-sys); letter-spacing: .02em; animation: a2-tg-in var(--m-base) var(--m-ease-std) both; }
+.a2-tg[hidden] { display: none; }
+@keyframes a2-tg-in { from { opacity: 0; transform: scale(.8); } }
+.a2-r.lit { animation: a2-in .45s var(--m-ease-std) both; }
+@keyframes a2-in { from { opacity: 0; transform: translateY(6px); } }
+.a2-r.lit .a2-glow { animation: dp-lit 1.5s var(--m-ease-std); }
+.a2-r.lit .a2-glow::before { content: ""; position: absolute; inset: -14px; border-radius: 50%; pointer-events: none;
+  background: radial-gradient(closest-side, color-mix(in srgb, var(--tint) 80%, transparent), transparent); animation: dp-halo 1.5s var(--m-ease-std) both; }
+.a2-fx { position: absolute; inset: -4px -6px; border-radius: 14px; overflow: hidden; pointer-events: none; z-index: 3; }
+.a2-r.mc .a2-fx .s1, .a2-r.mc .a2-fx .s2 { position: absolute; top: -10%; bottom: -10%; right: -40%; width: 40%; transform: skewX(-16deg); background: linear-gradient(90deg, transparent, rgba(255,255,255,.7), transparent); animation: dp-streak .7s var(--m-ease-emph) both; }
+.a2-r.mc .a2-fx .s2 { width: 14%; animation-delay: .08s; opacity: .8; }
+.a2-r.mc .a2-fx .fl { position: absolute; inset: 0; background: #fff; opacity: 0; animation: dp-flash .5s ease-out both; }
+.a2-r.mc .a2-fx .pl { position: absolute; left: -6%; right: -6%; top: 50%; height: 40px; margin-top: -20px; padding-left: calc(6% + var(--a2) + 18px); display: flex; flex-direction: column; justify-content: center; background: var(--accent); color: var(--accent-ink);
+  font: 600 var(--fs-13)/1 var(--f-display); letter-spacing: .2em; clip-path: polygon(0 12%, 100% 0, 100% 88%, 0 100%); animation: dp-plate 2.3s var(--m-ease-emph) both; }
+.a2-r.mc .a2-fx .pl small { font: 600 var(--fs-10) var(--f-cjk); letter-spacing: .3em; opacity: .7; margin-top: 3px; }
+@keyframes a2-plate-rm { 0% { opacity: 0; } 10%, 85% { opacity: 1; } 100% { opacity: 0; } }
+@media (prefers-reduced-motion: reduce) {
+  .a2-r.lit, .a2-r.lit .a2-glow, .a2-tg, .a2-srch { animation: none; transition: none; } .a2-r.lit .a2-glow::before { display: none; }
+  .a2-r.mc .a2-fx .s1, .a2-r.mc .a2-fx .s2, .a2-r.mc .a2-fx .fl { display: none; } .a2-r.mc .a2-fx .pl { animation-name: a2-plate-rm; }
+}
+
+/* ===== t-m-chat-avatar-row (B, 11-08): phone chat puts a 24px avatar + name row ABOVE each bubble, and the bubble gets the full width under it.
+   Agents: the .mh row on the left. Me: .m-hd (mobile.js decorateThread) on the right. A run from the same speaker shows the row once (.m-cont).
+   Desktop (style.css >= 761px + decorateDesk) is untouched. ===== */
+#right .msg, #right .msg.me { padding-left: 0; padding-right: 0; align-self: stretch; }
+#right .msg:not(.m-cont) { margin-top: 10px; }
+#right .msg.m-cont { margin-top: -4px; }
+#right .msg .mh { position: static; display: flex; align-items: center; gap: 8px; margin: 0 2px 6px; font-size: var(--fs-13); font-weight: 600; color: var(--ink2); line-height: 1; }
+#right .msg .mh .av, #right .m-hd .m-meav, #right .m-typing > .av { width: 24px; height: 24px; flex: none; --wk-r: 12px; }
+#right .msg .m-nm { display: none; }
+#right .msg.m-cont .mh, #right .msg.m-cont .m-hd { display: none; }
+#right .msg .mb, #right .msg.me .mb { max-width: 100%; }
+#right .m-hd { display: flex; flex-direction: row-reverse; align-items: center; gap: 8px; margin: 0 2px 6px; font-size: var(--fs-13); font-weight: 600; color: var(--ink2); line-height: 1; }
+#right .m-hd .m-meav { position: static; }
+#right .m-hd .m-meav.ph b { font-size: 12px; }
+#right .m-typing { flex-direction: column; align-items: flex-start; gap: 6px; margin-top: 10px; }
+#right .m-typing .mb { max-width: 100%; }
+
+/* t-schedule-ui: 定时 page on phones. Undo pill sits above the tab bar like #rv-undo; the switch + ⋯ stay on one line. */
+#sc-undo { left: 16px; right: 16px; width: auto; bottom: calc(var(--tb-h) + 14px); transform: translateY(12px) scale(.96); }
+#sc-undo.on { transform: none; }
+body.vp-fix #sc-undo { bottom: auto; top: calc(var(--app-h) - var(--tb-h) - 64px); }
+.sc-more { width: 36px; height: 36px; margin-right: -6px; }
+.sc-row .rs-s { line-height: 1.7; }
+
+/* t-hm-build: 招聘市场 on the phone, one column; the sheet stacks its fields */
+.mk-grid { grid-template-columns: minmax(0, 1fr); gap: 12px; }
+.mk-chips { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; margin-right: -16px; padding-right: 16px; } .mk-chips::-webkit-scrollbar { display: none; }
+.mk-chips button { flex: none; }
+.mk-card:hover { transform: none; }
+.mk-b { height: 40px; font-size: var(--fs-14); }
+.mk-sw button { padding: 7px 2px; }
+.mk-sh-row { grid-template-columns: 1fr 1fr; } .mk-sh-row .mk-tint { grid-column: 1 / -1; }
+.mk-av.xl { width: 64px; height: 64px; }
+#mk-undo, #ht-undo { bottom: calc(var(--tb-h, 64px) + 12px + env(safe-area-inset-bottom)); }
+/* t-ht-build: the handover sheet is a bottom sheet here (#modal aligns to the bottom); selects drop under the title */
+.ht-row { grid-template-columns: 1fr; }
+.ht-row select { max-width: none; width: 100%; min-height: 40px; }
+.ht-sheet { max-height: 58vh; }
+.mdl.ht-mdl { width: 100%; }   /* style.css sets min(580px, 94vw) for desk; the phone sheet is full width like every .mdl */
+.ht-b { padding: 8px 16px; }
+
+/* t-ri1108-a P4: 定时 page titles wrap to two lines before the ellipsis (long routine / standing-card names were cut at ~10 chars) */
+.rs-n b { white-space: normal; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow-wrap: anywhere; line-height: 1.3; }
+
+/* t-ri1111-a P5: the 委托 category track fades at an edge that has more to swipe (Urgent was hard-cut, Schedules out of sight).
+   The pill (bg + ring) moves to the wrapper so only the scrolling buttons fade, not the pill's own edge. */
+.m-seg.q { border-radius: 999px; background: var(--chip); box-shadow: inset 0 0 0 1px var(--line2); }
+html[data-theme="white"] .m-seg.q { background: #f0f0f0; box-shadow: none; }   /* mirrors the per-theme .seg pills above (660 / 1095) */
+html[data-theme="white"][data-ut="light-warm"] .m-seg.q { background: var(--panel2); box-shadow: inset 0 0 0 1px var(--line); }
+html[data-theme] .m-seg.q .seg { background: none; box-shadow: none; --fl: 0px; --fr: 0px;
+  -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 var(--fl), #000 calc(100% - var(--fr)), transparent 100%);
+          mask-image: linear-gradient(90deg, transparent 0, #000 var(--fl), #000 calc(100% - var(--fr)), transparent 100%); }
+.m-seg.q .seg.fl { --fl: 36px; } .m-seg.q .seg.fr { --fr: 36px; }
+

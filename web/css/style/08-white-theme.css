@@ -1,0 +1,49 @@
+/* ===== D2 (t-web-d2): white theme rules shared by phone and desktop (moved from mobile.css: ui13, t-done-splash, t-vis-b1). Phone-only white rules stay in mobile.css. ===== */
+/* decoration layers off: vignette, fog, light shafts, grain, ambience gradient */
+[data-theme="white"] body::after, [data-theme="white"] .fog, [data-theme="white"] .shafts, [data-theme="white"] .grain, [data-theme="white"] #ambience { display: none; }
+[data-theme="white"] body, [data-theme="white"] #layout { background: #fff; }
+[data-theme="white"] #right { background: #fff; }
+[data-theme="white"] #drawer { background: #fff; box-shadow: -10px 0 28px rgba(0,0,0,.14); }
+[data-theme="white"] .md pre.code { background: #f5f5f5; }
+[data-theme="white"] ::selection { background: rgba(0,0,0,.14); color: #111; }
+[data-theme="white"] a, [data-theme="white"] a:hover { color: var(--accent); text-shadow: none; }
+[data-theme="white"] .md a, [data-theme="white"] .now a { text-decoration: underline; text-decoration-color: rgba(0,0,0,.35); text-underline-offset: 2px; }
+[data-theme="white"] .card:hover, [data-theme="white"] .card:hover .body h3 { text-shadow: none; }
+/* review deck */
+[data-theme="white"] .dk-card { background: #fff; box-shadow: inset 0 0 0 1px var(--line2), 0 14px 34px rgba(0,0,0,.16); }
+[data-theme="white"] .dk-stamp.ok, [data-theme="white"] .dk-stamp.no { text-shadow: none; }
+[data-theme="white"] .dk-btns button { box-shadow: inset 0 0 0 1px var(--line2), 0 4px 12px rgba(0,0,0,.10); background: #fff; }
+[data-theme="white"] .dk-btns .ok { box-shadow: inset 0 0 0 1px rgba(6,122,60,.5), 0 4px 12px rgba(0,0,0,.10); }
+[data-theme="white"] body #right .ch-comp textarea, [data-theme="white"] #right .ch-comp textarea { background: #f0f0f0; color: var(--ink); }
+[data-theme="white"] #right .ch-comp textarea:focus { background: #ebebeb; }
+[data-theme="white"] #right .ch-comp textarea::placeholder { color: var(--dim); opacity: 1; }
+[data-theme="white"] #right .ch-comp .m-send { background: var(--accent); color: var(--accent-ink); }
+[data-theme="white"] .ui2-panel button b { background: #f0f0f0; color: var(--ink); }
+/* toast, modal, scrims, inbox */
+[data-theme="white"] #toast { background: #111; color: #fff; border-radius: 22px; text-shadow: none; padding: 10px 22px; letter-spacing: .04em; max-width: calc(100vw - 32px); box-shadow: 0 8px 24px rgba(0,0,0,.25); }
+[data-theme="white"] #toast::before, [data-theme="white"] #toast::after { display: none; }
+[data-theme="white"] #toast.err { background: #c0281e; color: #fff; text-shadow: none; }
+[data-theme="white"] #modal { background: rgba(0,0,0,.4); }
+[data-theme="white"] .mdl { background: #fff; }
+[data-theme="white"] #scrim { background: rgba(0,0,0,.28); }
+[data-theme="white"] #mailscrim { background: rgba(0,0,0,.22); }
+[data-theme="white"] #mailbox { background: #fff; box-shadow: 0 18px 44px rgba(0,0,0,.18); }
+[data-theme="white"] .cs-jump button { box-shadow: 0 4px 12px rgba(0,0,0,.14); }
+html[data-theme="white"] .title-card { background: radial-gradient(ellipse 50% 32% at 50% 50%, rgba(255,255,255,.94), transparent 75%); }
+html[data-theme="white"] .mc-st { --streak: rgba(0,0,0,.10); }
+html[data-theme="white"] .mc-flash { background: rgba(0,0,0,.28); }
+/* D2: three-way theme picker in the header (dark / light / white swatches). Clicks go through [data-theme-set] (mobile.js), the same path and rt.theme key as the phone menu. */
+.hdr-ctrl .hc-theme { display: inline-flex; align-items: center; gap: 2px; padding: 3px; border-radius: 999px; background: var(--chip); box-shadow: inset 0 0 0 1px var(--line); }
+.hdr-ctrl .hc-th { width: 24px; height: 24px; padding: 0; justify-content: center; border-radius: 50%; }
+.hdr-ctrl .hc-th::after { display: none; }
+.hdr-ctrl .hc-th i { width: 12px; height: 12px; border-radius: 50%; box-shadow: inset 0 0 0 1px var(--line3); transition: transform var(--m-quick, .18s) var(--ease); }
+.hdr-ctrl .hc-th.dark i { background: #111; } .hdr-ctrl .hc-th.light i { background: #e8e0cc; } .hdr-ctrl .hc-th.white i { background: #fff; }
+.hdr-ctrl .hc-th:hover i { transform: scale(1.12); }
+.hdr-ctrl .hc-th.on { box-shadow: inset 0 0 0 1.5px var(--accent); }
+.hdr-ctrl .hc-th:focus-visible { outline: 2px solid var(--accent-line); outline-offset: 1px; }
+/* D2: desktop white surfaces match the phone (P2 cards / P5 review cards): solid white face + hairline + soft shadow instead of the grey accent tint. Desktop only; the phone has its own card rules in mobile.css. */
+@media (min-width: 761px) {
+  [data-theme="white"] .card { background: var(--solid); box-shadow: 0 0 0 1px rgba(0,0,0,.06), 0 6px 18px rgba(0,0,0,.05); }
+  [data-theme="white"] .card:hover { background-color: #fafafa; box-shadow: 0 0 0 1px rgba(0,0,0,.08), 0 10px 24px rgba(0,0,0,.07); }
+}
+

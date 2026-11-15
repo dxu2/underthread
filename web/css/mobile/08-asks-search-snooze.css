@@ -1,0 +1,185 @@
+/* ---------- t-open-questions (phone): bigger tap targets; the dock keeps its two buttons (the block above already counts what is open) ---------- */
+.ask-o { padding: 8px 14px; font-size: var(--fs-14); }
+.ask-opts.sm .ask-o { padding: 7px 13px; font-size: var(--fs-14); }
+.ri14-more { padding: 7px 13px; font-size: var(--fs-14); }   /* t-ri1114-a P4: same size as the option chips above it */
+.rv-card .ask-row { margin: 10px 0 2px; padding: 10px 12px; border: 1px solid var(--line2); border-radius: 12px; }
+.rv-card .ask-row .ask-opts.sm { display: flex; }
+#drawer .dock-note { display: none; }
+
+/* ===== t-ui-next (2026-10-28): phone side of the detail polish (rules in style.css) ===== */
+.cs-line { gap: 6px; margin-left: 7px; padding-left: 14px; font-size: var(--fs-12); }
+.cs-line + .cs-line::before { top: -12px; }   /* .cs gap is 12px here */
+.cs-card:not(.draftc) { padding: 11px 14px 12px; }
+.cs-me { padding: 9px 14px 11px; }
+
+/* ---------- t-imp29-p1: 推送分级 + 夜间免打扰 + 早报 (设置 → 推送通知, only while push is on) ---------- */
+.pz { margin: 0 4px 0 42px; padding: 2px 0 12px; border-bottom: 1px solid var(--line); }
+.pz-l { font-size: var(--fs-12); color: var(--dim); margin: 12px 0 8px; letter-spacing: .04em; }
+.pz-seg { display: flex; gap: 2px; padding: 3px; border: 1px solid var(--line2); border-radius: 999px; }
+.pz-seg button { flex: 1; min-height: 34px; border-radius: 999px; font-size: var(--fs-12); color: var(--ink2); transition: background-color .22s var(--ease), color .22s var(--ease); }
+.pz-seg button.on { background: var(--accent); color: var(--accent-ink); font-weight: 600; }
+.pz-r { border-top: 1px solid var(--line); margin-top: 12px; }
+.pz-r + .pz-r { margin-top: 0; }
+.pz-tg { width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 11px 0; text-align: left; }
+.pz-tg b { display: block; font-size: var(--fs-14); font-weight: 600; }
+.pz-tg small { display: block; font-size: var(--fs-12); color: var(--dim); margin-top: 2px; }
+.pz-span { display: flex; align-items: center; gap: 8px; padding: 0 0 11px; color: var(--dim); }
+.pz-time { appearance: none; -webkit-appearance: none; font: inherit; font-size: var(--fs-13); font-variant-numeric: tabular-nums; color: var(--ink); background: var(--chip); border: 1px solid var(--line2); border-radius: 999px; padding: 6px 14px; min-height: 32px; }
+.pz-ch { display: flex; align-items: flex-end; gap: 3px; height: 56px; margin-top: 4px; }
+.pz-ch i { flex: 1; border-radius: 2px 2px 0 0; background: var(--ink2); opacity: .8; }
+.pz-ch i.q { background: var(--dot); opacity: .9; }
+.pz-ax { display: flex; justify-content: space-between; margin-top: 4px; font-size: var(--fs-10); color: var(--dim); font-variant-numeric: tabular-nums; }
+.pz-cap { margin-top: 8px; font-size: var(--fs-12); color: var(--ink2); line-height: 1.5; }
+
+/* ===== t-imp29-p4: 素材库 on phones — chips scroll sideways inside their row (never the page), two tiles per row */
+.lib-bar { flex-direction: column; align-items: stretch; gap: 8px; }
+.lib-chips { flex: none; width: 100%; }
+.lib-seg { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
+.lib-seg::-webkit-scrollbar { display: none; }
+.lib-seg > button { flex-shrink: 0; }   /* t-ui-fix-r5 R5-01: the R4-14 ellipsis (overflow:hidden) let chips shrink to 「所…」 instead of the row scrolling; chips keep their width, the row scrolls */
+.lib-q { flex: none; width: 100%; height: 38px; font-size: var(--fs-16); }
+.lib-g { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.lib-cap { padding: 6px 8px; font-size: var(--fs-12); }
+
+/* ===== t-imp29-p5: chips wrap inside phone bubbles; bigger picker rows for touch */
+.idc b { max-width: 9.5em; }
+.hp-r { padding: 10px 8px; font-size: var(--fs-15); }
+.hp-f { display: none; }
+
+/* ===== t-m2-a ⑤ glass dialogs + toast. The scrim drops its blur(6px) and the sheet blurs instead, so the blurred-layer count on screen stays the same.
+   A denser tint than the pill glass (--glass-panel), because a sheet is full of text. Reduced transparency / no backdrop-filter: solid (same switch as --glass-bg). */
+html[data-theme="dark"] { --glass-panel-fx: linear-gradient(135deg, rgba(255,255,255,.10) 0, transparent 40%), rgba(26,26,30,.66); }
+html[data-theme="light"] { --glass-panel-fx: linear-gradient(135deg, rgba(255,255,255,.45) 0, transparent 40%), rgba(246,241,229,.72); }
+html[data-theme="white"] { --glass-panel-fx: linear-gradient(135deg, rgba(255,255,255,.6) 0, transparent 40%), rgba(255,255,255,.74); }
+html[data-theme] { --glass-panel: var(--glass-solid); }
+@supports ((-webkit-backdrop-filter: blur(1px)) or (backdrop-filter: blur(1px))) { html[data-theme] { --glass-panel: var(--glass-panel-fx); } }
+@media (prefers-reduced-transparency: reduce) { html[data-theme] { --glass-panel: var(--glass-solid); } }
+/* The scrim colour + its fade-in move to #modal::before: an element that runs an opacity animation becomes a "backdrop root", and a blurred sheet inside it
+   would only blur the flat scrim (the page would show through unblurred). #modal itself now has no background, filter or animation. */
+html[data-theme] #modal { -webkit-backdrop-filter: none; backdrop-filter: none; background: none; animation: none; }
+html[data-theme] #modal::before { content: ""; position: fixed; inset: 0; background: rgba(0,0,0,.46); animation: veil .4s ease both; }
+html[data-theme="light"] #modal::before { background: rgba(60,45,20,.22); }
+html[data-theme="white"] #modal::before { background: rgba(0,0,0,.28); }
+html[data-theme] #modal .mdl { background: var(--glass-panel); -webkit-backdrop-filter: var(--glass-bf); backdrop-filter: var(--glass-bf);
+  box-shadow: var(--glass-rim), var(--glass-shadow); border-top: 1px solid var(--glass-line); border-radius: 22px 22px 0 0; }
+html[data-theme] #modal .mdl .foot { background: linear-gradient(to top, var(--glass-solid) 62%, transparent); }
+html[data-theme] #toast { background: var(--glass-panel); -webkit-backdrop-filter: var(--glass-bf); backdrop-filter: var(--glass-bf); border: 1px solid var(--glass-line);
+  box-shadow: var(--glass-rim), var(--glass-shadow); border-radius: 22px; padding: 10px 20px; text-shadow: none; color: var(--ink); letter-spacing: .04em; }
+html[data-theme] #toast.err { color: var(--urgent); }
+/* ③ cold-start skeleton: drawn over the empty app until the first /api/state answer (app.js bootDone removes it) */
+#boot-sk { display: block; position: fixed; left: 0; right: 0; top: calc(env(safe-area-inset-top, 0px) + 60px); z-index: 1; }
+
+/* ===== t-m2-b ① shared-element push (app.js vtRun). While html.vt-run is set the browser animates snapshots, so the drawer slide and the page recede
+   jump straight to their end state underneath (no double motion). One named group (m2-card); the root cross-fades. Snapshots exist only for the transition. */
+html.vt-run #drawer, html.vt-run #page { transition: none !important; }
+::view-transition-group(m2-card) { animation-duration: .36s; animation-timing-function: cubic-bezier(.2,.8,.2,1); border-radius: 18px; overflow: clip; }
+::view-transition-old(m2-card), ::view-transition-new(m2-card) { height: 100%; width: 100%; object-fit: cover; object-position: top; }
+::view-transition-old(m2-card) { animation: vt-fade-out .12s ease-out both; }   /* the stretched card snapshot must not linger */
+::view-transition-new(m2-card) { animation: vt-fade-in .28s ease-out .04s both; }
+::view-transition-old(root), ::view-transition-new(root) { animation-duration: .3s; }
+@keyframes vt-fade-out { to { opacity: 0; } }
+@keyframes vt-fade-in { from { opacity: 0; } }
+
+/* ===== t-m2-c ④ pull-to-refresh pill (mobile.js). Fixed under the top bar of the list being pulled; only transform / opacity move.
+   --ptr-y / --ptr-o follow the finger (inline, no transition while .live); release springs to the rest spot. Idle = hidden (no layer). Ink + the red --dot. */
+#ptr { position: fixed; left: 50%; top: var(--ptr-top, 54px); z-index: 30; display: flex; align-items: center; gap: 8px; height: 34px; padding: 0 14px 0 11px;
+  border-radius: 17px; font-size: var(--fs-13); font-weight: 600; letter-spacing: .03em; color: var(--ink); pointer-events: none; white-space: nowrap;
+  background: var(--glass-panel); border: 1px solid var(--glass-line); box-shadow: var(--glass-rim), var(--glass-shadow); -webkit-backdrop-filter: var(--glass-bf); backdrop-filter: var(--glass-bf);
+  transform: translate3d(-50%, calc(var(--ptr-y, 0px) - 40px), 0); opacity: var(--ptr-o, 0);
+  transition: transform var(--m-base) var(--m-spring-soft), opacity var(--m-quick) ease-out; }
+#ptr[hidden] { display: none; }
+#ptr.live { transition: none; will-change: transform, opacity; }
+#ptr[data-s="busy"], #ptr[data-s="done"], #ptr[data-s="fail"] { --ptr-o: 1; }
+#ptr[data-s="out"] { transform: translate3d(-50%, -46px, 0); opacity: 0; transition: transform var(--m-base) var(--m-ease-in), opacity var(--m-quick) ease-in; }
+#ptr i { display: none; flex: none; }
+#ptr .ptr-ic { display: block; width: 16px; height: 16px; transition: transform var(--m-quick) var(--m-ease-std); }
+#ptr .ptr-ic svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; display: block; }
+#ptr[data-s="ready"] .ptr-ic { transform: rotate(180deg); }
+#ptr[data-s="busy"] .ptr-ic, #ptr[data-s="done"] .ptr-ic, #ptr[data-s="fail"] .ptr-ic, #ptr[data-s="out"] .ptr-ic { display: none; }
+#ptr[data-s="busy"] .ptr-sp { display: block; width: 14px; height: 14px; border-radius: 50%; border: 2px solid var(--line2, rgba(128,128,128,.35)); border-top-color: var(--ink); animation: ptr-spin .7s linear infinite; }
+#ptr[data-s="done"] .ptr-dot { display: block; width: 8px; height: 8px; border-radius: 50%; background: var(--dot); animation: ptr-pop var(--m-base) var(--m-spring) both; }
+#ptr[data-s="fail"] { color: var(--ink2); }
+@keyframes ptr-spin { to { transform: rotate(360deg); } }
+@keyframes ptr-pop { from { transform: scale(0); } }
+@media (prefers-reduced-motion: reduce) {
+  #ptr, #ptr .ptr-ic, #ptr[data-s="out"] { transition: none; }
+  #ptr[data-s="busy"] .ptr-sp { animation: none; border-top-color: var(--line2, rgba(128,128,128,.35)); }
+  #ptr[data-s="done"] .ptr-dot { animation: none; }
+}
+
+/* ---------- t-btn-names (phone): review-card button + swipe deck; the dock rule lives in style.css ---------- */
+.rv-ok b { font-weight: inherit; }
+.rv-ok.has-ask { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; line-height: 1.15; }
+.dk-who .ok-ask { display: inline-block; margin-left: 8px; font-size: var(--fs-12); font-weight: 600; opacity: 1; color: var(--accent); }
+
+/* ---------- t-ask-rec (phone): undo pill sits above the detail dock ---------- */
+#ar-undo { left: 16px; right: 16px; width: auto; bottom: calc(env(safe-area-inset-bottom) + 150px); }
+.sec-h .ask-allrec { height: 32px; font-size: var(--fs-14); }
+
+/* t-draft-keep: restored-draft line in the phone dock, and the [草稿] marker in the chat list */
+#drawer .dw-dock .dr-tag { padding: 0 max(16px, env(safe-area-inset-right)) 0 max(16px, env(safe-area-inset-left)); margin-bottom: -6px; }
+.cl-p .cl-dr { color: var(--dot); font-weight: 600; }
+
+#newver { top: auto; bottom: calc(var(--tb-h) + 14px); }   /* t-new-ver: above the tab bar */
+
+/* t-id-copy: the card id shows on the phone too (small grey, truncates instead of pushing the category pill off) */
+#drawer .dw-lead .dw-id { display: inline-flex; min-width: 0; max-width: 100%; font-size: var(--fs-12); padding: 4px 2px; }
+#drawer .dw-lead .dw-id span { min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+/* t-stamina-stale v2: phones have no pill, so the subtitle carries the reason ("管家离线 · 33 分钟前") in the warning colour */
+#stamina.est.stale .pct > small { color: var(--warn); font-weight: 600; }
+
+/* t-agent-queue-mobile: 「排队 N」 in the chat list row, the DM header pill and the expanded home panel (base .aq / .aq-pop live in style.css) */
+.cl-t .aq { margin-left: -2px; flex: none; align-self: center; }
+.cl-back .who .wt .nm { display: inline-flex; align-items: center; }
+.cl-back .who .aq { height: 16px; font-size: var(--fs-10); padding: 0 5px; margin-left: 6px; letter-spacing: 0; }
+.dp-info .rl { display: flex; align-items: center; min-width: 0; } .dp-info .rl-t { min-width: 0; overflow: hidden; text-overflow: ellipsis; }   /* a long title gives way, the badge stays whole inside the slanted panel */
+.dp-info .rl .aq, .dp-info .rl .aq:hover { flex: none; height: 17px; padding: 0 6px; margin-left: 7px; font-size: var(--fs-11); background: rgba(255,255,255,.22); color: #fff; }
+.aq-pop { max-width: calc(100vw - 16px); }
+
+/* t-type-polish A: badge counts here use the font shorthand (which resets numerals), so tabular-nums goes after it */
+.cl-n, .cl-back button > i.n { font-variant-numeric: tabular-nums; }
+
+/* ===== ri1103-P4 (2026-11-03): 长草稿目录 on the phone. Closed = a small 「目录 · 读到 N%」 pill bottom-left above the reply box (the jump buttons
+   sit bottom-right); a tap opens the same list as a bottom sheet over the dock, a tap on a heading (or the scrim) closes it. No backdrop blur (layer budget). ===== */
+.dw-toc { top: auto; right: auto; left: 12px; bottom: calc(var(--dock-h, 150px) + 12px); width: auto; z-index: 6; }
+.dw-toc .toc-box { -webkit-backdrop-filter: none; backdrop-filter: none; background: var(--solid); box-shadow: inset 0 0 0 1px var(--line2), 0 6px 18px rgba(0,0,0,.22); max-height: none; }
+.dw-toc:not(.open) .toc-box { min-width: 0; border-radius: 999px; }
+.dw-toc:not(.open) .toc-h { padding: 8px 14px; gap: 5px; }
+.dw-toc:not(.open) .toc-h .n, .dw-toc:not(.open) .toc-h .sp, .dw-toc:not(.open) .toc-bar { display: none; }
+.dw-toc.open { inset: 0; width: auto; pointer-events: auto; }
+.dw-toc.open .toc-scrim { display: block; position: absolute; inset: 0; background: rgba(0,0,0,.36); }
+.dw-toc.open .toc-box { position: absolute; left: 0; right: 0; bottom: 0; max-height: 62vh; border-radius: 18px 18px 0 0; padding-bottom: env(safe-area-inset-bottom); }
+.dw-toc.open .toc-h { padding: 16px 20px 10px; font-size: var(--fs-13); }
+.dw-toc.open .toc-l { padding: 0 10px 8px; }
+.dw-toc.open .toc-l button { padding: 10px 12px; font-size: var(--fs-15); }
+.dw-toc.open .toc-l button.l2 { padding-left: 26px; }
+.dw-toc.open .toc-bar { margin: 2px 20px 14px; }
+body.kb .dw-toc:not(.open) { display: none; }
+/* t-ri1109-a P2: app.js tocSync() adds .away once the draft card has scrolled above the top; the pill fades and drops out of the way of the thread */
+.dw-toc:not(.open) { transition: opacity .2s ease, transform .2s ease; }
+.dw-toc.away:not(.open) { opacity: 0; transform: translateY(10px); }
+.dw-toc.away:not(.open), .dw-toc.away:not(.open) .toc-box { pointer-events: none; }
+@media (prefers-reduced-motion: reduce) { .dw-toc:not(.open) { transition: none; } }   /* keyboard up: the pill would sit on the text being typed against */
+
+/* ===== ri1103-P5 (2026-11-03): search sheet = same categories as ⌘K (全部 / 草稿 / 卡片讨论 / 对话). Hit rows show the sentence (2 lines, words marked). ===== */
+.ms-tabs { display: flex; gap: 6px; padding: 2px max(16px, env(safe-area-inset-left)) 8px; overflow-x: auto; scrollbar-width: none; }
+.ms-tabs::-webkit-scrollbar { display: none; }
+.ms-tabs button { flex: none; display: inline-flex; align-items: center; gap: 4px; height: 32px; padding: 0 14px; border: 0; border-radius: 999px; background: var(--chip); box-shadow: inset 0 0 0 1px var(--line);
+  font: 500 var(--fs-14)/1 var(--f-sys); color: var(--ink2); }
+.ms-tabs button i { font-style: normal; font-size: var(--fs-12); color: var(--dim); font-variant-numeric: tabular-nums; }
+.ms-tabs button.on { background: var(--accent-soft); color: var(--ink); box-shadow: inset 0 0 0 1px var(--line2); }
+.ms-h { display: flex; align-items: baseline; }
+.ms-more { margin-left: auto; padding: 0; border: 0; background: none; font: 500 var(--fs-13) var(--f-sys); color: var(--dim); }
+.ms-hit { align-items: flex-start; }
+.ms-hit .ms-m b { white-space: normal; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; font-weight: 500; line-height: 1.4; }
+.ms-hit .ms-m b mark { background: color-mix(in srgb, var(--warn) 30%, transparent); color: inherit; border-radius: 3px; padding: 0 1px; }
+
+/* ===== ri1103-P2: 稍后 on the phone: a compact third pill in the dock; the menu is a bottom sheet (style.css .snz-wrap.sheet) ===== */
+#drawer .dw-acts .ab.sz { flex: none; gap: 5px; padding: 0 13px; border: 1px solid var(--line2); font-weight: 500; font-size: var(--fs-15); }
+#drawer .dw-acts .ab.sz.on { max-width: 38%; background: var(--chip2); color: var(--ink2); }
+#drawer .dw-acts .ab.sz span { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+#drawer .dw-acts .ab.sz .snz-car { display: none; }
+.snz-wrap.sheet .snz-o { padding: 13px 12px; font-size: var(--fs-16); }
+.snz-wrap.sheet .snz-o span { font-size: var(--fs-14); }
+.snz-cus input { font-size: var(--fs-16); padding: 8px 10px; }
+

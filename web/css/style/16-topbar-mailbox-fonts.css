@@ -1,0 +1,182 @@
+/* ===== t-hdr-trim (2026-11-05) ===== */
+/* ⑩ long English role names ellipsize; status word, 排队 chip and unread count never leave the row */
+.team-i > div:not(.av) { min-width: 0; }
+.team-i .nm { min-width: 0; }
+.team-i .nm .nmt { flex: 0 1 auto; min-width: 2em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.team-i .nm > .st, .team-i .nm > .tn { flex: none; white-space: nowrap; }
+.team-i .du .aq { display: inline-flex; vertical-align: 1px; height: 16px; padding: 0 6px; margin: 0 6px 0 0; font-size: var(--fs-10); }
+/* ⑨ detail + DM boxes: no resize grip, no visible scrollbar; app.js deskFit / mobile.js fit grow the height, past the cap it scrolls (bar hidden) */
+#drawer .composer textarea, #right .ch-comp textarea { resize: none; scrollbar-width: none; overflow-y: auto; }
+#drawer .composer textarea::-webkit-scrollbar, #right .ch-comp textarea::-webkit-scrollbar { display: none; width: 0; height: 0; }
+@media (min-width: 761px) { #drawer .composer textarea { max-height: 200px; } }
+
+/* ===== t-splash: Settings › 开屏动画 row (a div with two buttons: 预览 + the switch) ===== */
+.st-row.st-sp .st-tx { flex: 1; min-width: 0; }
+.st-prev { flex: none; display: inline-flex; align-items: center; gap: 6px; height: 30px; padding: 0 12px; border-radius: 999px; border: 1px solid var(--line2);
+  background: none; color: var(--ink2); font: inherit; font-size: var(--fs-12); cursor: pointer; transition: background-color .2s, color .2s, border-color .2s, transform .15s var(--ease); }
+.st-prev i { font-style: normal; font-size: 9px; transition: transform .2s var(--ease); }
+.st-prev:hover { background: color-mix(in srgb, var(--ink) 6%, transparent); color: var(--ink); border-color: var(--line3); }
+.st-prev:hover i { transform: translateX(2px); }
+.st-prev:active { transform: scale(.96); }
+.st-swb { flex: none; display: inline-flex; padding: 4px; margin: -4px; border: 0; background: none; cursor: pointer; border-radius: 999px; }
+.st-swb:focus-visible, .st-prev:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+@media (prefers-reduced-motion: reduce) { .st-prev, .st-prev i { transition: background-color .2s, color .2s, border-color .2s !important; transform: none !important; } }
+
+/* ===== t-attach-btn (detail polish batch 2, direction A): one attach button everywhere, a solid round paperclip (app.js ATT_IC).
+   Files dragged over a composer (.drop-on, set by wireUploads on the whole .composer / .ch-comp) outline it and turn the button into an accent ↑. ===== */
+#drawer .composer .att, #right .ch-comp > .att { flex: none; width: 34px; height: 34px; padding: 0; margin: 0; display: grid; place-items: center; border: 0; border-radius: 50%;
+  background: color-mix(in srgb, var(--ink) 8%, transparent); color: var(--ink2); font-size: 0; line-height: 0; cursor: pointer; -webkit-tap-highlight-color: transparent;
+  transition: background-color .16s ease, color .16s ease, transform .12s ease; }
+.att svg { grid-area: 1 / 1; width: 17px; height: 17px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;
+  transition: transform .22s cubic-bezier(.3, 1.4, .5, 1), opacity .16s ease; }
+.att .ic-up { opacity: 0; transform: translateY(4px); }
+#drawer .composer .att:hover, #right .ch-comp > .att:hover { background: color-mix(in srgb, var(--ink) 14%, transparent); color: var(--ink); transform: none; }
+.att:hover .ic-clip { transform: rotate(-18deg); }
+#drawer .composer .att:active, #right .ch-comp > .att:active { transform: scale(.94); }
+#drawer .composer .att:focus-visible, #right .ch-comp > .att:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+#drawer .composer.drop-on, #right .ch-comp.drop-on { outline: 1.5px dashed var(--accent); outline-offset: 3px; border-radius: 18px; transition: outline-color .12s ease; }
+#drawer .composer.drop-on .att, #right .ch-comp.drop-on > .att { background: var(--accent); color: var(--accent-ink); }
+.drop-on .att .ic-clip { opacity: 0; transform: translateY(-4px); }
+.drop-on .att .ic-up { opacity: 1; transform: none; }
+.drop-on textarea.lib-drop { outline: 0; }
+@media (prefers-reduced-motion: reduce) { .att, .att svg { transition: background-color .16s, color .16s, opacity .16s !important; transform: none !important; } }
+
+/* ===== t-sync-pill (batch 2, V1): the top bar's sync pill + hover details (app.js syncPaint). #net-off is the phone's offline strip (mobile.css). ===== */
+#sync.sy1 { display: flex; align-items: center; position: relative; min-width: 0; font-size: var(--fs-13); color: var(--ink2); outline: none; }
+.sy-pill { display: inline-flex; align-items: center; gap: 7px; height: 28px; padding: 0 12px 0 10px; border-radius: 999px; white-space: nowrap;
+  background: color-mix(in srgb, var(--ink) 6%, transparent); transition: background-color .16s ease, color .16s ease; }
+#sync.sy1:hover .sy-pill, #sync.sy1:focus-visible .sy-pill { background: color-mix(in srgb, var(--ink) 11%, transparent); }
+#sync.sy1:focus-visible .sy-pill { box-shadow: 0 0 0 2px var(--accent); }
+#sync.sy1:active .sy-pill { transform: scale(.97); }
+.sy-pill .sy-k { font: inherit; font-weight: 500; color: var(--ink); letter-spacing: 0; }
+.sy-pill .sy-s { color: var(--dim); font-size: var(--fs-12); }
+.sy-pill .sy-s:empty { display: none; }
+.sy-dot { flex: none; width: 7px; height: 7px; border-radius: 50%; background: var(--ok); transition: background-color .2s ease; }
+.sy-pill .sy-dot { align-self: center; margin: 0; }
+@media (min-width: 761px) { #right .ch-comp textarea { height: 42px; } }   /* t-chat-input-h: empty desktop chat box = one row (42px, the same height focus gives it); typing sets an inline height (deskFit) */   /* t-chat-input-h: the status modal .sy-dot (align-self:flex-start; margin-top:6px) leaked into the pill and lifted the dot 4.5px */
+.sy-pill.down { background: color-mix(in srgb, var(--urgent) 14%, transparent); }
+.sy-pill.down .sy-k { color: var(--urgent); font-weight: 600; }
+.sy-pill.down .sy-dot { background: var(--urgent); }
+.sy-pill.snap .sy-dot { background: var(--warn); }   /* ri1105-P3: showing the IndexedDB snapshot until the first poll answers */
+.sy-pill.back .sy-dot { animation: sy-back .9s ease-out 1; }
+@keyframes sy-back { 0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--ok) 70%, transparent); } 100% { box-shadow: 0 0 0 9px transparent; } }
+.sy-pop { position: absolute; top: calc(100% + 10px); left: 0; z-index: 60; min-width: 270px; padding: 12px 14px; border-radius: 14px; background: var(--bg); border: 1px solid var(--line2);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, .35); font-size: var(--fs-13); color: var(--ink2); display: grid; grid-template-columns: auto 1fr; gap: 7px 14px; white-space: nowrap;
+  opacity: 0; visibility: hidden; transform: translateY(-4px); pointer-events: none; transition: opacity .16s ease, transform .16s ease, visibility 0s linear .16s; }
+#sync.sy1:hover .sy-pop, #sync.sy1:focus-visible .sy-pop { opacity: 1; visibility: visible; transform: none; transition-delay: .12s, .12s, 0s; }
+.sy-pop > span { color: var(--dim); }
+.sy-pop > b { color: var(--ink); font-weight: 500; font-family: inherit; letter-spacing: 0; }
+.sy-pop > b b { font-weight: 500; font-family: inherit; letter-spacing: 0; }
+.sy-pop > b b.sy-due { color: var(--accent); }   /* r-improve-1112 P4: a due, unsent run in 「下一个」 */
+.sy-pop { width: max-content; }   /* r-improve-1112 P4: grow with the 下一个 line (capped at 24em below) instead of squeezing it into min-width 270px */
+.sy-pop > b.ok { color: var(--ok); } .sy-pop > b.bad { color: var(--urgent); }
+.sy-pop > b[data-v="n"] { max-width: 24em; overflow: hidden; text-overflow: ellipsis; }   /* t-ui-fix-r7 R7-04: a long routine / event name ends in … instead of widening the card */
+.sy-pop .ft { grid-column: 1 / -1; border-top: 1px solid var(--line); padding-top: 8px; color: var(--dim); font-size: var(--fs-12); }
+#net-off { display: none; }
+@media (prefers-reduced-motion: reduce) { .sy-pill, .sy-pop { transition: opacity .16s ease !important; transform: none !important; } .sy-pill.back .sy-dot { animation: none; } }
+
+/* ===== t-sync-pill batch 2: usage rows. The name is its own span so the ellipsis works (.ru-n is a flex box; text-overflow does nothing on a bare text node). ===== */
+.ru-n .t { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ru-n .ru-on { flex: none; }
+
+/* ===== t-option-quote: ↩ quote line above a reply that answers an earlier message (quick option) / a card ask ===== */
+.rq { display: flex; align-items: center; gap: 6px; max-width: min(76%, 420px); min-width: 0; margin: 0 0 4px; padding: 4px 10px 4px 8px; box-sizing: border-box;
+  border: 0; border-left: 2px solid var(--accent); border-radius: 4px 10px 10px 4px; background: color-mix(in srgb, var(--ink) 6%, transparent);
+  color: var(--dim); font: inherit; font-size: var(--fs-12); line-height: 1.4; text-align: left; cursor: pointer;
+  transition: background var(--m-quick, .14s) ease, transform var(--m-quick, .14s) ease; }
+.rq i { font-style: normal; flex: none; transition: transform var(--m-quick, .14s) ease; }
+.rq b { flex: none; font-weight: 600; color: var(--ink2); }
+.rq span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rq:hover { background: color-mix(in srgb, var(--ink) 11%, transparent); } .rq:hover i { transform: translateX(-2px); }
+.rq:active { transform: scale(.98); }
+.rq:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+div.rq { cursor: default; } div.rq:hover { background: color-mix(in srgb, var(--ink) 6%, transparent); } div.rq:hover i { transform: none; }
+.msg.me > .rq { align-self: flex-end; margin-left: auto; }
+.cs-me .rq { max-width: 100%; margin: 4px 0 4px; }
+.rq-new { animation: rq-in .2s var(--m-ease-std, ease) both; }
+@keyframes rq-in { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+.rq-hit { animation: rq-ring 1.22s ease both; border-radius: 12px; }
+@keyframes rq-ring { 0% { box-shadow: 0 0 0 0 transparent; } 10%, 67% { box-shadow: 0 0 0 2px var(--accent); } 100% { box-shadow: 0 0 0 2px transparent; } }
+@media (prefers-reduced-motion: reduce) {
+  .rq, .rq i { transition: none; } .rq:hover i { transform: none; } .rq:active { transform: none; }
+  .rq-new { animation: none; }
+  .rq-hit { animation: none; box-shadow: 0 0 0 2px var(--accent); }
+}
+#right .msg.me > .rq ~ .m-meav { top: 34px; }   /* the avatar stays beside the bubble, not the quote line */
+
+/* ===== t-perf C: the message you just sent is drawn at once (app.js PEND). Gray while sending, normal once the server said ok
+   (it is swapped for the server copy on the next poll), red outline + 重试 / 删除 when the POST failed. */
+#right .msg.pend .mb { transition: opacity var(--m-quick, .18s) var(--m-ease-std, ease), box-shadow var(--m-quick, .18s) var(--m-ease-std, ease); }
+#right .msg.pend:not(.pend-ok):not(.pend-fail) .mb { opacity: .55; }
+#right .msg.pend-fail .mb { box-shadow: 0 0 0 1.5px var(--urgent); }
+#right .msg.me.pend:not(.pend-ok) .mt { display: flex; justify-content: flex-end; align-items: center; gap: 8px; margin-top: 4px; font-size: var(--fs-11, 11px); color: var(--dim); text-align: right; }
+#right .msg.pend .pend-x { color: var(--urgent); }
+#right .msg.pend .pend-b { font: inherit; color: var(--ink2); background: var(--chip); border: 1px solid var(--line2); border-radius: 999px; padding: 2px 10px; cursor: pointer;
+  transition: color var(--m-quick, .18s) var(--m-ease-std, ease), border-color var(--m-quick, .18s) var(--m-ease-std, ease), background var(--m-quick, .18s) var(--m-ease-std, ease); }
+#right .msg.pend .pend-b:hover { color: var(--ink); border-color: var(--line3); background: var(--accent-soft); }
+#right .msg.pend .pend-b[data-pend-retry] { color: var(--urgent); border-color: var(--urgent); }
+@media (prefers-reduced-motion: reduce) { #right .msg.pend .mb, #right .msg.pend .pend-b { transition: none; } }
+
+/* ===== t-ut-orb A: the Soul block takes only its content width (the week line under it was ~1000 px), no STAMINA caption. Desktop only. */
+@media (min-width: 761px) { #top > #stamina { justify-self: start; } .stamina .lbl small { display: none; } }
+/* ===== t-mailbox-top: ✉ 信箱 N pill at the right end of the top bar, same look as the sync pill (.sy-pill). Desktop only:
+   the phone keeps 信箱 in 更多 (#nav row), so the rail row is hidden only here. Press = glass.js unified scale (no own :active). */
+.hdr-ctrl .hc-mail { gap: 7px; height: 28px; padding: 0 10px 0 11px; border-radius: 999px; background: color-mix(in srgb, var(--ink) 6%, transparent); color: var(--ink);
+  font-weight: 500; letter-spacing: 0; text-shadow: none; transition: background-color .16s ease, color .16s ease; }
+.hdr-ctrl .hc-mail::after { display: none; }
+.hdr-ctrl .hc-mail:hover { background: color-mix(in srgb, var(--ink) 11%, transparent); text-shadow: none; }
+.hdr-ctrl .hc-mail:focus-visible { outline: none; box-shadow: 0 0 0 2px var(--accent); }
+.hdr-ctrl .hc-mail svg { width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-width: 1.6; flex: none; }
+.hdr-ctrl .hc-mail .n { font: 600 var(--fs-11)/1 var(--f-display); background: var(--dot); color: #fff; border-radius: 9px; min-width: 18px; height: 18px; padding: 0 5px; box-sizing: border-box;
+  display: inline-flex; align-items: center; justify-content: center; }
+@media (min-width: 761px) { #nav .nav-i[data-go="mail"] { display: none; } }
+/* t-mailbox-icon: icon-only round button (36 px hit area, same as before or larger), unread count as a small corner badge (absent at 0), word in the title tip */
+.hdr-ctrl .hc-mail { position: relative; width: 36px; height: 36px; padding: 0; gap: 0; justify-content: center; border-radius: 50%; }
+.hdr-ctrl .hc-mail svg { width: 18px; height: 18px; }
+.hdr-ctrl .hc-mail .n { position: absolute; top: -3px; right: -5px; min-width: 17px; height: 17px; padding: 0 4px; font-size: var(--fs-10); box-shadow: 0 0 0 2px var(--bg); pointer-events: none; }
+@media (max-width: 760px) { .hdr-ctrl .hc-mail { display: none !important; } }
+@media (prefers-reduced-motion: reduce) { .hdr-ctrl .hc-mail { transition: none; } }
+
+/* ===== t-nav-shoot (11-05): left rail font + 制作 / Studio sub tabs.
+   Nunito (SIL OFL 1.1, web/fonts/Nunito-OFL.txt), latin subset, variable weight, self-hosted. CJK falls through to the system font, so Chinese rows look the same. */
+@font-face { font-family: "Nunito"; font-style: normal; font-weight: 200 1000; font-display: swap; src: url("/static/fonts/nunito-latin.woff2?v=1") format("woff2");   /* ri1105-P2: ?v= = cached for a year; bump it if the font file changes */
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
+.nav-i { font-family: "Nunito", var(--f-sys); }
+/* ri1106-P1: Cinzel (SIL OFL 1.1, web/fonts/Cinzel-OFL.txt), latin subset, variable 400-700, self-hosted instead of Google Fonts. Cinzel Decorative and Noto Serif SC are
+   no longer downloaded: --f-deco falls back to Cinzel, --f-brand-cjk to the system Songti SC. */
+@font-face { font-family: "Cinzel"; font-style: normal; font-weight: 400 700; font-display: swap; src: url("/static/fonts/cinzel-latin.woff2?v=1") format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD; }
+html[lang="en"] .nav-i { font-weight: 500; } html[lang="en"] .nav-i.on, html[lang="en"] #nav .nav-i.on { font-weight: 700; }
+.nv-t { position: relative; }
+.nv-ic, .nv-ul, .nv-knot { display: none; }   /* t-thread-motif: rail icons + the selected-row thread show only under 特典 (theme-ut.css) */
+/* 制作 sub tabs: same control as 设置; switching fades the page out, then slides it in from the side you moved to (app.js data-stutab) */
+.ph-studio + .stu-tabs { margin-top: -4px; }
+#pagebody.stu-out > :not(.ph):not(.stu-tabs) { opacity: 0; transition: opacity .09s ease-out; }
+#pagebody.stu-in-r > :not(.ph):not(.stu-tabs) { animation: st-in-r .2s var(--ease) both; }
+#pagebody.stu-in-l > :not(.ph):not(.stu-tabs) { animation: st-in-l .2s var(--ease) both; }
+@media (max-width: 760px) { .ph-studio + .stu-tabs { margin: 0 0 14px; } .stu-tabs .seg { max-width: 100%; } .stu-tabs .seg-i { padding: 8px 12px; } }
+@media (prefers-reduced-motion: reduce) { #pagebody.stu-in-r > *, #pagebody.stu-in-l > * { animation: none; } #pagebody.stu-out > * { transition: none; } }
+
+/* ===== t-m-accept-btn / t-m-ask-sheet / t-m-shipped-avatar (2026-11-05) =====
+   dock button: the count badge is phone-only (mobile.css); desktop keeps the full label and the line under it.
+   question bar: folds to one line (app.js askFold); the chevron turns, the chips fade in when it opens.
+   shipped card: the kind label shrinks (ellipsis) so the time and the avatar stay inside the card. */
+#drawer .dw-acts .ok-n { display: none; }
+.dw-askbar .ask-rt { display: flex; align-items: center; min-width: 0; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.dw-askbar .ask-rt i { flex: none; }
+.dw-askbar .ask-rt b { flex: none; }
+.dw-askbar .ask-rt span { min-width: 0; padding-left: .3em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dw-askbar .ask-cv { flex: none; margin-left: auto; padding-left: 8px; box-sizing: content-box; color: var(--dim); transition: rotate var(--m-base, .28s) var(--m-ease-emph, ease); }
+.dw-askbar.fold .ask-cv { rotate: 180deg; }   /* t-q-arrow: the bar sits on the dock and grows upward, so folded points up (▴) and open points down (▾) */
+.dw-askbar:not(.fold) .ask-rt { align-items: flex-start; }
+.dw-askbar:not(.fold) .ask-rt i { margin-top: .55em; }
+.dw-askbar:not(.fold) .ask-rt span { white-space: normal; }
+.dw-askbar:not(.fold) .ask-cv { margin-top: .5em; }
+.dw-askbar.fold .ask-opts, .dw-askbar.fold .ask-more { display: none; }
+.dw-askbar.fold .ask-rt { margin-bottom: 0; }
+.dw-askbar:not(.fold) .ask-opts { animation: askOptsIn var(--m-base, .28s) var(--m-ease-emph, ease) both; }
+@keyframes askOptsIn { from { opacity: 0; transform: translateY(4px); } }
+@media (prefers-reduced-motion: reduce) { .dw-askbar .ask-cv { transition: none; } .dw-askbar:not(.fold) .ask-opts { animation: none; } }
+.dc-sh.c .k .kl, .dc-sh.c .k .kt { padding: 0; font-size: inherit; color: inherit; }   /* not the cover card's "name · time" span (.dc-sh span) */
+.dc-sh.c .k .kl { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.dc-sh.c .k .kt { flex: none; }

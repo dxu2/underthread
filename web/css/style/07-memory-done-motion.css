@@ -1,0 +1,147 @@
+/* ===== t-agent-memory v2: 记忆 / 灵魂 pills + read-only viewer. Theme vars only (light/white follow). ===== */
+.rc-links { display: flex; gap: 8px; margin: 2px 0 8px; }
+.rf-pill { font-size: var(--fs-12); padding: 5px 14px; border-radius: 999px; border: 1px solid var(--line2); background: transparent; color: var(--ink2); letter-spacing: .04em; cursor: pointer; transition: color .3s, border-color .3s; }
+.rf-pill b { font-family: var(--f-display); font-weight: 600; margin-left: 4px; color: var(--ink); }
+.rf-pill:hover { color: var(--ink); border-color: var(--ink2); }
+.rf-mdl { width: min(760px, 94vw); max-height: 86vh; overflow: auto; }
+.rf-bar { display: flex; gap: 10px; flex-wrap: wrap; justify-content: space-between; margin: 12px 0 10px; }
+.rf-tabs { display: flex; flex-wrap: wrap; gap: 6px; }
+.rf-pill.on { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+.rf-tabs .rf-pill { font-size: var(--fs-12); padding: 3px 10px; }
+.rf-body { max-height: 56vh; overflow: auto; font-size: var(--fs-14); }
+.rf-body pre { white-space: pre-wrap; word-break: break-word; font-size: var(--fs-13); margin: 0; }
+.rf-foot { text-align: center; font-size: var(--fs-11); margin-top: 12px; }
+.rf-sub { text-align: center; font-size: var(--fs-12); color: var(--ink2); margin-top: 6px; word-break: break-all; font-family: var(--f-sys); }
+
+/* ===== t-done-splash: 委托完成 screen (FX.missionComplete) + persistent done stamp. One master timeline on .mc (2.6 s); every child is a delayed animation.
+   Colours: surface = var(--bg), plate = var(--accent) / var(--accent-ink) (neutral, no gold). The white theme's streak / flash tint lives in mobile.css (white-theme rules only exist there). ===== */
+.mc { position: fixed; inset: 0; z-index: 90; overflow: hidden; cursor: pointer; -webkit-tap-highlight-color: transparent; animation: mc-life 2.6s linear both; transition: opacity .25s; --bgc: #f1e4d6; }
+.mc.bye { opacity: 0 !important; pointer-events: none; }
+@keyframes mc-life { 0% { opacity: 0; } 4% { opacity: 1; } 84.6% { opacity: 1; } 100% { opacity: 0; } }   /* 0.1 s in, hold to 2.2 s, 0.4 s out */
+.mc > * { position: absolute; pointer-events: none; }
+.mc-dim { inset: 0; background: color-mix(in srgb, var(--bg) 86%, transparent); }
+.mc-glow { inset: -10% -10% 10% -10%; background: radial-gradient(58% 46% at 64% 48%, var(--bgc) 0, color-mix(in srgb, var(--bgc) 60%, transparent) 46%, transparent 76%); animation: mc-fade .45s .04s ease-out both; }
+@keyframes mc-fade { from { opacity: 0; } }
+.mc-st { inset: 0; overflow: hidden; --streak: rgba(255,255,255,.6); }
+html[data-theme="light"] .mc-st { --streak: rgba(0,0,0,.10); }
+.mc-st i { top: -10%; bottom: -10%; right: -40%; width: 26vw; transform: skewX(-16deg); background: linear-gradient(90deg, transparent, var(--streak), transparent); animation: mc-streak .62s cubic-bezier(.2,.7,.2,1) both; }
+.mc-st i:nth-child(2) { width: 9vw; animation-delay: .07s; opacity: .8; } .mc-st i:nth-child(3) { width: 46vw; animation-delay: .14s; opacity: .5; }
+@keyframes mc-streak { from { transform: translateX(0) skewX(-16deg); opacity: 0; } 15% { opacity: 1; } to { transform: translateX(-170vw) skewX(-16deg); opacity: 0; } }
+.mc-art { right: -10vw; top: calc(env(safe-area-inset-top, 0px) + 3vh); height: min(76vh, 760px); width: auto; max-width: none;
+  /* t-finish-edge: radial alone leaves ~40% alpha at the jpg edges (hard line); h + v linear feathers intersected force all four edges to 0 */
+  -webkit-mask-image: radial-gradient(ellipse 62% 57% at 50% 47%, #000 54%, rgba(0,0,0,.55) 75%, transparent 100%), linear-gradient(90deg, transparent 0, #000 16%, #000 84%, transparent 100%), linear-gradient(180deg, transparent 0, #000 10%, #000 86%, transparent 100%); mask-image: radial-gradient(ellipse 62% 57% at 50% 47%, #000 54%, rgba(0,0,0,.55) 75%, transparent 100%), linear-gradient(90deg, transparent 0, #000 16%, #000 84%, transparent 100%), linear-gradient(180deg, transparent 0, #000 10%, #000 86%, transparent 100%);
+  -webkit-mask-composite: source-in, source-in; mask-composite: intersect;
+  will-change: transform; animation: mc-art-in .7s .04s cubic-bezier(.16,1,.3,1) both, mc-art-drift 2.6s linear both; }
+.mc.noart .mc-art, .mc.noart .mc-glow { display: none; }
+/* t-mc-halo: transparent cut-outs (art/cut/<id>.webp): no edge mask, halo from a theme token instead of the jpg corner (manager/scout jpgs have black backdrops -> black halo on light themes) */
+.mc { --mc-glow: rgb(226 210 200); }
+.mc.cut { --bgc: var(--mc-glow); }
+.mc.cut .mc-art { -webkit-mask-image: none; mask-image: none; }
+@keyframes mc-art-in { from { transform: translateX(58vw) skewX(-7deg) scale(1.1); opacity: 0; } 35% { opacity: 1; } }
+@keyframes mc-art-drift { from { translate: 0 0; } to { translate: -3vw 0; } }
+.mc-flash { inset: 0; background: #fff; opacity: 0; animation: mc-flash .42s ease-out both; }
+html[data-theme="light"] .mc-flash { background: rgba(0,0,0,.28); }
+@keyframes mc-flash { 0% { opacity: 0; } 12% { opacity: .92; } 100% { opacity: 0; } }
+.mc-plate { left: 0; right: 0; bottom: calc(env(safe-area-inset-bottom, 0px) + 168px); height: 108px; display: flex; flex-direction: column; justify-content: center; padding: 0 26px;
+  background: var(--accent); color: var(--accent-ink); clip-path: polygon(0 10%, 100% 0, 100% 90%, 0 100%); box-shadow: 0 12px 40px rgba(0,0,0,.4);
+  animation: mc-plate .46s .26s cubic-bezier(.2,.9,.1,1) both; }
+@keyframes mc-plate { from { transform: translateX(-104%); } }
+.mc-k { font: 600 var(--fs-11) var(--f-cjk); letter-spacing: .5em; opacity: .62; margin-bottom: 4px; animation: mc-fade .3s .6s both; }
+.mc-main { font: 600 clamp(46px, 14vw, 64px)/1.05 var(--f-cjk); letter-spacing: .16em; text-transform: none; animation: mc-pop .5s .4s cubic-bezier(.2,1.4,.3,1) both; }
+@keyframes mc-pop { from { transform: scale(1.35); letter-spacing: .5em; opacity: 0; } 40% { opacity: 1; } }
+.mc-info { left: max(22px, env(safe-area-inset-left)); right: max(22px, env(safe-area-inset-right)); bottom: calc(env(safe-area-inset-bottom, 0px) + 74px); animation: mc-up .45s .62s cubic-bezier(.2,.9,.2,1) both; }
+@keyframes mc-up { from { transform: translateY(14px); opacity: 0; } }
+.mc-t { font: 600 var(--fs-20)/1.3 var(--f-cjk); color: var(--ink); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; text-shadow: 0 0 14px var(--bg), 0 0 4px var(--bg); }
+.mc-by { margin-top: 8px; display: flex; align-items: center; gap: 8px; font: 500 var(--fs-13) var(--f-cjk); color: var(--ink2); text-shadow: 0 0 10px var(--bg); }
+.mc-by .av { width: 24px; height: 24px; }
+@media (min-width: 761px) { .mc-art { right: 14vw; top: 5vh; height: min(58vh, 640px); } .mc-plate { padding-left: 14vw; bottom: 24vh; } .mc-info { left: 14vw; right: 14vw; bottom: 13vh; } }
+/* reduced motion: no slide / streak / flash / scale; 0.2 s fade in, shown ~1.4 s, fade out. !important because the global reduced-motion rule above squashes every animation to 0.01 ms. */
+@keyframes mc-life-rm { 0% { opacity: 0; } 10% { opacity: 1; } 85% { opacity: 1; } 100% { opacity: 0; } }
+@media (prefers-reduced-motion: reduce) {
+  .mc { animation-name: mc-life-rm !important; animation-duration: 1.9s !important; }
+  .mc-st, .mc-flash { display: none; }
+  .mc-art, .mc-plate, .mc-main, .mc-info, .mc-glow, .mc-k { animation: none !important; }
+}
+/* persistent done stamp (detail page bottom bar). .pre = invisible until the splash is gone; .fresh = lands once. Reduced motion: no animation (fresh is not added). */
+.dw-stamp { display: inline-flex; align-items: center; gap: 10px; min-width: 0; padding: 4px 16px 4px 4px; border: 1.5px solid var(--ok); border-radius: 16px; color: var(--ok);
+  background: color-mix(in srgb, var(--ok) 9%, transparent); transform: rotate(-1.2deg); }
+.dw-stamp .st-av .av { width: 34px; height: 34px; display: block; border: 2px solid var(--ok); box-shadow: none; }
+.dw-stamp .st-tx { display: flex; flex-direction: column; min-width: 0; line-height: 1.25; }
+.dw-stamp b { font: 600 var(--fs-15) var(--f-cjk); letter-spacing: .24em; color: var(--ok); text-transform: none; }
+.dw-stamp i { font: 500 var(--fs-12) var(--f-cjk); font-style: normal; letter-spacing: .02em; color: var(--ink2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.dw-stamp.pre { opacity: 0; }
+.dw-stamp.fresh { animation: stamp-in .5s cubic-bezier(.2,1.5,.3,1) both; }
+@keyframes stamp-in { from { transform: scale(1.7) rotate(-9deg); opacity: 0; } 60% { opacity: 1; } }
+
+/* ===== mo1 (t-tabbar-motion M1): motion tokens. ONE place for durations / easings / distances; new motion references these, old call-sites migrate in later milestones.
+   Rules: transform + opacity only; never animate blur / backdrop-filter; will-change only while a transition runs; spring = damped (zeta .72, ~4% overshoot), spring-soft = critically damped (no overshoot, for whole-page pushes). ===== */
+:root {
+  --m-instant: 90ms; --m-quick: 180ms; --m-move: 330ms; --m-release: 220ms; --m-stagger: 30ms;   /* --m-base / --m-slow: one value site-wide, defined in glass.css (t-motion-all) */
+  --m-ease-std: cubic-bezier(.2, 0, 0, 1); --m-ease-emph: cubic-bezier(.2, .8, .2, 1); --m-ease-ios: cubic-bezier(.32, .72, 0, 1); --m-ease-in: cubic-bezier(.4, 0, 1, 1);
+  --m-spring: linear(0, 0.0335, 0.1167, 0.2281, 0.3513, 0.4748, 0.5907, 0.6942, 0.7828, 0.856, 0.9142, 0.9586, 0.991, 1.0133, 1.0275, 1.0352, 1.0382, 1.0378, 1.0352, 1.0312, 1.0266, 1.0218, 1.0172, 1.0131, 1.0095, 1.0064, 1);
+  --m-spring-soft: linear(0, 0.0827, 0.2459, 0.4168, 0.5663, 0.6861, 0.7773, 0.8444, 0.8926, 0.9266, 0.9503, 0.9665, 0.9776, 0.9851, 0.9901, 0.9935, 0.9957, 0.9972, 0.9982, 0.9988, 1);
+  --m-rise: 10px; --m-rise-page: 8px; --m-recede: -24%; --m-press-row: .98; --m-press-card: .98; --m-press-pill: .96; --m-pop: 1.12;
+}
+@supports not (transition-timing-function: linear(0, 1)) {   /* iOS < 17.2: no linear(): near-equivalent beziers */
+  :root { --m-spring: cubic-bezier(.34, 1.4, .64, 1); --m-spring-soft: cubic-bezier(.2, .8, .2, 1); }
+}
+@media (prefers-reduced-motion: reduce) {   /* policy: no travel, no scale, no overshoot. CSS transitions are already cut by the global rule above; JS-driven motion (tab bar, row entrance) reads these and falls back to a short opacity fade */
+  :root { --m-rise: 0px; --m-rise-page: 0px; --m-recede: 0%; --m-press-row: 1; --m-press-card: 1; --m-press-pill: 1; --m-pop: 1; --m-stagger: 0ms; --m-spring: linear(0, 1); --m-spring-soft: linear(0, 1); }
+}
+
+/* ===== t-detail-bottom: the composer + action row live in .dw-dock. display: contents = on desktop they stay direct flex children of the drawer, laid out exactly as before; mobile.css turns the dock into the glass bar. ===== */
+.dw-dock { display: contents; }
+
+/* ===== t-working-item-highlight: rows whose item an agent is working on right now (app.js workersOf: agents[].status === "working" && agents[].item === id).
+   .wk-fx = a soft tint that breathes (opacity) + a 2px rail on the left edge with a highlight flowing down it (transform). .wk-tag = ringed avatar(s) + 「名字 处理中 · 12 分钟」.
+   Shares the t-working-avatar tokens (--wk-period / --wk-ring / --wk-track, neutral --accent*), and the same --wp negative wall-clock phase: poll re-renders never restart it.
+   Only transform / opacity animate; nothing moves layout. Reduced motion = static tint + solid rail. White theme needs no rule: it only reads --accent* variables. ===== */
+.wk-on { position: relative; isolation: isolate; }
+.wk-fx { position: absolute; inset: 0; z-index: -1; pointer-events: none; border-radius: inherit; }
+.wk-bg { position: absolute; inset: 0; border-radius: inherit; background: linear-gradient(90deg, var(--accent-soft), color-mix(in srgb, var(--accent-soft) 35%, transparent) 70%, transparent);
+  opacity: .55; animation: wk-tint var(--wk-period) var(--wk-ease) var(--wp, 0s) infinite; }
+.wk-bar { position: absolute; left: 0; top: 8px; bottom: 8px; width: 2px; border-radius: 1px; overflow: hidden; background: var(--wk-track); }
+.wk-bar::before { content: ""; position: absolute; left: 0; right: 0; top: 0; height: 50%; background: linear-gradient(to bottom, transparent, var(--wk-ring) 50%, transparent);
+  transform: translateY(-100%); animation: wk-flow var(--wk-period) var(--m-ease-std, ease-in-out) var(--wp, 0s) infinite; }
+@keyframes wk-tint { 0%, 100% { opacity: .5; } 50% { opacity: 1; } }
+@keyframes wk-flow { 0% { transform: translateY(-100%); } 70%, 100% { transform: translateY(200%); } }
+.wk-tag { display: inline-flex; align-items: center; gap: 7px; max-width: 100%; min-width: 0; box-sizing: border-box; height: 24px; padding: 0 10px 0 5px; border-radius: 12px;
+  background: var(--accent-soft); box-shadow: inset 0 0 0 1px var(--accent-line); color: var(--ink2); font-size: var(--fs-12); line-height: 1; white-space: nowrap; font-family: var(--f-cjk); letter-spacing: 0; vertical-align: middle; }
+.wk-avs { display: inline-flex; align-items: center; gap: 7px; flex: none; padding-left: 2px; }
+.wk-tag .av.sm { width: 15px; height: 15px; border: 0; --wk-gap: 1.5px; --wk-w: 1.5px; }
+.wk-tx { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.wk-tx b { color: var(--ink); font-weight: 600; }
+.wk-el { font-variant-numeric: tabular-nums; color: var(--dim); }
+.card.wk-on .wk-tag { margin-top: 10px; }
+.card.wk-on .wk-fx { inset: 0 0 0 0; }
+.mini.wk-on .wk-tag { margin: 0 0 6px; height: auto; min-height: 22px; padding: 3px 8px 3px 5px; border-radius: 9px; font-size: var(--fs-11); align-items: flex-start; }
+.mini.wk-on .wk-tag .wk-avs { padding-top: 1px; flex-wrap: wrap; row-gap: 5px; }
+.mini.wk-on .wk-tag { flex-wrap: wrap; row-gap: 3px; }
+.mini.wk-on .wk-tx { flex: 1 1 64px; white-space: normal; line-height: 1.4; }
+.mini.wk-on .wk-bar { top: 6px; bottom: 6px; }
+.dw-top .wk-tag.dw-wk { margin-left: 10px; }
+.dw-wkrow { display: none; }
+@media (prefers-reduced-motion: reduce) {
+  .wk-bg { animation: none; opacity: .8; }
+  .wk-bar::before { animation: none; transform: none; height: 100%; background: var(--wk-ring); opacity: .7; }
+}
+
+/* ===== t-parent-links: a child card shows 「属于 <parent>」 above its title; a parent lists its 「子单」. Neutral tokens only (both are rows you tap, not accents). ===== */
+.dw-parent { display: flex; align-items: center; gap: 8px; width: 100%; min-height: 40px; margin: 0 0 12px; padding: 0 12px; border-radius: 12px; border: 1px solid var(--line2); background: var(--chip);
+  color: var(--ink2); font: inherit; font-size: var(--fs-13); text-align: left; cursor: pointer; transition: background .2s, border-color .2s; }
+.dw-parent:hover { border-color: var(--line3); }
+.dw-parent .k { flex: none; color: var(--dim); font-size: var(--fs-12); letter-spacing: .04em; }
+.dw-parent b { flex: 1; min-width: 0; font-weight: 600; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.dw-parent .st, .dw-kid .st { flex: none; font-size: var(--fs-11); color: var(--dim); padding: 1px 8px; border-radius: 9px; border: 1px solid var(--line2); }
+.dw-parent svg, .dw-kid svg { flex: none; color: var(--faint); }
+.dw-kids { display: flex; flex-direction: column; border: 1px solid var(--line2); border-radius: 12px; overflow: hidden; }
+.dw-kid { display: flex; align-items: center; gap: 10px; min-height: 46px; padding: 6px 12px; border: 0; border-top: 1px solid var(--line); background: none; color: var(--ink); font: inherit; font-size: var(--fs-14); text-align: left; cursor: pointer; transition: background .2s; }
+.dw-kid:first-child { border-top: 0; }
+.dw-kid:hover { background: var(--chip); }
+.dw-kid .av { flex: none; }
+.dw-kid .t { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.dw-kid.done .t { color: var(--ink2); }
+.dw-kid .st.s-review { color: var(--ink); border-color: var(--accent-line); }
+.dw-kid .st.s-doing { color: var(--ink); }
+#drawer.dw-has-back .dw-top button.dw-back[data-close] { display: inline-flex; }
+

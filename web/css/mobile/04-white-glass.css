@@ -1,0 +1,230 @@
+/* ===== ui13 (t-slack-ios P1): third theme "white" (Slack-style white surface, ink accent). Mobile only (this file is media-limited to <=760px).
+   Selected with data-theme="white"; dark stays the default and is untouched. Text colours are the contrast-checked ones from t-ios-light v2:
+   ink #111 18.9:1, dim #6B6B6B 5.33:1, ink accent #111 18.9:1 on white; pills #8A5300/#FFF3E0 5.77, #067A3C/#E8F8EE 4.95, #C0281E/#FDECEB 5.16. ===== */
+/* white theme tokens + the rules shared with desktop moved to style.css (t-web-d2). Phone-only white rules (tab bar, bubbles, cards...) stay here. */
+[data-theme="white"] { --bub: #ffffff; --bub-me: #efefef; --bub-line: rgba(0,0,0,.12); }   /* bubble tokens are phone-only (mobile.css :root defines the dark ones) */
+/* tab bar: flat white, hairline on top */
+[data-theme="white"] #tabbar { background: rgba(255,255,255,.97); box-shadow: 0 -1px 0 var(--line); }
+[data-theme="white"] #tabbar::before, [data-theme="white"] #tabbar .tb-orn { display: none; }
+[data-theme="white"] #tabbar button { color: var(--dim); }
+[data-theme="white"] #tabbar button.on { color: var(--accent); }
+[data-theme="white"] #tabbar button.on svg { filter: none; }
+[data-theme="white"] .tb-ind b { background: var(--accent); box-shadow: none; }
+[data-theme="white"] #tabbar .tb-badge, [data-theme="white"] .hdr-ctrl .badge, [data-theme="white"] .cl-n { box-shadow: 0 0 0 1.5px #fff; animation: none; color: #fff; } [data-theme="white"] .hdr-ctrl .badge::after { display: none; }
+/* chat: bubbles + composer */
+[data-theme="white"] #right .msg .mb, [data-theme="white"] .m-typing .mb { background: #f1f1f2; border: 0; color: var(--ink); }
+[data-theme="white"] #right .msg:not(.me) > .mb::before, [data-theme="white"] .m-typing .mb::before { background: var(--bub); border: 0; box-shadow: -1px 1px 0 var(--bub-line); }
+[data-theme="white"] #right .msg.me .mb { background: var(--accent); color: var(--accent-ink); border: 0; }
+/* status pills: P2 (t-aes-p2) moved them to one scheme for all three themes, see the P2 section at the end (soft fill; solid ink only for what waits on you) */
+/* theme switch row in the mobile menu (all themes) */
+.m-theme { display: block; cursor: default; }
+.m-theme > span { display: block; margin-bottom: 10px; }
+.m-theme-seg { display: flex; width: 100%; }
+.m-theme-seg .seg-i { flex: 1; white-space: nowrap; min-height: 36px; }
+[data-theme="white"] .seg { background: #f0f0f0; box-shadow: none; }
+[data-theme="white"] .seg .seg-i { color: var(--ink2); }
+[data-theme="white"] .seg .seg-i.on { color: var(--accent-ink); }
+[data-theme="white"] .seg .seg-ind { background: var(--accent); box-shadow: none; }
+/* PWA status bar is black-translucent (white clock/battery): give the white theme an ink band under it so they stay readable. Zero height in a normal tab. */
+html[data-theme="white"]::before { content: ""; position: fixed; left: 0; right: 0; top: 0; height: env(safe-area-inset-top); background: var(--accent); z-index: 45; pointer-events: none; }
+
+/* ===== ui15 (t-slack-p2): Slack-style floating glass chrome. Phone only (this file is media-limited to <=760px); desktop untouched.
+   (1) pill tab bar: #tabbar is now a transparent full-width carrier (keeps the body.vp-fix / kb / sheet logic and the --tb-h reservation); the visible pill is .tb-row.
+   (2) floating header: chat-thread back + name pill; detail-page back circle + status pill (detail bar stays flush + opaque at the top, see ui5).
+   (3) composer pill above the tab bar. Blur has an opaque-ish fallback; @supports lowers the alpha only where backdrop-filter exists. ===== */
+:root { --tb-h: calc(70px + env(safe-area-inset-bottom)); --pill-h: 56px; }
+html[data-theme="dark"]  { --gl: rgba(26,26,30,.94); --glb: rgba(255,255,255,.14); --sel: var(--accent-soft); --selc: var(--accent); --dotc: var(--accent); --gsh: 0 8px 24px rgba(0,0,0,.45); --chip2: rgba(255,255,255,.10); }
+html[data-theme="light"] { --gl: rgba(244,238,224,.95); --glb: rgba(48,36,18,.18); --sel: var(--accent-soft); --selc: var(--accent); --dotc: var(--accent); --gsh: 0 8px 22px rgba(60,44,12,.18); --chip2: rgba(48,36,18,.08); }
+html[data-theme="white"] { --gl: rgba(255,255,255,.95); --glb: rgba(0,0,0,.13); --sel: var(--accent-soft); --selc: var(--accent); --dotc: var(--accent); --gsh: 0 8px 22px rgba(0,0,0,.14); --chip2: #efefef; }
+@supports ((-webkit-backdrop-filter: blur(1px)) or (backdrop-filter: blur(1px))) {
+  html[data-theme="dark"]  { --gl: rgba(26,26,30,.66); }
+  html[data-theme="light"] { --gl: rgba(244,238,224,.68); }
+  html[data-theme="white"] { --gl: rgba(255,255,255,.70); }
+}
+.tb-glass, .tb-row, .ui15-glass { -webkit-backdrop-filter: blur(16px) saturate(1.5); backdrop-filter: blur(16px) saturate(1.5); }
+
+/* --- tab bar --- */
+html[data-theme] #tabbar { display: flex; align-items: flex-end; background: none; box-shadow: none; -webkit-backdrop-filter: none; backdrop-filter: none; pointer-events: none; padding: 0; height: var(--tb-h); }
+html[data-theme] #tabbar::before { display: block; content: ""; position: absolute; inset: 0; height: auto; z-index: 0; pointer-events: none;
+  background: linear-gradient(to top, var(--bg) 0, var(--bg) 38%, transparent 100%); }
+html[data-theme] #tabbar .tb-orn, #tabbar .tb-ind { display: none; }
+#tabbar .tb-row { position: relative; z-index: 1; flex: 1; pointer-events: auto; height: var(--pill-h); box-sizing: border-box; padding: 4px;
+  margin: 0 max(12px, env(safe-area-inset-right)) calc(env(safe-area-inset-bottom) + 6px) max(12px, env(safe-area-inset-left));
+  background: var(--gl); border: 1px solid var(--glb); border-radius: 30px; box-shadow: var(--gsh); }
+#tabbar button { height: 100%; padding: 0; gap: 3px; border-radius: 24px; color: var(--dim); transition: background .25s, color .25s; }
+#tabbar button svg { width: 23px; height: 23px; stroke-width: 1.7; }
+#tabbar button .l, html[lang="en"] #tabbar button .l { font-family: var(--f-sys); font-size: var(--fs-11); font-weight: 600; letter-spacing: 0; padding-left: 0; text-transform: none; }
+html[data-theme] #tabbar button.on { color: var(--selc); background: var(--sel); }
+#tabbar button.on svg { filter: none; transform: none; fill: currentColor; fill-opacity: .16; stroke-width: 1.9; }
+#tabbar button.on .l { font-weight: 600; }
+#tabbar button[data-k="more"] svg { fill: none !important; }
+#tabbar .tb-dot { position: absolute; top: 7px; left: calc(50% + 7px); width: 9px; height: 9px; border-radius: 50%; background: var(--dot); box-shadow: 0 0 0 1.5px var(--bg); }
+html[data-theme="white"] #tabbar .tb-dot { box-shadow: 0 0 0 1.5px #fff; }
+#tabbar .tb-badge { display: none; }
+body.vp-fix #tabbar { top: calc(var(--app-h) - var(--tb-h)); }
+@media (hover: none) { #tabbar button:hover { color: var(--dim); } html[data-theme] #tabbar button.on:hover { color: var(--selc); } }
+/* the chat thread keeps the bar now (Slack does); the old "hide in thread" rule from the WeChat layout is released */
+body[data-mtab="chat"][data-cv="thread"] #tabbar { transform: none; opacity: 1; pointer-events: none; }
+body.kb[data-mtab="chat"][data-cv="thread"] #tabbar, body.kb #tabbar { transform: translateY(110%); opacity: 0; pointer-events: none; }
+body.sheet #tabbar { transform: translateY(110%); opacity: 0; pointer-events: none; }
+
+/* --- floating header: chat thread --- */
+body[data-cv="thread"] .cl-back { position: absolute; left: 0; right: 0; top: 0; z-index: 6; box-sizing: border-box; padding: calc(env(safe-area-inset-top) + 8px) max(12px, env(safe-area-inset-right)) 14px max(12px, env(safe-area-inset-left)); gap: 8px; pointer-events: none;
+  background: linear-gradient(to bottom, var(--bg) 0, var(--bg) 55%, transparent 100%); }
+body[data-cv="thread"] .cl-back::after { display: none; }
+body[data-cv="thread"] .cl-back > * { pointer-events: auto; }
+.cl-back button { position: relative; width: 40px; height: 40px; min-width: 40px; padding: 0; justify-content: center; border-radius: 50%; background: var(--gl); border: 1px solid var(--glb); box-shadow: var(--gsh); -webkit-backdrop-filter: blur(16px) saturate(1.5); backdrop-filter: blur(16px) saturate(1.5); }
+.cl-back button .n { position: absolute; top: -5px; right: -5px; min-width: 18px; height: 18px; padding: 0 5px; box-sizing: border-box; border-radius: 9px; background: var(--dot); color: #fff; font: 600 var(--fs-11)/18px var(--f-display); text-align: center; }
+.cl-back button .n:empty { display: none; }
+.cl-back .who { flex: 1; min-width: 0; margin-right: 0; height: 40px; flex-direction: row; justify-content: flex-start; gap: 10px; padding: 0 16px 0 5px; border-radius: 20px; text-align: left;
+  background: var(--gl); border: 1px solid var(--glb); box-shadow: var(--gsh); -webkit-backdrop-filter: blur(16px) saturate(1.5); backdrop-filter: blur(16px) saturate(1.5); align-items: center; }
+.cl-back .who .av { width: 30px; height: 30px; min-width: 30px; border-radius: 50%; flex: none; }
+.cl-back .who .wt { display: flex; flex-direction: column; min-width: 0; line-height: 1.2; }
+.cl-back .who .nm { font-family: var(--f-sys); font-size: var(--fs-15); font-weight: 600; letter-spacing: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cl-back .who .ti { font-family: var(--f-sys); font-size: var(--fs-11); letter-spacing: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+body[data-cv="thread"] #right .ch-msgs { padding-top: calc(env(safe-area-inset-top) + 62px); }   /* P3: the thread starts at the screen top (no app header above it) */
+
+/* --- floating header: detail page. Bar stays flush at the very top + opaque (ui5 / t-drawer-sticky); only the controls inside become pills. --- */
+#drawer .dw-top { padding-bottom: 8px; min-height: calc(var(--pill-h) + env(safe-area-inset-top)); padding-left: max(12px, env(safe-area-inset-left)); padding-right: max(12px, env(safe-area-inset-right)); }
+#drawer .dw-lead { gap: 8px; }
+#drawer .dw-top button.dw-back[data-close] { width: 40px; height: 40px; min-height: 40px; margin: 0; padding: 0; justify-content: center; border-radius: 50%; background: var(--gl); border: 1px solid var(--glb); box-shadow: var(--gsh); }
+#drawer .dw-top button.dw-back[data-close] span { display: none; }
+#drawer .dw-top button.dw-back[data-close] svg { width: 11px; height: 18px; }
+#drawer .dw-lead .tag { display: inline-flex; align-items: center; height: 40px; box-sizing: border-box; padding: 0 16px; border-radius: 20px; background: var(--gl); border: 1px solid var(--glb); box-shadow: var(--gsh); font-size: var(--fs-12); font-weight: 600; color: var(--ink); }   /* P2: glass pill keeps ink text (the solid-ink tag colours are for list tags) */
+
+/* --- composer pill (thread), above the tab bar; keyboard up -> bar hidden, pill drops to the bottom --- */
+body[data-cv] #right .ch-comp { position: relative; margin: 0 max(12px, env(safe-area-inset-right)) var(--tb-h) max(12px, env(safe-area-inset-left)); padding: 5px; gap: 6px; align-items: center;
+  background: var(--gl); border: 1px solid var(--glb); border-radius: 27px; box-shadow: var(--gsh); -webkit-backdrop-filter: blur(16px) saturate(1.5); backdrop-filter: blur(16px) saturate(1.5); }
+body.kb[data-cv] #right .ch-comp { margin-bottom: calc(8px + env(safe-area-inset-bottom) * 0); }
+html[data-theme] body #right .ch-comp textarea, html[data-theme] body #right .ch-comp textarea:focus { background: transparent; box-shadow: none; border: 0; border-radius: 0; padding: 9px 6px; }
+/* t-m-input-ring: pill fields show focus on their pill (or not at all), never a square outline on the inner field.
+   theme-ut.css paints `:focus-visible { outline: 2px solid var(--focus) }` at (0,4,1); text fields always match :focus-visible, so these need an id or :focus-within to win. Phone only (this file). */
+html[data-theme] body #right .ch-comp textarea:focus-visible, html[data-theme] body #drawer .composer textarea:focus-visible, html[data-theme] body .cl-search:focus-within input:focus-visible { outline: none; animation: none; }
+html[data-theme] body #right .ch-comp > button:first-child { border: 0; width: 40px; height: 40px; background: var(--chip2); color: var(--ink); font-size: var(--fs-24); }
+html[data-theme] body #right .ch-comp .m-send { border-radius: 20px; padding: 0 18px; }
+.ui2-panel { bottom: calc(100% + 8px); border: 1px solid var(--glb); border-radius: 22px; background: var(--gl); box-shadow: var(--gsh); -webkit-backdrop-filter: blur(16px) saturate(1.5); backdrop-filter: blur(16px) saturate(1.5); }
+.cs-jump { bottom: 10px; }
+
+/* --- 搜索 sheet: above the page, below the tab bar --- */
+#msearch { position: fixed; left: 0; right: 0; top: 0; bottom: 0; z-index: 24; display: flex; flex-direction: column; background: var(--bg); padding-top: calc(env(safe-area-inset-top) + 8px); }
+#msearch[hidden] { display: none; }
+body.vp-fix #msearch { bottom: auto; height: var(--app-h); }
+.ms-bar { flex: none; padding: 6px max(16px, env(safe-area-inset-right)) 10px max(16px, env(safe-area-inset-left)); }
+/* .ms-in now IS a .cl-search (same pill, ring, focus, ✕; see the css block) -- only the sheet-specific bits stay here */
+.ms-in input { font: var(--fs-16) var(--f-sys); }
+.ms-res { flex: 1; overflow-y: auto; padding: 0 0 calc(var(--tb-h) + 12px); overscroll-behavior: contain; -webkit-overflow-scrolling: touch; }
+body.kb .ms-res { padding-bottom: 24px; }
+.ms-h { padding: 12px max(16px, env(safe-area-inset-left)) 6px; font: 600 var(--fs-13) var(--f-sys); color: var(--dim); letter-spacing: .04em; }
+.ms-row { display: flex; align-items: center; gap: 12px; width: 100%; padding: 10px max(16px, env(safe-area-inset-right)) 10px max(16px, env(safe-area-inset-left)); text-align: left; background: none; border: 0; border-bottom: 1px solid var(--line); font: inherit; color: inherit; }
+.ms-row:active { background: var(--chip); }
+.ms-av .av { display: block; width: 40px; height: 40px; min-width: 40px; border-radius: 8px; box-shadow: none; }
+.ms-m { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; font-family: var(--f-sys); }
+.ms-m b { font-size: var(--fs-15); font-weight: 600; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ms-m > span { font-size: var(--fs-13); color: var(--dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ms-m .tag { font-style: normal; }
+/* page chips (首页 now also carries 审核 first): nothing to style, they reuse .seg */
+
+/* ===== ui16 (t-slack-p2 v2): leading line icons on the 菜单/更多 rows. Phone only; same stroke style as the tab bar. ===== */
+.m-ic { order: -1; flex: none; display: inline-flex; align-items: center; justify-content: center; width: 26px; height: 22px; margin-right: 12px; color: var(--dim); }
+.m-ic svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 1.35; stroke-linecap: round; stroke-linejoin: round; }
+#nav .nav-i { justify-content: flex-start; padding-left: 8px; }
+#nav .nav-i > span:first-child { min-width: 0; }
+#nav .nav-i .n { margin-left: auto; padding-left: 8px; }
+#nav .nav-i.on .m-ic { color: var(--glow); filter: drop-shadow(0 0 5px var(--glow-a)); }
+#nav .nav-i.urgent .m-ic { color: var(--urgent); }
+.m-settings .m-set > .m-ic { margin-right: 0; }
+.m-settings .m-set { justify-content: flex-start; gap: 12px; }
+.m-settings .m-set > span:not(.m-ic):not(.sw) { flex: 1; min-width: 0; }
+.m-settings .m-set > .sw, .m-settings .m-set > em { margin-left: auto; flex: none; }
+.m-settings .m-theme { display: grid; grid-template-columns: 26px minmax(0, 1fr); column-gap: 12px; row-gap: 10px; align-items: center; }
+.m-settings .m-theme > .m-ic { grid-column: 1; grid-row: 1; }
+.m-settings .m-theme > span:not(.m-ic) { grid-column: 2; grid-row: 1; }
+.m-settings .m-theme .m-theme-seg { grid-column: 1 / -1; grid-row: 2; width: 100%; }
+@media (max-width: 340px) { .m-ic { margin-right: 9px; width: 24px; } .m-settings .m-set { gap: 9px; } .m-settings .m-theme { grid-template-columns: 24px minmax(0, 1fr); column-gap: 9px; } }
+
+/* ===== ui17 (t-slack-p2 v3): no curly flourishes around the active/hovered 菜单 row on the phone. Desktop keeps them (they live in style.css). ===== */
+.nav-i > span:first-child::before, .nav-i > span:first-child::after { content: none; display: none; }
+
+/* ===== ui18 (t-slack-p2 v4): the 菜单 page no longer repeats the logo masthead (top bar already shows it). Hidden here, not in style.css; desktop never shows .m-hero anyway. ===== */
+.m-hero { display: none !important; }
+
+/* ===== ui21 (t-slack-p2 v5): narrow phones (<=360px). Top bar keeps its height; logo / stamina orb / mail never touch.
+   Flex-ish on purpose: the logo column can shrink (min-width:0) so a future image wordmark drops in without fixed positions. ===== */
+@media (max-width: 360px) {
+  #top { grid-template-columns: minmax(0, auto) minmax(0, 1fr) auto; gap: 8px; }
+  .brand { min-width: 0; font-size: 12.5px; letter-spacing: .09em; white-space: nowrap; }
+  .brand > * { min-width: 0; }
+  .brand img { max-width: 100%; height: 25px; width: auto; }
+  .stamina { min-width: 0; gap: 6px; padding-right: 0; }
+  .stamina .pct { white-space: nowrap; }
+  .hdr-ctrl button[data-h="mail"] { width: 40px; height: 40px; margin: -5px -4px -5px 0; }
+  .hdr-ctrl .badge { top: 3px; right: 0; }
+}
+
+/* ===== ui23 (t-liquid-glass M1): variant B "标准 iOS 26" glass on THREE surfaces only: bottom tab bar, chat composer pill, floating header pills
+   (chat header back + name pill, detail back circle + status pill). Phone only (this file is media-limited to <=760px); desktop untouched.
+   Re-usable material: tokens --glass-bg / --glass-blur / --glass-sat / --glass-bri / --glass-line / --glass-rim / --glass-shadow / --glass-lite,
+   and a .glass class (any element can opt in later: M2/M3 = add the selector to the list below, or add class="glass").
+   Accent colours stay on the live --accent* / --sel variables (nothing here defines a colour of its own for "selected").
+   Rules of the material: (1) never put blur on list items / cards; (2) never nest a blurred element inside another blurred one (the inner one sees nothing: use --glass-lite);
+   (3) at most 4 blurred layers on screen (thread = tab row + composer + 2 header pills; detail = 2 pills).
+   Fallbacks: no backdrop-filter -> solid translucent fill; prefers-reduced-transparency -> solid fill, blur off.
+   Why the old pills showed no blur: composer sat IN FLOW below the message list (nothing scrolled under it) and the header / tab-bar scrims were opaque var(--bg),
+   so the blur only ever sampled a flat colour. Here the composer floats over the list, the scrims are 50% fades, and the detail bar floats over the scroller. ===== */
+html[data-theme] { --glass-blur: 26px; --glass-sat: 1.7; --glass-bri: 1.05; }
+html[data-theme="dark"] {
+  --glass-fx: linear-gradient(135deg, rgba(255,255,255,.16) 0, transparent 46%), rgba(44,44,52,.36);
+  --glass-solid: rgba(34,34,40,.94);
+  --glass-line: rgba(255,255,255,.12); --glass-lite: rgba(255,255,255,.10);
+  --glass-rim: inset 0 1px 0 rgba(255,255,255,.45), inset 1px 0 0 rgba(255,255,255,.12), inset 0 -1px 0 rgba(255,255,255,.12), inset 0 0 18px rgba(255,255,255,.07);
+  --glass-shadow: 0 10px 30px rgba(0,0,0,.34);
+}
+html[data-theme="light"] {
+  --glass-fx: linear-gradient(135deg, rgba(255,255,255,.5) 0, transparent 46%), rgba(252,249,241,.44);
+  --glass-solid: rgba(250,246,236,.95);
+  --glass-line: rgba(40,36,30,.10); --glass-lite: rgba(40,36,30,.07);
+  --glass-rim: inset 0 1px 0 rgba(255,255,255,.95), inset 1px 0 0 rgba(40,36,30,.08), inset 0 -1px 0 rgba(40,36,30,.08), inset 0 0 18px rgba(255,255,255,.3);
+  --glass-shadow: 0 10px 28px rgba(40,36,30,.16);
+}
+html[data-theme="white"] {
+  --glass-fx: linear-gradient(135deg, rgba(255,255,255,.6) 0, transparent 46%), rgba(255,255,255,.52);
+  --glass-solid: rgba(255,255,255,.96);
+  --glass-line: rgba(0,0,0,.09); --glass-lite: rgba(0,0,0,.05);
+  --glass-rim: inset 0 1px 0 rgba(255,255,255,1), inset 1px 0 0 rgba(0,0,0,.07), inset 0 -1px 0 rgba(0,0,0,.07), inset 0 0 18px rgba(255,255,255,.35);
+  --glass-shadow: 0 10px 28px rgba(0,0,0,.13);
+}
+/* default = the fallback (solid translucent colour); real glass only where backdrop-filter exists and the user has not asked for less transparency */
+html[data-theme] { --glass-bg: var(--glass-solid); --glass-bf: none; }
+@supports ((-webkit-backdrop-filter: blur(1px)) or (backdrop-filter: blur(1px))) {
+  html[data-theme] { --glass-bg: var(--glass-fx); --glass-bf: blur(var(--glass-blur)) saturate(var(--glass-sat)) brightness(var(--glass-bri)); }
+}
+@media (prefers-reduced-transparency: reduce) {
+  html[data-theme] { --glass-bg: var(--glass-solid); --glass-bf: none; }
+}
+
+/* ---------- the material ---------- */
+.glass, #tabbar .tb-row, .cl-back button, .cl-back .who, body[data-cv] #right .ch-comp, #drawer .dw-top button.dw-back[data-close], #drawer .dw-lead .tag, #drawer .dw-top .r select[data-f="category"] {
+  background: var(--glass-bg); border: 1px solid var(--glass-line); box-shadow: var(--glass-rim), var(--glass-shadow);
+  -webkit-backdrop-filter: var(--glass-bf); backdrop-filter: var(--glass-bf);
+}
+
+/* ---------- 1. bottom tab bar: the opaque scrim becomes a faint fade so content can show through the glass row ---------- */
+html[data-theme] #tabbar::before { background: linear-gradient(to top, color-mix(in srgb, var(--bg) 50%, transparent) 0, transparent 100%); }
+html[data-theme] #tabbar button.on { box-shadow: inset 0 0 0 1px var(--glass-line); }
+#tabbar .tb-dot { box-shadow: 0 0 0 1.5px var(--bg); }
+
+/* ---------- 2. chat header pills: scrim is a fade, not an opaque block ---------- */
+body[data-cv="thread"] .cl-back { background: linear-gradient(to bottom, var(--bg) 0, var(--bg) env(safe-area-inset-top), color-mix(in srgb, var(--bg) 55%, transparent) calc(env(safe-area-inset-top) + 14px), transparent 100%); }   /* P3: solid across the status-bar strip (same as the detail page bar), so it reads the same with or without iOS's own frosted layer */
+
+/* ---------- 3. composer pill floats OVER the message list (absolute), list gets bottom padding so the last message can still be read ---------- */
+body[data-cv] #right .ch-comp { position: absolute; left: max(12px, env(safe-area-inset-left)); right: max(12px, env(safe-area-inset-right)); bottom: var(--tb-h); margin: 0; z-index: 6; }
+body.kb[data-cv] #right .ch-comp { bottom: 8px; margin: 0; }
+body[data-cv="thread"] #right .ch-msgs { padding-bottom: calc(var(--tb-h) + var(--comp-h, 66px)); }
+body.kb[data-cv="thread"] #right .ch-msgs { padding-bottom: calc(8px + var(--comp-h, 66px)); }
+html[data-theme] body #right .ch-comp > button:first-child { background: var(--glass-lite); }   /* the + inside the pill: tint only, no nested blur */
+
+/* ---------- detail page: bar floats over the scroller (opaque only across the status-bar strip), pills are the glass ---------- */
+#drawer .dw-top { position: absolute; top: 0; left: 0; right: 0; background: linear-gradient(to bottom, var(--bg) 0, var(--bg) env(safe-area-inset-top), color-mix(in srgb, var(--bg) 55%, transparent) calc(env(safe-area-inset-top) + 14px), transparent 100%); }
+#drawer .dw-top::after { display: none; }
+#drawer .dw-scroll { padding-top: calc(var(--pill-h) + env(safe-area-inset-top) + 12px); }
+

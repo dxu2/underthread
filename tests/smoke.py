@@ -198,6 +198,16 @@ def t_server(root):
         assert "/static/sw.js" not in imports
         assert idx.index('<script type="importmap">') < idx.index('<script type="module" src="/static/main.js?v='), "import map after the module entry"
         assert re.search(r'<meta name="ut-build" content="[0-9a-f]{12}">', idx), "no ut-build stamp"
+        # t-oss-struct S11: style.css / mobile.css load as their section files, in order, mobile ones keep the media query; the old URL still
+        # answers with the joined parts (byte-identical to the pre-split file)
+        for name in ("style", "mobile"):
+            parts = sorted(f for f in os.listdir(os.path.join(root, "web", "css", name)) if f.endswith(".css"))
+            refs = re.findall(rf'href="/static/css/{name}/([\w.-]+\.css)\?v=[0-9a-f]{{8}}"', idx)
+            assert refs == parts, f"{name} sections missing or out of order"
+            joined = b"".join(open(os.path.join(root, "web", "css", name, f), "rb").read() for f in parts)
+            code, body = req(s.port, f"/static/{name}.css")
+            assert code == 200 and body == joined, f"/static/{name}.css is not the joined sections"
+        assert idx.count('media="(max-width: 760px)"') >= len(os.listdir(os.path.join(root, "web", "css", "mobile"))), "a mobile section lost its media query"
         assert not re.findall(r'/static/[\w./@-]+\.(?:js|css|png|ico)(?=["\s,])', re.sub(r'<script type="importmap">.*?</script>', '', idx)), "a /static/ file without ?v="
     finally:
         s.stop()
@@ -282,6 +292,8 @@ def t_local(root):
         "roles/common.md": "# common (local)\n\n## Confirmed rules\n- smoke local rule\n",
         "ext.json": json.dumps({"css": [{"href": "smoke-ext.css", "after": "skin-ink.css"}], "js": [{"src": "smoke-ext.js"}], "drop": ["oss.css"]}),
         "web/smoke-ext.css": "/* smoke */\n",
+        "web/mobile.css": "/* smoke: an old whole-file override */\n",
+        "web/css/style/99-smoke.css": "/* smoke: a local section */\n",
         "web/smoke-ext.js": "/* smoke */\n",
         "ext/smoke/server_ext.py": "def register(srv):\n    def route(h, u, q):\n        if u.path == '/api/smoke-ext':\n            return h._send(200, {'ok': True})\n    srv.EXT_GET.append(route)\n",
         "ext/smoke/stateutil_ext.py": "def register(S):\n    def cli(sub):\n        sub.add_parser('smoke-ext').set_defaults(fn=lambda a: print('smoke-ext ok'))\n    S.CLI_EXT.append(cli)\n",
@@ -309,6 +321,10 @@ def t_local(root):
             assert html.index('<script defer src="/static/smoke-ext.js') > html.index('<script type="module" src="/static/main.js'), "extension script must come after the module entry"
             assert html.index("smoke-ext.css") > html.index("skin-ink.css"), "css not placed after its anchor"
             assert "/static/oss.css" not in html, "drop did not remove oss.css"
+            # t-oss-struct S11: a whole local/web/mobile.css still wins (no section links); a local section joins style.css by its number
+            assert "/static/css/mobile/" not in html and re.search(r'href="/static/mobile\.css\?v=[0-9a-f]{8}" media="\(max-width: 760px\)"', html), "local mobile.css override lost"
+            assert html.index("/static/css/style/99-smoke.css") == html.rindex("/static/css/style/"), "local section not last"
+            assert req(srv.port, "/static/style.css")[1].endswith(b"/* smoke: a local section */\n"), "joined style.css misses the local section"
             assert re.search(r'"/static/app\.js":"/static/app\.js\?v=[0-9a-f]{8}"', html), "no content hash for app.js in the import map"
             assert html.index('<script type="importmap">') < html.index('<script type="module"'), "import map must come before the module entry"
             assert re.search(r'<meta name="ut-build" content="\w+">', html) and 'rel="modulepreload" href="/static/app.js?v=' in html
@@ -404,7 +420,7 @@ def register(R):
             html = req(p, "/")[1].decode()
             assert re.search(r'<script defer src="/static/ext/demo/demo\.js\?v=[0-9a-f]{8}"', html), "manifest js not injected"
             assert '"/static/ext/demo/demo.js":"/static/ext/demo/demo.js?v=' in html, "extension js not in the import map"
-            assert html.index("/static/ext/demo/demo.css") > html.index("/static/style.css"), "manifest css not after its anchor"
+            assert html.index("/static/ext/demo/demo.css") > html.rindex("/static/css/style/"), "manifest css not after its anchor"
             assert "/static/ext/old/" not in html
             assert req(p, "/static/ext/demo/demo.js")[0] == 200 and req(p, "/static/ext/old/x.js")[0] == 404
             assert req(p, "/static/ext/demo/..%2fext.json")[0] in (403, 404)

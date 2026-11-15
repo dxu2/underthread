@@ -40,7 +40,9 @@ d.dataset.splash="1";d.style.setProperty("--ut-guard",t==="white"?"#ffffff":t===
 <style>html[data-splash="1"] body::before{content:"";position:fixed;inset:0;z-index:2147483000;background:var(--ut-guard,#040404)}</style>
 <link rel="stylesheet" href="/static/splash.css">
 <script src="/static/splash.js" defer></script>
-<!-- ri1106-P1: no Google Fonts request any more; Cinzel (latin) is self-hosted in web/fonts, see style.css @font-face -->
+<!-- ri1106-P1: no Google Fonts request any more; Cinzel (latin) is self-hosted in web/fonts, see css/style/16-topbar-mailbox-fonts.css @font-face -->
+<!-- t-oss-struct S11: style.css and mobile.css are cut into web/css/style/ and web/css/mobile/ (NN-section.css, file-name order = cascade order);
+     the server turns each line below into one <link> per section. local/web/css/<stem>/<file> replaces one section; local/web/style.css still replaces the whole sheet. -->
 <link rel="stylesheet" href="/static/style.css">
 <link rel="stylesheet" href="/static/mobile.css" media="(max-width: 760px)">
 <link rel="stylesheet" href="/static/team.css">   <!-- t-rb-build -->

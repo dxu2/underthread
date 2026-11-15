@@ -1,0 +1,108 @@
+/* ---------- drawer thread as a chat stream (t-detail-chat proposal) ---------- */
+/* Appended to web/style.css; replaces the .tl / .tl-i rules for the drawer. */
+.cs { display: flex; flex-direction: column; gap: 14px; margin-top: 14px; padding-bottom: 8px; }
+
+/* 1. agent reply: dark card, left accent rule in the agent's color, avatar + name + @target + time */
+.cs-card { position: relative; align-self: flex-start; max-width: min(860px, 94%); background: linear-gradient(180deg, var(--panel), var(--panel2));
+  border: 1px solid var(--line); border-left: 2px solid var(--acc, var(--ink2)); padding: 10px 18px 12px 16px; }
+.cs-card::before { content: ""; position: absolute; left: -2px; top: -1px; width: 14px; height: 14px; border-top: 1px solid var(--acc, var(--ink2)); border-left: 1px solid var(--acc, var(--ink2)); border-radius: 6px 0 0 0; }
+.cs-h { display: flex; align-items: center; gap: 8px; font-size: var(--fs-13); color: var(--ink2); margin-bottom: 4px; font-family: var(--f-cjk); }
+.cs-h .nm { font-weight: 600; color: var(--ink); letter-spacing: .02em; flex: none; white-space: nowrap; }
+.cs-h .at, .cs-h .tm, .cs-h button { flex: none; white-space: nowrap; }
+.cs-h .at { color: var(--glow); }
+.cs-h .tm { color: var(--dim); font-family: var(--f-display); font-size: var(--fs-11); letter-spacing: .04em; }
+.cs-h .sp { flex: 1; }
+.cs-h button { font-size: var(--fs-12); color: var(--dim); letter-spacing: .04em; } .cs-h button:hover { color: var(--soul); }
+.cs-card .md { font-size: var(--fs-15); } .cs-card .md p { margin: 0 0 6px; }
+
+/* draft card = an agent card that carries a version of the draft */
+/* P1 / D4: the draft is the thing under review: a calm full-width sheet (radius 22, soft fill, hairline), no coloured edge, no hook corner; the kind tag is solid ink */
+.cs-card.draftc { max-width: 100%; align-self: stretch; border: 0; border-radius: 22px; background: var(--accent-soft); box-shadow: inset 0 0 0 1px var(--line); padding: 16px 20px 14px; }
+.cs-card.draftc::before { display: none; }
+.cs-card .dtag { flex: none; font-family: var(--f-sys); font-size: var(--fs-11); font-weight: 600; letter-spacing: .04em; padding: 2px 8px; border-radius: 9px; white-space: nowrap; }
+.cs-card.draftc .dtag { background: var(--accent); color: var(--accent-ink); }
+.cs-card.draftc .md { font-size: var(--fs-15); line-height: 1.7; }
+.cs-card.draftc .md h1, .cs-card.draftc .md h2, .cs-card.draftc .md h3 { font-family: var(--f-sys); font-variant: normal; letter-spacing: -.005em; background: none; padding-bottom: 0; margin-top: 22px; }
+.cs-card.draftc .md h1, .cs-card.draftc .md h2 { font-size: var(--fs-20); }
+#drawer .md ul > li::marker { content: "•  "; font-size: 1em; color: var(--dim); }
+.cs-card.folded .md { max-height: 15.5em; overflow: hidden; -webkit-mask: linear-gradient(#000 70%, transparent); mask: linear-gradient(#000 70%, transparent); }
+.cs-more { display: block; margin: 6px auto 0; font-size: var(--fs-12); color: var(--ink2); letter-spacing: .04em; } .cs-more:hover { color: var(--soul); }
+.cs-card.old { opacity: 1; }   /* t-ui-fix-r6 R6-01: was .6 (× .md .9) = 3.6:1 body / 2.2:1 header in day themes */
+/* t-ui-fix-r6 R6-01: an older draft version reads quieter without transparency: no fill, a dashed hairline, an 旧版 tag,
+   --dim header text, body at --ink2, all at full opacity (AA 4.5 in every theme) */
+.cs-card.draftc.old, #drawer .cs-card.draftc.old { background: transparent; border: 1px dashed var(--line2); box-shadow: none; }
+.cs-card.old > .cs-h .nm, .cs-card.old > .cs-h .at, .cs-card.old > .cs-h .tm, .cs-card.old > .cs-h button, .cs-card.old > .cs-more { color: var(--dim); }
+.cs-card.old .md { color: var(--ink2); }
+.cs-card.draftc .dtag.dold { background: transparent; color: var(--dim); box-shadow: inset 0 0 0 1px var(--line2); }
+
+/* 2. log / event / status: one centered line between thin rules */
+.cs-line { display: flex; align-items: flex-start; gap: 10px; font-size: var(--fs-13); color: var(--ink2); padding: 0 4px; }
+.cs-line::before, .cs-line::after { content: ""; flex: 0 0 48px; height: 1px; margin-top: .8em; background: linear-gradient(90deg, transparent, var(--line2)); }
+.cs-line::after { transform: scaleX(-1); }
+.cs-line .in { flex: 1; display: flex; gap: 8px; align-items: flex-start; justify-content: center; min-width: 0; }
+.cs-line .tm { font-family: var(--f-display); font-weight: 600; color: var(--ink); white-space: nowrap; padding-top: 1px; }
+.cs-line .av.sm { flex: none; width: 20px; height: 20px; }
+.cs-line .nm { font-weight: 600; color: var(--ink); white-space: nowrap; font-family: var(--f-cjk); }
+.cs-line .tx { min-width: 0; overflow-wrap: anywhere; line-height: 1.55; }
+.cs-line.event { opacity: .62; } .cs-line.event .tx { font-style: normal; }
+.cs-line.approve .tx, .cs-line.done .tx { color: var(--ok); }
+.cs-line.reject .tx { color: var(--urgent); }
+
+/* 3. the user's own message: right-aligned bubble with @target */
+.cs-me { align-self: flex-end; max-width: min(620px, 82%); background: var(--panel2); border: 1px solid var(--line2); padding: 8px 14px 10px; position: relative; }
+.cs-me::after { content: ""; position: absolute; right: -4px; bottom: -4px; width: 12px; height: 12px; background: var(--ink2);
+  -webkit-mask: var(--hook) center/contain no-repeat; mask: var(--hook) center/contain no-repeat; transform: rotate(180deg); }
+.cs-me .cs-h .nm { font-family: var(--f-display); font-variant: small-caps; }
+.cs-me .md { font-size: var(--fs-15); } .cs-me .md p { margin: 0; }
+
+.cs-day { font-size: var(--fs-11); color: var(--dim); text-align: center; letter-spacing: .04em; font-family: var(--f-cjk); display: flex; align-items: center; gap: 14px; margin: 4px 0; }
+.cs-day::before, .cs-day::after { content: ""; flex: 1; height: 1px; background: linear-gradient(90deg, transparent, var(--line)); }
+.cs-day::after { transform: scaleX(-1); }
+
+/* 4. floating TOP / LATEST jump buttons (inside .dw-scroll, sticky to its bottom-right) */
+.cs-jump { position: sticky; bottom: 12px; height: 0; z-index: 3; }
+.cs-jump .wrap { position: absolute; right: -40px; bottom: 0; display: flex; flex-direction: column; gap: 8px; }
+.cs-jump button { position: relative; width: 36px; height: 36px; display: grid; place-items: center; border: 1px solid var(--line2); border-radius: 50%;
+  background: color-mix(in srgb, var(--solid) 86%, transparent); -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); color: var(--ink2); box-shadow: 0 6px 18px rgba(0,0,0,.35); transition: border-color .3s, color .3s; }
+.cs-jump button:hover { color: var(--soul); border-color: var(--line3); }
+.cs-jump button[hidden] { display: none; }
+.cs-jump .ic { font-size: var(--fs-15); line-height: 1; }
+.cs-jump .lb { position: absolute; right: 44px; top: 50%; transform: translateY(-50%); display: none; flex-direction: column; align-items: center; line-height: 1.1; white-space: nowrap;
+  font-family: var(--f-cjk); font-size: var(--fs-13); letter-spacing: .04em; padding: 4px 10px; background: var(--solid); border: 1px solid var(--line2); border-radius: 14px; }
+.cs-jump button:hover .lb { display: flex; }
+.cs-jump .lb small { font-family: var(--f-display); font-size: 8px; letter-spacing: .04em; color: var(--dim); }
+.cs-jump .new { position: absolute; right: 1px; top: 1px; width: 7px; height: 7px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 8px var(--accent-line); }
+
+/* 5. composer: recipient chip + @ picker (keeps .composer / textarea / .cm-row so mobile.js still hooks in) */
+/* t-sendto-chip (2026-11-02): 「发给 [头像] @某人」 = a soft tinted pill, no border; equal 5px gaps; the avatar drops its outline and the
+   working ring (that ring belongs to the team strip, here it read as a white halo). It only looks clickable on hover: a click puts an
+   "@" at the caret and opens the same picker as typing "@". */
+.cm-to { display: inline-flex; align-items: center; gap: 5px; height: 24px; border: 0; border-radius: 999px; padding: 0 10px 0 9px; font-size: var(--fs-12); line-height: 1;
+  color: var(--dim); background: color-mix(in srgb, var(--ink) 5%, transparent); cursor: pointer; user-select: none; -webkit-user-select: none;
+  transition: background-color .15s ease, color .15s ease; }
+.cm-to:hover { background: color-mix(in srgb, var(--ink) 10%, transparent); color: var(--ink2); }
+.cm-to:has(button) { padding-right: 3px; }
+.cm-to .av.sm, .cm-to .av.sm.working { width: 18px; height: 18px; border: 0; box-shadow: none; animation: none; }
+.cm-to .av::before, .cm-to .av::after { content: none; }
+.cm-to b { font-weight: 600; color: var(--ink); }
+.cm-to button { width: 18px; height: 18px; border-radius: 50%; display: grid; place-items: center; font-size: 9px; color: var(--dim); margin-left: 1px; }
+.cm-to button:hover { color: var(--urgent); background: color-mix(in srgb, var(--ink) 8%, transparent); }
+.at-pop { position: absolute; left: 30px; bottom: calc(100% - 6px); min-width: 240px; background: var(--solid); border: 1px solid var(--line2); box-shadow: var(--shadow); padding: 4px 0; z-index: 6; }
+.at-pop[hidden] { display: none; }
+.at-pop div { display: flex; align-items: center; gap: 10px; padding: 6px 14px; font-size: var(--fs-14); cursor: pointer; }
+.at-pop div small { color: var(--dim); font-size: var(--fs-12); }
+.at-pop div.on, .at-pop div:hover { background: var(--chip); color: var(--soul); box-shadow: inset 2px 0 0 var(--ink2); }
+.cs-card .dlabel { flex: 0 1 auto; min-width: 0; font-size: var(--fs-12); color: var(--dim); max-width: 22em; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cs-card .conf { margin: 2px 0 6px; }
+.cs-more[hidden] { display: none; }
+.dw-def[hidden] { display: none; }
+[data-theme="light"] .cs-jump button { box-shadow: 0 4px 12px rgba(70,50,20,.16); }
+
+/* manager asleep after hitting the plan limit: moonlit, not alarming */
+.sync .zz, .ch-who .zz { color: var(--glow); opacity: .8; white-space: nowrap; } .ch-who .zz { font-size: var(--fs-12); }
+.team-i .st.sleeping { color: var(--glow); opacity: .75; }
+/* t-queue-row-2: while the manager is asleep the name row reads 名字 + 排队 n + ☾ 08:00 — keep it on one line (146px column) */
+.team-i .nm:has(.st.sleeping) { white-space: nowrap; gap: 5px; }
+.team-i .st.sleeping { letter-spacing: 0; font-variant-numeric: tabular-nums; }
+.team-i .nm:has(.st.sleeping) .aq { padding: 0 5px; }
+

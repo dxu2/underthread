@@ -1,0 +1,162 @@
+/* ---------- t-web-audit (2026-10-28): desktop audit fixes ---------- */
+.log-i.hb { opacity: .5; }   /* 11: folded heartbeats */
+.col-more { display: block; width: 100%; margin-top: 6px; padding: 8px; border: 1px dashed var(--line2); border-radius: 8px; color: var(--ink2); font-size: var(--fs-12); transition: color .25s, border-color .25s; }
+.col-more:hover { color: var(--ink); border-color: var(--line3); }
+@media (min-width: 761px) {
+  /* 04: no notice -> no band; a notice opens it over .3s */
+  #ticker { max-height: 60px; overflow: hidden; transition: max-height .3s var(--ease), min-height .3s var(--ease), padding .3s var(--ease); }
+  #ticker:empty { max-height: 0; min-height: 0; padding-top: 0; padding-bottom: 0; }
+  /* 06: narrow middle column -> the drawer covers it */
+  body.main-narrow #drawer { width: 100%; border-left: 0; box-shadow: none; }
+  /* 08: the phone icon pushed the count to the middle; zero counts stay quiet */
+  .nav-i .m-ic { display: none; }
+  .nav-i .n.z { visibility: hidden; }
+  /* 02: tighter nav, no empty time rail, idle teammates on one line */
+  .nav-i { padding-top: 5px; padding-bottom: 5px; }
+  #cal.noev .cal-now { display: none; }
+  .team-i { min-height: 0; padding: 5px 10px; grid-template-columns: 26px 1fr; align-items: center; }
+  .team-i .av { width: 26px; height: 26px; }
+  .team-i:not(.busy) .du { display: none; }
+  /* 10: the big "等你拍板 N" repeated the group header */
+  .ph-review + .ph-bar .count { display: none; }
+  /* 09 → t-chroster-8 A (2026-11-03): the whole team on one row at any chat width. Each button takes an equal share (max 46px), the avatar
+     shrinks with it (max 38px), names get an ellipsis and hide below a 330px column (container query on .ch-head; the rail tip still names them).
+     Open column only: the folded rail keeps its own vertical rules. */
+  .ch-roster { flex-wrap: nowrap; gap: 4px; justify-content: space-between; overflow-x: auto; scrollbar-width: none; }
+  .ch-roster::-webkit-scrollbar { display: none; }
+  .ch-roster button { flex: none; }
+  .ch-roster button .av { width: 38px; height: 38px; }
+  /* t-avatar-strip-scroll (2026-11-10) replaced the open-column squeeze (equal shares, ellipsis, names hidden <330px): see the block after this media query */
+}
+/* t-avatar-strip-scroll (2026-11-10): desktop open chat column = a horizontal scroll strip. Full-size avatars, whole names, scroll-snap,
+   edge fades + hover arrows on the side that has more (app.js crs* sets .crs-l / .crs-r on .crs-wrap), vertical wheel mapped to horizontal in app.js.
+   .crs-wrap is display:contents on the phone and in the folded rail, so those layouts see the old .ch-head > .ch-roster tree. */
+.crs-wrap { display: contents; }
+.crs-a { display: none; }
+@media (min-width: 761px) {
+  body:not(.chat-folded) .crs-wrap { display: block; position: relative; margin: 0 -10px; }
+  body:not(.chat-folded) .crs-wrap::after { content: ""; position: absolute; left: 10px; right: 10px; bottom: 0; height: 1px; background: linear-gradient(90deg, transparent, var(--line2), transparent); pointer-events: none; }
+  body:not(.chat-folded) .ch-roster::after { display: none; }
+  body:not(.chat-folded) .ch-roster { flex-wrap: nowrap; justify-content: flex-start; gap: 4px; overflow-x: auto; overflow-y: hidden; overscroll-behavior-x: contain;
+    scroll-snap-type: x proximity; scroll-padding-inline: 10px; padding: 10px 10px 10px; scrollbar-width: none; }
+  body:not(.chat-folded) .ch-roster.crs-free { scroll-snap-type: none; }
+  body:not(.chat-folded) .ch-roster button { flex: none; width: auto; min-width: 54px; max-width: none; padding: 0 3px; scroll-snap-align: start; }
+  body:not(.chat-folded) .ch-roster button .av { width: 40px; height: 40px; aspect-ratio: auto; }
+  body:not(.chat-folded) .ch-roster button > span:not(.av) { max-width: none; overflow: visible; letter-spacing: 0; font-size: var(--fs-11); }
+  .crs-wrap.crs-l .ch-roster { -webkit-mask-image: linear-gradient(90deg, transparent 4px, #000 40px); mask-image: linear-gradient(90deg, transparent 4px, #000 40px); }
+  .crs-wrap.crs-r .ch-roster { -webkit-mask-image: linear-gradient(90deg, #000 calc(100% - 40px), transparent calc(100% - 4px)); mask-image: linear-gradient(90deg, #000 calc(100% - 40px), transparent calc(100% - 4px)); }
+  .crs-wrap.crs-l.crs-r .ch-roster { -webkit-mask-image: linear-gradient(90deg, transparent 4px, #000 40px, #000 calc(100% - 40px), transparent calc(100% - 4px));
+    mask-image: linear-gradient(90deg, transparent 4px, #000 40px, #000 calc(100% - 40px), transparent calc(100% - 4px)); }
+  body:not(.chat-folded) .crs-a { display: grid; place-items: center; position: absolute; top: 18px; z-index: 3; width: 24px; height: 24px; padding: 0; border-radius: 50%;
+    color: var(--ink2); background: color-mix(in srgb, var(--bg) 90%, transparent); box-shadow: 0 0 0 1px var(--line2), 0 4px 12px rgba(0,0,0,.22);
+    opacity: 0; pointer-events: none; transform: scale(.8); transition: opacity .22s var(--ease), transform .32s var(--ease), color .2s, box-shadow .25s; }
+  .crs-a.crs-prev { left: 2px; } .crs-a.crs-next { right: 2px; }
+  .crs-a span { width: 6px; height: 6px; border-right: 1.5px solid currentColor; border-bottom: 1.5px solid currentColor; transition: transform .3s var(--ease); }
+  .crs-a.crs-prev span { transform: translateX(1px) rotate(135deg); } .crs-a.crs-next span { transform: translateX(-1px) rotate(-45deg); }
+  .crs-wrap.crs-l:hover .crs-prev, .crs-wrap.crs-l .crs-prev:focus-visible, .crs-wrap.crs-r:hover .crs-next, .crs-wrap.crs-r .crs-next:focus-visible { opacity: 1; pointer-events: auto; transform: none; }
+  .crs-a:hover { color: var(--ink); box-shadow: 0 0 0 1px var(--line3), 0 0 12px var(--glow-a), 0 4px 12px rgba(0,0,0,.22); }
+  .crs-a.crs-prev:hover span { transform: translateX(-1px) rotate(135deg); } .crs-a.crs-next:hover span { transform: translateX(1px) rotate(-45deg); }
+  .crs-wrap .crs-a:active { transform: scale(.88); transition-duration: .08s; }
+}
+@media (prefers-reduced-motion: reduce) { .crs-a, .crs-a span { transition: opacity .01s; } }
+
+/* ---------- t-web-audit-2 05: chat pop-over for 761-1180px windows ---------- */
+.hc-chat { display: none !important; }
+@media (min-width: 761px) and (max-width: 1180px) {
+  .hc-chat { display: inline-flex !important; }
+  body.chat-pop #right { display: flex; position: fixed; top: 0; right: 0; bottom: 0; width: min(420px, 92vw); z-index: 40;
+    background: var(--bg); border-left: 1px solid var(--line2); box-shadow: -28px 0 64px rgba(0,0,0,.45), 0 0 0 100vmax rgba(0,0,0,.3); animation: chat-pop-in .34s var(--ease) both; }   /* the second shadow is the scrim over the page */
+  body.chat-pop #right .ch-grip { display: none; }
+  @keyframes chat-pop-in { from { transform: translateX(24px); opacity: 0; } }
+}
+@media (min-width: 761px) and (max-width: 1180px) and (prefers-reduced-motion: reduce) { body.chat-pop #right { animation: none; } }
+
+/* ---------- t-open-questions: questions for the user with clickable options (detail block, list-card row, guard sheet) ---------- */
+.ask-h { display: flex; align-items: center; gap: 8px; }
+.ask-h i { width: 7px; height: 7px; border-radius: 50%; background: var(--line3); }
+.ask-h.on i { background: var(--dot); }
+.ask-list { display: flex; flex-direction: column; gap: 10px; margin: 6px 0 18px; }
+.ask { border: 1px solid var(--line2); border-radius: 14px; padding: 12px 14px; background: color-mix(in srgb, var(--ink) 4%, transparent); }
+.ask-q { display: flex; gap: 8px; align-items: flex-start; font-size: var(--fs-14); line-height: 1.55; color: var(--ink); }
+.ask-q .n { flex: none; width: 18px; height: 18px; margin-top: 2px; border-radius: 50%; display: grid; place-items: center; font-size: var(--fs-11); background: var(--dot); color: #fff; }
+.ask.done .ask-q .n { background: var(--line3); color: var(--bg); }
+.ask-opts { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+.ask-o { border: 1px solid var(--line3); border-radius: 999px; padding: 6px 13px; font-size: var(--fs-13); line-height: 1.3; color: var(--ink); background: transparent; transition: background .2s, color .2s, border-color .2s, opacity .2s, transform 90ms ease-out; }
+.ask-o:hover:not(:disabled) { border-color: var(--ink2); }
+.ask-o:active:not(:disabled) { transform: scale(.97); }
+.ask-o.on { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+.ask-o:disabled { cursor: default; }
+.ask.done .ask-o:not(.on) { opacity: .45; }
+.ask-o.ghost { border-style: dashed; color: var(--ink2); }
+.ask-a { margin-top: 8px; font-size: var(--fs-12); color: var(--dim); }
+.ask-row { margin-top: 10px; }
+.ask-rt { font-size: var(--fs-13); line-height: 1.5; color: var(--ink2); }
+.ask-rt i { display: inline-block; width: 6px; height: 6px; margin-right: 6px; border-radius: 50%; background: var(--dot); vertical-align: 1px; }
+.ask-rt b { color: var(--ink); font-weight: 600; }
+.ask-opts.sm { margin-top: 7px; gap: 6px; } .ask-opts.sm .ask-o { padding: 4px 11px; font-size: var(--fs-13); }
+.ask-row .ask-more { font-size: var(--fs-12); color: var(--dim); margin-left: 4px; }
+.ask-row { display: block; } .ask-row .ask-opts.sm { display: inline-flex; vertical-align: middle; }
+.dc-s .ask-n { color: var(--ink); font-weight: 600; }
+.dock-note { display: inline-flex; align-items: center; gap: 6px; margin-right: auto; font-size: var(--fs-12); color: var(--ink2); white-space: nowrap; }
+.dock-note i { width: 6px; height: 6px; border-radius: 50%; background: var(--dot); }
+.mdl.ask-guard { max-width: min(480px, 92vw); }
+.mdl.ask-guard .ask-gp { margin: 4px 0 14px; font-size: var(--fs-13); line-height: 1.55; color: var(--ink2); }
+.mdl.ask-guard .ask-list { margin: 0; }
+@media (prefers-reduced-motion: reduce) { .ask-o { transition: none; } .ask-o:active:not(:disabled) { transform: none; } }
+/* t-ri1114-a P4: list cards show at most 2 lines of the question (tap the card for the rest); 「还有 N 题 ›」 is a dashed pill that opens the card at 「要你拿主意」 */
+.ask-row.ri14-clamp .ask-rt { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2; overflow: hidden; }
+.ri14-more { display: inline-flex; align-items: center; gap: 3px; margin-top: 7px; padding: 4px 11px; border: 1px dashed var(--line3); border-radius: 999px; background: transparent; color: var(--ink2); font-size: var(--fs-13); line-height: 1.3; cursor: pointer; transition: background .2s, color .2s, border-color .2s, transform 90ms ease-out; }
+.ri14-more span { font-size: 1.1em; line-height: 1; }
+.ri14-more:hover { color: var(--ink); border-color: var(--accent); background: color-mix(in srgb, var(--accent) 6%, transparent); }
+.ri14-more:active { transform: scale(.97); }
+.ask-row.ri14-clamp .ask-opts.sm + .ri14-more { display: flex; width: max-content; }
+@media (prefers-reduced-motion: reduce) { .ri14-more { transition: none; } .ri14-more:active { transform: none; } }
+/* the guard sheet uses the neutral system look, not the older spaced-serif modal title and ornament buttons */
+#modal .mdl.ask-guard h2 { text-align: left; font-family: var(--f-sys); font-size: var(--fs-17); letter-spacing: 0; padding-left: 0; text-shadow: none; }
+#modal .mdl.ask-guard .foot { gap: 10px; margin-top: 18px; }
+#modal .mdl.ask-guard .foot .btn { font-family: var(--f-sys); font-size: var(--fs-14); letter-spacing: 0; padding: 8px 10px; }
+#modal .mdl.ask-guard .foot .btn:not(.primary) { text-decoration: underline; text-underline-offset: 3px; }
+#modal .mdl.ask-guard .foot .btn.primary { padding: 9px 18px; border-radius: 999px; background: var(--accent); color: var(--accent-ink); }
+#modal .mdl.ask-guard .foot .btn.primary::before, #modal .mdl.ask-guard .foot .btn.primary::after { display: none; }
+
+/* ---------- t-web-dm: the phone thread's major design on the desktop chat panel (also the <=1180px pop-over). Phone untouched: mobile.css owns it there. ---------- */
+.ch-kb { display: none; }
+@keyframes dk-dot { 30% { opacity: 1; transform: translateY(-2px); } }
+@media (min-width: 761px) {
+  #right .ch-head { padding: 14px 22px 2px 48px; }
+  #right .ch-who { gap: 10px; }
+  #right .ch-who .av { width: 34px; height: 34px; }
+  #right .ch-who .nm { font-size: var(--fs-16); }
+  #right .ch-roster { padding: 8px 0 10px; }
+  #right .ch-msgs { gap: 14px; padding: 12px 22px 20px; }
+  #right .msg { position: relative; display: flex; flex-direction: column; align-items: flex-start; max-width: 100%; padding-left: 44px; }
+  #right .msg .mh { position: absolute; left: 0; top: 0; margin: 0; gap: 0; font-size: 0; }
+  #right .msg .mh small { display: none; }
+  #right .msg .mh .av, #right .m-meav, #right .m-typing > .av { width: 34px; height: 34px; border-radius: 50%; }
+  #right .msg .m-nm { margin: 0 0 3px 2px; font-size: var(--fs-11); color: var(--dim); }
+  #right .msg .mb, #right .m-typing .mb { max-width: min(82%, 560px); padding: 9px 14px; border: 0; border-radius: 6px 18px 18px 18px;
+    background: color-mix(in srgb, var(--ink) 9%, var(--bg)); font-size: var(--fs-15); line-height: 1.6; overflow-wrap: anywhere; }
+  #right .msg:not(.me) > .mb { padding-left: 14px; border-left: 0; }
+  #right .msg.me { align-self: stretch; align-items: flex-end; max-width: 100%; padding-left: 0; padding-right: 44px; }
+  #right .msg.me .mb { border-radius: 18px 6px 18px 18px; background: var(--accent); color: var(--accent-ink); }
+  #right .msg.me .mb a, #right .msg.me .mb code { color: inherit; }
+  #right .msg.me .mt { display: none; }
+  #right .msg .m-meav { position: absolute; right: 0; top: 0; background-size: cover; background-position: center; }
+  #right .m-meav.ph { display: grid; place-items: center; font-size: var(--fs-13); color: var(--ink2); background: color-mix(in srgb, var(--ink) 12%, var(--bg)); }
+  #right .msg.m-cont { margin-top: -9px; }
+  #right .msg.m-cont .mh .av, #right .msg.m-cont .m-meav { visibility: hidden; }
+  #right .msg.m-cont .m-nm { display: none; }
+  #right .m-tsep { align-self: center; padding: 6px 0 0; font-size: var(--fs-12); color: var(--dim); }
+  #right .msg .mb p { margin: 4px 0; } #right .msg .mb > :first-child { margin-top: 0; } #right .msg .mb > :last-child { margin-bottom: 0; }
+  #right .msg .atts { margin-top: 6px; } #right .msg.me .atts { justify-content: flex-end; }
+  #right .msg .atts img { max-width: 240px; max-height: 240px; border-radius: 12px; }
+  #right .msg .opts { margin-top: 8px; padding-left: 0; }
+  #right .m-typing { display: flex; align-items: flex-start; gap: 10px; animation: rise .4s var(--ease) both; }
+  #right .m-dots { display: inline-flex; gap: 4px; padding: 6px 2px; }
+  #right .m-dots i { width: 5px; height: 5px; border-radius: 50%; background: var(--ink2); opacity: .3; animation: dk-dot 1.2s ease-in-out infinite; }
+  #right .ch-comp { align-items: center; padding: 10px 16px 22px; }
+  #right .ch-comp textarea { min-height: 42px; padding: 10px 16px; border-radius: 22px; background: color-mix(in srgb, var(--ink) 6%, var(--bg)); }
+  #right .ch-comp > button { width: 34px; height: 34px; flex: none; display: grid; place-items: center; padding: 0; border: 1px solid var(--line2); border-radius: 50%; font-size: var(--fs-20); }
+  #right .ch-kb { display: block; position: absolute; right: 30px; bottom: 5px; font-size: var(--fs-11); color: var(--dim); pointer-events: none; }
+}
+@media (min-width: 761px) and (prefers-reduced-motion: reduce) { #right .m-dots i { animation: none; opacity: .6; } #right .m-typing { animation: none; } }

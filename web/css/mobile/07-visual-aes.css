@@ -1,0 +1,208 @@
+/* ===== t-vis-b1 (visual batch 1: the visible bugs). Phone only (this file is media-limited to <= 760px); desktop untouched.
+   1. light theme: --soul / --glow were a blue (#2b4a7a / #3f68a8), the only blue in the app: my chat bubble, the stamina liquid, hovers. Back to the neutral ink of --accent.
+   2. white theme: my bubble's tail took var(--glow) (#111) while the bubble is --bub-me, so it showed as a black diamond beside the bubble.
+   3. white theme: the opening splash had no backdrop (the white title-card gradient overrode .splash's --void), so the title sat on top of the home page.
+   4. no synthesized italics: CJK fonts have no italic, the browser just slants them.
+   5. detail page: the top bar was transparent, so text scrolled under the back / stage pills and overlapped. Once scrolled (mobile.js sets #drawer.dw-scrolled) a glass layer
+      fades in behind the bar (opacity only; the blur itself is never animated), and the pills inside drop their own blur (never nest blurred layers: --glass-lite). ===== */
+html[data-theme="light"] .orb .w1 { fill: var(--soul); } html[data-theme="light"] .orb .w2 { fill: var(--glow); }   /* style.css hard-codes the light liquid as #4d6fa8 / #7f9ccc */
+html[data-theme="white"] #right .msg.me .mb::after { background: var(--bub-me); box-shadow: 1px -1px 0 rgba(0,0,0,.14); }
+.empty, .cs-line.event .tx, .m-chip.none { font-style: normal; }
+.empty { letter-spacing: .04em; }
+#drawer .dw-top::after { display: block; content: ""; position: absolute; inset: 0; left: 0; right: 0; height: auto; z-index: -1;   /* style.css gives this pseudo height:1px (it was the old divider) */
+  pointer-events: none; opacity: 0;
+  background: color-mix(in srgb, var(--bg) 80%, transparent); -webkit-backdrop-filter: var(--glass-bf); backdrop-filter: var(--glass-bf); border-bottom: 1px solid var(--glass-line);   /* a bar with text under it: iOS-nav-bar density, not the thin pill glass */
+  transition: opacity var(--m-base) var(--m-ease-std); }
+#drawer.dw-scrolled .dw-top::after { opacity: 1; }
+#drawer.dw-scrolled .dw-top button.dw-back[data-close], #drawer.dw-scrolled .dw-lead .tag, #drawer.dw-scrolled .dw-top .r select[data-f="category"] { background: var(--glass-lite); -webkit-backdrop-filter: none; backdrop-filter: none; box-shadow: none; }
+@media (prefers-reduced-motion: reduce) { #drawer .dw-top::after { transition: none; } }
+
+/* ===== t-parent-links (phone): rows are tap targets (>= 44pt), press state like other rows ===== */
+.dw-parent { min-height: 44px; border-color: var(--glass-line); background: var(--glass-lite); }
+.dw-kid { min-height: 52px; }
+.dw-parent:active, .dw-kid:active { transform: scale(var(--m-press-row)); transition: transform var(--m-instant) var(--m-ease-std); }
+.dw-kids { border-color: var(--glass-line); }
+
+/* ===== t-vis-b2 (方案 A): 委托 tab. Home keeps only the stats row as its filter, in the same solid pill as every segmented control; the category bar + search live on the 委托 page.
+   更多 drops its category entries (they live on 委托 now); 委托板 and the rest stay. ===== */
+.hd-stat.on { background: var(--accent); } .hd-stat.on b, .hd-stat.on span { color: var(--accent-ink); }
+.ph-review ~ .ph-bar .count { display: none; }   /* 「待审核 0」 repeated the stats row */
+#left .nav-i[data-go="review"], #left .nav-i[data-go="main"], #left .nav-i[data-go="side"], #left .nav-i[data-go="daily"], #left .nav-i[data-go="urgent"], #left .nav-i[data-go="ongoing"] { display: none; }
+.q-search { display: flex; align-items: center; gap: 8px; width: 100%; height: 40px; margin: 4px 0 8px; padding: 0 14px; border-radius: 20px; border: 1px solid var(--glass-line); background: var(--glass-lite);
+  color: var(--dim); font: inherit; font-size: var(--fs-14); text-align: left; cursor: text; transition: transform var(--m-quick) var(--m-ease-std); }
+.q-search svg { width: 16px; height: 16px; flex: none; }
+.q-search:active { transform: scale(var(--m-press-row)); }
+.m-seg.q { overflow-x: auto; margin: 0 -16px 8px; padding: 0 16px; scrollbar-width: none; } .m-seg.q::-webkit-scrollbar { display: none; }
+.m-seg.q .seg { width: max-content; min-width: 100%; }
+.m-seg.q .seg-i { flex: 1 0 auto; padding: 0 14px; white-space: nowrap; }
+.q-search svg { fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; }
+
+/* ===== P5 (t-aes-p5): phone home 待审 = review cards. Image first (the first image attachment, 150px), then owner · category · time, title, two-line summary,
+   看详情 / 批准. Cards are solid surfaces (no blur, rule 1 of the glass material); glass only on the floating kind tag over the image and on the undo pill.
+   Radius 26 (large card tier), buttons are pills. Colours: --accent* / --ink / --dim / --dot only. Motion: --m-* press tokens; fold-out / undo are WAAPI in app.js. ===== */
+.rv-list { margin-top: 6px; min-width: 0; }
+.rv-card { position: relative; margin: 0 0 14px; border-radius: 26px; overflow: hidden; background: var(--accent-soft); box-shadow: inset 0 0 0 1px var(--line);
+  cursor: pointer; -webkit-tap-highlight-color: transparent; transition: transform var(--m-release) var(--m-spring); }
+.rv-card:active:not(:has(button:active)) { transform: scale(var(--m-press-card)); transition-duration: var(--m-instant); transition-timing-function: ease-out; }
+[data-theme="white"] .rv-card { background: var(--solid); box-shadow: 0 0 0 1px rgba(0,0,0,.06), 0 14px 36px rgba(0,0,0,.08); }
+[data-theme="light"] .rv-card { background: var(--panel); box-shadow: inset 0 0 0 1px var(--line), 0 12px 28px -16px rgba(60,44,12,.35); }
+.rv-media { position: relative; height: 150px; overflow: hidden; background: var(--bg2); }
+.rv-media img { width: 100%; height: 100%; object-fit: cover; object-position: 50% 0; display: block; }
+.rv-media::after { content: ""; position: absolute; inset: auto 0 0 0; height: 40%; background: linear-gradient(transparent, rgba(0,0,0,.28)); pointer-events: none; }
+.rv-kind { position: absolute; left: 12px; top: 12px; z-index: 1; height: 26px; padding: 0 11px; display: inline-flex; align-items: center; border-radius: 13px;
+  font-size: var(--fs-12); font-weight: 600; letter-spacing: 0; color: var(--ink); background: var(--glass-bg); -webkit-backdrop-filter: var(--glass-bf); backdrop-filter: var(--glass-bf); box-shadow: var(--glass-rim); }
+.rv-kind.sm { position: static; height: 20px; padding: 0 8px; margin-left: auto; font-size: var(--fs-11); background: none; box-shadow: inset 0 0 0 1px var(--line2); -webkit-backdrop-filter: none; backdrop-filter: none; color: var(--ink2); }
+.rv-body { padding: 14px 16px 16px; }
+.rv-meta { display: flex; align-items: center; gap: 7px; min-width: 0; font-size: var(--fs-13); color: var(--dim); white-space: nowrap; }
+.rv-meta .av { width: 22px; height: 22px; flex: none; box-shadow: none; }
+.rv-meta b { color: var(--ink); font-weight: 600; overflow: hidden; text-overflow: ellipsis; }
+.rv-meta span:not(.rv-kind) { overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.rv-dot { flex: none; width: 8px; height: 8px; margin-left: -3px; border-radius: 50%; background: var(--dot); }
+.rv-card h3 { margin: 9px 0 6px; font-size: var(--fs-20); line-height: 1.3; font-weight: 600; letter-spacing: -.01em; color: var(--ink);
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; overflow-wrap: anywhere; }
+.rv-card p { margin: 0; font-size: var(--fs-14); line-height: 1.55; color: var(--dim); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; overflow-wrap: anywhere; }
+.rv-acts { display: flex; gap: 10px; margin-top: 14px; }
+.rv-acts button { flex: 1; min-width: 0; height: 44px; border-radius: 22px; border: 0; font-size: var(--fs-15); font-weight: 600; letter-spacing: 0; cursor: pointer;
+  -webkit-tap-highlight-color: transparent; touch-action: manipulation; transition: transform var(--m-release) var(--m-spring), filter var(--m-quick) ease-out; }
+.rv-acts button:active { transform: scale(var(--m-press-pill)); filter: brightness(.92); transition-duration: var(--m-instant); transition-timing-function: ease-out; }
+.rv-open { background: var(--accent-soft); color: var(--ink); }
+[data-theme="white"] .rv-open { background: var(--chip2); }
+.rv-ok { background: var(--accent); color: var(--accent-ink); }
+/* undo pill: floats above the tab bar (same spot as #toast), glass, with a hairline that runs out while the approve is held */
+#rv-undo { position: fixed; left: 16px; right: 16px; bottom: calc(var(--tb-h) + 14px); z-index: 61; display: flex; align-items: center; gap: 12px; min-height: 50px; padding: 0 6px 0 18px;
+  border-radius: 25px; overflow: hidden; background: var(--glass-bg); -webkit-backdrop-filter: var(--glass-bf); backdrop-filter: var(--glass-bf); box-shadow: var(--glass-rim), var(--glass-shadow);
+  opacity: 0; transform: translateY(12px) scale(.96); transition: opacity var(--m-quick) ease-out, transform var(--m-base) var(--m-ease-emph); pointer-events: none; }
+#rv-undo.on { opacity: 1; transform: none; pointer-events: auto; transition: opacity var(--m-quick) ease-out, transform var(--m-slow) var(--m-spring); }
+#rv-undo[hidden] { display: none; }
+body.vp-fix #rv-undo { bottom: auto; top: calc(var(--app-h) - var(--tb-h) - 64px); }
+#rv-undo .rv-u-tx { flex: 1; min-width: 0; font-size: var(--fs-14); color: var(--dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#rv-undo .rv-u-tx b { color: var(--ink); font-weight: 600; margin-right: 8px; }
+#rv-undo button { flex: none; height: 38px; padding: 0 18px; border: 0; border-radius: 19px; background: var(--accent); color: var(--accent-ink); font-size: var(--fs-14); font-weight: 600; cursor: pointer;
+  -webkit-tap-highlight-color: transparent; transition: transform var(--m-release) var(--m-spring); }
+#rv-undo button:active { transform: scale(var(--m-press-pill)); transition-duration: var(--m-instant); }
+#rv-undo .rv-u-bar { position: absolute; left: 18px; right: 18px; bottom: 0; height: 2px; border-radius: 1px; background: var(--ink); opacity: .28; transform-origin: 0 50%; }
+#rv-undo.on .rv-u-bar { animation: rv-hold var(--hold, 4500ms) linear forwards; }
+@keyframes rv-hold { from { transform: scaleX(1); } to { transform: scaleX(0); } }
+@media (prefers-reduced-motion: reduce) { #rv-undo, #rv-undo.on { transform: none; } }
+
+/* ===== P1 (t-aes-p1): phone detail = review desk. Shared rules live in style.css (#drawer is the same markup on both ends); here only phone sizes.
+   Category select = a glass pill like the stage pill on the left (it is in the material list above). ===== */
+#drawer .dw-top .r select[data-f="category"] { height: 40px; padding: 0 30px 0 16px; border-radius: 20px; font-size: var(--fs-12); color: var(--ink); background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%23888' stroke-width='1.6' stroke-linecap='round'/%3E%3C/svg%3E") right 13px center / 9px 6px no-repeat, var(--glass-bg); }
+#drawer.dw-scrolled .dw-top .r select[data-f="category"] { background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%23888' stroke-width='1.6' stroke-linecap='round'/%3E%3C/svg%3E") right 13px center / 9px 6px no-repeat, var(--glass-lite); }
+.dw-meta { margin-top: 18px; }
+.dw-pill { height: 38px; border-radius: 19px; }
+.cs-card.draftc { padding: 16px 18px 14px; }
+
+/* ===== P4 (t-aes-p4): phone 角色页 = portrait as the card header. Phone only (this file is max-width:760px); desktop roster keeps ui20/ui22 for the D-series.
+   Replaces the watermark set in style.css (ui20/ui22: right-side art at .27-.46 opacity, left scrim .rc::after, text halos) by specificity, no !important:
+   .roster > .rc (0,2,0) beats .rc and the (hover:none) .rc:hover reset above; .roster > .rc > .rc-art (0,3,0) beats [data-theme] .rc > .rc-art (0,2,1).
+   Art = full opacity, 290px, fades into the card. Dark: name sits on the fade (30px/800). Light / white: the art has a dark backdrop, so the name goes below it on the card face.
+   Card = solid face, radius 26 (large tier), no corner ornaments. Stats get plain hairlines. Colours: --accent* / --ink / --dim / --line only. ===== */
+.roster { gap: 16px; }
+.roster > .rc, .roster > .rc:hover { --rc-bg: color-mix(in srgb, var(--accent) 12%, var(--bg)); background: var(--rc-bg); border: 0; border-radius: 26px; box-shadow: inset 0 0 0 1px var(--line); padding: 232px 18px 16px; }
+[data-theme="light"] .roster > .rc, [data-theme="light"] .roster > .rc:hover { --rc-bg: color-mix(in srgb, var(--accent) 6%, var(--bg)); padding-top: 226px; }
+[data-theme="white"] .roster > .rc, [data-theme="white"] .roster > .rc:hover { --rc-bg: #fff; box-shadow: 0 0 0 1px rgba(0,0,0,.06), 0 10px 30px rgba(0,0,0,.06); padding-top: 226px; }
+.roster > .rc.frame::before, .roster > .rc.frame::after { display: none; }
+.roster > .rc > .rc-art { inset: 0 0 auto; width: 100%; height: 290px; max-width: none; aspect-ratio: auto; object-fit: cover; object-position: 50% 12%; opacity: 1; mix-blend-mode: normal; filter: none;
+  -webkit-mask-image: linear-gradient(#000 50%, transparent 96%); mask-image: linear-gradient(#000 50%, transparent 96%); -webkit-mask-composite: source-over; mask-composite: add; }
+[data-theme="light"] .roster > .rc > .rc-art, [data-theme="white"] .roster > .rc > .rc-art { height: 250px; -webkit-mask-image: linear-gradient(#000 40%, transparent 98%); mask-image: linear-gradient(#000 40%, transparent 98%); }
+/* no art (onerror removes the img): back to the plain header with the avatar */
+/* no-art cards: the themed .rc:hover padding (0,4,0) used to win on tap and jump the card 208px (t-ht-build) */
+.roster > .rc:not(:has(> .rc-art)), .roster > .rc:not(:has(> .rc-art)):hover, [data-theme] .roster > .rc:not(:has(> .rc-art)), [data-theme] .roster > .rc:not(:has(> .rc-art)):hover { padding-top: 18px; }
+/* clean type: no halos */
+.roster > .rc > :not(.rc-art), .roster > .rc .stats small, .roster > .rc .now .dim { text-shadow: none; }
+.roster > .rc .rc-h { margin: -28px 0 0; }
+[data-theme="light"] .roster > .rc .rc-h, [data-theme="white"] .roster > .rc .rc-h { margin-top: 6px; }
+.roster > .rc:not(:has(> .rc-art)) .rc-h { margin-top: 0; }
+.roster > .rc:has(> .rc-art) .rc-h .av.lg { display: none; }
+.roster > .rc .rc-h .nm { font-size: var(--fs-28); font-weight: 600; letter-spacing: -.01em; line-height: 1.1; }
+.roster > .rc .rc-h .ti { font-size: var(--fs-13); color: var(--ink2); margin-top: 4px; letter-spacing: .02em; }
+.roster > .rc .du { font-size: var(--fs-14); color: var(--ink2); margin: 10px 0 12px; }
+.roster > .rc .stats { padding: 12px 0; margin: 14px 0; }
+.roster > .rc .stats::before, .roster > .rc .stats::after { background: var(--line); }
+.roster > .rc .stats b { font-size: var(--fs-24); font-weight: 600; letter-spacing: -.02em; }
+/* labels: --ink2 on dark / light (--dim is ~3.6:1 on those faces), --dim on white (5.3:1) */
+.roster > .rc .stats small, .roster > .rc .now .dim { color: var(--ink2); }
+[data-theme="white"] .roster > .rc .rc-h .ti, [data-theme="white"] .roster > .rc .stats small, [data-theme="white"] .roster > .rc .now .dim { color: var(--dim); }
+.roster > .rc .stats small { font-size: var(--fs-12); }
+.roster > .rc .rt-s { background: var(--accent-soft); }
+.roster > .rc .rt:not(.all) .rt-b:has(~ .rt-more)::after { background: linear-gradient(transparent, var(--rc-bg)); }
+.roster > .rc .rf-pill { min-height: 32px; padding: 0 12px; border: 0; background: var(--accent-soft); }
+
+/* ===== P2 (t-aes-p2): one clean visual language on the phone. Phone only (this file is max-width:760px); desktop ornaments are D1.
+   Gone: the ◆ + ornament rule under the header (#top, above), the ◇ before group headers and their fading rule, the hook corner and gradient frame on cards,
+   the ◆ / ▼ glyphs JS writes into tags and the sort button (wrapped in .gl in app.js / mobile.js, hidden here; desktop still shows them).
+   Cards = solid face, radius 20 (P5 review cards / P4 role cards are the 26 tier). Same surfaces as P5: dark --accent-soft + hairline, light --panel + hairline, white --solid + soft shadow.
+   Tags: soft fill, no border; only the ones waiting on you (待验收 / 待拍板 / 待回答) are solid ink. The detail header's tag stays the P1 glass pill (#drawer .dw-lead .tag wins).
+   Text stays --ink2 on card faces (--dim is ~3.6:1 on dark / light faces). Motion untouched: m-rise entrance, --m-press-card press, wk-on breathing. ===== */
+.gl { display: none; }
+/* group header: quiet bold label + count, no diamond, no rule */
+.grp-h { gap: 6px; margin: 22px 2px 10px; font-size: var(--fs-13); letter-spacing: .02em; color: var(--ink2); }
+.grp-h::before { display: none; }
+.grp-h::after { background: none; }
+.grp-h b { font-size: var(--fs-15); font-weight: 600; letter-spacing: 0; color: var(--ink); }
+/* cards: hover/active keep the face (the (hover:none) block above resets background; only the colour is set here so the press glow image still layers on top) */
+.card { --card-bg: var(--accent-soft); border-radius: 20px; padding: 16px 16px 14px; margin-bottom: 10px; box-shadow: inset 0 0 0 1px var(--line); }
+.card, .card:hover, .card:active { background-color: var(--card-bg); }
+[data-theme="light"] .card { --card-bg: var(--panel); }
+[data-theme="white"] .card { --card-bg: var(--solid); }
+[data-theme="white"] .card:not(:active) { box-shadow: 0 0 0 1px rgba(0,0,0,.06), 0 6px 18px rgba(0,0,0,.05); }
+.card::before, .card::after { display: none; }
+.card .body h3 { font-size: var(--fs-17); line-height: 1.35; letter-spacing: -.005em; margin-bottom: 6px; }
+.card .body p { font-size: var(--fs-14); line-height: 1.55; }
+.card .meta { margin-top: 8px; }
+.card .owner .av.sm { width: 30px; height: 30px; }
+.card .owner { right: 14px; top: 14px; }
+/* tags */
+.tag, .tag.plan, .tag.question, .tag.deliverable { border-color: transparent; background: var(--accent-soft); color: var(--ink2); box-shadow: none; }
+.tag.urgent { border-color: transparent; background: var(--accent-soft); color: var(--urgent); }
+.card .meta .tag { height: 20px; padding: 0 9px; font-weight: 600; }
+.tag.deliverable, .tag.plan, .tag.question { background: var(--accent); color: var(--accent-ink); }
+/* legacy review strip chip (m-chip): same card language */
+.m-chip { border: 0; border-radius: 20px; background: var(--accent-soft); box-shadow: inset 0 0 0 1px var(--line); }
+.m-chip::before { display: none; }
+/* sort bar: plain words */
+.ph-bar button { letter-spacing: 0; }
+
+/* ===== P3 (t-aes-p3): one header in a chat thread. The app header (#top logo + stamina, #ticker) is covered, not removed: #layout spans all three body grid rows
+   (top / ticker / layout stay sized as before, so nothing reflows) and sits above them; the thread's own .cl-back pills are the only header and own the status-bar strip.
+   While the surface moves (swipe back / push, #right.oof-on) the header shows again under it, and the screen being revealed (the conversation list, or the origin page
+   of a DM opened elsewhere) is pushed down by --top-h (= #top + #ticker height, mobile.js) so it sits exactly where it lands. Status-bar band / meta untouched.
+   Revert = delete this block + the three P3-marked .cl-back / .ch-msgs lines above. ===== */
+body[data-mtab="chat"][data-cv="thread"] #layout { grid-row: 1 / -1; grid-column: 1; z-index: 2; background: transparent; }
+body[data-mtab="chat"][data-cv="thread"] #top { grid-row: 1; grid-column: 1; } body[data-mtab="chat"][data-cv="thread"] #ticker { grid-row: 2; grid-column: 1; }   /* pinned, or auto-placement would push them into new rows below #layout */
+body[data-mtab="chat"][data-cv="thread"] #top, body[data-mtab="chat"][data-cv="thread"] #ticker { visibility: hidden; }
+body[data-mtab="chat"][data-cv="thread"]:has(#right.oof-on) #top, body[data-mtab="chat"][data-cv="thread"]:has(#right.oof-on) #ticker { visibility: visible; }
+body[data-mtab="chat"][data-cv="thread"] #right.oof-on { background: transparent; }
+body[data-mtab="chat"][data-cv="thread"] #right.oof-on > .cl { top: var(--top-h, 0px); }
+body[data-ret="main"][data-mtab="chat"][data-cv="thread"] #main, body[data-ret="left"][data-mtab="chat"][data-cv="thread"] #left { top: var(--top-h, 0px); }
+
+/* ===== t-imp-p4: stale usage greyed on the phone orb too (overrides D's "stays bright"), 系统状态 sheet ===== */
+.stamina.stale .pct b { color: var(--dim); }
+.st-age { display: none !important; }
+.mdl.sys { width: 100%; max-height: 88dvh; border-radius: 22px 22px 0 0; padding: 26px 18px calc(18px + env(safe-area-inset-bottom)); }
+.sy-hd { flex-wrap: wrap; }
+.m-sys small { font-weight: 600; }
+
+/* ===== t-imp-p5: home search button (opens the shared search sheet, which now also lists actions) ===== */
+.hd-srch { display: inline-grid; place-items: center; flex: none; width: 30px; height: 30px; margin-left: auto; border-radius: 15px; padding: 0;
+  border: 1px solid var(--glass-line); background: var(--glass-lite); color: var(--ink2); }
+.hd-srch svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; }
+.hd-srch:active { transform: scale(.94); }
+.ms-ic { display: grid; place-items: center; width: 34px; height: 34px; border-radius: 10px; background: var(--chip); box-shadow: inset 0 0 0 1px var(--line); color: var(--ink2); font: 600 var(--fs-15) var(--f-sys); }
+@media (max-width: 360px) { .hd-srch { display: none; } }   /* the 委托 page search field stays */
+
+/* ===== t-imp-p3: 制作线 on phones = week strip (swipe) + stage sections stacked; empty stages fold to one line */
+.pl-week { grid-template-columns: repeat(7, 38vw); margin: 4px 0 14px; padding: 0 0 6px; scroll-snap-type: x proximity; }
+.pl-day { scroll-snap-align: start; min-height: 74px; }
+.pl-board { display: block; overflow: visible; }
+.pl-col { min-height: 0; margin-bottom: 10px; }
+.pl-col.none { padding: 7px 9px; }
+.pl-col.none .pl-d { margin-bottom: 0; }
+.pl-card { cursor: pointer; }
+
+/* t-routine-close */
+.dw-rt { border-color: var(--glass-line, var(--line2)); }
+#drawer .dw-acts .ab.no.solo { flex: 1; }
+#drawer .dw-acts .rt-off { font-size: var(--fs-15); padding: 0 10px; }
+

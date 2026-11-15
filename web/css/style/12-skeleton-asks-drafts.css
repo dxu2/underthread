@@ -1,0 +1,134 @@
+/* ===== t-m2-a ② number roll: one glyph window per changed digit (app.js roll()). clip-path, not overflow, so the baseline stays where the digit's is. */
+.nr { display: inline-grid; vertical-align: baseline; clip-path: inset(0 -.15em); }
+.nr > span { grid-area: 1 / 1; display: block; text-align: center; }
+.nr.nr, .nr > .nr-o, .nr > .nr-n { font: inherit; color: inherit; letter-spacing: inherit; }   /* beats label rules like .hd-stat span */
+
+/* ===== t-m2-a ③ skeleton: invisible for the first 150 ms (a fast answer never shows it), ONE sweep per block, removed with the block.
+   Reduced motion: static bars, no sweep. */
+:root { --sk-hi: rgba(255,255,255,.07); --sk-bar: var(--line); }
+[data-theme="light"] { --sk-hi: rgba(255,250,235,.55); --sk-bar: var(--line); }
+[data-theme="white"] { --sk-hi: rgba(255,255,255,.75); --sk-bar: #ececec; }
+.sk { position: relative; overflow: hidden; opacity: 0; animation: sk-in .2s ease-out .15s forwards; pointer-events: none; }
+.sk::after { content: ""; position: absolute; inset: 0; background: linear-gradient(100deg, transparent 25%, var(--sk-hi) 50%, transparent 75%); transform: translateX(-100%);
+  animation: sk-sweep 1.5s ease-in-out .15s infinite; }
+.sk i { display: block; height: 11px; margin: 0 0 11px; border-radius: 6px; background: var(--sk-bar); }
+.sk i:last-child { margin-bottom: 0; }
+.sk-c { padding: 16px; border-radius: 16px; border: 1px solid var(--line); background: var(--chip); }
+.sk-c + .sk-c { margin-top: 12px; }
+.sk-dw { margin: 10px 0 14px; }
+.sk-fail { margin: 10px 0 14px; padding: 12px 14px; border-radius: 12px; border: 1px dashed var(--line2); color: var(--dim); font-size: var(--fs-13); }
+#boot-sk { display: none; }   /* phone only (mobile.css): #main stays display:none there until the first state arrives */
+.boot-sk { padding: 16px; }
+.boot-sk .sk-st { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 16px; }
+.boot-sk .sk-st b { display: block; height: 64px; border-radius: 16px; background: var(--chip); border: 1px solid var(--line); }
+.boot-sk .sk-c { margin-top: 12px; }
+@keyframes sk-in { to { opacity: 1; } }
+@keyframes sk-sweep { to { transform: translateX(100%); } }
+@media (prefers-reduced-motion: reduce) { .sk::after { display: none; } }
+/* asset thumbnails fade in over their placeholder (no sweep per tile: L-1029-a669) */
+.lib-f img { opacity: 0; transition: opacity .25s ease-out, transform .35s var(--ease); }
+.lib-f img.ld { opacity: 1; }
+
+/* ---------- t-btn-names (2026-10-30): the approve button says what happens next; open questions show as a line under its label ---------- */
+.ok-ask { display: block; font-size: var(--fs-11); font-weight: 500; letter-spacing: 0; line-height: 1.2; opacity: .82; white-space: nowrap; }
+#drawer .dw-acts .ab.has-ask { flex-direction: column; gap: 1px; line-height: 1.15; }
+
+/* ---------- t-stamina-stale (2026-10-30): usage older than 20 min = grey orb, still waves, dim %, the subtitle says how old ---------- */
+.stamina.stale .orb { filter: grayscale(1); opacity: .45; animation: none; }
+.stamina.stale .orb .w1, .stamina.stale .orb .w2, .stamina.stale .orb .ring2 { animation-play-state: paused; }
+.stamina.stale .pct b { color: var(--dim); }
+.stamina.stale .pct > small { color: var(--warn); font-weight: 600; }
+
+/* ---------- t-ask-rec (2026-10-30): the asker's recommended option + 「全按推荐」 with a 4.5 s undo ---------- */
+.ask-o.rec:not(.on) { border-color: var(--accent); box-shadow: inset 0 0 0 .5px var(--accent); }
+.ask-o .rec-b { font-style: normal; margin-left: 6px; padding: 1px 5px; border-radius: 6px; font-size: var(--fs-11); line-height: 1.3; background: var(--accent); color: var(--accent-ink); vertical-align: 1px; }
+.ask-o.on .rec-b { background: var(--accent-ink); color: var(--accent); }
+.opts .btn-s.rec { border-color: var(--accent); box-shadow: inset 0 0 0 .5px var(--accent); }   /* t-opt-star */
+.opts .btn-s .rec-b { font-style: normal; margin-left: 6px; padding: 1px 5px; border-radius: 6px; font-size: var(--fs-11); line-height: 1.3; background: var(--accent); color: var(--accent-ink); vertical-align: 1px; letter-spacing: 0; }
+/* t-i18n-chips: a long quick reply ("As the template says: <duty>") wraps inside its pill instead of running off the column. Single-line pills
+   keep their exact box: line-height 1.3 is paid back from the padding (12 * .3 / 2 = 1.8px a side). */
+.msg .opts .btn-s { max-width: 100%; white-space: normal; text-align: left; line-height: 1.3; padding-block: calc(8px - .15em); }
+/* t-hr-multiselect: --multi quick replies toggle; 发送（n） sends the picks as 「A、B」 */
+.opts-multi .btn-s.on { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.opts-multi .btn-s.on .rec-b { background: var(--accent-ink); color: var(--accent); }
+.opts-multi .msend { border-style: dashed; }
+.opts-multi .msend:not([disabled]) { border-style: solid; font-weight: 600; }
+.opts-multi .msend[disabled] { opacity: .6; cursor: default; }
+.sec-h .ask-allrec, .ask-allrec { margin-left: auto; height: 30px; padding: 0 14px; border: 0; border-radius: 15px; background: var(--accent); color: var(--accent-ink);
+  font: 600 var(--fs-13) var(--f-sys); letter-spacing: 0; text-transform: none; cursor: pointer; white-space: nowrap; }
+.sec-h .ask-allrec:hover { color: var(--accent-ink); }
+.ask-allrec:active { transform: scale(.97); }
+.ask-recnote { margin: -2px 0 10px; font-size: var(--fs-12); line-height: 1.5; color: var(--dim); }
+#ar-undo { position: fixed; right: 28px; bottom: 120px; z-index: 81; display: flex; align-items: center; gap: 12px; width: min(420px, calc(100vw - 32px)); min-height: 50px; padding: 0 6px 0 18px;
+  border-radius: 25px; background: var(--solid, var(--bg)); border: 1px solid var(--line2); box-shadow: 0 12px 32px -12px rgba(0,0,0,.45); overflow: hidden;
+  opacity: 0; transform: translateY(8px); pointer-events: none; transition: opacity .16s ease-out, transform .2s ease-out; }
+#ar-undo.on { opacity: 1; transform: none; pointer-events: auto; }
+#ar-undo[hidden] { display: none; }
+#ar-undo .rv-u-tx { flex: 1; min-width: 0; font-size: var(--fs-14); color: var(--dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#ar-undo .rv-u-tx b { color: var(--ink); font-weight: 600; margin-right: 8px; }
+#ar-undo button { flex: none; height: 38px; padding: 0 18px; border: 0; border-radius: 19px; background: var(--accent); color: var(--accent-ink); font-size: var(--fs-14); font-weight: 600; cursor: pointer; }
+#ar-undo .rv-u-bar { position: absolute; left: 18px; right: 18px; bottom: 0; height: 2px; border-radius: 1px; background: var(--ink); opacity: .35; transform-origin: left; }
+#ar-undo.on .rv-u-bar { animation: ar-hold var(--hold, 4500ms) linear forwards; }
+@keyframes ar-hold { from { transform: scaleX(1); } to { transform: scaleX(0); } }
+@media (prefers-reduced-motion: reduce) { #ar-undo { transition: none; } #ar-undo.on .rv-u-bar { animation: none; } }
+
+/* ===== t-draft-keep: "草稿 · 上次没发出 · 清空" above a restored card reply box ===== */
+.dr-tag { display: flex; align-items: center; gap: 8px; padding: 10px 30px 0; font-size: var(--fs-12); color: var(--dim); }
+.dr-tag b, .dr-tag button { flex: none; }
+.dr-tag span { min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.dr-tag b { color: var(--dot); font-weight: 600; }
+.dr-tag button { margin-left: auto; background: none; border: 0; padding: 2px 0; color: var(--dim); font: inherit; text-decoration: underline; cursor: pointer; }
+.dr-tag button:hover { color: var(--ink); }
+@media (min-width: 761px) { #drawer .dr-tag { padding-left: 22px; padding-right: 22px; } }
+
+/* t-now-closed: the manager with no live card sits at the end of 此刻, dimmed, no timer / bar */
+.dc-row.dc-on { opacity: .62; }
+
+/* t-wait-days: 「等了 N 天」 on cards waiting on the user > 24 h (amber = --warn tokens, like the 暂停 tag's quiet chip) */
+.wait-d { display: inline-block; flex: none; margin-left: 6px; padding: 1px 7px; border-radius: 8px; font-size: var(--fs-12); font-weight: 600; line-height: 1.5; letter-spacing: 0; white-space: nowrap;
+  color: var(--warn); background: rgba(var(--warn-rgb), .14); border: 1px solid rgba(var(--warn-rgb), .42); vertical-align: 1px; }
+
+/* t-chat-table: a table's first column (labels such as 机型 / 芯片) never breaks one character per line; wide tables scroll inside .tbl */
+.md table th:first-child, .md table td:first-child { white-space: nowrap; }
+/* t-ui-fix-r7 R7-01: .md's overflow-wrap:anywhere made every cell's min-content ~1 character, so auto layout crushed the middle columns
+   (P/1, 手/机/素/材, rows 1000+ px tall). Cells break only at word boundaries; md.js gives each column a floor from its longest cell. */
+.md th, .md td { overflow-wrap: break-word; }
+.md th.c-n, .md td.c-n { white-space: nowrap; }
+.md th.c-m, .md td.c-m { min-width: 6em; }
+.md th.c-l, .md td.c-l { min-width: 11em; }
+/* t-ui-fix-r7b: "more this way" hint on a table that scrolls sideways — md.js sets more-r / more-l; the edge fades out (mask, so it follows
+   every theme's background); gone at the scroll end */
+.md .tbl.more-r { -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 36px), rgba(0,0,0,.18)); mask-image: linear-gradient(to right, #000 calc(100% - 36px), rgba(0,0,0,.18)); }
+.md .tbl.more-l { -webkit-mask-image: linear-gradient(to left, #000 calc(100% - 36px), rgba(0,0,0,.18)); mask-image: linear-gradient(to left, #000 calc(100% - 36px), rgba(0,0,0,.18)); }
+.md .tbl.more-l.more-r { -webkit-mask-image: linear-gradient(to right, rgba(0,0,0,.18), #000 36px, #000 calc(100% - 36px), rgba(0,0,0,.18)); mask-image: linear-gradient(to right, rgba(0,0,0,.18), #000 36px, #000 calc(100% - 36px), rgba(0,0,0,.18)); }
+
+/* t-new-ver: "看板更新了 · 点一下刷新" pill (top centre on desktop; mobile.css moves it above the tab bar) */
+#newver { position: fixed; top: 84px; left: 50%; transform: translateX(-50%); z-index: 70; display: flex; align-items: center; gap: 8px; padding: 8px 16px 8px 13px; border-radius: 999px;
+  background: var(--solid); color: var(--ink); border: 1px solid var(--accent); box-shadow: 0 6px 22px rgba(0,0,0,.32); font: 600 var(--fs-13)/1.2 var(--f-sys); letter-spacing: 0; white-space: nowrap; cursor: pointer; }
+#newver i { width: 7px; height: 7px; border-radius: 50%; background: var(--accent); }
+#newver b { color: var(--accent); font-weight: 600; margin-left: 2px; }
+
+/* t-cal-fold: empty schedule = one faint row (the "+" keeps full colour on hover) */
+#cal.cal-empty { margin: 10px 0 14px; }
+#cal.cal-empty .side-h > span { font-weight: 400; color: var(--dim); }
+
+/* t-id-copy: the card id in the drawer header is a copy button */
+.dw-top .dw-id { display: inline-flex; align-items: center; gap: 5px; padding: 2px 4px; margin: 0; border: 0; border-radius: 6px; background: none; font: inherit; color: var(--dim); cursor: pointer; letter-spacing: inherit; }
+.dw-top .dw-id svg { opacity: .7; flex: none; }
+.dw-top .dw-id:hover { color: var(--ink); } .dw-top .dw-id:hover svg { opacity: 1; }
+
+/* t-lib-attach: a library tile dragged over a reply box; the phone viewer's 「附到回复…」 and its picker sheet */
+textarea.lib-drop { outline: 2px dashed var(--accent); outline-offset: 3px; }
+#lb .lb-att[hidden] { display: none; }
+#att-pick { position: fixed; inset: 0; z-index: 90; }
+#att-pick .ap-scrim { position: absolute; inset: 0; background: rgba(0,0,0,.38); }
+#att-pick .ap-sheet { position: absolute; left: 12px; right: 12px; bottom: calc(14px + env(safe-area-inset-bottom)); max-height: 70vh; overflow-y: auto; padding: 14px 16px 8px; border-radius: 16px;
+  background: var(--solid); color: var(--ink); box-shadow: 0 12px 40px rgba(0,0,0,.4); font-family: var(--f-sys); }
+#att-pick .ap-h { display: block; font-size: var(--fs-15); margin-bottom: 6px; }
+#att-pick .ap-row { display: flex; align-items: baseline; gap: 8px; width: 100%; padding: 12px 0; border: 0; border-top: 1px solid var(--line); background: none; color: var(--ink); font: inherit; font-size: var(--fs-15); text-align: left; cursor: pointer; }
+#att-pick .ap-row small { flex: none; color: var(--dim); font-size: var(--fs-12); }
+#att-pick .ap-row span { min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+#att-pick .ap-row em { margin-left: auto; flex: none; font-style: normal; font-size: var(--fs-12); color: var(--dim); }
+#att-pick .ap-more span, #att-pick .ap-cancel span { color: var(--dim); }
+#att-pick .ap-more[hidden], #att-pick .ap-others[hidden] { display: none; }
+

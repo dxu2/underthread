@@ -1,0 +1,134 @@
+/* ===== ui1-A: team rows 56px touch targets (left rail is already one scroll column on phones) ===== */
+.team-i { min-height: 56px; }
+
+/* ===== ui1-B: phone detail = full-screen push from the right (replaces sheet-up); no scrim; page scroll locked while open ===== */
+#drawer { animation: none; inset: 0; width: auto; border-left: 0; box-shadow: none; transition: transform .24s cubic-bezier(.4,0,1,1); }
+#drawer.open { transition: transform .32s var(--ease); }
+#scrim { display: none !important; }
+html:has(body.sheet), body.sheet { overflow: hidden; overscroll-behavior: none; }
+.dw-scroll { min-height: 0; }
+
+/* ===== ui1-C: phone mailbox = full-width drop-down (max 75dvh); no blur in entry animations (it stutters on phones) ===== */
+@keyframes rise { from { opacity: 0; transform: translateY(14px); } }
+#mailbox { left: 8px; right: 8px; width: auto; max-height: 75dvh; top: calc(var(--mb-top, 56px) + 6px); z-index: 70; }
+#mailscrim { z-index: 69; }
+body.vp-fix #mailscrim { bottom: auto; height: var(--app-h); }
+.mb-i { padding: 12px 14px; } .mb-h { padding: 14px 14px 6px; } .mb-f { padding: 6px 14px 10px; }
+
+/* ===== ui2-A composer (WeChat-style bar). Phone chat only; appended, older rules untouched ===== */
+body #right .ch-comp { position: relative; align-items: flex-end; gap: 8px; background: var(--bg2); border-top: .5px solid var(--line2); padding: 8px 10px calc(var(--tb-h) + 8px); }
+body.kb #right .ch-comp { padding-bottom: 8px; }
+body[data-cv="thread"] #right .ch-comp { padding-bottom: calc(8px + env(safe-area-inset-bottom)); }
+body.kb[data-cv="thread"] #right .ch-comp { padding-bottom: 8px; }
+body #right .ch-comp::before { display: none; }
+body #right .ch-comp textarea { height: 38px; min-height: 38px; max-height: 120px; overflow-y: auto; padding: 8px 12px; border: 0; border-radius: 8px; font-size: var(--fs-16); line-height: 22px;
+  background: rgba(255,255,255,.09); box-shadow: none; }
+[data-theme="light"] body #right .ch-comp textarea, [data-theme="light"] #right .ch-comp textarea { background: rgba(255,255,255,.7); }
+body #right .ch-comp textarea:focus { height: auto; box-shadow: none; background: rgba(255,255,255,.12); }
+[data-theme="light"] #right .ch-comp textarea:focus { background: #fff; }
+/* + (left of nothing, right of the box) and 发送 swap places via .has-text */
+body #right .ch-comp > button:first-child { order: 3; flex: none; width: 36px; height: 36px; margin: 1px 0; padding: 0; display: grid; place-items: center; border: 1.5px solid var(--ink2); border-radius: 50%;
+  font-size: var(--fs-20); line-height: 1; color: var(--ink2); transform: none; transition: transform .14s var(--ease); }
+body #right .ch-comp > button:first-child:hover { transform: none; }
+body #right .ch-comp.panel-on > button:first-child { transform: rotate(45deg); }
+body #right .ch-comp textarea { order: 1; }
+body #right .ch-comp .m-send { order: 4; width: auto; height: 36px; margin: 1px 0; padding: 0 14px; border-radius: 6px; background: var(--glow); color: #0b0b0c; font-size: var(--fs-15); font-weight: 600; display: none; }
+[data-theme="light"] #right .ch-comp .m-send { color: #fff; }
+body #right .ch-comp .m-send svg { display: none; }
+body #right .ch-comp .m-send::after { content: attr(data-t); }
+body #right .ch-comp.has-text > button:first-child { display: none; }
+body #right .ch-comp.has-text .m-send { display: block; animation: ui2-pop .16s var(--ease); }
+body #right .ch-comp:not(.has-text) > button:first-child { animation: ui2-pop .16s var(--ease); }
+body #right .ch-comp .m-send:active { filter: brightness(1.15); }
+body #right .ch-comp.sending .m-send svg { animation: none; }
+@keyframes ui2-pop { from { opacity: 0; transform: scale(.8); } }
+/* + panel: 相册 / 拍照 / 文件 / @ */
+.ui2-panel { position: absolute; left: 0; right: 0; bottom: 100%; display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; padding: 14px 10px 16px; background: var(--bg2); border-top: .5px solid var(--line2);
+  transform: translateY(8px); opacity: 0; pointer-events: none; visibility: hidden; transition: transform .24s var(--ease), opacity .24s var(--ease), visibility 0s .24s; z-index: 3; }
+.ch-comp.panel-on .ui2-panel { transform: none; opacity: 1; pointer-events: auto; visibility: visible; transition-delay: 0s; }
+.ui2-panel button { display: flex; flex-direction: column; align-items: center; gap: 6px; font-size: var(--fs-12); color: var(--ink2); padding: 6px 0; }
+.ui2-panel button b { width: 54px; height: 54px; border-radius: 12px; display: grid; place-items: center; background: rgba(255,255,255,.09); font-size: var(--fs-24); font-weight: 400; color: var(--ink); }
+[data-theme="light"] .ui2-panel button b { background: rgba(255,255,255,.7); }
+.ui2-panel button:active b { filter: brightness(1.3); }
+
+/* ===== ui2-B bubbles: flat, no outline. P3 (t-aes-p3): round 34px avatars; 20px bubbles whose corner beside the avatar stays 6px as the tail (no drawn tail);
+   mine = solid --accent; a run of messages from the same speaker shows the avatar once (.m-cont, set in mobile.js decorateThread) ===== */
+#right .msg .mh .av, .m-typing > .av, #right .m-meav { width: 34px; height: 34px; border-radius: 50%; --wk-r: 17px; }
+#right .msg { padding-left: 44px; } #right .msg.me { padding-left: 0; padding-right: 44px; }
+#right .msg .mb, .m-typing .mb { border: 0; border-radius: 6px 20px 20px 20px; padding: 10px 15px; font-size: var(--fs-15); line-height: 1.6; background: #1f1f22; max-width: calc(100vw - 104px); }
+[data-theme="light"] #right .msg .mb, [data-theme="light"] .m-typing .mb { background: rgba(255,255,255,.82); }
+#right .msg:not(.me) > .mb { border-left: 0; }
+#right .msg:not(.me) > .mb::before, .m-typing .mb::before { display: none; }
+#right .msg.me .mb { border-radius: 20px 6px 20px 20px; background: var(--accent); color: var(--accent-ink); border: 0; }
+#right .msg.me .mb a, #right .msg.me .mb code { color: inherit; }
+#right .msg.me .mb::after { display: none; }
+#right .msg .atts img { border: 0; border-radius: 14px; }
+#right .msg.m-cont { margin-top: -6px; }
+#right .msg.m-cont .mh .av, #right .msg.m-cont .m-meav { visibility: hidden; }
+#right .msg.m-cont .m-nm { display: none; }
+@media (prefers-reduced-motion: reduce) { .ui2-panel, body #right .ch-comp.has-text .m-send, body #right .ch-comp:not(.has-text) > button:first-child { transition: none !important; animation: none !important; } }
+
+/* ===== ui3: WeChat-style back — top-left chevron + label, no ✕; page follows the finger on swipe ===== */
+#drawer .dw-top button[data-close]:not(.dw-back) { display: none; }
+#drawer .dw-top button.dw-back[data-close] { display: inline-flex; width: auto; height: auto; border: 0; border-radius: 0; background: none; transform: none !important; white-space: nowrap; flex: none; align-items: center; gap: 6px; min-height: 44px; margin: -10px 4px -10px -12px; padding: 0 12px 0 10px; color: var(--ink); font-size: var(--fs-16); letter-spacing: 0; -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
+#drawer .dw-top button.dw-back[data-close]:active { opacity: .55; }
+#drawer .dw-lead { display: flex; align-items: center; gap: 4px; min-width: 0; }
+#drawer .dw-top { min-height: 44px; }
+#drawer.swiping { will-change: transform; box-shadow: -10px 0 28px rgba(0,0,0,.35); }
+#drawer.swiping .dw-scroll { overflow: hidden; }
+
+/* ===== ui4: phone category switch = .seg, scrolls inside its own track; ≥36px touch height ===== */
+.m-seg { display: block; overflow: visible; margin: 4px 0 8px; padding: 0; }
+.m-seg .seg { display: flex; width: 100%; }
+.seg-i { min-height: 36px; display: inline-flex; align-items: center; justify-content: center; padding: 0 16px; }
+.seg-i:active { transform: scale(.96); }
+
+/* ===== ui5: phone detail top bar flush at the very top (real-iPhone "floating bar" fix, t-mobile-back / t-drawer-sticky) =====
+   Before: #drawer had padding-top: safe-area-inset-top, so the bar sat 47px below the screen top and the strip above it was
+   un-owned drawer padding (page content showed through / scrolled into it on iOS). Now the safe-area lives INSIDE the bar:
+   bar is flush at top:0, opaque, covers the status-bar strip; scroller is paint-contained so nothing escapes above it. */
+#drawer { padding-top: 0; }
+#drawer .dw-top { position: relative; top: auto; z-index: 3; flex: none; box-sizing: border-box; background: var(--bg); padding-top: calc(env(safe-area-inset-top) + 10px); min-height: calc(44px + env(safe-area-inset-top)); }
+#drawer .dw-top::before { content: ""; position: absolute; left: 0; right: 0; bottom: 100%; height: 120px; background: var(--bg); pointer-events: none; } /* overscroll / rubber-band cover above the bar */
+#drawer .dw-scroll { contain: paint; position: relative; z-index: 1; }
+
+/* ===== ui7: pill .btn-s on phones — 40px tap target (same pill as desktop, just taller) ===== */
+.btn-s { min-height: 40px; padding: 0 18px; font-size: var(--fs-13); letter-spacing: .04em; }
+.msg .opts, #right .msg .opts { gap: 8px; }
+#right .msg .opts .btn-s { min-height: 34px; padding: 0 14px; border-radius: 17px; background: var(--glass-lite); border: 1px solid var(--glass-line); box-shadow: none; font-size: var(--fs-13); font-weight: 600; letter-spacing: 0; color: var(--ink); }   /* P3: quick replies = tinted glass pills (no blur: list content) */
+#right .msg .opts .btn-s.rec { border-color: var(--accent); box-shadow: inset 0 0 0 .5px var(--accent); }   /* t-opt-star */
+#right .msg .opts .btn-s { padding-block: 7px; }
+#right .msg .opts-multi .btn-s.on { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }   /* t-hr-multiselect */
+#right .msg .opts-multi .msend { border-style: dashed; } #right .msg .opts-multi .msend:not([disabled]) { border-style: solid; }   /* t-i18n-chips: room above/below when a long quick reply wraps; one line still sits in the 34px min-height */
+
+/* ===== ui8 (t-composer-fix): + stays beside 发送; no 90° spin; panel = 拍照 / 上传媒体 =====
+   Spin cause: style.css `.ch-comp > button:hover { transform: rotate(90deg) }` also matched .m-send; on touch the :hover sticks after the tap. */
+body #right .ch-comp > button, body #right .ch-comp > button:hover, body #right .ch-comp > button:active, body #right .ch-comp .m-send:hover, body #right .ch-comp .m-send:active { transform: none; }
+body #right .ch-comp.panel-on > button:first-child { transform: rotate(45deg); }  /* + -> x while the panel is open (intended, reset on close) */
+body #right .ch-comp.has-text > button:first-child { display: grid; animation: none; }
+body #right .ch-comp.has-text .m-send { animation: none; margin-left: 2px; }
+body #right .ch-comp.has-text { gap: 8px; }
+.ui2-panel { grid-template-columns: repeat(2, minmax(0, 96px)); justify-content: center; gap: 28px; }
+
+/* ===== ui9 (t-bold-titles, plan option A) phone: system-sans menu/tab labels, card + page titles ===== */
+.nav-i { font-weight: 600; } .nav-i.on { font-weight: 600; }
+#tabbar button .l { font-weight: 500; } #tabbar button.on .l { font-weight: 600; }
+.card .body h3 { font-weight: 600; }
+.cl-h { font-weight: 600; }
+
+/* ===== ui11 (t-composer-left): ＋ sits LEFT of the input; right side is only 发送 (when there is text). Panel opens from the ＋ (bottom-left). ===== */
+body #right .ch-comp > button:first-child { order: 0; }
+body #right .ch-comp textarea { order: 1; }
+body #right .ch-comp .m-send { order: 4; }
+body #right .ch-comp.has-text { gap: 8px; }
+.ui2-panel { justify-content: start; grid-template-columns: repeat(2, 96px); gap: 12px; padding-left: max(12px, env(safe-area-inset-left));
+  transform-origin: 30px 100%; transform: translateY(8px) scale(.94); }
+.ch-comp.panel-on .ui2-panel { transform: none; }
+
+/* ===== ui12b (t-composer-oneline): phone chat composer is ONE row (40px) by default; grows upward with the text (JS sets inline height, max 120px, then scrolls).
+   Cause of the old two-row look: ui2 `textarea:focus { height:auto }` = the textarea's default rows=2 (~60px) once focused. ＋ / 发送 are 40px = same height family, bottom-aligned (so they sit centred on the one-row field). ===== */
+body #right .ch-comp { align-items: flex-end; }
+body #right .ch-comp textarea, body #right .ch-comp textarea:focus { box-sizing: border-box; height: 40px; min-height: 40px; max-height: 120px; padding: 9px 12px; line-height: 22px; overflow-y: auto; transition: height .12s var(--ease), background .2s; }
+body #right .ch-comp > button:first-child { width: 40px; height: 40px; margin: 0; }
+body #right .ch-comp .m-send { height: 40px; margin-top: 0; margin-bottom: 0; }
+

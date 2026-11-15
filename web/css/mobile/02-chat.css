@@ -1,0 +1,165 @@
+/* ---------- phone (<= 760px): chat stream tweaks, appended to web/mobile.css ---------- */
+.cs { gap: 12px; }
+.cs-card { max-width: 100%; align-self: stretch; padding: 9px 12px 10px 12px; }
+.cs-card .md { font-size: var(--fs-15); }
+.cs-h { flex-wrap: wrap; row-gap: 0; }
+.cs-me { max-width: 88%; }
+.cs-line { font-size: var(--fs-13); gap: 6px; }
+.cs-line::before, .cs-line::after { flex-basis: 14px; }
+.cs-line .in { justify-content: flex-start; flex-wrap: wrap; column-gap: 6px; }
+.cs-line .tx { flex-basis: 100%; padding-left: 0; }
+.cs-jump { bottom: 6px; } .cs-jump .wrap { right: -13px; gap: 6px; }
+.cs-jump .lb, .cs-jump button:hover .lb { display: none; }
+.at-pop { left: 16px; right: 16px; min-width: 0; }
+.at-pop div { padding: 10px 14px; font-size: var(--fs-15); }
+.cs-card .dlabel { max-width: 12em; }
+
+/* ---------- chat list: WeChat-style conversations (t-mobile-chat-list). body[data-cv] = list | thread, set by mobile.js ---------- */
+.cl, .cl-back { display: none; }
+body[data-cv="list"] .cl { display: flex; flex-direction: column; flex: 1; min-height: 0; }
+body[data-cv="list"] #right > :not(.cl):not(.m-stripwrap) { display: none !important; }
+body[data-cv="list"] .m-stripwrap { order: -1; }
+body[data-cv="thread"] .m-stripwrap { display: none; }
+
+.cl-h { padding: 8px 16px 6px; text-align: center; font-family: var(--f-cjk); font-size: var(--fs-16); font-weight: 600; letter-spacing: .04em; color: var(--ink); }
+.cl-search { display: flex; align-items: center; gap: 8px; margin: 4px 16px 6px; padding: 0 12px; height: 36px; background: var(--chip); border: 1px solid var(--line); color: var(--dim); }
+.cl-search svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 1.4; stroke-linecap: round; flex: none; }
+.cl-search input { flex: 1; min-width: 0; background: none; border: 0; outline: 0; color: var(--ink); font: inherit; font-size: var(--fs-16); -webkit-appearance: none; appearance: none; }
+.cl-search input::placeholder { color: var(--dim); }
+.cl-search input::-webkit-search-cancel-button { -webkit-appearance: none; }
+.cl-rows { flex: 1; overflow-y: auto; padding-bottom: calc(var(--tb-h) + 12px); overscroll-behavior: contain; -webkit-overflow-scrolling: touch; }
+body.kb .cl-rows { padding-bottom: 24px; }
+
+.cl-row { display: flex; align-items: center; gap: 12px; width: 100%; min-height: 70px; padding: 0 0 0 16px; text-align: left; position: relative; background: none; border: 0; font: inherit; color: inherit; }
+.cl-row:active, .cl-row.pin { background: var(--chip); }
+.cl-av { position: relative; flex: none; padding: 11px 0; }
+.cl-av .av { display: block; width: 48px; height: 48px; min-width: 48px; border-radius: 6px; box-shadow: none; }
+/* t-working-avatar, phone: rounded-square avatars can't spin a ring (a rotating square would swing its corners), so their ring is the same two layers, flat: a steady ring that breathes + the sonar ring */
+.cl-av .av.working::before, #right .msg .mh .av.working::before, .m-typing > .av.working::before, .ms-av .av.working::before { background: var(--wk-ring); animation: wk-glow var(--wk-breath) var(--wk-ease) var(--wp, 0s) infinite; }
+.cl-av .av.working::before, .ms-av .av.working::before, #right .msg .mh .av.working::before, .m-typing > .av.working::before { border-radius: calc(var(--wk-r, 6px) + var(--wk-gap) + var(--wk-w)); }
+.cl-av .av.working::after, .ms-av .av.working::after, #right .msg .mh .av.working::after, .m-typing > .av.working::after { border-radius: calc(var(--wk-r, 6px) + var(--wk-gap)); }
+.cl-av .av { --wk-r: 6px; } .ms-av .av { --wk-r: 8px; } #right .msg .mh .av, .m-typing > .av { --wk-r: 7px; }
+.cl-n { position: absolute; top: 5px; right: -7px; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 9px; background: var(--dot); color: #fff;
+  font: 600 var(--fs-11)/18px var(--f-display); text-align: center; box-shadow: 0 0 0 1.5px var(--bg); font-style: normal; }
+.cl-m { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 5px; align-self: stretch; justify-content: center; padding-right: 16px; position: relative; }
+.cl-row + .cl-row .cl-m::before { content: ""; position: absolute; left: 0; right: 0; top: 0; height: 1px; background: var(--line); }
+.cl-t { display: flex; align-items: baseline; gap: 8px; }
+.cl-row .aq { pointer-events: none; }   /* t-ui-fix-r2 B10: the 排队 N pill sits mid-row, so a normal tap opened the queue pop-over instead of the DM; the row now always opens the DM (the pill in the DM header still opens the queue) */
+.cl-t .nm { font-family: var(--f-cjk); font-size: var(--fs-17); font-weight: 600; color: var(--ink); letter-spacing: .04em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cl-t .st, .cl-back .st { font-style: normal; font-size: var(--fs-11); color: var(--accent); white-space: nowrap; }
+.cl-t time { margin-left: auto; font-size: var(--fs-12); color: var(--dim); font-family: var(--f-display); letter-spacing: .03em; white-space: nowrap; }
+.cl-p { font-size: var(--fs-14); color: var(--dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cl-p em { font-style: normal; color: var(--faint); }
+
+/* thread: a back bar replaces the big header + avatar strip; the tab bar steps aside like it does for an open item */
+body[data-cv="thread"] .cl-back { display: flex; align-items: center; gap: 4px; padding: 6px max(16px, env(safe-area-inset-right)) 8px max(4px, env(safe-area-inset-left)); position: relative; flex: none; }
+body[data-cv="thread"] .cl-back::after { content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 1px; background: var(--line); }
+.cl-back button { display: flex; align-items: center; gap: 2px; height: 40px; min-width: 44px; padding: 0 6px; color: var(--ink); background: none; border: 0; }
+.cl-back button svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
+.cl-back .n { font-style: normal; font-size: var(--fs-13); color: var(--dim); font-family: var(--f-display); }
+.cl-back .who { flex: 1; min-width: 0; text-align: center; margin-right: 44px; display: flex; flex-direction: column; align-items: center; line-height: 1.25; }
+.cl-back .who .nm { font-family: var(--f-cjk); font-size: var(--fs-16); font-weight: 600; letter-spacing: .04em; color: var(--ink); }
+.cl-back .who .ti { font-size: var(--fs-11); color: var(--dim); letter-spacing: .04em; }
+body[data-cv="thread"] .ch-head { display: none; }
+body[data-mtab="chat"][data-cv="thread"] #tabbar { transform: translateY(100%); opacity: 0; pointer-events: none; }
+body[data-cv="thread"] .ch-comp { padding-bottom: calc(10px + env(safe-area-inset-bottom)); }
+body.kb[data-cv="thread"] .ch-comp { padding-bottom: 10px; }
+
+/* ---------- chat bubbles + motion (t-mobile-chat-bubbles, plan v3). Phone chat panel only; desktop chat untouched ---------- */
+:root { --bub: #141416; --bub-me: #22252b; --bub-line: rgba(232,229,221,.16); }
+[data-theme="light"] { --bub: #f6f1e4; --bub-me: #dde4ee; --bub-line: rgba(48,36,18,.18); }
+
+/* Apple system font in the chat panel (list, thread, composer); header, tab bar and other pages keep the house serif */
+#right, #right .md, #right textarea, #right input, #right button, #right .cl-t .nm, #right .cl-t time, #right .cl-back .who .nm, #right .m-tsep, #right .m-nm,
+#right .msg .mb, #right .opts .btn-s { font-family: var(--f-sys); }
+#right .cl-h { letter-spacing: .04em; font-size: var(--fs-17); }
+#right .cl-t .nm { letter-spacing: 0; font-weight: 500; }
+#right .cl-t time { letter-spacing: 0; }
+#right .cl-p { font-size: var(--fs-14); }
+#right .cl-back .who .nm { letter-spacing: .02em; font-size: var(--fs-17); }
+#right .cl-back .who .ti { letter-spacing: .02em; font-size: var(--fs-11); }
+#right .ch-comp textarea { line-height: 1.4; }
+
+/* bubbles: others left with avatar, me right with avatar; 10px corners, small softened tail */
+#right .ch-msgs { gap: 12px; padding: 10px 12px 16px; }
+#right .msg { position: relative; display: flex; flex-direction: column; align-items: flex-start; padding-left: 48px; max-width: 100%; animation: none; }
+#right .msg .mh { position: absolute; left: 0; top: 0; margin: 0; font-size: 0; }
+#right .msg .mh small { display: none; }
+#right .msg .mh .av, .m-typing > .av, #right .m-meav { width: 38px; height: 38px; border-radius: 7px; box-shadow: none; }
+#right .msg .m-nm { font-size: var(--fs-11); color: var(--dim); margin: 0 0 3px 2px; letter-spacing: .02em; }
+#right .msg .mb, .m-typing .mb { position: relative; max-width: calc(100vw - 112px); padding: 9px 14px; border: 1px solid var(--bub-line); border-radius: 10px;
+  background: var(--bub); font-size: var(--fs-16); line-height: 1.55; letter-spacing: .01em; overflow-wrap: anywhere; }
+#right .msg:not(.me) > .mb { padding-left: 14px; border-left: 1px solid var(--bub-line); }
+#right .msg:not(.me) > .mb::before, .m-typing .mb::before { content: ""; position: absolute; left: -4px; top: 13px; width: 7px; height: 7px; background: var(--bub);
+  border-left: 1px solid var(--bub-line); border-bottom: 1px solid var(--bub-line); border-radius: 0 0 0 1.5px; transform: rotate(45deg); }
+#right .msg.me { align-self: flex-end; align-items: flex-end; padding-left: 0; padding-right: 48px; max-width: 100%; }
+#right .msg.me .mb { background: var(--bub-me); border-color: var(--line3); }
+#right .msg.me .mb::after { right: -4px; top: 13px; bottom: auto; width: 7px; height: 7px; background: var(--bub-me); -webkit-mask: none; mask: none;
+  border-top: 1px solid var(--line3); border-right: 1px solid var(--line3); border-radius: 0 1.5px 0 0; transform: rotate(45deg); }
+#right .msg.me .mt { display: none; }
+#right .msg .mb p { margin: 4px 0; } #right .msg .mb > :first-child { margin-top: 0; } #right .msg .mb > :last-child { margin-bottom: 0; }
+#right .msg .md code { font-size: .9em; }
+#right .msg .atts { margin-top: 6px; } #right .msg.me .atts { justify-content: flex-end; }
+#right .msg .atts a:has(img) { padding: 0; border: 0; }
+#right .msg .atts img { max-width: min(220px, 60vw); max-height: 220px; border-radius: 8px; border: 1px solid var(--bub-line); }
+#right .msg .opts { padding-left: 0; margin-top: 8px; }
+/* "me" avatar: avatars/me.* when present, else a placeholder tile (mobile.js meAv) */
+#right .m-meav { position: absolute; right: 0; top: 0; margin: 0; }
+#right .m-meav:not(.ph) { image-rendering: auto; }
+#right .m-meav.ph { display: grid; place-items: center; background: linear-gradient(160deg, var(--bub-me), var(--bub)); border: 1px solid var(--line3); }
+#right .m-meav.ph b { font-family: var(--f-cjk); font-weight: 600; font-size: 17px; color: var(--ink2); line-height: 1; }
+#right .m-meav.ph::after { display: none; }   /* P3: the ◆ corner mark is gone (round avatar, no ornaments) */
+/* centred time stamps, typing bubble, working dots */
+.m-tsep { align-self: center; font-size: var(--fs-12); color: var(--dim); padding: 10px 0 2px; }
+.m-typing { display: flex; align-items: flex-start; gap: 10px; }
+.m-dots { display: inline-flex; gap: 3px; margin-left: 4px; vertical-align: middle; }
+.m-dots i { width: 4px; height: 4px; background: currentColor; transform: rotate(45deg); opacity: .35; animation: m-dot 1.2s infinite; }
+.m-typing .m-dots { color: var(--ink2); margin: 6px 2px; } .m-typing .m-dots i { width: 5px; height: 5px; }
+.m-dots i:nth-child(2) { animation-delay: .2s; } .m-dots i:nth-child(3) { animation-delay: .4s; }
+@keyframes m-dot { 0%, 60%, 100% { opacity: .3; transform: rotate(45deg) translateY(0); } 30% { opacity: 1; transform: rotate(45deg) translate(-2px, -2px); } }
+
+/* motion: short (<= 250ms), transform/opacity only; all off under prefers-reduced-motion */
+#layout > #right.cv-push { animation: cv-push .24s var(--ease) both; }
+#layout > #right.cv-pop { animation: cv-pop .22s var(--ease) both; }
+@keyframes cv-push { from { transform: translateX(28%); opacity: .2; } }
+@keyframes cv-pop { from { transform: translateX(-12%); opacity: .4; } }
+#right .msg.m-new { animation: bub-in .22s var(--ease) both; transform-origin: 0 100%; }
+#right .msg.me.m-new { transform-origin: 100% 100%; }
+@keyframes bub-in { from { opacity: 0; transform: translateY(8px) scale(.94); } }
+.m-typing { animation: bub-in .2s var(--ease) both; }
+.ch-comp.sending .m-send svg { animation: send-fly .25s var(--ease); filter: drop-shadow(0 0 10px var(--glow)); }
+.ch-comp.sending textarea { opacity: .55; transition: opacity .15s; }
+@keyframes send-fly { 40% { transform: translateX(6px) rotate(45deg) scale(.86); } }
+.cl-row { transition: background-color .12s; }
+.cl-row:active .cl-av .av { transform: scale(.94); transition: transform .12s; }
+.cl-n.pop, #tabbar .tb-badge { animation: badge-pop .24s var(--ease); }
+@keyframes badge-pop { 0% { transform: scale(.4); } 70% { transform: scale(1.18); } }
+@media (prefers-reduced-motion: reduce) {
+  #layout > #right.cv-push, #layout > #right.cv-pop, #right .msg.m-new, .m-typing, .cl-n.pop, #tabbar .tb-badge, .ch-comp.sending .m-send svg, .m-dots i { animation: none !important; }
+  .m-dots i { opacity: .7; }
+}
+
+/* ---------- Apple system font across the phone UI (t-mobile-sysfont). The house serif stays only on the brand:
+   the UNDERTHREAD wordmark, page titles (審核 / PENDING REVIEW), modal titles, the splash title card, deck stamps and the menu footer ---------- */
+:root {
+  --f-brand-display: "Cinzel", "Trajan Pro", "Noto Serif SC", serif;
+  --f-brand-cjk: "Noto Serif SC", "Songti SC", "STSong", serif;
+  --f-display: var(--f-sys); --f-body: var(--f-sys); --f-cjk: var(--f-sys);
+}
+.brand, .m-hero .tc-sub, .ph .en, .m-foot, .title-card .tc-sub, .title-card .tc-main { font-family: var(--f-brand-display); }
+.ph h1, .mdl h2, .dk-stamp, .title-card.cjk .tc-main, #right .m-meav.ph b { font-family: var(--f-brand-cjk); }
+/* serif-era spacing and small caps read too loose in sans: tighten */
+.card .body h3, .dw-title, .md h1, .md h2, .md h3, .md h4 { font-variant: normal; letter-spacing: 0; }
+.card .body h3 { font-weight: 600; }
+.btn { letter-spacing: .04em; } .btn.big { letter-spacing: .04em; } .btn.big small { letter-spacing: .04em; }
+.btn-s { letter-spacing: .04em; }
+.nav-i { letter-spacing: .04em; } body[data-mv="deck"] .nav-i { letter-spacing: .04em; }
+.grp-h { letter-spacing: .04em; } .col-h { letter-spacing: .04em; }
+.side-h .sc { letter-spacing: .04em; } .ver-h { letter-spacing: .04em; } .conf b { letter-spacing: .04em; }
+.m-strip-h { letter-spacing: .04em; } .m-set b { letter-spacing: .02em; } .mdl label { letter-spacing: .04em; }
+.cs-day { letter-spacing: .04em; } .cs-more { letter-spacing: .04em; } .dk-count { letter-spacing: .04em; }
+.tag { letter-spacing: .03em; } .tag.pf { letter-spacing: .04em; }
+#tabbar button .l { letter-spacing: .04em; padding-left: .12em; }
+.md th { letter-spacing: .04em; }
+.ch-who .nm { letter-spacing: .04em; }
+

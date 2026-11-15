@@ -1,0 +1,177 @@
+/* ---------- t-type-polish A: tabular numerals on counts, times, percentages and timers, so digits do not shift the text after them ---------- */
+time, .nrv, .aq, .aq-n, .badge, .nav-i .n, .grp-h, .col-h span, .rf-pill b, .rt-g, .ask-more, .sync b,
+.stamina .pct b, .stamina .pct > small, .ph-bar .count b, .rc .stats b, .rc .now, .use-row b, .sy-u b, .team-i .du,
+.cal-i .tm, .cal-now, .log-i .tm, .mail-i .tm, .cs-h .tm, .cs-line .tm, .cs-day, .msg .mh small, .msg.me .mt, #right .m-tsep,
+.pl-dh, .pl-slot .tm, .pl-who i, .ap-dur, .ap-dur2, .vm-t, #lb .lb-cnt, #lb .lb-zm .lb-pct, .st-age, .wait-d, .nr-n, .aq-pop time,
+.wg-big, .wg-job b, .wg-row time, .wg-sr time, .vc-clk, .vc-sumh span, .vp-dur, #vp-rec-t
+.hd-stat b, .hd-sum b, .dp-m em, .act-n, .cl-n, #tabbar .tb-badge, .dk-count, .ms-m b { font-variant-numeric: tabular-nums; }
+/* card detail headings: h1 20 / h2 16 / h3 14 (the draft card had h1 = h2 = 19px) */
+.cs-card.draftc .md h2 { font-size: var(--fs-16); }
+/* PingFang SC stops at Semibold (600): the browser's default bold (700) only thickens the Latin and digits in a mixed line. Cap it. */
+b, strong, th, h1, h2, h3, h4, h5, h6 { font-weight: 600; }
+
+/* ri1103-P3: desktop left nav — the 8 lower pages sit in two columns so all TEAM fits one screen */
+@media (min-width: 761px) {
+  #nav { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); column-gap: 4px; }
+  #nav > .nav-i, #nav > .nav-sep { grid-column: 1 / -1; }
+  #nav > .nav-sep ~ .nav-i { grid-column: auto; min-width: 0; padding-top: 5px; padding-bottom: 5px; }
+  #nav > .nav-sep ~ .nav-i > span:first-child { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  #nav > .nav-sep ~ .nav-i .n { display: none; }
+}
+
+/* ri1103-P1: today's schedule lists the team's fixed daily routines (rows from app.js renderLeft) */
+.cal-i.cal-rt { align-items: center; gap: 8px; cursor: pointer; padding: 2px 0; }
+#cal.noev:not(.cal-empty) { margin-bottom: 12px; }
+@media (min-width: 761px) { #nav { margin-bottom: 14px; } }   /* P1+P3: keeps all 8 TEAM rows on a 1000px-tall screen */
+.cal-rt .av.cal-av { width: 18px; height: 18px; flex: none; border-width: 1px; }
+.cal-rt .cal-nm { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cal-rt .cal-st { flex: none; font-size: var(--fs-11); color: var(--dim); font-family: var(--f-display); letter-spacing: .02em; }
+.cal-rt .cal-st.soon { color: var(--accent); font-weight: 600; }
+.cal-rt:hover .cal-nm { color: var(--ink); }
+.cal-off { font-size: var(--fs-11); color: var(--dim); padding: 6px 0 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* ===== ri1103-P4 (2026-11-03): 长草稿目录 (t-ri1103-p4). app.js tocBuild() adds nav.dw-toc to the detail when the current draft has 4+ h1/h2:
+   desktop = a floating card under the category button (list + 读到 N% bar), 收起 leaves a small header pill. The phone layout lives in mobile.css. ===== */
+.dw-toc[hidden] { display: none; }
+.dw-toc { position: absolute; z-index: 4; top: var(--toc-top, 64px); right: 22px; width: 264px; pointer-events: none; }
+.dw-toc .toc-scrim { display: none; }
+.dw-toc .toc-box { pointer-events: auto; display: flex; flex-direction: column; max-height: min(60vh, 470px); border-radius: 16px; overflow: hidden;
+  background: color-mix(in srgb, var(--bg) 90%, transparent); -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px);
+  box-shadow: inset 0 0 0 1px var(--line2), 0 12px 32px rgba(0,0,0,.22); }
+.dw-toc .toc-h { flex: none; display: flex; align-items: center; gap: 6px; width: 100%; padding: 10px 14px 8px; margin: 0; border: 0; border-radius: 0; background: none; box-shadow: none;
+  font: 500 var(--fs-12)/1.2 var(--f-sys); letter-spacing: .02em; color: var(--dim); text-align: left; cursor: pointer; }
+.dw-toc .toc-h .k { color: var(--ink2); }
+.dw-toc .toc-h .sp { flex: 1; }
+.dw-toc .toc-h .pc { font-variant-numeric: tabular-nums; }
+.dw-toc .toc-h .chev { flex: none; margin-left: 2px; opacity: .7; transition: transform .2s var(--ease); }
+.dw-toc:not(.open) .toc-h .chev { transform: rotate(180deg); }
+.dw-toc .toc-h:hover .k { color: var(--ink); }
+.dw-toc .toc-l { position: relative; flex: 1 1 auto; min-height: 0; list-style: none; margin: 0; padding: 0 6px 6px; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: none; }
+.dw-toc .toc-l::-webkit-scrollbar { display: none; }
+.dw-toc .toc-l li { margin: 0; padding: 0; }
+.dw-toc .toc-l li::marker { content: none; }
+.dw-toc .toc-l button { display: block; width: 100%; padding: 6px 10px; margin: 0; border: 0; border-radius: 8px; background: none; box-shadow: none; text-align: left;
+  font: 400 var(--fs-13)/1.4 var(--f-sys); letter-spacing: .01em; color: var(--dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer; }
+.dw-toc .toc-l button.l1 { color: var(--ink2); font-weight: 500; }
+.dw-toc .toc-l button.l2 { padding-left: 20px; }
+.dw-toc .toc-l button:hover { color: var(--ink); background: color-mix(in srgb, var(--ink) 6%, transparent); }
+.dw-toc .toc-l button.on { color: var(--ink); background: var(--accent-soft); box-shadow: inset 2px 0 0 var(--accent); }
+.dw-toc .toc-bar { flex: none; height: 2px; margin: 2px 14px 10px; border-radius: 1px; background: var(--line); overflow: hidden; }
+.dw-toc .toc-bar i { display: block; height: 100%; width: 0; border-radius: inherit; background: var(--accent); }
+.dw-toc:not(.open) { width: auto; }
+.dw-toc:not(.open) .toc-box { min-width: 156px; border-radius: 14px; }
+.dw-toc:not(.open) .toc-l { display: none; }
+.dw-toc:not(.open) .toc-bar { margin-top: 0; margin-bottom: 8px; }
+
+/* ===== ri1103-P5 (2026-11-03): ⌘K also searches drafts and card talk (palette.js). Category chips under the input, 「全部 N 条 →」 on section
+   heads, and the flash on the sentence a hit jumps to (app.js seekItem / seekChat: mark.seek-hit + .seek-blk on its block). ===== */
+.pl-tabs { display: flex; align-items: center; gap: 6px; padding: 8px 14px; border-bottom: 1px solid var(--line); }
+.pl-tabs[hidden] { display: none; }
+.pl-tabs button { display: inline-flex; align-items: center; gap: 5px; height: 28px; padding: 0 12px; border: 0; border-radius: 999px; background: none; box-shadow: inset 0 0 0 1px var(--line);
+  font: 500 var(--fs-13)/1 var(--f-sys); color: var(--ink2); cursor: pointer; }
+.pl-tabs button i { font-style: normal; font-size: var(--fs-12); color: var(--dim); font-variant-numeric: tabular-nums; }
+.pl-tabs button:hover { color: var(--ink); box-shadow: inset 0 0 0 1px var(--line2); }
+.pl-tabs button.on { background: var(--accent-soft); color: var(--ink); box-shadow: inset 0 0 0 1px var(--accent-line, var(--line2)); }
+.pl-tabs .pl-tk { margin-left: auto; font-size: var(--fs-11); color: var(--dim); }
+.pl-h { display: flex; align-items: baseline; }
+.pl-more { margin-left: auto; padding: 0 2px; border: 0; background: none; font: 500 var(--fs-12) var(--f-sys); color: var(--dim); cursor: pointer; }
+.pl-more:hover { color: var(--ink); }
+.pl-m b mark { background: color-mix(in srgb, var(--warn) 28%, transparent); color: inherit; border-radius: 3px; padding: 0 1px; }
+.pl-m b { font-weight: 500; }
+.pl-m b:not(:has(mark)) { font-weight: 600; }
+mark.seek-hit { background: color-mix(in srgb, var(--warn) 42%, transparent); color: inherit; border-radius: 3px; padding: 0 1px; animation: seek-hit 2.6s ease-out both; }
+@keyframes seek-hit { 0%, 55% { background: color-mix(in srgb, var(--warn) 42%, transparent); } 100% { background: transparent; } }
+.seek-blk { animation: seek-blk 1.4s ease-out; }
+@keyframes seek-blk { 0%, 30% { box-shadow: 0 0 0 2px color-mix(in srgb, var(--warn) 55%, transparent); } 100% { box-shadow: 0 0 0 2px transparent; } }
+@media (prefers-reduced-motion: reduce) { mark.seek-hit, .seek-blk { animation: none; } }
+
+/* ===== ri1103-P2: 稍后 (snooze). Dock button between 驳回 and 验收, the menu / phone sheet, the home line, the 推迟过 chip ===== */
+.snz-ic { flex: none; vertical-align: -2px; }
+.snz-line { display: inline-flex; align-items: center; gap: 6px; max-width: 100%; margin: 0 0 12px; padding: 5px 12px; border: 1px solid var(--line2); border-radius: 999px; background: transparent;
+  color: var(--ink2); font: 500 var(--fs-13)/1.3 var(--f-sys); letter-spacing: 0; cursor: pointer; }
+.snz-line span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.snz-line i { font-style: normal; color: var(--dim); }
+.snz-line:hover { background: var(--accent-soft); color: var(--ink); }
+html[data-home="widgets"] .wg-hd .snz-line { margin: 0; }
+.snz-was { display: inline-block; flex: none; margin-left: 6px; padding: 1px 7px; border-radius: 8px; font-size: var(--fs-12); font-weight: 600; line-height: 1.5; letter-spacing: 0; white-space: nowrap;
+  color: var(--ink2); background: var(--accent-soft); border: 1px solid var(--line2); vertical-align: 1px; }
+html[data-home="widgets"] .wg-tg.snz { background: var(--accent-soft); color: var(--ink2); }
+.snz-wrap { position: fixed; inset: 0; z-index: 400; }
+.snz-pop { position: fixed; width: 284px; max-height: 70vh; overflow: auto; padding: 6px; border-radius: 14px; background: var(--solid); color: var(--ink);
+  box-shadow: 0 0 0 1px var(--line2), var(--shadow); font-family: var(--f-sys); animation: snz-in 160ms var(--ease) both; }
+.snz-wrap.out { pointer-events: none; } .snz-wrap.out .snz-pop { opacity: 0; transition: opacity 140ms ease-out; }
+.snz-pop.busy { opacity: .6; pointer-events: none; }
+.snz-h { padding: 6px 10px 6px; }
+.snz-h b { display: block; font-size: var(--fs-14); font-weight: 600; }
+.snz-h small { display: block; margin-top: 2px; font-size: var(--fs-12); color: var(--dim); }
+.snz-o { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; width: 100%; padding: 9px 10px; border: 0; border-radius: 9px; background: transparent;
+  color: var(--ink); font: 500 var(--fs-14)/1.3 var(--f-sys); text-align: left; cursor: pointer; }
+.snz-o:hover, .snz-o:focus-visible { background: var(--accent-soft); outline: none; }
+.snz-o b { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 500; }
+.snz-o span { flex: none; font-size: var(--fs-12); color: var(--dim); font-variant-numeric: tabular-nums; }
+.snz-o.un b { color: var(--warn); }
+.snz-cus { display: flex; gap: 6px; padding: 2px 10px 8px; }
+.snz-cus[hidden] { display: none; }
+.snz-cus input { flex: 1; min-width: 0; padding: 5px 8px; border-radius: 8px; border: 1px solid var(--line2); background: var(--bg2); color: var(--ink); font: var(--fs-13) var(--f-sys); }
+.snz-r { display: flex; align-items: center; gap: 4px; }
+.snz-r .snz-o { flex: 1; min-width: 0; flex-direction: column; align-items: flex-start; gap: 2px; }
+.snz-r .snz-o b { max-width: 100%; }
+.snz-x { flex: none; margin-right: 4px; padding: 4px 10px; border-radius: 999px; border: 1px solid var(--line2); background: transparent; color: var(--ink2); font: 500 var(--fs-12) var(--f-sys); cursor: pointer; }
+.snz-x:hover { background: var(--accent-soft); color: var(--ink); }
+.snz-wrap.sheet { background: rgba(0,0,0,.32); }
+.snz-wrap.sheet .snz-pop { left: 8px; right: 8px; top: auto; bottom: calc(8px + env(safe-area-inset-bottom)); width: auto; max-width: 520px; margin: 0 auto; padding: 8px; border-radius: 18px; animation-name: snz-up; }
+@keyframes snz-in { from { opacity: 0; transform: translateY(6px) scale(.98); } }
+@keyframes snz-up { from { opacity: 0; transform: translateY(28px); } }
+@media (prefers-reduced-motion: reduce) { .snz-pop { animation: none; } }
+@media (min-width: 761px) {
+  #drawer .dw-acts .ab.sz { flex: none; gap: 6px; padding: 0 16px; box-shadow: inset 0 0 0 1px var(--line2); font-weight: 500; }
+  #drawer .dw-acts .ab.sz:hover { background: var(--accent-soft); }
+  #drawer .dw-acts .ab.sz.on { max-width: 34%; color: var(--ink2); background: var(--accent-soft); }
+  #drawer .dw-acts .ab.sz span { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+  .snz-car { flex: none; color: var(--dim); }
+}
+
+/* ===== t-home-usage (approved 11-04): tokens per role today. Shared by the desktop widget (widgets.js), the phone home card and 系统状态.
+   Bars are transform: scaleX(--ru-w) so length changes glide; app.js ruSettle() starts a new bar at its previous length (0 the first time). ===== */
+.ru-tot { display: flex; align-items: baseline; gap: 8px; margin: -2px 0 8px; cursor: pointer; }
+.ru-tot b { font-size: var(--fs-28); font-weight: 600; line-height: 1.1; color: var(--ink); font-variant-numeric: tabular-nums; }
+.ru-tot span { font-size: var(--fs-12); color: var(--dim); }
+.ru-list { display: grid; gap: 2px; align-content: start; min-height: 0; }
+.ru-row { display: grid; grid-template-columns: 22px minmax(0, 72px) 1fr auto; align-items: center; gap: 8px; padding: 4px 8px; margin: 0 -8px; border-radius: 10px;
+  font-size: var(--fs-13); color: var(--ink); transition: background-color .15s ease, transform .12s ease; }
+.ru-row[data-chat] { cursor: pointer; }
+.ru-row[data-chat]:hover { background: color-mix(in srgb, var(--ink) 6%, transparent); }
+.ru-row[data-chat]:active { transform: scale(.98); }
+.ru-av { width: 22px; height: 22px; border-radius: 50%; object-fit: cover; display: block; background: color-mix(in srgb, var(--ink) 10%, transparent); }
+.ru-n { display: flex; align-items: center; gap: 5px; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ru-on { width: 6px; height: 6px; border-radius: 50%; background: var(--ok); flex: none; }
+.ru-bar { position: relative; height: 6px; border-radius: 3px; overflow: hidden; background: color-mix(in srgb, var(--ink) 8%, transparent); }
+.ru-bar em { position: absolute; inset: 0; border-radius: 3px; background: var(--accent); transform-origin: left center; transform: scaleX(var(--ru-w, 0));
+  transition: transform .55s cubic-bezier(.2, .8, .2, 1); transition-delay: calc(var(--ru-i, 0) * 40ms); }
+.ru-row:hover .ru-bar em { filter: brightness(1.08); }
+.ru-row b { font-weight: 600; text-align: right; font-variant-numeric: tabular-nums; min-width: 44px; }
+.ru-row.nd .ru-n { color: var(--ink2); }
+.ru-more { font-size: var(--fs-12); color: var(--dim); padding: 4px 0 0; cursor: pointer; transition: color .15s ease; }
+.ru-more:hover { color: var(--ink); }
+.ru-wait { font-size: var(--fs-13); color: var(--dim); padding: 6px 0; }
+.ru-q { display: flex; flex-wrap: wrap; gap: 4px 14px; align-items: center; margin-top: auto; padding-top: 9px; border-top: 1px solid color-mix(in srgb, var(--ink) 8%, transparent);
+  font-size: var(--fs-11); color: var(--dim); white-space: nowrap; cursor: pointer; transition: color .3s ease; }
+.ru-list + .ru-q, .ru-wait + .ru-q { margin-top: 10px; }
+.ru-q b { color: var(--ink2); font-weight: 600; font-variant-numeric: tabular-nums; transition: color .3s ease; }
+.ru-q.old b { color: var(--dim); }
+.ru-q .ru-age em { font-style: normal; color: var(--warn); font-weight: 500; }
+.ru-q:hover b { color: var(--ink); }
+/* phone home card */
+.ru-card { margin: 10px 0 6px; padding: 12px 14px; border-radius: 18px; background: color-mix(in srgb, var(--ink) 5%, transparent); display: grid; gap: 6px; cursor: pointer;
+  transition: transform .12s ease, background-color .15s ease; }
+.ru-card:active { transform: scale(.99); }
+.ru-card .ru-hd { display: flex; align-items: baseline; gap: 8px; font-size: var(--fs-13); }
+.ru-card .ru-hd b { font-weight: 600; color: var(--ink); } .ru-card .ru-hd small { font-size: var(--fs-11); color: var(--dim); }
+.ru-card .ru-hd span { margin-left: auto; font-size: var(--fs-12); color: var(--dim); font-variant-numeric: tabular-nums; }
+.ru-card .ru-row { grid-template-columns: 22px minmax(0, 84px) 1fr auto; }
+.ru-card .ru-q { margin-top: 4px; }
+/* 系统状态 panel */
+.sy-ru { margin: 14px 0 4px; } .sy-ru h4 { font-size: var(--fs-12); color: var(--dim); font-weight: 500; margin: 0 0 8px; letter-spacing: .04em; }
+.sy-ru .ru-row { grid-template-columns: 22px minmax(0, 96px) 1fr auto; }
+@media (prefers-reduced-motion: reduce) { .ru-bar em, .ru-row, .ru-card, .ru-q, .ru-q b { transition: none; } }
+

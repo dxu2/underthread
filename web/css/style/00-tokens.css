@@ -1,0 +1,78 @@
+/* Underthread — "Hallownest" skin: true black, bone-white filigree, pale soul light. */
+:root {
+  --void: #000000; --bg: #040404; --bg2: #0a0a0a; --panel: rgba(18,18,19,.74); --panel2: rgba(25,25,27,.82); --solid: #0b0b0c;
+  --line: rgba(232,229,221,.10); --line2: rgba(232,229,221,.20); --line3: rgba(238,235,228,.46);
+  --ink: #ece8dd; --ink2: #b7b2a6; --dim: #7a766d; --faint: #45433e;
+  --soul: #f5f3ec; --glow: #d9dde4; --glow-a: rgba(228,232,240,.26); --glow-b: rgba(228,232,240,.07);
+  --dot: #FF453A; /* unread / notification dot: semantic red, NOT the accent (t-red-dots). Light + white themes override below / in mobile.css */
+  --urgent: #e3735d; --ok: #a3cf93; --warn: #f0a560; --warn-rgb: 240,165,96; --chip: rgba(255,255,255,.03);
+  /* accent (t-accent-neutral): ONE place to swap the app accent. --accent = text/icon/fill colour of 'selected / active';
+     --accent-ink = text on top of an --accent fill; --accent-soft = tint behind selected items; --accent-line = thin ring/stripe. */
+  --accent: #f2f2f2; --accent-ink: #111111; --accent-soft: rgba(255,255,255,.12); --accent-line: rgba(255,255,255,.34);
+  --shadow: 0 24px 70px rgba(0,0,0,.65);
+  /* D1 (t-web-d1): system sans everywhere, like the phone; the house serif stays only on the brand (logo wordmark, splash title card) */
+  --f-sys: -apple-system, BlinkMacSystemFont, "SF Pro Text", "PingFang SC", "Helvetica Neue", sans-serif;
+  --f-brand-display: "Cinzel", "Trajan Pro", "Noto Serif SC", serif;
+  --f-brand-cjk: "Noto Serif SC", "Songti SC", "STSong", serif;
+  --f-display: var(--f-sys);
+  --f-deco: "Cinzel Decorative", "Cinzel", serif;
+  --f-body: var(--f-sys);
+  --f-cjk: var(--f-sys);
+  --f-mono: "SF Mono", "JetBrains Mono", Menlo, monospace;
+  /* t-type-polish A: one type scale. Every font-size is one of these; no .5 half sizes. 10 = badges / counters only,
+     16 = form inputs (iOS no-zoom) and card-detail h2. Icon glyphs, cqw office labels, brand and the ink 60px headline stay as they were. */
+  --fs-10: 10px; --fs-11: 11px; --fs-12: 12px; --fs-13: 13px; --fs-14: 14px; --fs-15: 15px; --fs-16: 16px;
+  --fs-17: 17px; --fs-20: 20px; --fs-24: 24px; --fs-28: 28px; --fs-34: 34px; --fs-44: 44px;
+  --ease: cubic-bezier(.22,.8,.24,1);
+  --pointer: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 34 18'><g fill='none' stroke='black' stroke-width='1.4' stroke-linecap='round'><path d='M1 9 H13'/><path d='M13 9 C16 3 24 1.5 28 5 C30.5 7.5 28 11 25 9.6 C23.6 8.8 24 7 25.4 7'/><path d='M13 9 C16 14.5 23 16.5 27.5 13.5'/></g><path d='M31 9 L33.5 6.5 L33.5 11.5 Z' fill='black'/></svg>");
+  --hook: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 30 30'><g fill='none' stroke='black' stroke-width='1.3' stroke-linecap='round'><path d='M1.5 29 V11 C1.5 5 5 1.5 11 1.5 H29'/><path d='M11 1.5 C7 1.5 5.5 5 7.5 7 C9 8.5 11.5 7.5 11 5.5'/></g><circle cx='1.5' cy='29' r='1.4' fill='black'/></svg>");
+  color-scheme: dark;
+}
+[data-theme="light"] {
+  --void: #d9cfb6; --bg: #e8e0cc; --bg2: #ded5be; --panel: rgba(246,240,225,.66); --panel2: rgba(238,230,212,.8); --solid: #ece4d1;
+  --line: rgba(48,36,18,.14); --line2: rgba(48,36,18,.26); --line3: rgba(48,36,18,.5);
+  --ink: #1d1913; --ink2: #463e31; --dim: #7a6f5c; --faint: #a89c84;
+  --soul: #1f2328; --glow: #1f2328; --glow-a: rgba(31,35,40,.16); --glow-b: rgba(31,35,40,.06);   /* D3 (t-web-d3): was blue #2b4a7a / #3f68a8; ink = --accent, same as the phone (t-vis-b1) */
+  --dot: #E02A20;
+  --urgent: #a9442e; --ok: #4e7f43; --warn: #9a4f0c; --warn-rgb: 154,79,12; --chip: rgba(60,40,10,.04);
+  --accent: #1f2328; --accent-ink: #ffffff; --accent-soft: rgba(31,35,40,.10); --accent-line: rgba(31,35,40,.42);
+  --shadow: 0 24px 60px rgba(70,50,20,.22);
+  color-scheme: light;
+}
+/* D2 (t-web-d2): white theme (Slack-style white surface, ink accent), shared by phone and desktop. Moved from mobile.css ui13 unchanged.
+   Contrast on #fff: ink #111 18.9:1, dim #6B6B6B 5.33:1. */
+[data-theme="white"] {
+  --void: #ffffff; --bg: #ffffff; --bg2: #f7f7f7; --panel: rgba(255,255,255,.94); --panel2: #f5f5f5; --solid: #ffffff;
+  --line: #e5e5e5; --line2: #d9d9d9; --line3: #b5b5b5;
+  --ink: #111111; --ink2: #3b3b3b; --dim: #6b6b6b; --faint: #767676;
+  --soul: #111111; --glow: #111111; --glow-a: rgba(0,0,0,.16); --glow-b: rgba(0,0,0,.06);
+  --dot: #FF3B30;   /* white theme unread dot (3.55:1 on #fff) */
+  --urgent: #c0281e; --ok: #067a3c; --warn: #a64200; --chip: rgba(0,0,0,.04);
+  --accent: #111111; --accent-ink: #ffffff; --accent-soft: rgba(0,0,0,.07); --accent-line: rgba(0,0,0,.40);
+  --shadow: 0 10px 30px rgba(0,0,0,.12);
+  color-scheme: light;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; }
+body {
+  background: var(--bg); color: var(--ink); font-family: var(--f-body); font-size: var(--fs-15); line-height: 1.55;
+  display: grid; grid-template-rows: auto auto 1fr; overflow: hidden; -webkit-font-smoothing: antialiased; text-rendering: optimizeLegibility;
+}
+body::after { content: ""; position: fixed; inset: 0; pointer-events: none; z-index: 40;
+  background: radial-gradient(ellipse 120% 90% at 50% 40%, transparent 55%, rgba(0,0,0,.55)); }
+[data-theme="light"] body::after { background: radial-gradient(ellipse 120% 90% at 50% 40%, transparent 55%, rgba(90,65,25,.22)); }
+#top, #ticker, #layout { position: relative; z-index: 1; }
+button, input, textarea, select { font: inherit; color: inherit; }
+button { cursor: pointer; background: none; border: 0; padding: 0; }
+a { color: var(--glow); text-decoration: none; }
+a:hover { color: var(--soul); text-shadow: 0 0 12px var(--glow-a); }
+::selection { background: var(--glow-a); color: var(--soul); }
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-thumb { background: var(--line2); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--line3); }
+::-webkit-scrollbar-track { background: transparent; }
+.sc { font-family: var(--f-display); letter-spacing: .04em; }
+.dim { color: var(--dim); }
+.mono { font-family: var(--f-mono); font-size: .82em; letter-spacing: 0; }
+:focus-visible { outline: 2px solid var(--accent-line, var(--glow)); outline-offset: 2px; }   /* t-motion-all: one ring; glass.css plays it in */
+

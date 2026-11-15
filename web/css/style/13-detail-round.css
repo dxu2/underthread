@@ -1,0 +1,247 @@
+/* ===== t-detail-round (2026-11-02): desktop detail = a floating rounded panel like the DM column. Avatar + bubble messages, pill composer / buttons.
+   Look only: .dw-scroll stays the scroller (t-detail-jump pinning and nearEnd untouched). Phone untouched (mobile.css owns the phone detail). ===== */
+@media (min-width: 761px) {
+  #drawer { inset: 14px 14px 14px 4px; border-radius: 26px; overflow: hidden;
+    box-shadow: inset 0 0 0 1px var(--line2), 0 0 0 40px var(--bg), 0 24px 60px rgba(0,0,0,.28); }   /* the 40px spread hides the page behind the margin (#main clips it) */
+  html[data-stage] #drawer { box-shadow: inset 0 0 0 1px var(--stg-line, var(--line2)), 0 0 0 40px color-mix(in srgb, var(--bg) 90%, transparent), 0 24px 60px rgba(0,0,0,.32); }
+  #drawer .dw-top { padding-top: 14px; }
+  #drawer .cs-card:not(.draftc) { margin-left: 50px; max-width: min(78%, 760px); padding: 10px 16px 12px; border-radius: 6px 20px 20px 20px;
+    background: color-mix(in srgb, var(--ink) 9%, var(--bg)); box-shadow: none; }
+  #drawer .cs-card:not(.draftc) > .cs-h > .av:first-child { position: absolute; left: -50px; top: 0; width: 38px; height: 38px; border-radius: 50%; }
+  #drawer .cs-me { max-width: min(70%, 640px); border-radius: 20px 6px 20px 20px; }
+  #drawer .cs-card.draftc { border-radius: 24px; }
+  #drawer .composer textarea { border-radius: 24px; min-height: 48px; }
+  #drawer .dw-file { border-radius: 999px; padding: 4px 12px; border: 1px solid var(--line2); }
+  #drawer .cm-to, #drawer .dw-acts .ab, #drawer .dw-acts button { border-radius: 999px; }
+}
+
+/* ===== t-toast-style (2026-11-02): the desktop toast drops the ink cloud ornaments and the black radial wash for the same clean pill as the
+   DM column / rounded detail, and moves to the top centre under the header, so it never sits on the detail's bottom buttons
+   (完成委托 / 批准) or the chat composer. Phone keeps its own glass pill above the tab bar (mobile.css). ===== */
+@media (min-width: 761px) {
+  html[data-theme] #toast { top: 86px; bottom: auto; padding: 10px 20px; border-radius: 22px; font-family: var(--f-sys);
+    font-size: var(--fs-14); letter-spacing: .02em; text-shadow: none; color: var(--ink); gap: 0; max-width: min(560px, calc(100vw - 48px));
+    background: color-mix(in srgb, var(--bg) 86%, transparent) !important; -webkit-backdrop-filter: blur(18px) saturate(1.3); backdrop-filter: blur(18px) saturate(1.3);
+    box-shadow: inset 0 0 0 1px var(--line2), 0 10px 30px rgba(0,0,0,.22); animation: toast-drop .32s var(--ease) both; }
+  html[data-theme] #toast.err { color: var(--urgent); }
+}
+html[data-theme] #toast::before, html[data-theme] #toast::after { display: none; }   /* no cloud ornaments anywhere (phone dark showed them too) */
+@media (max-width: 760px) {   /* phone: same pill, but at the top (under the status bar) so it never covers the detail's reply box / bottom buttons or the undo pill; one line */
+  html[data-theme] body #toast { top: calc(env(safe-area-inset-top) + 58px); bottom: auto; white-space: nowrap; max-width: calc(100vw - 32px); overflow: hidden; text-overflow: ellipsis;
+    animation: toast-drop .32s var(--ease) both; }
+}
+@keyframes toast-drop { from { opacity: 0; transform: translate(-50%, -8px); } }
+@media (prefers-reduced-motion: reduce) { html[data-theme] #toast { animation: none; } }
+/* ===== t-detail-round2 (2026-11-02): same rounded detail, fewer layers (user: 「有点臃肿，套了这么多层」).
+   One outer panel only (no inset rule, no 40px spread ring: the page under an open detail is hidden instead, so nothing peeks through the margin);
+   the draft has no frame (a very faint fill); only the other side's messages are bubbles (t-me-bubble 11-05: mine are bubbles again, see below); no timeline rule,
+   no hairlines above the composer / buttons, composer and buttons pulled together. Desktop only. ===== */
+@media (min-width: 761px) {
+  #drawer, html[data-stage] #drawer { box-shadow: 0 18px 50px rgba(0,0,0,.26); }
+  #drawer { top: 14px; bottom: 14px; left: auto; right: 16px; }   /* wide main: the 760px side panel, 16px off the chat column (round 1's left: 4px pinned it to the left and ignored right) */
+  body.main-narrow #drawer { left: 16px; right: 16px; width: auto; }   /* narrow main (chat open): full width with 16px each side; width:100% there had made right do nothing */
+  #main:has(> #drawer.open) > #page { visibility: hidden; }
+  #main:has(> #drawer.open)::before, #main:has(> #drawer.open)::after { display: none; }
+  #drawer .dw-top::after, #drawer .composer::before, #drawer .dw-acts::before { display: none; }
+  #drawer .cs-card.draftc { background: color-mix(in srgb, var(--ink) 3.5%, transparent); box-shadow: none; border-radius: 20px; padding: 14px 18px 10px; }
+  /* t-me-bubble (2026-11-05, user 「加回来」): my messages are a bubble again: right side, light ink tint, the DM page's 20/6/20/20 corner */
+  #drawer .cs-me { background: color-mix(in srgb, var(--ink) 10%, transparent); padding: 10px 16px 12px; border-radius: 20px 6px 20px 20px; text-align: left; }
+  #drawer .cs-line { margin-left: 0; padding-left: 4px; }
+  #drawer .cs-line::before, #drawer .cs-line::after { display: none; }
+  #drawer .composer { padding-top: 6px; padding-bottom: 4px; }
+  #drawer .composer textarea { min-height: 46px; height: 46px; border-color: transparent !important; }   /* one line until you type (autosize / resize still grow it); no rule around it */
+  #drawer .composer textarea:focus { border-color: var(--line2) !important; box-shadow: none; }
+  #drawer .cm-row { margin-top: 6px; }
+  #drawer .dw-acts { padding-top: 6px; padding-bottom: 14px; }
+  /* t-ui-fix-r2 B02: a narrow drawer (~430px when the chat column is wide) broke the chip into 发/给, 默认：负/责人 and a 2-line hint.
+     Chip and default label never wrap; under 560px the keyboard hint goes first (Enter still sends as before). */
+  #drawer .composer { container: dwcomp / inline-size; }
+  #drawer .cm-row { min-width: 0; }
+  #drawer .cm-to, #drawer .cm-row > .dw-def { flex: none; white-space: nowrap; }
+  #drawer .cm-to { max-width: 100%; overflow: hidden; }
+  @container dwcomp (max-width: 560px) { #drawer .cm-row > span.dim:last-child { display: none; } }
+}
+
+/* ===== t-now-always (2026-11-02): 此刻 with nobody working = one faint line (phone home and the desktop app-style home) ===== */
+.dc-quiet { padding: 2px 4px 10px; font-size: var(--fs-13); color: var(--dim); }
+
+/* ===== t-hide-scrollbar (2026-11-02): desktop scroll areas keep scrolling (wheel / trackpad / keys) but draw no scrollbar:
+   the main column (#page), the detail (.dw-scroll), the chat thread and roster (#right), the left nav (#left). Phone already has overlay bars. ===== */
+@media (min-width: 761px) {
+  #page, #left, #drawer .dw-scroll, #right .ch-msgs, #right * { scrollbar-width: none; }
+  #page::-webkit-scrollbar, #left::-webkit-scrollbar, #drawer .dw-scroll::-webkit-scrollbar, #right .ch-msgs::-webkit-scrollbar, #right *::-webkit-scrollbar { display: none; width: 0; height: 0; }
+}
+
+/* ===== t-home-newreplies (2026-11-02): 「新回复 · N」 on the phone home and the desktop app-style home, the unread dot on card titles, and the
+   highlight on the reply a card opens at. Shared by both ends (style.css), so home-app.css does not need regenerating. ===== */
+.nr { margin: 4px 0 16px; }
+.nr-h { display: flex; align-items: baseline; gap: 8px; margin: 0 4px 6px; }
+.nr-h b { font: 600 var(--fs-15)/1.2 var(--f-sys); color: var(--ink); }
+.nr-h small { font: 600 var(--fs-13)/1 var(--f-sys); color: var(--accent); }
+.nr-h .sp { flex: 1; }
+.nr-all, .nr-more { padding: 0; border: 0; background: none; font-size: var(--fs-12); color: var(--dim); cursor: pointer; }
+.nr-all:hover, .nr-more:hover { color: var(--ink); }
+.nr-more { display: block; margin: 4px 12px 0; }
+.nr-r { position: relative; display: grid; grid-template-columns: 36px minmax(0, 1fr) auto; gap: 2px 12px; align-items: center; padding: 9px 12px; border-radius: 16px; cursor: pointer; }
+.nr-r:hover, .nr-r:focus-visible { background: color-mix(in srgb, var(--ink) 5%, transparent); outline: none; }
+.nr-r > .av { width: 36px; height: 36px; grid-row: span 2; }
+.nr-r b { min-width: 0; font-size: var(--fs-14); color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.nr-r b i { font-style: normal; font-weight: 500; color: var(--dim); }
+.nr-r p { grid-column: 2; min-width: 0; margin: 0; font-size: var(--fs-13); color: var(--ink2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.nr-r time { grid-row: 1; grid-column: 3; font-size: var(--fs-12); color: var(--dim); white-space: nowrap; }
+.nr-r > .nr-dot { grid-column: 3; justify-self: end; margin: 0; }
+.nr-n { position: absolute; left: 38px; top: 5px; min-width: 16px; height: 16px; padding: 0 4px; border-radius: 8px; background: var(--accent); color: var(--accent-ink, #fff); font: 600 var(--fs-10)/16px var(--f-sys); text-align: center; }
+.nr-dot { display: inline-block; width: 8px; height: 8px; margin: 0 6px 0 0; border-radius: 50%; background: var(--accent); vertical-align: .15em; }
+#drawer .cs-card.nr-hit { box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--accent) 55%, transparent); animation: nrHitFade 4500ms linear both; }
+@keyframes nrHitFade { 0%, 66% { box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--accent) 55%, transparent); } 100% { box-shadow: inset 0 0 0 1.5px transparent; } }   /* t-detail-jump-fix: plays once; re-renders pass a negative delay */
+@media (prefers-reduced-motion: reduce) { #drawer .cs-card.nr-hit { animation-timing-function: steps(1, end); } }
+
+/* ===== t-ask-bottom (2026-11-02): the unanswered question bar right above the detail's reply box (desktop and phone). One soft rounded block, no rule lines
+   (matches t-detail-round2). The scroller shrinks for it on desktop (flex); on the phone the dock padding (--dock-h) grows and the open-pin re-pins. ===== */
+.dw-askbar[hidden] { display: none; }
+.dw-askbar { padding: 8px 22px 0; }
+.dw-askbar .ask-row { margin: 0; padding: 10px 14px 12px; border-radius: 18px; background: color-mix(in srgb, var(--accent) 7%, color-mix(in srgb, var(--ink) 4%, transparent)); }
+.dw-askbar .ask-rt { margin-bottom: 8px; }
+.dw-askbar .ask-opts { max-height: 30vh; overflow-y: auto; }
+@media (max-width: 760px) { .dw-askbar { padding: 0 0 8px; } }
+
+/* ===== t-close-bottom (2026-11-02): the small 关单 pill at the left of the detail's bottom buttons (desktop and phone): quiet outline, never wider than
+   its word, so the main button keeps its size; it sits under the ask bar (t-ask-bottom) with the usual gap. ===== */
+#drawer .dw-acts .ab.cl { flex: none; width: auto; min-width: 0; padding: 0 16px; border: 1px solid var(--line2); border-radius: 999px; background: none; color: var(--dim); font-size: var(--fs-13); font-weight: 600; }
+#drawer .dw-acts .ab.cl:hover { color: var(--ink); border-color: var(--line3, var(--ink2)); }
+#modal .cl-t { margin: 4px 0 6px; font-weight: 600; color: var(--ink); }
+#modal .cl-w { margin: 0 0 10px; font-size: var(--fs-13); color: var(--warn, var(--urgent)); }
+/* t-no-dim (2026-11-02): desktop detail opens without darkening the page behind. #scrim stays (transparent) so a click beside the panel still closes it; phones hide #scrim in mobile.css anyway. */
+@media (min-width: 761px) { #main > #scrim { background: transparent !important; } }
+/* t-dash-token (2026-11-02): GitHub push token block inside 系统状态 (#gt; filled by ghPaint() in app.js). Desktop + phone (the phone opens the same modal). */
+.mdl.sys .gt { margin: 0 0 12px; padding: 13px 14px 12px; border-radius: 16px; background: var(--chip); box-shadow: inset 0 0 0 1px var(--line); }
+.mdl.sys .gt:empty { display: none; }
+.gt h4 { margin: 0 0 4px; display: flex; align-items: center; gap: 8px; font: 600 var(--fs-14)/1.35 var(--f-sys); color: var(--ink); }
+.gt h4 em { font-style: normal; font: 600 var(--fs-12)/1.5 var(--f-sys); padding: 0 8px; border-radius: 99px; background: var(--accent-soft); color: var(--ink2); }
+.gt h4 em.ok { color: var(--ok); } .gt h4 em.warn { color: var(--warn); } .gt h4 em.bad { color: var(--urgent); }
+.gt p { margin: 0 0 9px; font-size: var(--fs-13); line-height: 1.5; color: var(--dim); overflow-wrap: anywhere; }
+.gt p code { font-size: var(--fs-12); }
+.gt .ok { color: var(--ok); } .gt .warn { color: var(--warn); } .gt .bad { color: var(--urgent); }
+.gt .gt-pr.ok { color: var(--ok); } .gt .gt-pr.bad { color: var(--ink2); }
+.gt .gt-msg { font-weight: 600; color: var(--ink2); } .gt .gt-msg.ok { color: var(--ok); } .gt .gt-msg.bad { color: var(--urgent); }
+.gt-r { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin: 0 0 9px; }
+.gt-in { flex: 1 1 200px; min-width: 0; height: 36px; padding: 0 12px; border-radius: 12px; border: 1px solid var(--line2); background: var(--bg); color: var(--ink); font: var(--fs-13) var(--f-sys); }
+.gt-in:focus { outline: none; border-color: var(--line3); box-shadow: 0 0 0 3px var(--accent-soft); }
+.gt-b { flex: none; height: 32px; padding: 0 13px; border-radius: 99px; box-shadow: inset 0 0 0 1px var(--line2); color: var(--ink); font: 600 var(--fs-13) var(--f-sys); cursor: pointer; }
+.gt-b.pri { background: var(--accent); color: var(--accent-ink); box-shadow: none; height: 36px; }
+.gt-b.dn { color: var(--urgent); }
+.gt-b:disabled { opacity: .45; cursor: default; }
+.gt-b:active:not(:disabled) { transform: scale(.96); }
+.gt small { display: block; font-size: var(--fs-12); line-height: 1.45; color: var(--dim); }
+@media (max-width: 760px) { .gt-in { font-size: var(--fs-16); } }   /* iOS: no zoom on focus */
+/* t-rail-tip (2026-11-02): folded chat rail. Name tip left of the avatar, vertically centred, fixed on <body> (no clipping);
+   the expand button sits on the same centre line as the avatars. */
+#rail-tip { position: fixed; z-index: 80; transform: translate(-100%, -50%); padding: 5px 11px; border-radius: 10px; pointer-events: none; white-space: nowrap;
+  background: var(--solid, var(--bg)); color: var(--ink); font: 600 var(--fs-13)/1.3 var(--f-sys); box-shadow: 0 0 0 1px var(--line2), 0 8px 22px rgba(0,0,0,.22);
+  opacity: 0; transition: opacity .12s linear; }
+#rail-tip.on { opacity: 1; }
+#rail-tip::after { content: ""; position: absolute; right: -4px; top: 50%; width: 8px; height: 8px; margin-top: -4px; transform: rotate(45deg);
+  background: inherit; box-shadow: 1px -1px 0 0 var(--line2); }
+@media (min-width: 761px) { body.chat-folded .ch-fold { left: calc(50% - 13px); } }
+@media (min-width: 761px) { body.chat-folded .ch-roster button:hover .av { transform: none; } }   /* t-rail-tip: the tip is the hover cue; no lift, so tip and avatar share one centre */
+/* t-routine-btn (2026-11-02): routine main card — 暂停 / 开启 switch in the action bar instead of 完成委托 */
+#drawer .dw-acts .rt-on, #drawer .dw-acts .rt-off { flex: 1 1 auto; min-width: 0; align-self: center; display: inline-flex; align-items: center; gap: 7px; padding: 0 6px;
+  font-size: var(--fs-13); font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#drawer .dw-acts .rt-on { color: var(--ink2); } #drawer .dw-acts .rt-off { color: var(--warn); }
+#drawer .dw-acts .rt-dot { flex: none; width: 8px; height: 8px; border-radius: 50%; background: var(--ok); }
+#drawer .dw-acts .rt-off .rt-dot { background: transparent; box-shadow: inset 0 0 0 1.5px var(--warn); }
+#drawer .dw-acts .ab.rt-sw { flex: 0 0 auto; min-width: 104px; }
+@media (max-width: 760px) { #drawer .dw-acts .rt-on, #drawer .dw-acts .rt-off { font-size: var(--fs-14); } }
+
+/* ===== t-done-fold (2026-11-02): finished cards on the list pages fold into one quiet row at the bottom (app.js stageGroups).
+   Soft tinted pill, no border; the caret turns when open. A page with only finished cards gets one faint line above it. ===== */
+.df-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; width: 100%; margin: 30px 0 12px; padding: 0 16px; min-height: 42px;
+  border: 0; border-radius: 14px; background: color-mix(in srgb, var(--ink) 6%, transparent); color: var(--ink2); font-family: var(--f-cjk); font-size: var(--fs-13); letter-spacing: .02em;
+  text-align: left; cursor: pointer; transition: background-color .15s ease, color .15s ease; }
+.df-row:hover { background: color-mix(in srgb, var(--ink) 10%, transparent); color: var(--ink); }
+.df-row:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.df-row i { font-style: normal; font-size: var(--fs-13); transition: transform .2s ease; }
+.df-row[aria-expanded="true"] i { transform: rotate(90deg); }
+.df-row.solo { margin-top: 12px; }
+.df-empty { text-align: center; color: var(--dim);   /* t-ui-fix-r6 R6-03: was --faint (1.1:1 stage night) */
+  font-size: var(--fs-14); letter-spacing: .04em; padding: 56px 0 4px; font-family: var(--f-cjk); }
+.df-note { text-align: center; color: var(--faint); font-size: var(--fs-12); padding: 10px 0 4px; }
+@media (max-width: 760px) {
+  .df-row { margin: 22px 0 10px; min-height: 46px; border-radius: 16px; font-size: var(--fs-14); }
+  .df-row:hover { background: color-mix(in srgb, var(--ink) 6%, transparent); color: var(--ink2); }   /* no sticky hover after a tap */
+  .df-row:active { background: color-mix(in srgb, var(--ink) 11%, transparent); }
+  .df-empty { padding: 44px 0 2px; }
+}
+
+/* r-improve-1102 P1: answered quick options fold to one line under the bubble */
+.msg .opt-done { margin: 6px 0 0 14px; font-size: var(--fs-12); color: var(--dim); letter-spacing: .02em; }
+#right .msg .opt-done { margin-left: 0; }
+
+/* r-improve-1102 P2: card chips inside chat bubbles are short (≈7 characters) and show the stage as a dot; the full title and stage are in the tooltip.
+   Detail pages and drafts keep the long chip. Dot colours: waiting on you = --dot, in progress = --accent, done = --ok, otherwise dim. */
+#right .ch-msgs .idc { padding: 0 6px 0 2px; vertical-align: -0.22em; }
+#right .ch-msgs .idc b { max-width: 7.5em; }
+#right .ch-msgs .idc small { font-size: 0; opacity: 1; }
+#right .ch-msgs .idc small::before { content: ""; display: inline-block; width: 6px; height: 6px; border-radius: 50%; margin-left: 3px; vertical-align: 1px; background: var(--dim); }
+#right .ch-msgs .idc.st-review small::before { background: var(--dot); }
+#right .ch-msgs .idc.st-doing small::before { background: var(--accent); }
+#right .ch-msgs .idc.st-done small::before { background: var(--ok); }
+#right .ch-msgs .idc-nw { white-space: nowrap; }
+
+/* r-improve-1102 P4: new-message divider in the chat + 「↓ 回到最新」 pill (desktop) */
+#right .new-sep { display: flex; align-items: center; gap: 10px; margin: 14px 0 10px; font-size: var(--fs-12); color: var(--dot); letter-spacing: .02em; }
+#right .new-sep::before, #right .new-sep::after { content: ""; flex: 1; height: 1px; background: color-mix(in srgb, var(--dot) 45%, transparent); }
+#right .new-pill { position: absolute; left: 50%; transform: translateX(-50%); bottom: 112px; z-index: 5; padding: 7px 14px; border: 0; border-radius: 999px; font-size: var(--fs-12); cursor: pointer;
+  background: var(--ink); color: var(--bg); box-shadow: 0 6px 18px rgba(0,0,0,.25); }
+
+/* t-agent-queue: 「排队 N」 badge + the list it opens */
+.aq { display: inline-flex; align-items: center; height: 18px; padding: 0 7px; margin-left: 6px; border-radius: 9px; font-size: var(--fs-11); font-weight: 600; letter-spacing: .02em; line-height: 1;
+  background: color-mix(in srgb, var(--accent) 16%, transparent); color: var(--accent); cursor: pointer; white-space: nowrap; vertical-align: 1px; font-style: normal; }
+.aq:hover { background: color-mix(in srgb, var(--accent) 26%, transparent); }
+/* t-queued-dots: three small dots after the count float up one after another, a calm "still waiting in line" cue (user 00:02).
+   One span: the middle dot is the element, the outer two are ::before / ::after. transform + opacity only; 1.6 s loop, .18 s stagger, 2px lift.
+   Desktop only: the phone renders a pill in every chat-list row and the iPhone crashes on many infinite layers (L-1029, "only the newest item").
+   fx.js power saving marks these with data-ip and pauses them after 20 s idle like every other loop. prefers-reduced-motion: dots stay, still. */
+.aq-w { margin-right: .3em; }   /* the label word is its own span (narrow widget rows hide it); a trailing space would collapse inside the inline-flex pill */
+.aq-d { position: relative; display: inline-block; width: 3px; height: 3px; margin: 0 6px 0 9px; border-radius: 50%; background: currentColor; opacity: .7; }
+.aq-d::before, .aq-d::after { content: ""; position: absolute; top: 0; width: 3px; height: 3px; border-radius: 50%; background: currentColor; }
+.aq-d::before { left: -5px; } .aq-d::after { left: 5px; }
+@media (min-width: 761px) and (prefers-reduced-motion: no-preference) {
+  .aq-d { animation: aq-float 1.6s ease-in-out .18s infinite; }
+  .aq-d::before { animation: aq-float 1.6s ease-in-out 0s infinite; }
+  .aq-d::after { animation: aq-float 1.6s ease-in-out .36s infinite; }
+}
+@keyframes aq-float { 0%, 60%, 100% { transform: translateY(0); opacity: .45; } 30% { transform: translateY(-2px); opacity: 1; } }
+@media (max-width: 760px) { .aq-d { display: none; } }
+.team-i { position: relative; }
+.team-i .nm .aq { margin: 0 0 0 -2px; flex: none; }   /* t-queue-row: badge sits after the name (was absolute over the activity line) */
+.team-i .st.working, .team-i .st.idle { display: none; }   /* t-queue-row: only 离线 / ☾ 休眠 show; busy = avatar ring + ▶ line (manager 在线 is .working too) */
+.ch-roster button { position: relative; }
+.ch-roster .aq-n { position: absolute; right: -2px; bottom: 16px; min-width: 16px; height: 16px; padding: 0 4px; border-radius: 8px; font-size: var(--fs-10); font-weight: 600; font-style: normal;
+  display: grid; place-items: center; background: var(--accent); color: var(--accent-ink); box-shadow: 0 0 0 2px var(--bg); cursor: pointer; }
+.aq-pop { position: fixed; z-index: 9200; width: 300px; max-height: 50vh; overflow: auto; padding: 8px; border-radius: 16px; font-size: var(--fs-13); color: var(--ink);
+  background: color-mix(in srgb, var(--bg) 94%, transparent); -webkit-backdrop-filter: blur(20px); backdrop-filter: blur(20px); box-shadow: 0 14px 40px rgba(0,0,0,.35), inset 0 0 0 1px color-mix(in srgb, var(--ink) 10%, transparent); }
+.aq-pop h4 { margin: 4px 8px 6px; font-size: var(--fs-12); color: var(--dim); font-weight: 600; }
+.aq-pop button { display: flex; gap: 8px; width: 100%; padding: 8px; border: 0; border-radius: 10px; background: none; color: inherit; text-align: left; cursor: pointer; font: inherit; }
+.aq-pop button:hover { background: color-mix(in srgb, var(--ink) 8%, transparent); }
+.aq-pop span { flex: 1; min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; } .aq-pop time { color: var(--dim); font-size: var(--fs-12); flex: none; }
+.aq-pop p { margin: 6px 8px; color: var(--dim); }
+/* ===== t-stamina-stale v2: estimated usage. "估" tag instead of "≈"; a window that reset after the reading is drawn full but faded;
+   the number stays readable (ink2) because it is a real estimate, the pill alone says why the reading is old. #stamina beats mobile.css's .stamina.stale rule. */
+.stamina .pct b .ap { font: 600 var(--fs-10)/1 var(--f-sys); letter-spacing: 0; color: var(--dim); opacity: 1; border: 1px solid color-mix(in srgb, var(--dim) 55%, transparent); border-radius: 4px; padding: 2px 3px 1px; margin-right: 4px; vertical-align: 5px; }
+#stamina.est .pct b { color: var(--ink2); }
+#stamina.est .pct > small { color: var(--dim); font-weight: 500; }
+#stamina.lost .liq { opacity: .4; }
+.sy-u b .sy-est { font: 600 var(--fs-10)/1 var(--f-sys); font-style: normal; color: var(--dim); border: 1px solid color-mix(in srgb, var(--dim) 55%, transparent); border-radius: 4px; padding: 2px 3px 1px; margin-right: 5px; vertical-align: 3px; }
+/* the pill hangs below #top; #layout (z 1, later in the DOM, opaque in white) painted over it. Lift the header only while the pill shows and the chat isn't popped out. */
+@media (min-width: 761px) { body:not(.chat-pop) #top:has(.st-age:not([hidden])) { z-index: 2; } }
+/* t-ut-orb ①: the same trap for the sync pill's hover popover (.sy-pop): only its top 13 px showed, as an "arc" under the header. */
+@media (min-width: 761px) { body:not(.chat-pop) #top:has(#sync:hover), body:not(.chat-pop) #top:has(#sync:focus-visible) { z-index: 2; } }
+/* ===== t-select-color: under the ink skin my chat bubble (and the filled 待验收/待拍板 tags, the queue badge) are inverted against the theme:
+   light fill on dark themes, dark fill on light ones. The global ::selection (light ink on dark themes, dark ink on light) then matched the fill
+   and selected text vanished. These inverted surfaces get the opposite highlight. Shared by desktop and phone. */
+html[data-theme="dark"] #right .msg.me .mb::selection, html[data-theme="dark"] #right .msg.me .mb *::selection,
+html[data-theme="dark"] .tag.deliverable::selection, html[data-theme="dark"] .tag.plan::selection, html[data-theme="dark"] .aq-n::selection { background: rgba(17,17,17,.2); color: #111; }
+html:not([data-theme="dark"]) #right .msg.me .mb::selection, html:not([data-theme="dark"]) #right .msg.me .mb *::selection,
+html:not([data-theme="dark"]) .tag.deliverable::selection, html:not([data-theme="dark"]) .tag.plan::selection, html:not([data-theme="dark"]) .aq-n::selection { background: rgba(255,255,255,.34); color: #fff; }
+
