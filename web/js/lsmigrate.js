@@ -7,6 +7,11 @@
     /* 1 */ function (L) {   // t-mail-unread-pill + t-ui-fix-r3 R3-07 (were removeItem calls on every app.js boot)
       L.removeItem("rt.mailUnread");
       L.removeItem("rt.esMiss");
+    },
+    /* 2 */ function (L) {   // t-tex-trim: the Sweater (knit2) and Saddle (leather2) textures were removed; keep the same family
+      var map = { knit2: "knit1", leather2: "leather1" }, v = null;
+      try { v = JSON.parse(L.getItem("rt.texture")); } catch (e) { }
+      if (typeof v === "string" && map[v]) L.setItem("rt.texture", JSON.stringify(map[v]));
     }
   ];
   window.RT_LS_SCHEMA = STEPS.length;

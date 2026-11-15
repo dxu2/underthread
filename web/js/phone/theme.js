@@ -92,6 +92,7 @@ function wirePhTheme() {
       document.querySelectorAll(".seg[data-seg=texture]").forEach(s => s.append(document.createTextNode("")));
     }
     function texSet(v, quiet) {
+      v = { knit2: "knit1", leather2: "leather1" }[v] || v;   // t-tex-trim: an old tab may still write a removed texture
       const ok = (App.textures ? App.textures() : ["off"]).includes(v) ? v : "off";
       const go = () => {
         if (!quiet) { try { localStorage.setItem("rt.texture", JSON.stringify(ok)); } catch (err) { } }

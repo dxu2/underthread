@@ -145,11 +145,11 @@ function utRow(en) {
   return stRow(en ? "Palette" : "配色", en ? "Underthread (the default) is solid coffee / cream with the needle-thread avatars. Ink is black glass. Night / Day still follow the theme above." : "特典（默认）是纯色咖啡 / 奶油，配针线头像；墨刊是黑色毛玻璃。夜 / 昼仍按上面的「主题」走",
     stSeg("ut", [["ink", "墨刊", "Ink"], ["ut", "Underthread 特典", "Underthread"]], utNow(), "data-ut-set"), "", "div");
 }
-// t-theme-knit: 质感 row, generic (rt.texture = off | knit1 | knit2; leather later = one more entry here + its css). Flipped in place by mobile.js ui13 (texSet / texPaint).
-const TEXTURES = [["off", "关", "Off"], ["knit1", "针脚", "Stitch"], ["knit2", "毛衣", "Sweater"], ["leather1", "软皮", "Leather"], ["leather2", "马鞍", "Saddle"]];   /* t-theme-leather: leather1/2 → texture-leather.css */
-const texNow = () => { let v = null; try { v = JSON.parse(localStorage.getItem("rt.texture")); } catch (err) { } return TEXTURES.some(x => x[0] === v) ? v : "off"; };
+// t-theme-knit: 质感 row, generic (rt.texture = off | knit1 | leather1; a new texture = one more entry here + its css; knit2 / leather2 removed in t-tex-trim, lsmigrate.js step 2 maps them). Flipped in place by mobile.js ui13 (texSet / texPaint).
+const TEXTURES = [["off", "关", "Off"], ["knit1", "针脚", "Stitch"], ["leather1", "软皮", "Leather"]];   /* t-theme-leather: leather1 → texture-leather.css */
+const texNow = () => { let v = null; try { v = JSON.parse(localStorage.getItem("rt.texture")); } catch (err) { } v = { knit2: "knit1", leather2: "leather1" }[v] || v; return TEXTURES.some(x => x[0] === v) ? v : "off"; };
 function texRow(en) {
-  return stRow(en ? "Texture" : "质感", en ? "Adds a material look on top of the palette; colours stay the same. Sweater and Saddle are the stronger ones." : "在配色上叠一层材质，颜色不变；毛衣比针脚、马鞍比软皮更明显",
+  return stRow(en ? "Texture" : "质感", en ? "Adds a material look on top of the palette; colours stay the same." : "在配色上叠一层材质，颜色不变",
     stSeg("texture", TEXTURES, texNow(), "data-tex-set"), "", "div");
 }
 function spRow(en) {

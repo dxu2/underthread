@@ -1,12 +1,11 @@
-/* t-theme-leather · 质感层「皮革」（web/texture-leather.css）。设置 → 外观 →「质感」：rt.texture = leather1（软皮）| leather2（马鞍），首帧脚本设 <html data-texture>。
-   由artist 角色的 work/t-theme-leather/leather-layer.css 接入，规则原样（选择器本来就是 data-texture^="leather" / ="leather2"），底纹在 /static/leather/。
+/* t-theme-leather · 质感层「皮革」（web/texture-leather.css）。设置 → 外观 →「质感」：rt.texture = leather1（软皮；2 档「马鞍」t-tex-trim 11-15 删了，旧值由 lsmigrate.js 第 2 步改成 leather1），首帧脚本设 <html data-texture>。
+   由artist 角色的 work/t-theme-leather/leather-layer.css 接入，规则原样（选择器是 data-texture^="leather"），底纹在 /static/leather/。
    下面接着是扩展页和对比度修正。和 texture-knit.css 互不命中（同一时间只挂一种 data-texture）。 */
 
 /* t-theme-leather v1 · 皮革质感层（只加质感，不换配色）
-   挂法：<html data-texture="leather">（= 1 软皮）。2 档：data-texture="leather2"（马鞍）。也认 "leather1"，和smith的 knit1/knit2 命名对齐。
+   挂法：<html data-texture="leather">（= 1 软皮）。也认 "leather1"，和 knit1 命名对齐。
    不挂 data-texture 或挂别的值，一条都不命中。叠在任何现有配色上（墨刊 ink、Underthread，深浅都行）。
    1 软皮：卡片面上细荔枝纹（很淡）；内侧一圈压痕 + 直针脚；按钮压纹凸起，按下凹进去；顶栏下沿改成压痕加针脚；边缘一点擦色。
-   2 马鞍：粗荔枝纹更明显；针脚变成斜的马鞍针、线更粗、主色线；边缘擦色更重；顶栏是双压线夹一道马鞍针（工具压花线）；分隔线也缝。
    颜色全部取当前主题变量（--dim / --accent / --ink），只有压痕和擦色的明暗用黑/白半透明（深浅主题各一组）。
    底纹图：work/t-theme-leather/tex/*.webp（黑白 + 透明叠加层，不带颜色），接入时拷到 web/leather/，这里按 /static/leather/ 引用。
    生成：build/leathergen.html + tex.json + texrun.mjs（可平铺 Worley 颗粒 + 细噪声，高度场打光）。
@@ -40,17 +39,6 @@ html[data-texture^="leather"][data-theme="dark"] {
   --lt-press: rgba(0, 0, 0, .55);
   --lt-sh: 0 1px 2px rgba(0, 0, 0, .40);
 }
-html[data-texture="leather2"] {
-  --lt-grain-size: 160px 160px;
-  --lt-thread: color-mix(in srgb, var(--accent, var(--glow)) 55%, color-mix(in srgb, var(--dim) 70%, transparent));
-  --lt-sw: 2.6px;
-  --lt-in: 6.5px;
-  /* 马鞍针：斜的短线，四条边各自转角度 */
-  --lt-st-h: repeating-linear-gradient(45deg, var(--lt-thread) 0 1.6px, transparent 1.6px 5.5px);
-  --lt-st-v: repeating-linear-gradient(135deg, var(--lt-thread) 0 1.6px, transparent 1.6px 5.5px);
-}
-html[data-texture="leather2"][data-theme="white"] { --lt-grain: url("/static/leather/leather-saddle-l.webp"); --lt-burn: rgba(90, 58, 34, .16); --lt-groove: rgba(90, 58, 34, .22); }
-html[data-texture="leather2"][data-theme="dark"]  { --lt-grain: url("/static/leather/leather-saddle-d.webp"); --lt-burn: rgba(0, 0, 0, .42); }
 
 /* ---- 面板 / 卡片：荔枝纹 + 内侧压痕 + 四条直边针脚 + 边缘擦色 ---- */
 html[data-texture^="leather"] :is(.toc-box, .hd, .ru-card, .dc-none, .dw-dock, .sy-pop, .sy-use) {
@@ -90,30 +78,19 @@ html[data-texture^="leather"] :is(.ab, .hc-mail, .dw-stamp, .tb-row, .hd-chip, .
 }
 /* 主按钮：内侧一圈主色线 */
 html[data-texture^="leather"] :is(.ab, .dw-stamp) { outline: 1px dashed var(--lt-thread-acc) !important; outline-offset: -4px !important; }
-html[data-texture="leather2"] :is(.ab, .dw-stamp, .hd-chip, .hc-mail) { outline: 1.5px dashed var(--lt-thread) !important; outline-offset: -4px !important; }
 /* 首页右侧那列小卡本身是按钮：保留面板处理，再加一点凸起 */
 
-/* ---- 分隔线：1 档是压痕（暗线 + 亮边），2 档缝起来 ---- */
+/* ---- 分隔线：压痕（暗线 + 亮边） ---- */
 html[data-texture^="leather"] :is(.ft, .sy-row) { border-top-color: var(--lt-groove) !important; box-shadow: inset 0 1px 0 var(--lt-hi) !important; }
-html[data-texture="leather2"] :is(.ft, .sy-row) { border-top-style: dashed !important; border-top-color: var(--lt-thread) !important; box-shadow: none !important; }
 html[data-texture^="leather"] #drawer :is(td, th) { border-bottom-color: var(--lt-groove) !important; }
 
-/* ---- 顶栏下沿：1 档压痕 + 针脚；2 档工具压花：双压线夹一道马鞍针 ---- */
+/* ---- 顶栏下沿：压痕 + 针脚 ---- */
 html[data-texture^="leather"] #top::after {
   height: 5px !important;
   background:
     linear-gradient(var(--lt-groove), var(--lt-groove)) left bottom / 100% 1px no-repeat,
     linear-gradient(var(--lt-hi), var(--lt-hi)) left 0 bottom 1px / 100% 1px no-repeat,
     repeating-linear-gradient(90deg, var(--lt-thread) 0 5px, transparent 5px 9px) left top / 100% 1.5px no-repeat !important;
-}
-html[data-texture="leather2"] #top::after {
-  height: 10px !important;
-  background:
-    linear-gradient(var(--lt-groove), var(--lt-groove)) left top / 100% 1px no-repeat,
-    linear-gradient(var(--lt-hi), var(--lt-hi)) left 0 top 1px / 100% 1px no-repeat,
-    repeating-linear-gradient(45deg, var(--lt-thread) 0 1.6px, transparent 1.6px 5.5px) left 0 top 3px / 100% 2.6px no-repeat,
-    linear-gradient(var(--lt-groove), var(--lt-groove)) left 0 bottom 1px / 100% 1px no-repeat,
-    linear-gradient(var(--lt-hi), var(--lt-hi)) left bottom / 100% 1px no-repeat !important;
 }
 
 /* 系统开了「增强对比度」：去掉荔枝纹和擦色，只留压痕和针脚 */
@@ -157,9 +134,8 @@ html[data-texture^="leather"] .mk-card:hover { box-shadow: inset 0 3px 0 -1px va
     box-shadow: inset 0 0 0 1px var(--lt-burn), inset 0 0 12px -2px var(--lt-burn), var(--lt-sh) !important;
     --lt-in: 5px; --lt-r: 16px; }
 }
-/* 信箱 / 新回复这类平铺的行列表没有面板，不压纹；行间分隔：1 档压痕（暗线 + 亮边），2 档缝起来 */
+/* 信箱 / 新回复这类平铺的行列表没有面板，不压纹；行间分隔：压痕（暗线 + 亮边） */
 html[data-texture^="leather"] :is(.act-row + .act-row, .mail-i + .mail-i, .nr-r + .nr-r) { border-top: 1px solid var(--lt-groove); box-shadow: inset 0 1px 0 var(--lt-hi); }
-html[data-texture="leather2"] :is(.act-row + .act-row, .mail-i + .mail-i, .nr-r + .nr-r) { border-top: 1px dashed var(--lt-thread); box-shadow: none; }
 @media (prefers-contrast: more) {
   html[data-texture^="leather"] :is(.act-row + .act-row, .mail-i + .mail-i, .nr-r + .nr-r) { box-shadow: none; }
 }
@@ -170,12 +146,7 @@ html[data-texture="leather1"][data-theme="dark"]:not([data-ut]) { --lt-dim0: #7a
 html[data-texture="leather1"][data-theme="white"]:not([data-ut]) { --lt-dim0: #6b6b6b; --dim: color-mix(in srgb, #6b6b6b 97%, #111111); }
 html[data-texture="leather1"][data-theme][data-ut="dark-warm"] { --lt-dim0: #AF9273; --dim: color-mix(in srgb, #AF9273 90%, #F4E1C2); }
 html[data-texture="leather1"][data-theme][data-ut="light-warm"] { --lt-dim0: #7E604A; --dim: color-mix(in srgb, #7E604A 91%, #2B1913); }
-html[data-texture="leather2"][data-theme="dark"]:not([data-ut]) { --lt-dim0: #7a766d; --dim: color-mix(in srgb, #7a766d 76%, #ece8dd); }
-html[data-texture="leather2"][data-theme="white"]:not([data-ut]) { --lt-dim0: #6b6b6b; --dim: color-mix(in srgb, #6b6b6b 88%, #111111); }
-html[data-texture="leather2"][data-theme][data-ut="dark-warm"] { --lt-dim0: #AF9273; --dim: color-mix(in srgb, #AF9273 90%, #F4E1C2); }
-html[data-texture="leather2"][data-theme][data-ut="light-warm"] { --lt-dim0: #7E604A; --dim: color-mix(in srgb, #7E604A 80%, #2B1913); }
 html[data-texture="leather1"][data-theme] { --lt-thread: color-mix(in srgb, var(--lt-dim0, var(--dim)) 58%, transparent); }
-html[data-texture="leather2"][data-theme] { --lt-thread: color-mix(in srgb, var(--accent, var(--glow)) 55%, color-mix(in srgb, var(--lt-dim0, var(--dim)) 70%, transparent)); }
 
 /* ---- t-home-colors L2（2026-11-10 用户选定）：每个板块一张染色皮 + 同色线。只挂在 data-texture^="leather" 下（软皮 / 马鞍、墨刊 / 特典都算），针织和无质感不命中。
    等你拍板 焦糖 · 此刻在忙 藏蓝（有立绘的 .hero 不染）· 团队交接 酒红 · 新回复 牛血 · 今天交付 墨绿 · 本周 驼 · 每日 橄榄 · 素材 石板蓝 · 用量 炭灰。
@@ -197,7 +168,6 @@ html[data-texture^="leather"] :is(.wg:not(.wg-busy.hero), .hd, .rv-card, .ru-car
   background-color: color-mix(in srgb, var(--dye, var(--panel)) var(--dye-amt, 0%), var(--panel)) !important;
   --dim: color-mix(in srgb, var(--lt-dim0) 58%, var(--ink));   /* --lt-dim0 is set for every leather × theme × skin combo above; no var(--dim) fallback (it would be a cycle) */
 }
-html[data-texture="leather2"] :is(.wg:not(.wg-busy.hero), .hd, .rv-card, .ru-card) { --dim: color-mix(in srgb, var(--lt-dim0) 48%, var(--ink)); }   /* 马鞍纹更粗更暗：小字再往正文色靠一点，真实纹理上 ≥ 4.8 */
 html[data-texture^="leather"][data-theme="dark"] :is(.wg-review, .rv-card, .wg-week, .wg-ongoing):not(.wg-busy.hero) { --dim: color-mix(in srgb, var(--lt-dim0) 44%, var(--ink)); }   /* 夜里浅色染料（焦糖 / 驼 / 橄榄）的皮更亮：小字再靠近正文色 */
 html[data-texture^="leather"] .ru-card { --lt-grain: url("/static/leather/leather-soft-d.webp"); }
 html[data-texture^="leather"][data-theme="white"] .ru-card { --lt-grain: url("/static/leather/leather-soft-l.webp"); }
@@ -210,9 +180,6 @@ html[data-texture="leather1"] :is(.wg-review, .wg-busy:not(.hero), .wg-team, .wg
   --lt-sw: 2px;
   --lt-st-h: repeating-linear-gradient(90deg, var(--lt-thread) 0 var(--lt-dash), transparent var(--lt-dash) var(--lt-pitch));
   --lt-st-v: repeating-linear-gradient(180deg, var(--lt-thread) 0 var(--lt-dash), transparent var(--lt-dash) var(--lt-pitch)); }
-html[data-texture="leather2"] :is(.wg-review, .wg-busy:not(.hero), .wg-team, .wg-replies, .wg-today, .wg-week, .wg-ongoing, .wg-media, .wg-usage, .hd, .rv-card, .ru-card) {
-  --lt-st-h: repeating-linear-gradient(45deg, var(--lt-thread) 0 1.6px, transparent 1.6px 5.5px);
-  --lt-st-v: repeating-linear-gradient(135deg, var(--lt-thread) 0 1.6px, transparent 1.6px 5.5px); }
 /* 增强对比度：不染色，回到原皮 */
 @media (prefers-contrast: more) {
   html[data-texture^="leather"] :is(.wg, .hd, .rv-card, .ru-card) { --dye-amt: 0% !important; }

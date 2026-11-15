@@ -19,7 +19,7 @@
 <link rel="manifest" href="/manifest.webmanifest">
 <title>Underthread</title>
 <!-- t-visual-ink: 墨刊 skin, set before first paint. t-theme-trim: always on (rt.skin="classic" and #skin=classic are ignored, the switches are gone); t-theme-trim2: rt.inkLight is ignored too (neutral paper, its switch is gone). -->
-<script>(function(){var d=document.documentElement;d.dataset.skin="ink";var g=false;try{g=JSON.parse(localStorage.getItem("rt.stage"))===true;}catch(e){}var h=/[#&]stage=(1|0)/.exec(location.hash);if(h)g=h[1]==="1";if(g)d.dataset.stage="1";try{if(JSON.parse(localStorage.getItem("rt.powerSave"))===false)d.dataset.power="off";}catch(e){}var x=null;try{x=JSON.parse(localStorage.getItem("rt.texture"));}catch(e){}var xh=/[#&]texture=(\w+)/.exec(location.hash);if(xh)x=xh[1];if(typeof x==="string"&&/^[a-z0-9]{1,16}$/.test(x)&&x!=="off")d.dataset.texture=x;})();</script>
+<script>(function(){var d=document.documentElement;d.dataset.skin="ink";var g=false;try{g=JSON.parse(localStorage.getItem("rt.stage"))===true;}catch(e){}var h=/[#&]stage=(1|0)/.exec(location.hash);if(h)g=h[1]==="1";if(g)d.dataset.stage="1";try{if(JSON.parse(localStorage.getItem("rt.powerSave"))===false)d.dataset.power="off";}catch(e){}var x=null;try{x=JSON.parse(localStorage.getItem("rt.texture"));}catch(e){}var xh=/[#&]texture=(\w+)/.exec(location.hash);if(xh)x=xh[1];if(x==="knit2")x="knit1";if(x==="leather2")x="leather1";if(typeof x==="string"&&/^[a-z0-9]{1,16}$/.test(x)&&x!=="off")d.dataset.texture=x;})();</script>
 <!-- t-settings-tab / t-theme-auto: theme mode before first paint. rt.themeMode auto|manual; a device with no saved theme starts on auto.
      Auto: system dark -> dark (夜), light -> white (昼); neither answered -> 07:00-19:00 white. Writes rt.theme so app.js picks it up. -->
 <script>(function(){var d=document.documentElement,L=localStorage,m=null,t=null;try{m=JSON.parse(L.getItem("rt.themeMode"));}catch(e){}
@@ -51,7 +51,7 @@ d.dataset.splash="1";d.style.setProperty("--ut-guard",t==="white"?"#ffffff":t===
 <link rel="stylesheet" href="/static/css/glass.css">   <!-- t-glass-system: shared glass + motion tokens; card / rail / TOC glass. <html data-glass="0"> turns it off -->
 <link rel="stylesheet" href="/static/css/theme-ut.css">   <!-- t-theme-ut: Underthread 特典配色, only under html[data-ut] -->
 <link rel="stylesheet" href="/static/css/texture-knit.css">   <!-- t-theme-knit: 质感「针织」, only under html[data-texture^=knit] (rt.texture, 设置 → 外观 → 质感) -->
-<link rel="stylesheet" href="/static/css/texture-leather.css">   <!-- t-theme-leather: 质感「皮革」, only under html[data-texture^=leather] (leather1 软皮 / leather2 马鞍) -->
+<link rel="stylesheet" href="/static/css/texture-leather.css">   <!-- t-theme-leather: 质感「皮革」, only under html[data-texture^=leather] (leather1 软皮) -->
 <link rel="stylesheet" href="/static/css/oss.css">   <!-- open-source build: text wordmark, hides switches for parts not shipped (stage art, voice) -->
 <!-- EXT:CSS --> <!-- core / local split: server.py puts local/ext.json stylesheets here (or after their "after" file) -->
 </head>

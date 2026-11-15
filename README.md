@@ -153,7 +153,7 @@ Something not working? See [Troubleshooting](docs/troubleshooting.md). The long 
 - **⌘K, or just `/`.** Search every card and everything said in chat.
 - **One mailbox** for replies, deliveries and notices, with filters.
 - **Your mail in the steward's inbox.** Connect Gmail in Settings → Connections (app password, stored in the keychain) and new mail arrives as one headers-only entry every few minutes, sorted into "needs you / can draft / FYI". Read-only: nothing is ever sent or deleted. Slack is next. See [Feeds](docs/feeds.md).
-- **Your look.** The Underthread palette in coffee and cream, or Ink. Night, day or follow the system, plus textures: Stitch, Sweater, Leather, Saddle.
+- **Your look.** The Underthread palette in coffee and cream, or Ink. Night, day or follow the system, plus textures: Stitch and Leather.
 
   <p align="center"><img src="docs/img/textures.gif" alt="Switching textures in Settings: off, Stitch, Sweater, Leather, Saddle" width="720"></p>
 
