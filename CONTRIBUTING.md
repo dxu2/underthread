@@ -37,7 +37,7 @@ Read [docs/architecture.md](docs/architecture.md) first. In short:
 ## Ground rules for code
 
 - **Python standard library only.** No `pip install` for the core. An optional tool may need an external program (ffmpeg, cwebp, whisper.cpp); say so at the top of the file and fail with a clear message when it's missing.
-- **No build step** for `web/`. When you change a file in `web/`, bump its `?v=N` in `web/index.html` so browsers fetch the new copy.
+- **No build step** for `web/`. The page scripts are ES modules: `web/main.js` imports them in order, and the server writes an import map that gives every file a `?v=<content hash>`, so a changed file always gets a new URL. Never write `?v=` by hand; a new page script is one `import` line in `web/main.js`. Modules run in strict mode.
 - **All state goes through `stateutil.py`.** Never write `state.json` directly, and never rewrite or truncate `inbox.jsonl`.
 - **Both languages.** Every user-facing string needs English and Chinese (look for the `en() ? "…" : "…"` pattern and the string tables in `web/app.js`).
 - **Desktop and phone.** Check a UI change at desktop width and at about 390px wide, in light and dark.

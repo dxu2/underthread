@@ -17,7 +17,7 @@ Start with the log: `tail -n 80 logs/server.log`. Most problems show up there fi
 | There's no Approve button on a delivery | The card isn't in `review`, or the draft is empty | Ask the steward to check the card; it fixes the state |
 | An image on a card doesn't show | The attachment path isn't relative (`work/…` or `uploads/…`) | Ask the teammate to re-attach with a relative path |
 | The steward stopped dispatching | Usage passed 85% (it queues) or 95% (it sleeps) | Wait for the window to reset; it wakes by itself. Urgent cards still go out at 85% |
-| Changes to `web/` files don't show | Browser cache | Bump the `?v=N` on that file in `web/index.html`, then reload |
+| Changes to `web/` files don't show | The page was opened before the change | Reload (the "Dashboard updated" pill does it). Every file's URL carries its content hash, so there is nothing to bump. Still old: check the browser is Safari 16.4+ / Chrome 89+ (import maps) |
 | Changes to `server.py` / `stateutil.py` don't apply | The running server still has the old code | Restart the server. With keepalive: `kill $(lsof -nP -tiTCP:8765 -sTCP:LISTEN)` and it comes back in about 2 seconds. Don't use a broad `pkill -f server.py` |
 | The phone can't open the dashboard | The dashboard only listens on `127.0.0.1` | Use Tailscale Serve: [phone-and-push.md](phone-and-push.md) |
 | Push notifications don't arrive | Not served over https, or on iPhone not opened from the home screen | [phone-and-push.md](phone-and-push.md#if-push-doesnt-work) |

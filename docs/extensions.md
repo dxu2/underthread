@@ -33,8 +33,12 @@ local/ext/<name>/
 - `name` must match the folder name. `api` is the registry API this extension was written for (now **1**).
   `requires` is an optional version range for Underthread itself (`>=0.2`, `>=0.2,<1`, `==0.2.1`).
 - `web.css` / `web.js`: paths inside the extension's `web/` folder. `after` puts the tag right after a core file
-  (`style.css`, `mobile.css`, `skin-ink.css`, `icon-180.png` for a script that must run in `<head>`); without it the tag goes
-  to the end of the page's extension block. Every file gets a content hash in its URL, so a change shows up without a restart.
+  (`style.css`, `mobile.css`, `skin-ink.css`, `icon-180.png` for a script that must run in `<head>`); a script with `after` is a
+  plain `<script>` that runs while the page is parsed. Without `after` a script goes to the end of the page as `<script defer>`:
+  it runs after every core page script (they are ES modules, see `web/main.js`) and before `DOMContentLoaded`, in the order listed.
+  `{"src": "x.js", "module": true}` loads it as an ES module instead (same place, same order; it may `import` other files
+  by relative path). Every file gets a content hash in its URL (scripts through the page's import map), so a change shows up
+  without a restart. The core page scripts are no longer `<script>` tags, so `after` a core `.js` file falls back to the end.
 - `web.drop`: core files to leave out of the page (for example `oss.css`).
 - `card_kinds`: new card kinds (see below). Both the server and `stateutil.py` read them from here.
 
@@ -72,7 +76,7 @@ def register(R):
 
 ## In the page: App.ext
 
-`web/ext.js` loads before every other page script and is `window.UTExt` (also `App.ext`). Core registers its own nine home
+`web/ext.js` loads before every other core page script and is `window.UTExt` (also `App.ext`); extension scripts run after all of them. Core registers its own nine home
 widgets through it, so a widget from an extension sizes, moves, drags and hides like a core one.
 
 ```js
