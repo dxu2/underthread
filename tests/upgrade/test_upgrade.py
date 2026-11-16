@@ -144,7 +144,7 @@ class Upgrade(unittest.TestCase):
         }
         for k, v in cls.local.items():
             write(os.path.join(d, k), v)
-        changed = set(git("diff", "--name-only", PREV, HEAD, cwd=ROOT).split())
+        changed = set(git("diff", "--no-renames", "--name-only", PREV, HEAD, cwd=ROOT).split())   # a moved file counts as changed (SECURITY.md went to .github/)
         cls.mine = next(f for f in ("policy.md", "team.md", "SECURITY.md", "CODE_OF_CONDUCT.md", "LICENSE") if f not in changed)
         write(os.path.join(d, cls.mine), read(os.path.join(d, cls.mine)) + "\n<!-- my own line -->\n")
         with Server(d, cls.port) as s:   # the old version runs once on this data
