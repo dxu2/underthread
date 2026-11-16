@@ -548,6 +548,9 @@ def after_switch(run):
     r = subprocess.run([PY, "make_agents.py"], cwd=ROOT, capture_output=True, text=True, timeout=180)
     if r.returncode:
         raise Stop("make_agents.py failed: " + (r.stderr or r.stdout).strip()[-300:])
+    if os.path.exists(os.path.join(ROOT, "core", "avatar_seed.py")):   # t-oss-generic S1: missing default avatars (never overwrites)
+        run.step("avatars")
+        subprocess.run([PY, os.path.join("core", "avatar_seed.py")], cwd=ROOT, capture_output=True, text=True, timeout=320)
 
 
 def notify(entry):

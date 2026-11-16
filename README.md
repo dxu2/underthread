@@ -44,13 +44,13 @@ The default crew has seven members. Each one has an embroidered patch, and when 
 
 | | Who | Id | What they do |
 |---|---|---|---|
-| <img src="avatars/ut/manager.png" width="48" alt=""> | **Steward** | `manager` | Reads every message you send, sorts it into cards, hands them out and writes you a daily report. Rings a tiny bell when there's work. |
-| <img src="avatars/ut/scout.png" width="48" alt=""> | **Scout** | `scout` | Research, comparisons and fact-checks, with a source for every claim. Never goes anywhere without a magnifying glass. |
-| <img src="avatars/ut/writer.png" width="48" alt=""> | **Quill** | `writer` | Owns every word: docs, drafts, summaries, messages. Turns a page in a little notebook while thinking. |
-| <img src="avatars/ut/director.png" width="48" alt=""> | **Lens** | `director` | Breaks big jobs into steps: plans, checklists, reviews. Snaps a clapperboard when a scene is ready. |
-| <img src="avatars/ut/artist.png" width="48" alt=""> | **Brush** | `artist` | Images, diagrams and mockups, optionally through your own ComfyUI machine. Leaves a dab of paint behind. |
-| <img src="avatars/ut/ops.png" width="48" alt=""> | **Signal** | `ops` | Your calendar, follow-ups and message drafts. Flies paper planes. |
-| <img src="avatars/ut/smith.png" width="48" alt=""> | **Smith** | `smith` | Keeps the dashboard and the tools running, and makes a backup before touching anything. Knits when nothing is on fire. |
+| <img src="avatars/seed/ut/manager.png" width="48" alt=""> | **Steward** | `manager` | Reads every message you send, sorts it into cards, hands them out and writes you a daily report. Rings a tiny bell when there's work. |
+| <img src="avatars/seed/ut/scout.png" width="48" alt=""> | **Scout** | `scout` | Research, comparisons and fact-checks, with a source for every claim. Never goes anywhere without a magnifying glass. |
+| <img src="presets/classic/avatars/ut/writer.png" width="48" alt=""> | **Quill** | `writer` | Owns every word: docs, drafts, summaries, messages. Turns a page in a little notebook while thinking. |
+| <img src="presets/classic/avatars/ut/director.png" width="48" alt=""> | **Lens** | `director` | Breaks big jobs into steps: plans, checklists, reviews. Snaps a clapperboard when a scene is ready. |
+| <img src="avatars/seed/ut/artist.png" width="48" alt=""> | **Brush** | `artist` | Images, diagrams and mockups, optionally through your own ComfyUI machine. Leaves a dab of paint behind. |
+| <img src="presets/classic/avatars/ut/ops.png" width="48" alt=""> | **Signal** | `ops` | Your calendar, follow-ups and message drafts. Flies paper planes. |
+| <img src="avatars/seed/ut/smith.png" width="48" alt=""> | **Smith** | `smith` | Keeps the dashboard and the tools running, and makes a backup before touching anything. Knits when nothing is on fire. |
 
 Want a different team? Names, duties, tone and the number of teammates all live in `roster.json`, and the Hiring market has 24 ready-made job templates. A Chinese content-creator preset (B站 / YouTube / 小红书: scripts, storyboards, covers, publishing calendar) ships in `presets/content-zh/`; `python3 tools/preset.py apply content-zh` switches to it. See [Make it your crew](#make-it-your-crew).
 

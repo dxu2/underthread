@@ -5,10 +5,14 @@ replaced (the picked avatar; tools/avatar_sizes.py then moves meta.avv), at most
 import datetime as dt
 import json
 import os
+import sys
 import time
 import unittest
 
-from tests.api._server import FixtureServer
+from tests.api._server import FixtureServer, ROOT as _ROOT
+
+sys.path.insert(0, _ROOT)
+from core.avatar_seed import seed  # noqa: E402
 
 NOW = dt.datetime.now().astimezone()
 
@@ -31,6 +35,7 @@ IDS = {}
 
 
 def prepare(root):
+    seed(root, background=False)   # t-oss-generic S1: avatars/ut/ is install data; the server seeds it at start, prepare runs before
     roles = [r["id"] for r in rj(os.path.join(root, "roster.json"))["roles"] if r["id"] != "manager"]
     ut = [i for i in roles if os.path.exists(os.path.join(root, "avatars", "ut", f"{i}.png"))]
     IDS.update(given=roles[0], wait=ut[-1], old=roles[1], gone=roles[2])

@@ -24,6 +24,7 @@ from api.routes import schedules, snooze, state, push, health as _health_mod, se
 
 from api.ctx import S, C, MG, ROOT, CONFIG, _comfy
 from core import registry as REG
+from core import avatar_seed
 from api.http import H, QuietServer
 from api.routes.schedules import schedules_import
 from api.routes.state import sync_roster
@@ -50,6 +51,7 @@ def main():
                                          + (f" (error: {e['error']})" if e.get("error") else "") for n, e in S.EXT.items()), flush=True)
     _comfy["configured"] = bool(CONFIG.get("comfy"))
     sync_roster()
+    avatar_seed.seed(ROOT)   # t-oss-generic S1: avatars/ut/ is install data; a missing default patch comes back from avatars/seed/ut/
     st0 = S.read()   # t-oss-struct E1: the first read after an update runs the state migrations (backup in local/backups/migrate)
     sc = MG.status(ROOT, st0)
     print(f"schema: code {sc['code']}, state {sc['state']}" + (f"; data newer than this code: {', '.join(sc['ahead'])}" if sc["ahead"] else ""), flush=True)

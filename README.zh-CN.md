@@ -44,13 +44,13 @@
 
 | | 谁 | Id | 做什么 |
 |---|---|---|---|
-| <img src="avatars/ut/manager.png" width="48" alt=""> | **Steward**（管家） | `manager` | 读你发的每条消息，整理成卡片、派出去，每天给你写日报。有活的时候摇一下小铃铛。 |
-| <img src="avatars/ut/scout.png" width="48" alt=""> | **Scout**（研究员） | `scout` | 查资料、做对比、核事实，每条结论都带出处。放大镜不离手。 |
-| <img src="avatars/ut/writer.png" width="48" alt=""> | **Quill**（写作） | `writer` | 管所有文字：文档、草稿、总结、消息。想事情的时候翻小本子。 |
-| <img src="avatars/ut/director.png" width="48" alt=""> | **Lens**（规划） | `director` | 把大活拆成步骤：计划、清单、复查。场景就绪时打一下场记板。 |
-| <img src="avatars/ut/artist.png" width="48" alt=""> | **Brush**（设计） | `artist` | 图片、示意图和样稿，可以接你自己的 ComfyUI 机器。走过留下一点颜料。 |
-| <img src="avatars/ut/ops.png" width="48" alt=""> | **Signal**（协调） | `ops` | 日程、跟进、消息草稿。会折纸飞机。 |
-| <img src="avatars/ut/smith.png" width="48" alt=""> | **Smith**（工具） | `smith` | 维护看板和工具，动手前先备份。没事的时候织毛线。 |
+| <img src="avatars/seed/ut/manager.png" width="48" alt=""> | **Steward**（管家） | `manager` | 读你发的每条消息，整理成卡片、派出去，每天给你写日报。有活的时候摇一下小铃铛。 |
+| <img src="avatars/seed/ut/scout.png" width="48" alt=""> | **Scout**（研究员） | `scout` | 查资料、做对比、核事实，每条结论都带出处。放大镜不离手。 |
+| <img src="presets/classic/avatars/ut/writer.png" width="48" alt=""> | **Quill**（写作） | `writer` | 管所有文字：文档、草稿、总结、消息。想事情的时候翻小本子。 |
+| <img src="presets/classic/avatars/ut/director.png" width="48" alt=""> | **Lens**（规划） | `director` | 把大活拆成步骤：计划、清单、复查。场景就绪时打一下场记板。 |
+| <img src="avatars/seed/ut/artist.png" width="48" alt=""> | **Brush**（设计） | `artist` | 图片、示意图和样稿，可以接你自己的 ComfyUI 机器。走过留下一点颜料。 |
+| <img src="presets/classic/avatars/ut/ops.png" width="48" alt=""> | **Signal**（协调） | `ops` | 日程、跟进、消息草稿。会折纸飞机。 |
+| <img src="avatars/seed/ut/smith.png" width="48" alt=""> | **Smith**（工具） | `smith` | 维护看板和工具，动手前先备份。没事的时候织毛线。 |
 
 想换一支队伍？名字、职责、语气、人数都在 `roster.json` 里；招聘市场还有 24 个现成岗位。做 B站 / YouTube / 小红书 的话，`presets/content-zh/` 里有一套中文自媒体团队预设（脚本、分镜、封面、发布排期），跑 `python3 tools/preset.py apply content-zh` 就能换过去。见[组建你自己的小队](#组建你自己的小队)。
 

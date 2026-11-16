@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
-"""Leak scan for tracked text files: home-folder paths, private IPs, token-looking strings, real-looking emails.
+"""Leak scan for tracked text files: home-folder paths, private IPs, token-looking strings, real-looking emails, and tracked
+install avatars (anything under avatars/ outside avatars/seed/).
 
     python3 tests/scan.py            # tracked files (git ls-files)
     python3 tests/scan.py --staged   # only what is staged for the next commit
@@ -38,6 +39,13 @@ def main():
             # whole words only on the ASCII side: "5090" must not hit inside a sha256 in core.manifest.json
             pats.append(("listed word", re.compile("(?<![A-Za-z0-9])(?:" + "|".join(re.escape(w) for w in words) + ")(?![A-Za-z0-9])", re.I)))
     hits = 0
+    # t-oss-generic S1: avatars/ is install data (git-ignored); only the shipped defaults in avatars/seed/ may be tracked.
+    # A tracked avatars/ut/<id> is somebody's own picture leaking into the repo (food/buyer once did).
+    cmd = ["git", "diff", "--cached", "--name-only", "--diff-filter=AM"] if "--staged" in sys.argv else ["git", "ls-files"]
+    for f in subprocess.run(cmd + ["--", "avatars"], cwd=ROOT, capture_output=True, text=True).stdout.split("\n"):
+        if f and not f.startswith("avatars/seed/"):
+            hits += 1
+            print(f"{f}: install avatar tracked (avatars/ is install data; defaults go in avatars/seed/)")
     for f in files("--staged" in sys.argv):
         if f in ("tests/scan.py", "tests/scan-words.txt"):
             continue

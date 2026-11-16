@@ -85,7 +85,7 @@ Settings → Roster lists every teammate. **Transfer** changes a teammate's job 
 | `order` | dashboard | Sort order |
 | `enabled` | everything | `false` hides the teammate and removes its agent file on the next `make_agents.py` |
 
-Avatars: put a PNG at `avatars/ut/<id>.png` (and optionally `avatars/<id>.png`), then run `python3 tools/avatar_sizes.py` (needs `cwebp`). Without one, the dashboard shows a coloured circle with an initial.
+Avatars: put a PNG at `avatars/ut/<id>.png` (and optionally `avatars/<id>.png`), then run `python3 tools/avatar_sizes.py` (needs `cwebp`). `avatars/` is yours and git-ignored: the default patches ship in `avatars/seed/ut/` (and `presets/<name>/avatars/ut/`) and are copied in only where a role has no picture, never over yours. Without one, the dashboard shows a coloured circle with an initial.
 
 ## Worked example: a solo developer's crew
 
