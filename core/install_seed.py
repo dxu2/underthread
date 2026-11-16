@@ -5,7 +5,9 @@ make_agents.py. Neither step overwrites or deletes anything.
 
 Role notes: the classic Quill / Lens / Signal notes left core (roles/{writer,director,ops}.md -> presets/classic/roles/). A
 roster role whose notebook roles/<f>.md is missing gets the first preset copy back at roles/<f>.md (where tools/preset.py
-puts preset notes too; git-ignored), so an older crew keeps reading exactly what it read before.
+puts preset notes too; git-ignored), so an older crew keeps reading exactly what it read before. A default role whose notes
+ship as its market template (HR, S4: templates/roles/hr/role.md) gets them rendered at roles/<id>.md the same way, but only
+when the install has no local/roles/<id>.md of its own (an older install that hired HR keeps reading only its own notes).
 
 Avatars:
 
@@ -61,6 +63,14 @@ def roster_ids(root):
     return [r["id"] for r in roster_roles(root)]
 
 
+def render(body, r):
+    """The {{name}} / {{title}} / {{id}} / {{address}} placeholders of a template role.md, as tools/new_role.py fills them."""
+    addr = (r.get("address") or {}).get("name") if isinstance(r.get("address"), dict) else None
+    for k, v in {"name": r.get("name") or r["id"], "title": r.get("title") or "", "id": r["id"], "address": addr or "你"}.items():
+        body = body.replace("{{" + k + "}}", str(v))
+    return body
+
+
 def role_notes(root, dry=False):
     """Copy a missing roles/<f>.md notebook of a roster role from presets/<name>/roles/ (classic first). Returns the paths."""
     made = []
@@ -73,11 +83,21 @@ def role_notes(root, dry=False):
                 if os.path.exists(dst):
                     continue
                 src = next((os.path.join(d, n[6:]) for d in preset_dirs(root, "roles") if os.path.isfile(os.path.join(d, n[6:]))), None)
-                if not src:
+                if src:
+                    if not dry:
+                        os.makedirs(os.path.dirname(dst), exist_ok=True)
+                        shutil.copy2(src, dst)
+                    made.append(n)
+                    continue
+                tpl = os.path.join(root, "templates", "roles", r["id"], "role.md")
+                if n != f"roles/{r['id']}.md" or not os.path.isfile(tpl) or os.path.exists(os.path.join(root, "local", n)):
                     continue
                 if not dry:
                     os.makedirs(os.path.dirname(dst), exist_ok=True)
-                    shutil.copy2(src, dst)
+                    with open(tpl, encoding="utf-8") as f:
+                        body = f.read()
+                    with open(dst, "w", encoding="utf-8") as f:
+                        f.write(render(body, r))
                 made.append(n)
         if made and not dry:
             print("install_seed: role notes " + ", ".join(made), flush=True)

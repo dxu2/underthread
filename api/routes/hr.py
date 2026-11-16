@@ -1,6 +1,6 @@
 """Team changes: the 招聘市场 templates, hiring (tools/new_role.py plan / apply / retire / rehire), the HR interview and 调岗 DMs,
 退休 with a handover sheet and its undo, 返聘, 归档. Routes /api/templates, /api/tpl-av, /api/retire-plan, /api/transfer-plan,
-POST /api/hire and /api/interview. 批准入职 / 批准调岗 is the approve action (api/routes/actions.py), which calls _hire_apply."""
+POST /api/hire and /api/interview, GET /api/presets + POST /api/preset (整队预设). 批准入职 / 批准调岗 is the approve action (api/routes/actions.py), which calls _hire_apply."""
 import datetime as dt
 import json
 import os
@@ -20,11 +20,14 @@ _HEX = re.compile(r"^#[0-9a-fA-F]{6}$")
 _RID = re.compile(r"^[a-z][a-z0-9-]{1,15}$")
 
 
-def _tpl_list():
+HR_TPL = "hr"   # t-oss-gen-s4: HR's own template is not a market card (HR does the interviews); the market's 先请 HR applies it
+
+
+def _tpl_list(market=True):
     out = []
     for job in sorted(os.listdir(TPL_DIR)) if os.path.isdir(TPL_DIR) else []:
         p = os.path.join(TPL_DIR, job, "template.json")
-        if job.startswith(("_", ".")) or not os.path.isfile(p):
+        if job.startswith(("_", ".")) or not os.path.isfile(p) or (market and job == HR_TPL):
             continue
         try:
             t = json.load(open(p, encoding="utf-8"))
@@ -101,9 +104,11 @@ def hire_legacy(body):
             raise ValueError(f"管家、{rname('hr', 'HR')}、{rname('smith', '工具管家')}不能退休")
         args = [op, rid]
     elif op in ("plan", "apply"):
-        t = next((x for x in _tpl_list() if x["key"] == body.get("job")), None)
+        t = next((x for x in _tpl_list(market=False) if x["key"] == body.get("job")), None)
         if not t:
             raise ValueError("no such template")
+        if t["key"] == HR_TPL and (body.get("id") != HR_ID or _hr_on()):   # 先请 HR: only as the one hr, only when there is none
+            raise ValueError("HR 只能有一个，id 必须是 hr")
         v = next((x for x in t["variants"] if x["key"] == body.get("variant")), None)
         if not v:
             raise ValueError("no such personality")
@@ -657,9 +662,80 @@ def undo_update(body):
 HT_OPS = {"undo_retire": undo_retire, "unpark": unpark, "archive": archive_role, "undo_update": undo_update}
 
 
+# ===== t-oss-gen-s4: 整队预设 (whole-team presets) on the market page. tools/preset.py does the work, as from the command line:
+# dry = `apply <name> --dry` (nothing written), apply = `apply <name>` (every replaced file is backed up first; it prints the undo),
+# then install_seed (preset avatars / notes) and make_agents.py. roster.json is replaced whole, so the preview lists who leaves.
+PRESET_DIR = os.path.join(ROOT, "presets")
+_PKEY = re.compile(r"^[a-z0-9][a-z0-9-]{0,31}$")
+
+
+def _iv_busy(st):
+    return next((i for i in st.get("items", []) if i.get("hire") and i.get("stage") != "done"
+                 and i["hire"].get("status") not in ("hired", "abandoned")), None)
+
+
+def presets_payload():
+    cur_ids = [r["id"] for r in C.roster(ROOT).get("roles", [])]
+    items = S.read().get("items", [])
+    out = []
+    for key in sorted(os.listdir(PRESET_DIR)) if os.path.isdir(PRESET_DIR) else []:
+        p = os.path.join(PRESET_DIR, key, "roster.json")
+        if not _PKEY.match(key) or not os.path.isfile(p):
+            continue
+        try:
+            ro = json.load(open(p, encoding="utf-8"))
+        except (OSError, ValueError):
+            continue
+        roles = [{"id": r["id"], "name": r.get("name") or r["id"], "name_en": r.get("name_en") or "", "title": r.get("title") or "",
+                  "title_en": r.get("title_en") or ""} for r in ro.get("roles", []) if r.get("id")]
+        ids = [r["id"] for r in roles]
+        leave = [i for i in cur_ids if i not in ids]
+        out.append({"key": key, "team": ro.get("team") or key, "roles": roles, "leave": leave, "join": [i for i in ids if i not in cur_ids],
+                    "open_items": sum(1 for it in items if it.get("owner") in leave and it.get("stage") != "done"),
+                    "config": os.path.isfile(os.path.join(PRESET_DIR, key, "config.json")), "current": sorted(ids) == sorted(cur_ids)})
+    return {"presets": out}
+
+
+def preset_op(body):
+    op, key = body.get("op"), str(body.get("name") or "")
+    if op not in ("dry", "apply"):
+        raise ValueError("unknown op")
+    if not _PKEY.match(key) or not os.path.isfile(os.path.join(PRESET_DIR, key, "roster.json")):
+        raise ValueError("no such preset")
+    if op == "apply":
+        busy = _iv_busy(S.read())
+        if busy:
+            raise ValueError(_busy_msg(busy))
+    args = [sys.executable, os.path.join(ROOT, "tools", "preset.py"), "apply", key] + (["--dry"] if op == "dry" else [])
+    r = subprocess.run(args, cwd=ROOT, capture_output=True, text=True, timeout=120, stdin=subprocess.DEVNULL)
+    out, err = r.stdout, r.stderr
+    print(f"preset {op} {key} -> {r.returncode}", flush=True)
+    if op == "apply" and r.returncode == 0:
+        from core import install_seed
+        install_seed.run(ROOT, background=False)   # the preset's own avatars and role notes, never overwriting
+        m = subprocess.run([sys.executable, os.path.join(ROOT, "make_agents.py")], cwd=ROOT, capture_output=True, text=True,
+                           timeout=120, stdin=subprocess.DEVNULL)
+        out += m.stdout[-1500:]
+        err += m.stderr[-1500:]
+        sync_roster()
+    return {"ok": r.returncode == 0, "op": op, "out": out[-4000:], "err": err[-2000:]}
+
+
 @route("GET", "/api/templates")
 def _templates(h, u, q):   # t-hm-build
     return h._send(200, templates_payload())
+
+
+@route("GET", "/api/presets")
+def _presets(h, u, q):   # t-oss-gen-s4
+    return h._send(200, presets_payload())
+
+
+@route("POST", "/api/preset")
+def _preset(h, u, body):   # t-oss-gen-s4: same header guard as /api/hire (it replaces roster.json)
+    if not h._hdr_ok():
+        return h._send(403, {"ok": False, "error": "forbidden"})
+    return h._send(200, preset_op(body))
 
 
 @route("GET", "/api/retire-plan")

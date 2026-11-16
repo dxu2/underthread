@@ -4,6 +4,8 @@
    Hire: POST /api/hire {op: plan|apply|retire|rehire} with the X-Underthread header.
    t-hr-build: 面试 is live once the HR role (id hr) is on the team: POST /api/interview {job, variant} makes a hire-* card and her opening
    DM, then her DM opens. The hr-iv bar above that DM (Market.hrBar, called from app.js renderChat) shows progress, 看卡 and 放弃.
+   t-oss-gen-s4: no HR yet -> 「先请 HR」 on each card (hire templates/roles/hr as id hr); the 整队预设 bar above the chips runs
+   tools/preset.py through GET /api/presets + POST /api/preset (dry run in a sheet, apply on confirm).
    The page keeps its DOM across polls (page() returns null while nothing changed), so a switched personality or a filter survives. */
 (function () {
   const MK = { data: null, at: 0, busy: false, err: "", cat: "all", pick: {} };
@@ -30,6 +32,7 @@
       if (r.status === 404) throw new Error(L("看板服务还没重启：招聘市场的接口要重启一次才有。", "The dashboard server needs one restart before the market works."));
       if (!r.ok) throw new Error("HTTP " + r.status);
       MK.data = await r.json(); MK.err = "";
+      try { const rp = await fetch("/api/presets", { cache: "no-store" }); MK.pre = rp.ok ? (await rp.json()).presets || [] : []; } catch (_) { MK.pre = []; }   /* t-oss-gen-s4: 整队预设 bar */
       if (App.tplSeed) App.tplSeed(MK.data);   /* t-i18n-c: English job names for old interview cards */
     } catch (e) { MK.err = String(e.message || e); }
     MK.busy = false; MK.at = Date.now();
@@ -110,7 +113,7 @@
   function btns(t) {
     const h = hiredOf(t), on = h.filter(x => x.on), off = h.filter(x => !x.on);
     const ha = hrAgent(), cur = openIv(), mine = cur && cur.hire.job === t.key;
-    const iv = !ha ? `<button type="button" class="mk-b ghost dis" aria-disabled="true" title="${L("HR 上岗后开放", "Opens once the HR role is hired")}" data-mk-iv>${L("面试", "Interview")}</button>`
+    const iv = !ha ? `<button type="button" class="mk-b ghost hr-first" data-mk-hrfirst title="${L("面试要 HR 来问。先请 HR 入职（不用面试），再回来面试", "Interviews are done by HR. Hire HR first (no interview), then come back")}">${L("先请 HR", "Hire HR first")}</button>`   /* t-oss-gen-s4: was a disabled 面试 */
       : `<button type="button" class="mk-b ghost hr-ivb${mine ? " on" : ""}" data-mk-iv title="${esc(L(`${hrName()}替你问清要什么样的人，再出入职草案`, `${hrName()} asks what you need, then drafts the role`))}">${mine ? L("面试中", "Interviewing") : L("面试", "Interview")}</button>`;   /* t-ri1109-a P3: 「在岗」 moved to the page head (.mk-hrl) */
     if (on.length) return `<div class="mk-btns"><button type="button" class="mk-b ghost" data-mk-chat="${esc(on[0].id)}">${L("去聊天", "Chat")}</button><button type="button" class="mk-b ghost" data-mk-hire>${L("再雇一个", "Hire another")}</button></div>`;
     if (off.length) return `<div class="mk-btns">${iv}<button type="button" class="mk-b" data-mk-rehire="${esc(off[off.length - 1].id)}">${L("返聘", "Rehire")} · ${esc(off[off.length - 1].name)}</button><button type="button" class="mk-b ghost ht-arch" data-mk-arch="${esc(off[off.length - 1].id)}" data-name="${esc(off[off.length - 1].name)}" title="${esc(L("把文件挪进 archive/roles/，要再确认一次", "Move the files to archive/roles/ (asks again)"))}">${L("归档", "Archive")}</button></div>`;   /* t-ht-build: hard archive, template roles only */
@@ -138,13 +141,75 @@
     const body = $("#pagebody"), cur = body && $(".mk-page", body);
     load();
     const sub = MK.data ? L(`${MK.data.templates.length} 个工种 · 每个 3 种性格 · 雇了马上出现在团队里`, `${MK.data.templates.length} jobs · 3 personalities each · a hire joins the team right away`) : "";
-    const iv0 = openIv(), key = [App.UI.lang, MK.err, MK.data ? JSON.stringify(MK.data) : "-", hrAgent() ? hrName() : "", iv0 ? iv0.id : ""].join("|");   /* t-hr-build: HR on / an interview running redraws the buttons */
+    const iv0 = openIv(), key = [App.UI.lang, MK.err, MK.data ? JSON.stringify(MK.data) : "-", JSON.stringify(MK.pre || []), hrAgent() ? hrName() : "", iv0 ? iv0.id : ""].join("|");   /* t-hr-build: HR on / an interview running redraws the buttons */
     if (cur && cur.dataset.k === key) return null;   /* nothing changed: keep switches, filter and scroll */
     const inner = MK.err ? `<div class="mk-err" role="alert">${esc(MK.err)}</div>`
       : !MK.data ? `<div class="mk-load">${L("正在读模板…", "Loading templates…")}</div>`
-      : chips() + `<div class="mk-grid">${gridHTML()}</div>`;
+      : preBar() + chips() + `<div class="mk-grid">${gridHTML()}</div>`;
     const ha = MK.data && hrAgent(), hrl = ha ? `<p class="mk-hrl">${App.av(ha, "mk-hrl-av")}<span><b>${esc(hrName())}${L("在岗", " is in")}</b> · ${esc(L("点任一张卡的「面试」，她先问清你要什么样的人", "tap Interview on any card and she asks what you need first"))}</span></p>` : "";   /* t-ri1109-a P3 */
     return (head || "") + `<div class="mk-page" data-k="${esc(key)}">${sub ? `<p class="mk-sub">${esc(sub)}</p>` : ""}${hrl}${inner}</div>`;
+  }
+
+  /* t-oss-gen-s4: a crew without HR hires her straight from templates/roles/hr (HR cannot interview herself); the steward then
+     opens t-hr-avatar as for every hire. The server refuses it when HR is already on the team. */
+  async function hrFirst(b) {
+    if (b.disabled) return;
+    b.disabled = true; const was = b.textContent; b.textContent = L("正在请…", "Hiring…");
+    try {
+      const off = App.ST.agents && App.ST.agents[HR];   /* an hr in the roster but switched off comes back as herself */
+      const j = await hireApi(off ? { op: "rehire", id: HR } : { op: "apply", job: "hr", variant: "thimble", id: HR, name: "Thimble", tint: "#b0465a" });
+      if (!j.ok) throw new Error((j.err || j.out || "").trim() || "failed");
+      App.toast(L("HR 已入职，现在可以点「面试」了", "HR is in. Interview is open now"));
+      await load(true);
+    } catch (e) { App.toast(String(e.message || e), true); b.textContent = was; b.disabled = false; }
+  }
+
+  /* ---------- t-oss-gen-s4: 整队预设 (whole-team presets). tools/preset.py through POST /api/preset: dry run first, apply on confirm ---------- */
+  const PRE_L = { classic: ["经典 7 人", "Classic seven"], "content-zh": ["自媒体 7 人", "Content team (zh)"] };
+  const preLabel = p => (PRE_L[p.key] || [p.team, p.team])[en() ? 1 : 0];
+  const roleL = r => (en() && r.name_en || r.name) + ((en() ? r.title_en || r.title : r.title) ? ` · ${en() ? r.title_en || r.title : r.title}` : "");
+  async function preApi(body) {
+    const r = await fetch("/api/preset", { method: "POST", headers: { "Content-Type": "application/json", "X-Underthread": "1" }, body: JSON.stringify(body) });
+    if (r.status === 404) throw new Error(L("看板服务还没重启，整队预设的接口要重启一次才有。", "Restart the dashboard server once to enable presets."));
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(j.error || r.statusText);
+    return j;
+  }
+  function preBar() {
+    const ps = MK.pre || []; if (!ps.length) return "";
+    return `<div class="mk-pre"><span class="mk-pre-l">${L("整队预设", "Team presets")}</span>${ps.map(p => `<button type="button" class="mk-pre-b${p.current ? " on" : ""}" data-mk-pre="${esc(p.key)}"${p.current ? ` aria-current="true" disabled` : ""}>${esc(preLabel(p))}<b>${p.current ? L("当前", "current") : p.roles.length + L(" 人", "")}</b></button>`).join("")}<small>${L("一次换整支队伍，先看预演再确认", "Swap the whole crew; you see a dry run first")}</small></div>`;
+  }
+  function preSheet(p) {
+    const name = id => { const a = (App.ST.agents || {})[id]; return a ? App.aname(a) : id; };
+    const chip = (t, cls) => `<span class="mk-pre-r${cls ? " " + cls : ""}">${esc(t)}</span>`;
+    App.openModal(`<h2>${L("换成整队预设", "Switch to the preset")} · ${esc(preLabel(p))}</h2>
+      <div class="mk-sh mk-pre-sh">
+        <p class="mk-note">${esc(p.team)}</p>
+        <label>${L("换完的队伍", "The crew after")} · ${p.roles.length}</label><div class="mk-pre-rs">${p.roles.map(r => chip(roleL(r), p.join.includes(r.id) ? "new" : "")).join("")}</div>
+        ${p.leave.length ? `<label>${L("会离队", "Leaving")} · ${p.leave.length}</label><div class="mk-pre-rs">${p.leave.map(i => chip(name(i), "out")).join("")}</div>
+        <p class="mk-note warn">${L("离队的人规则、记忆、头像文件都留着（不删），只是不在队伍里了", "Their notes, memory and art stay on disk; they just leave the roster")}${p.open_items ? L(`；他们手上 ${p.open_items} 张没做完的卡转回管家`, `; their ${p.open_items} open cards go back to the steward`) : ""}${p.leave.includes(HR) ? L("。HR 也会离队，之后可以在市场里「先请 HR」", ". HR leaves too; use Hire HR first in the market later") : ""}${L("。", ".")}</p>` : ""}
+        <label>${L("会做的事（preset.py 预演，还没写任何文件）", "What happens (preset.py dry run, nothing written yet)")}</label>
+        <pre class="mk-plan" data-plan aria-live="polite">…</pre>
+        <p class="mk-note">${L("每个被替换的文件都先备份，换完会给出撤销命令。换完要重开管家会话，新队伍才能接活。", "Every replaced file is backed up first and you get the undo command. Restart the steward session afterwards.")}</p>
+      </div>
+      <div class="foot"><button class="btn" data-x>${L("取消", "Cancel")}</button><button class="btn primary" data-ok disabled>${L("换成这支队", "Switch")}</button></div>`, async m => {
+      m.classList.add("mk-mdl");
+      const ok = $("[data-ok]", m), plan = $("[data-plan]", m), x = $("[data-x]", m);
+      x.onclick = App.closeModal;
+      try { const j = await preApi({ op: "dry", name: p.key }); plan.textContent = (j.ok ? j.out : j.err || j.out).trim(); plan.classList.toggle("bad", !j.ok); ok.disabled = !j.ok; }
+      catch (e) { plan.textContent = String(e.message || e); plan.classList.add("bad"); }
+      ok.onclick = async () => {
+        ok.disabled = true; ok.textContent = L("正在换…", "Switching…");
+        try {
+          const j = await preApi({ op: "apply", name: p.key });
+          plan.textContent = (j.ok ? j.out : j.err || j.out).trim(); plan.classList.toggle("bad", !j.ok);
+          if (!j.ok) { ok.textContent = L("换成这支队", "Switch"); ok.disabled = false; return; }
+          ok.hidden = true; ok.style.display = "none"; x.textContent = L("关闭", "Close");   /* .btn sets display, so [hidden] alone shows it */
+          App.toast(L(`已换成「${preLabel(p)}」，重开管家会话后生效`, `Switched to ${preLabel(p)}; restart the steward session`));
+          load(true);
+        } catch (e) { plan.textContent = String(e.message || e); plan.classList.add("bad"); ok.textContent = L("换成这支队", "Switch"); ok.disabled = false; }
+      };
+    });
   }
 
   /* ---------- hire sheet ---------- */
@@ -225,6 +290,8 @@
       return load(true);
     }
     if (!pg) return;
+    const pb = e.target.closest("[data-mk-pre]");
+    if (pb) { const p = (MK.pre || []).find(x => x.key === pb.dataset.mkPre); if (p && !p.current) preSheet(p); return; }
     const c = e.target.closest("[data-mk-cat]");
     if (c) { MK.cat = c.dataset.mkCat; pg.querySelectorAll("[data-mk-cat]").forEach(b => { const on = b === c; b.classList.toggle("on", on); b.setAttribute("aria-selected", on); });
       const g = $(".mk-grid", pg); g.innerHTML = gridHTML(); g.classList.remove("in"); void g.offsetWidth; g.classList.add("in"); return; }
@@ -238,6 +305,7 @@
       const st = $(".mk-style", cd); st.classList.remove("in"); st.textContent = vStyle(v); void st.offsetWidth; st.classList.add("in");
       return;
     }
+    if (e.target.closest("[data-mk-hrfirst]")) return hrFirst(e.target.closest("[data-mk-hrfirst]"));
     const ivb = e.target.closest("[data-mk-iv]");
     if (ivb) { if (ivb.classList.contains("dis")) return; return startIv(t, ivb); }   /* t-hr-build: disabled until the HR role exists (tooltip says so) */
     const ch = e.target.closest("[data-mk-chat]"); if (ch) { App.setChat(ch.dataset.mkChat); return; }

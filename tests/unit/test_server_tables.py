@@ -47,6 +47,7 @@ ROUTES = [
     ("GET", "/api/item", "", "api.routes.state"), ("GET", "/api/memory", "", "api.routes.docs"),
     ("GET", "/api/push/history", "", "api.routes.push"), ("GET", "/api/push/key", "", "api.routes.push"),
     ("GET", "/api/push/latest", "", "api.routes.push"), ("GET", "/api/push/status", "", "api.routes.push"),
+    ("GET", "/api/presets", "", "api.routes.hr"), ("POST", "/api/preset", "", "api.routes.hr"),
     ("GET", "/api/retire-plan", "", "api.routes.hr"), ("GET", "/api/roster", "", "api.routes.state"),
     ("GET", "/api/secret/github", "", "api.routes.secret"), ("GET", "/api/state", "", "api.routes.state"),
     ("GET", "/api/templates", "", "api.routes.hr"), ("GET", "/api/thumb", "", "api.routes.media"),

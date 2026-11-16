@@ -112,6 +112,19 @@ class RoleNotes(unittest.TestCase):
         self.assertFalse(os.path.exists(os.path.join(self.r, "roles/scout.md")), "no preset copy, nothing made")
         self.assertEqual(A.role_notes(self.r), [], "second run copies nothing")
 
+    def test_template_notes(self):
+        """S4: HR's notes ship as templates/roles/hr/role.md; rendered for a roster hr, but never next to an install's own local notes."""
+        put(os.path.join(self.r, "templates/roles/hr/role.md"), "# {{name}} · {{title}}\n称呼「{{address}}」\n".encode())
+        with open(os.path.join(self.r, "roster.json"), "w", encoding="utf-8") as f:
+            json.dump({"roles": [{"id": "hr", "name": "Thimble", "title": "HR"}]}, f)
+        put(os.path.join(self.r, "local/roles/hr.md"), b"our own HR")
+        self.assertEqual(A.role_notes(self.r), [], "an install with local/roles/hr.md gets no core layer")
+        os.remove(os.path.join(self.r, "local/roles/hr.md"))
+        self.assertEqual(A.role_notes(self.r), ["roles/hr.md"])
+        with open(os.path.join(self.r, "roles/hr.md"), encoding="utf-8") as f:
+            self.assertEqual(f.read(), "# Thimble · HR\n称呼「你」\n")
+        self.assertEqual(A.role_notes(self.r), [], "second run copies nothing")
+
 
 if __name__ == "__main__":
     unittest.main()

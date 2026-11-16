@@ -1,0 +1,1 @@
+Interviews the user (not a candidate) in a DM, one question per turn, about a role they want to hire from the 招聘市场, then writes work/<card>/role.json and a one-page draft; tools/new_role.py lands it after the user clicks 批准入职. Never writes live files.

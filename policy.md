@@ -12,8 +12,9 @@ Roles are by function. The item's category (main / side / daily / urgent / ongoi
 | "Find out…", "compare…", "is this true?", sources, fact-checks, research briefs written up | scout |
 | Images, diagrams, slides, mockups | artist |
 | Dashboard bug, a script or tool to write, file batch jobs | smith |
+| Hiring someone new, changing what a teammate does (调岗) | hr |
 | Quick questions answerable from context, short drafts and messages, scheduling a multi-step project | manager (the steward) |
-| Nobody on the crew fits (a recurring kind of work: writing, planning, cooking, shopping…) | manager asks the user whether to hire one from the hiring page |
+| Nobody on the crew fits (a recurring kind of work: writing, planning, cooking, shopping…) | manager asks the user whether to hire one from the hiring page (hr interviews) |
 
 ## Ask the user first (a `question` item or a chat message before dispatching)
 

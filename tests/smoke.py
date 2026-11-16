@@ -192,6 +192,10 @@ def t_server(root):
         c, b = req(s.port, "/api/state")
         st = json.loads(b)
         assert c == 200 and len(st["items"]) >= 3 and "manager" in st["agents"], (c, len(st.get("items", [])))
+        # t-oss-gen-s4: five starters; HR's notes come from templates/roles/hr/role.md (roles/hr.md is install data)
+        assert sorted(st["agents"]) == ["artist", "hr", "manager", "scout", "smith"], sorted(st["agents"])
+        hrmd = open(os.path.join(root, "roles", "hr.md"), encoding="utf-8").read()
+        assert hrmd.startswith("# Thimble · HR") and "{{" not in hrmd, hrmd[:80]
         assert req(s.port, "/avatars/_s/index.json")[0] == 200, "avatar manifest should not 404"
         idx = req(s.port, "/")[1].decode()
         import re

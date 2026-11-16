@@ -137,6 +137,23 @@ html[lang="en"] .mk-sw button span::after { content: attr(data-t); font-weight: 
 .mk-hrl { display: flex; align-items: center; gap: 8px; width: fit-content; max-width: 100%; margin: -6px 0 14px; padding: 4px 12px 4px 4px; border-radius: 18px; background: var(--accent-soft); font-size: var(--fs-13); color: var(--ink2); }
 .mk-hrl .mk-hrl-av { width: 22px; height: 22px; flex: none; }
 .mk-hrl b { color: var(--ink); font-weight: 600; }
+/* t-oss-gen-s4: 整队预设 bar above the category chips (market.js preBar) + its confirm sheet (preSheet) */
+.mk-pre { display: flex; align-items: center; flex-wrap: wrap; gap: 6px 8px; margin: -4px 0 14px; padding: 6px 8px 6px 12px; border-radius: 12px; border: 1px dashed var(--line2); }
+.mk-pre-l { font-size: var(--fs-12); font-weight: 600; color: var(--ink2); }
+.mk-pre small { flex: 1 1 160px; min-width: 0; font-size: var(--fs-12); color: var(--dim); }
+.mk-pre-b { font: 500 var(--fs-13) var(--f-cjk); color: var(--ink2); background: var(--panel); border: 1px solid var(--line2); border-radius: 999px; padding: 3px 12px; cursor: pointer;
+  transition: background-color var(--m-quick, .18s) ease-out, color var(--m-quick, .18s) ease-out, border-color var(--m-quick, .18s) ease-out, transform var(--m-release, .22s) var(--m-spring, ease); }
+.mk-pre-b b { font-weight: 500; color: var(--dim); margin-left: 6px; }
+.mk-pre-b:hover { color: var(--ink); background: var(--accent-soft); border-color: var(--accent); }
+.mk-pre-b:active { transform: scale(.95); transition-duration: 90ms; }
+.mk-pre-b.on, .mk-pre-b.on:hover { color: var(--ink); background: var(--accent-soft); border-color: transparent; cursor: default; transform: none; }
+.mk-pre-rs { display: flex; flex-wrap: wrap; gap: 6px; }
+.mk-pre-r { font-size: var(--fs-12); color: var(--ink2); background: var(--chip); border-radius: 999px; padding: 3px 10px; }
+.mk-pre-r.new { color: var(--ink); box-shadow: inset 0 0 0 1px var(--accent); }
+.mk-pre-r.out { color: var(--warn); text-decoration: line-through; text-decoration-color: color-mix(in srgb, var(--warn) 55%, transparent); }
+.mk-pre-sh > .mk-note:first-child { margin: 8px 0 0; }
+.mk-note.warn { color: var(--warn); }
+@media (prefers-reduced-motion: reduce) { .mk-pre-b { transition: none; } .mk-pre-b:active { transform: none; } }
 .hr-iv { display: flex; align-items: center; gap: 8px; margin: 8px 12px 0; padding: 8px 10px 8px 12px; border-radius: 12px; background: var(--accent-soft);
   box-shadow: inset 3px 0 0 var(--hr-t, var(--accent)); animation: hr-in .28s cubic-bezier(.2, .8, .2, 1) both; flex: none; }
 .hr-iv-t { flex: 1; min-width: 0; display: flex; flex-direction: column; line-height: 1.35; }

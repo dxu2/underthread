@@ -121,6 +121,14 @@ Expected output: <plan | deliverable | answer>, delivered through stateutil per 
   is busy, queue the work or give an urgent job to an idle role.
 - **Handoff notes.** Every teammate overwrites `work/<role>-handoff.md` (≤30 lines) when it hands back. A new
   instance of a role reads that file first, plus its `.claude/agent-memory/underthread-<role>/`.
+- **New hire → Underthread avatar.** Right after a role lands (`new_role.py apply`, 批准入职, or the market's 先请 HR), open
+  `t-<id>-avatar` (`--tag` the hire card if there is one) and dispatch the artist to propose 3 Underthread-style avatars
+  (match `avatars/ut/*.png`: embroidered patch, cream canvas, brown rope border, one cute object with dot eyes) with an ask
+  to pick; install to `avatars/ut/<id>.png` + `python3 tools/avatar_sizes.py` only after the user picks. Then, same card
+  family, the artist makes the 4-frame work strip `avatars/ut/_s/<id>-work-{160,320,512}.webp` (frame 1 = the picked avatar).
+  No image backend (`python3 tools/image.py backend` says `none`): same steps, but the 3 candidates are the template's own
+  personality avatars (or, for a custom role, the default patch recoloured three ways), the work strip comes with the
+  picked template avatar or from `tools/work_strip.py --bob`, and the card says the pictures are template art.
 - **Who answers.** A comment addressed to a teammate is answered by that teammate (dispatch it, or `SendMessage` to
   its instance); you answer only when it is addressed to you.
 

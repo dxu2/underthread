@@ -19,6 +19,7 @@ You start with a small crew and hire as you go.
 | Role (roster id) | Does |
 |---|---|
 | Steward (`manager`) | Main session. Triage, dispatch, relay, schedule, daily report; answers small things itself |
+| Thimble · HR (`hr`) | Interviews you about a new hire or a change to a teammate, one question at a time, and drafts it for you to approve |
 | Scout · Researcher (`scout`) | Research, comparisons, fact-checks, sources |
 | Brush · Designer (`artist`) | Images, diagrams, slides, mockups, and the avatar patch of every new hire |
 | Smith · Tooling keeper (`smith`) | Dashboard, scripts, automation, first responder for tooling errors |
