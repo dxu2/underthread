@@ -2096,6 +2096,18 @@
     "agent": "me",
     "item": null,
     "t": "2026-01-20T10:00:00+00:00",
+    "text": "studio_mode"
+   },
+   {
+    "agent": "me",
+    "item": null,
+    "t": "2026-01-20T10:00:00+00:00",
+    "text": "studio_mode"
+   },
+   {
+    "agent": "me",
+    "item": null,
+    "t": "2026-01-20T10:00:00+00:00",
     "text": "stamina"
    },
    {
@@ -2419,7 +2431,7 @@
      "to": 2
     }
    ],
-   "rev": 119,
+   "rev": 121,
    "routines_log": {},
    "schema": 2,
    "stamina": {

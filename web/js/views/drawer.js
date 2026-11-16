@@ -14,6 +14,7 @@ import { agent, agents, aname, atitle, av, ringOnce } from "../core/av.js";
 import { api, closeBtn, closeModal, modalClose, modalReject, openModal, stillUploading, toast } from "../core/ui.js";
 import { ATT, ATT_IC, attHTML, attTiles, attTitle, copyText, wireUploads } from "./attach.js";
 import { chatPop } from "./chat.js";
+import { contentMode } from "./left.js";
 import { MB, closeMailbox, itemMailRead, nrMail, nrRead } from "./mail.js";
 import { MOBQ } from "./pages/common.js";
 import { renderPage } from "./pages/index.js";
@@ -666,7 +667,7 @@ function renderDrawer(first) {
     // t-btn-names: open questions show as a line under the button label (desktop and phone); before it was a .dock-note to the left, desktop only
   }
   annPaint();   // t-imp29-p2
-  if (window.Preview) Preview.decorate($('.cs-card.draftc[data-vkey="cur"]', sc), it);   // t-imp29-p3: 文稿 / 平台预览 on the current draft
+  if (window.Preview && contentMode()) Preview.decorate($('.cs-card.draftc[data-vkey="cur"]', sc), it);   // t-imp29-p3: 文稿 / 平台预览 on the current draft
   DW.sig = dwSig();   // t-perf E
 }
 // ===== ri1103-P2: 稍后 ▾ = push a card to 今晚 20:00 / 明早 09:00 / 下周一 09:00 / the specialist's next reply / a picked time.

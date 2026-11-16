@@ -117,6 +117,11 @@ const SET_TABS = ["general", "connections", "roles", "docs", "logs", "system"]; 
 /* t-nav-shoot: the 制作 / Studio group. Each sub page keeps its id (#page=pipe etc. still work, wide layout unchanged); "studio" opens the last one used. */
 const STU = ["pipe", "board", "channels", "assets"];
 const STU_L = { pipe: ["制作线", "Pipeline"], board: ["委托板", "Board"], channels: ["频道", "Channels"], assets: ["素材", "Assets"] };
+/* t-oss-gen-s5: content mode. 制作线 / 频道 and the drafts' platform previews belong to a content team: shown when config.json has
+   platforms (meta.platforms_set) or a role owns a production-line column (pipe); 设置 → 制作线和频道 (meta.studio) forces on / off.
+   Off: the pages still render from a direct #page= link, they just leave the tabs, the palette and the default. */
+const contentMode = () => { const m = (ST && ST.meta) || {}; if (m.studio === "on" || m.studio === "off") return m.studio === "on"; return m.platforms_set !== false || agents().some(a => a.pipe && a.enabled !== false); };   /* platforms_set missing = an older server: keep the tabs */
+const stuList = () => contentMode() ? STU : STU.filter(x => x !== "pipe" && x !== "channels");
 /* t-thread-motif: left rail icons (work/t-thread-motif/icons, 24 grid, stroke = currentColor); shown only under 特典 and only on desktop (CSS) */
 const NAV_IC = {
   review: '<path d="M3.5 11 12 4l8.5 7"/><path d="M5.5 9.5V20h13V9.5"/><path d="M10 20v-3.2a2 2 0 0 1 4 0V20"/>',
@@ -134,7 +139,7 @@ const NAV_IC = {
 };
 function stuTabs(k) {   /* same segmented control as 设置 */
   const en = UI.lang === "en";
-  return `<div class="st-tabs stu-tabs"><div class="seg" data-seg="stutab" role="tablist">${STU.map(x => `<button type="button" class="seg-i ${x === k ? "on" : ""}" role="tab" aria-selected="${x === k}" data-stutab="${x}">${STU_L[x][en ? 1 : 0]}</button>`).join("")}</div></div>`;
+  return `<div class="st-tabs stu-tabs"><div class="seg" data-seg="stutab" role="tablist">${stuList().map(x => `<button type="button" class="seg-i ${x === k ? "on" : ""}" role="tab" aria-selected="${x === k}" data-stutab="${x}">${STU_L[x][en ? 1 : 0]}</button>`).join("")}</div></div>`;
 }
 
 function wireLeft() {
@@ -150,4 +155,4 @@ function wireLeft() {
   });
 }
 
-export { counts, rtShort, rtFull, schToday, CALPF, calFold, renderLeft, SET_TABS, STU, STU_L, NAV_IC, stuTabs, wireLeft };
+export { counts, rtShort, rtFull, schToday, CALPF, calFold, renderLeft, SET_TABS, STU, STU_L, NAV_IC, stuTabs, wireLeft, contentMode, stuList };

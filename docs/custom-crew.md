@@ -2,29 +2,17 @@
 
 Underthread doesn't care what kind of work you do. The steward, cards, reviews, rules and dashboard work the same for any team. This page shows how to add, change and retire teammates.
 
-## Presets
-
-The default crew in `roster.example.json` is a general-purpose English team. `presets/content-zh/` holds a Chinese content-creator team (B站 / YouTube / 小红书) with its own `roster.json`, `config.json`, `policy.md`, `team.md` and `roles/`. To switch:
-
-```bash
-python3 tools/preset.py list                      # the presets you have
-python3 tools/preset.py apply content-zh --dry    # optional: show what would change
-python3 tools/preset.py apply content-zh
-python3 make_agents.py
-```
-
-Then restart the steward. `apply` replaces `roster.json`, `team.md`, `policy.md` and `roles/*.md`, and merges only the keys the preset lists into `config.json` (here `platforms` and a placeholder `comfy` block; your port, owner and times stay). Every replaced file is first backed up under the tag `preset-<time>` (in `local/backups/bak/`, or `.backups/bak/` without a `local/` folder). To undo, run the `python3 tools/bak.py restore preset-<time> …` line `apply` prints, then `python3 make_agents.py` again.
-
-A preset is just a folder under `presets/<name>/`, so you can make your own the same way.
+A new install starts with five: the steward, HR (Thimble), Scout, Brush and Smith (`roster.example.json`). Everyone else is
+hired as you need them.
 
 ## Three ways to add a teammate
 
 ### 1. Hiring market (easiest)
 
-Open **Hiring market** in the left rail. It lists 24 job templates (analyst, coder, copywriter, designer, editor, translator, travel planner, tutor and more), each with three personalities.
+Open **Hiring market** in the left rail. It lists 29 job templates (analyst, coder, copywriter, designer, editor, translator, travel planner, tutor and more), each with three personalities.
 
 - **Hire** adds the teammate right away: roster entry, role note, agent file and avatar.
-- **Interview** (only if your roster has a role with id `hr`): HR asks you five questions in a DM, one at a time, then drafts the new role for you to approve. The script is in `templates/hr/interview.json`.
+- **Interview**: HR asks you five questions in a DM, one at a time, then drafts the new role for you to approve. The script is in `templates/hr/interview.json`. A crew without an `hr` role sees **Hire HR first** instead, which hires HR from `templates/roles/hr/` (no interview).
 
 The steward picks up a new teammate after a restart.
 
@@ -35,7 +23,7 @@ python3 tools/new_role.py plan  --template coder --id dev --name Dev --name-en D
 python3 tools/new_role.py apply --template coder --id dev --name Dev --name-en Dev   # create it
 ```
 
-`apply` writes the roster entry, `roles/<id>.md` (never overwrites one), the agent file (through `make_agents.py`) and an avatar (the default patch recoloured to the role's tint; needs `ffmpeg`, or use `--avatar none`). `--variant <key>` picks one of the template's three personalities (the first one by default). On a fresh clone it first copies `roster.example.json` to `roster.json`. It is idempotent and refuses an id that already exists with different fields. Run `python3 tools/new_role.py apply -h` for every flag.
+`apply` writes the roster entry, `local/roles/<id>.md` (never overwrites one), the agent file (through `make_agents.py`) and an avatar (the default patch recoloured to the role's tint; needs `ffmpeg`, or use `--avatar none`). `--variant <key>` picks one of the template's three personalities (the first one by default). On a fresh clone it first copies `roster.example.json` to `roster.json`. It is idempotent and refuses an id that already exists with different fields. Run `python3 tools/new_role.py apply -h` for every flag.
 
 Other commands:
 
@@ -49,10 +37,10 @@ Other commands:
 ### 3. By hand
 
 1. Add an entry to `roster.json` (fields below).
-2. Write `roles/<id>.md`: what this teammate does, formats, tools, and end it with an empty `## Confirmed rules` section.
+2. Write `local/roles/<id>.md`: what this teammate does, formats, tools, and end it with an empty `## Confirmed rules` section.
 3. `python3 make_agents.py`
 4. Restart the steward.
-5. Add a line to `policy.md` saying which kind of work goes to the new teammate.
+5. Add a line to `local/policy.md` saying which kind of work goes to the new teammate (it is read after the core `policy.md`).
 
 ## Transfer and retire from the dashboard
 
@@ -98,3 +86,31 @@ Say you build a side project. You might want Scout (research), Quill (docs and r
 5. `python3 make_agents.py`, then restart the steward.
 
 Your rules accumulate per role from then on: reject a release note once with a reason, adopt the proposed rule, and Quill won't make that mistake again.
+
+## Optional: team presets
+
+A preset swaps in a whole team at once. Two ship with Underthread:
+
+- `classic`: the earlier seven-person general crew (the default five minus HR, plus Quill the writer, Lens the planner and
+  Signal the coordinator).
+- `content-zh`: a Chinese content-creator team (B站 / YouTube / 小红书) with its own `roster.json`, `config.json`,
+  `policy.md`, `team.md` and `roles/`. Its `config.json` adds `platforms`, which turns on the 制作组 page's production-line
+  and channel tabs.
+
+In the dashboard: the preset strip at the top of the Hiring market shows the crew after the switch, who leaves, and the
+files that change; **Switch** applies it. From the command line:
+
+```bash
+python3 tools/preset.py list                    # the presets you have
+python3 tools/preset.py apply <name> --dry      # optional: show what would change
+python3 tools/preset.py apply <name>
+python3 make_agents.py
+```
+
+Then restart the steward. `apply` replaces `roster.json`, writes the preset's `team.md`, `policy.md` and `roles/*.md` into
+`local/` (core files are never written; Confirmed rules already in `local/roles/<id>.md` are kept), and merges only the keys
+the preset lists into `config.json` (your port, owner and times stay). Every replaced file is first backed up under the tag
+`preset-<time>`. To undo, run the `python3 tools/bak.py restore preset-<time> …` line `apply` prints, delete the new
+`local/` files it lists, then `python3 make_agents.py` again.
+
+A preset is just a folder under `presets/<name>/`, so you can make your own the same way.

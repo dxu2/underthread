@@ -6,8 +6,8 @@ here before a change, so the install folder no longer fills up with `<file>.bak-
 
     <backups>/bak/<path relative to the install>.bak-<tag>
 
-<backups> is local/backups when the install has a local/ layer, else .backups (git-ignored), the same choice as
-core/migrate.py. An update never touches either. A tag is used once per file: save() refuses to overwrite an existing
+<backups> is local/backups when the install has a local/ layer, else .backups (git-ignored); a folder that already
+holds backups keeps being used (core/paths.backups_dir, shared with core/migrate.py). An update never touches either. A tag is used once per file: save() refuses to overwrite an existing
 backup (the check and the copy are one step). find() also looks at the old place, `<file>.bak-<tag>` next to the file,
 so backups made before this version still restore.
 
@@ -24,10 +24,9 @@ BAK_RE = re.compile(r"\.bak(?:$|[-_.0-9])")   # what .gitignore's *.bak* catches
 
 
 def root_dir(root=None):
-    """<backups>: local/backups when local/ exists, else <root>/.backups. Never creates local/."""
-    root = root or P.ROOT
-    loc = P.LOCAL if root == P.ROOT else os.path.join(root, "local")
-    return os.path.join(loc, "backups") if os.path.isdir(loc) else os.path.join(root, ".backups")
+    """<backups>: core/paths.backups_dir (local/backups, or .backups on an install that has no local/ layer, or had none when
+    it made its first backup). Never creates local/."""
+    return P.backups_dir(root)
 
 
 def rel(path, root=None):

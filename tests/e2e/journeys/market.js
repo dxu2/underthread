@@ -15,12 +15,18 @@ function noHr(S) {
 }
 const ready = async c => { await c.p.waitForFunction(() => window.App && App.ST && App.ST.meta && !document.getElementById("ut-splash"), null, { timeout: 15000 }); await c.sleep(1200); };
 const ids = S => JSON.parse(fs.readFileSync(RO(S), "utf8")).roles.map(r => r.id);
+/* t-oss-gen-s5: core files (git-tracked in the repo) a preset or make_agents must never write; the preset's own go to local/ */
+const CORE = ["manager.md", "policy.md", "team.md", "roles/common.md", "roles/scout.md", "roles/artist.md", "roles/smith.md", "roles/manager.md"];
+const coreSnap = S => Object.fromEntries(CORE.map(f => [f, fs.existsSync(path.join(S, f)) ? fs.readFileSync(path.join(S, f), "utf8") : null]));
+const PRESET_LOCAL = ["team.md", "policy.md"];   /* classic's writer / director / ops notes are not core: they go to roles/ (git-ignored) */
+const MADE = [];   /* local/ files this journey's preset made, removed in cleanup */
 module.exports = {
   views: ["desk", "phone"],
   hash: () => "#page=market",
   async run(c) {
     const p = c.p, S = c.SCRATCH;
     const crew = noHr(S);
+    const core0 = coreSnap(S), local0 = PRESET_LOCAL.filter(f => fs.existsSync(path.join(S, "local", f)));
     await c.until(async () => { const st = await c.state(); return !st.agents.hr; }, 10000);
     await ready(c);   /* no reload: WebKit logs every aborted poll as a page error; the long poll brings the smaller roster */
     await p.waitForFunction(() => !App.ST.agents.hr, null, { timeout: 30000 });
@@ -59,8 +65,13 @@ module.exports = {
     const res = await p.evaluate(() => document.querySelector("#modal [data-plan]").textContent);
     c.check("Switch applied classic: roster = the seven, undo command shown", JSON.stringify(ids(S).sort()) === JSON.stringify(["artist", "director", "manager", "ops", "scout", "smith", "writer"]) && /undo: python3 tools\/bak\.py restore preset-/.test(res), { ids: ids(S), res: res.slice(-300) });
     await c.until(async () => { const st = await c.state(); return !!st.agents.writer && !st.agents.hr; }, 15000);
+    const core1 = coreSnap(S), moved = CORE.filter(f => core0[f] !== core1[f]);
+    c.check("preset + make_agents left every core file as shipped", !moved.length, moved);
+    c.check("the preset's team.md / policy.md landed in local/", PRESET_LOCAL.every(f => fs.existsSync(path.join(S, "local", f))) && fs.existsSync(path.join(S, "local", "dispatch.md")), PRESET_LOCAL.filter(f => !fs.existsSync(path.join(S, "local", f))));
+    MADE.push(...PRESET_LOCAL.filter(f => !local0.includes(f)));
     await c.shot("after-classic");
     await c.tap("#modal [data-x]"); await c.sleep(500);
   },
-  async cleanup(o) { try { fs.unlinkSync(RO(o.SCRATCH)); cp.execFileSync("python3", ["make_agents.py"], { cwd: o.SCRATCH, stdio: "ignore" }); } catch (_) {} },
+  async cleanup(o) { try { for (const f of MADE.splice(0)) fs.rmSync(path.join(o.SCRATCH, "local", f), { force: true }); } catch (_) {}
+    try { fs.unlinkSync(RO(o.SCRATCH)); cp.execFileSync("python3", ["make_agents.py"], { cwd: o.SCRATCH, stdio: "ignore" }); } catch (_) {} },
 };

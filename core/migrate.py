@@ -109,10 +109,11 @@ def run(target, data, root, now=None, steps=None):
 
 
 def backup_dir(root):
-    """local/backups/migrate when the install has a local/ layer, else .backups/migrate (git-ignored). Never creates local/:
-    its presence changes where rule files are written (stateutil.role_md)."""
+    """<backups>/migrate (core/paths.backups_dir: local/backups, or .backups without a local/ layer). Never creates local/."""
     loc = os.path.abspath(os.environ.get("UNDERTHREAD_LOCAL") or os.path.join(root, "local"))
-    return os.path.join(loc, "backups", "migrate") if os.path.isdir(loc) else os.path.join(root, ".backups", "migrate")
+    lb, ob = os.path.join(loc, "backups"), os.path.join(root, ".backups")
+    base = lb if os.path.isdir(lb) else ob if os.path.isdir(ob) else lb if os.path.isdir(loc) else ob   # same rule as core/paths.backups_dir
+    return os.path.join(base, "migrate")
 
 
 def backup(root, name, raw, old):

@@ -48,7 +48,7 @@ On first start, `server.py` copies each template to its live name if the live fi
 | `port` | `8765` | Dashboard port. The `PORT` environment variable overrides it |
 | `report_time` | `18:00` | When the server asks the steward for the daily report |
 | `routines` | `[]` | **Read once.** On first start any routine listed here is imported into Schedules; after that, edit schedules on the Schedules page or with `S schedule`, not here |
-| `platforms` | not set | Your channels' names and home links, shown on cards. Only the content-zh preset adds it (B站 / YouTube / 小红书, [section 8](#presets)) |
+| `platforms` | not set | Your channels' names and home links, shown on cards. Only the optional content-zh preset adds it ([Presets](#presets)); while it is set (or a role has a `pipe`), the 制作组 page shows the production-line and channel tabs |
 | `comfy` (optional): `ssh_host`, `remote_port`, `local_port`, `default_workflow` | not set | Only for image generation through ComfyUI ([section 9](#9-comfyui-optional)). Without it the dashboard shows no ComfyUI status at all |
 | `allowed_hosts` | not set | Extra host names the dashboard accepts, besides `localhost`, this machine's names and any `*.ts.net` (Tailscale) name |
 
@@ -75,9 +75,9 @@ python3 make_agents.py
 **Required before the first start of the steward**, and again after any change to `roster.json`. It:
 - writes `.claude/agents/<agent_name>.md` for every enabled role, combining the roster entry, the shared hard rules and the role notes in `roles/<id>.md`;
 - removes agent files for roles that were disabled or deleted;
-- refreshes the dispatch table in `manager.md` (between the `DISPATCH:BEGIN` / `DISPATCH:END` markers).
+- writes the steward's dispatch table to `local/dispatch.md` (it makes the `local/` folder if there is none; `manager.md` itself is never written).
 
-Expected output: `from roster.json: wrote N agents → …` and `restart the manager session to pick them up`, plus `updated dispatch table in manager.md` when the table changed. Then restart the steward so it sees the new agents.
+Expected output: `from roster.json: wrote N agents → …` and `restart the manager session to pick them up`, plus `updated local/dispatch.md` when the table changed. Then restart the steward so it sees the new agents.
 
 ---
 
@@ -163,18 +163,22 @@ Finished cards that haven't moved for 3 days are moved from `state.json` to `arc
 See [docs/custom-crew.md](custom-crew.md).
 
 ### Presets
-A preset swaps in a whole team. `presets/content-zh/` is a Chinese content-creator team (B站 / YouTube / 小红书).
+Optional. A preset swaps in a whole team: `presets/classic/` is the earlier seven-person general crew (adds a writer, a
+planner and a coordinator), `presets/content-zh/` a Chinese content-creator team with its own production line and channel
+tabs. The market's preset strip shows what changes and switches in one tap; from the command line:
 
 ```bash
 python3 tools/preset.py list
-python3 tools/preset.py apply content-zh --dry   # optional: show what would change
-python3 tools/preset.py apply content-zh
+python3 tools/preset.py apply <name> --dry   # optional: show what would change
+python3 tools/preset.py apply <name>
 python3 make_agents.py
 ```
 
-Then restart the steward. `apply` replaces `roster.json`, `team.md`, `policy.md` and `roles/*.md`, and adds `platforms` and a placeholder `comfy` block to `config.json` (your port, owner and times stay). Every file it replaces is first backed up under the tag `preset-<time>` (in `local/backups/bak/`, see `tools/bak.py`); to undo, run the `tools/bak.py restore …` line it prints, then `make_agents.py` again.
-
----
+Then restart the steward. `apply` replaces `roster.json`, writes the preset's `team.md`, `policy.md` and `roles/*.md` into
+`local/` (read over the core files; Confirmed rules already in `local/roles/<id>.md` are kept; core files are never written),
+and merges only the keys the preset lists into `config.json` (your port, owner and times stay). Every file it replaces is
+first backed up under the tag `preset-<time>` (see `tools/bak.py`); to undo, run the `tools/bak.py restore …` line it
+prints, delete the new `local/` files it lists, then run `make_agents.py` again.
 
 ## 9. ComfyUI (optional)
 

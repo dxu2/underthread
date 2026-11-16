@@ -156,28 +156,53 @@ def t_agents(root):
 def t_preset(root):
     before = {f: os.path.exists(os.path.join(root, f)) for f in ("roster.json", "config.json")}
     roles_before = set(os.listdir(os.path.join(root, "roles")))
+    L = os.path.join(root, "local")
+    local_before = {os.path.relpath(os.path.join(d, f), L) for d, _, fs in os.walk(L) for f in fs} if os.path.isdir(L) else set()
+    # t-oss-gen-s5: a preset never writes a git-tracked file; team.md, policy.md and roles/*.md go to local/
+    tracked = subprocess.run(["git", "ls-files", "manager.md", "policy.md", "team.md", "roles"], cwd=root, capture_output=True,
+                             text=True).stdout.split() or ["manager.md", "policy.md", "team.md", "roles/scout.md", "roles/common.md"]
+    sums = {f: open(os.path.join(root, f), "rb").read() for f in tracked if os.path.exists(os.path.join(root, f))}
+    mine = "- smoke kept rule (2026-11-15)"
+    os.makedirs(os.path.join(L, "roles"), exist_ok=True)
+    had_scout = os.path.exists(os.path.join(L, "roles", "scout.md"))
+    if not had_scout:
+        with open(os.path.join(L, "roles", "scout.md"), "w", encoding="utf-8") as f:
+            f.write(f"# scout (local)\n\n## Confirmed rules\n{mine}\n")
     r = subprocess.run([PY, "tools/preset.py", "apply", "classic", "--dry"], cwd=root, capture_output=True, text=True)
-    assert r.returncode == 0 and "roles/writer.md" in r.stdout, r.stdout + r.stderr   # t-oss-gen-s2: the old seven-person crew
+    assert r.returncode == 0 and "add roles/writer.md" in r.stdout and "local/team.md" in r.stdout, r.stdout + r.stderr   # t-oss-gen-s2: the old seven-person crew
     r = subprocess.run([PY, "tools/preset.py", "apply", "content-zh"], cwd=root, capture_output=True, text=True)
     assert r.returncode == 0, r.stderr
     with open(os.path.join(root, "roster.json"), encoding="utf-8") as f:
         assert "B站" in json.load(f).get("team", "")
-    has_local = os.path.isdir(os.path.join(root, "local"))
-    bk = os.path.join(root, "local", "backups", "bak") if has_local else os.path.join(root, ".backups", "bak")   # core/backup.py
-    assert glob.glob(os.path.join(bk, "team.md.bak-preset-*")), "no backup of the replaced team.md"
+    assert open(os.path.join(L, "team.md"), encoding="utf-8").read() == open(os.path.join(root, "presets", "content-zh", "team.md"), encoding="utf-8").read()
+    if not had_scout:
+        sc = open(os.path.join(L, "roles", "scout.md"), encoding="utf-8").read()
+        assert mine in sc and "选题" in sc, "preset dropped the local Confirmed rules or did not land"
+    bk = next((d for d in (os.path.join(L, "backups", "bak"), os.path.join(root, ".backups", "bak")) if os.path.isdir(d)), None)
+    if had_scout or before["roster.json"]:   # a replaced file is backed up first (a new one has nothing to back up)
+        assert bk and glob.glob(os.path.join(bk, "**", "*.bak-preset-*"), recursive=True), "no backup of a replaced file"
+    bk = bk or os.path.join(L, "backups", "bak")
     assert not glob.glob(os.path.join(root, "roles", "*.bak*")), "backups must not land next to the files"
     r = subprocess.run([PY, "make_agents.py"], cwd=root, capture_output=True, text=True)
     assert r.returncode == 0, r.stderr
+    changed = [f for f, b in sums.items() if open(os.path.join(root, f), "rb").read() != b]
+    assert not changed, f"preset / make_agents wrote tracked files: {changed}"
     # put the default crew back for the next checks
-    for f in glob.glob(os.path.join(bk, "*.bak-preset-*")) + glob.glob(os.path.join(bk, "roles", "*.bak-preset-*")):
+    for f in glob.glob(os.path.join(bk, "*.bak-preset-*")):
         shutil.move(f, os.path.join(root, os.path.relpath(f, bk).split(".bak-preset-")[0]))
-    for f in set(os.listdir(os.path.join(root, "roles"))) - roles_before:   # role notes the preset added (not in the default crew)
+    shutil.rmtree(os.path.join(bk, "local"), ignore_errors=True)
+    for d, _, fs in os.walk(L):
+        for f in fs:
+            rp = os.path.relpath(os.path.join(d, f), L)
+            if rp not in local_before and not rp.startswith("backups" + os.sep) and rp != "dispatch.md":
+                os.remove(os.path.join(d, f))
+    for f in set(os.listdir(os.path.join(root, "roles"))) - roles_before:   # role notes added for the preset crew
         os.remove(os.path.join(root, "roles", f))
     for f, was in before.items():
         if not was and os.path.exists(os.path.join(root, f)):
             os.remove(os.path.join(root, f))
     shutil.rmtree(os.path.join(root, ".claude", "agents"), ignore_errors=True)
-    subprocess.run([PY, "make_agents.py"], cwd=root, capture_output=True, text=True)   # manager.md dispatch table back to default
+    subprocess.run([PY, "make_agents.py"], cwd=root, capture_output=True, text=True)   # local/dispatch.md back to the default crew
 
 
 def t_server(root):

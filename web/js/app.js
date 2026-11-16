@@ -14,7 +14,7 @@ import { wireCardRef } from "./views/cardref.js";
 import { chatList, renderChat, setChat, wireChat } from "./views/chat.js";
 import { DW, backItem, closeItem, dwSig, openItem, renderDrawer, seekChat, seekItem, snzLine, snzMenu, snzText, wireDrawer } from "./views/drawer.js";
 import { TOOL_EXTRA, fmtTok, renderHeader, renderTool, roleUsage, ruHTML, soulHTML, toolBadge, toolLine, toolWhat, usage, wireHeader } from "./views/header.js";
-import { SET_TABS, counts, renderLeft, rtFull, rtShort, schToday, wireLeft } from "./views/left.js";
+import { SET_TABS, contentMode, counts, renderLeft, rtFull, rtShort, schToday, wireLeft } from "./views/left.js";
 import { chatMailRead, mailPv, newReplies, nrDot, renderMailbox, seenOf, tablePv, unreadOf, wireMail, wireMail2 } from "./views/mail.js";
 import { inkEb } from "./views/pages/common.js";
 import { phaseFree, renderPage, wirePages, wirePages2 } from "./views/pages/index.js";
@@ -127,7 +127,7 @@ wireStatus();
 window.App = {
   okLabel, okDone, askLeft, openAsks: it => openAsks(it),   // t-btn-names
   askGroups: l => askGroups(l), grpHTML: (g, c) => grpHTML(g, c),   /* t-ri1113-a P3 */
-  rtShort, rtFull, schToday,   /* t-ri1109-a: routine names, shared with widgets.js; t-ri1110-a P2: schToday */
+  rtShort, rtFull, schToday, contentMode,   /* t-oss-gen-s5: contentMode (palette.js) */   /* t-ri1109-a: routine names, shared with widgets.js; t-ri1110-a P2: schToday */
   utEmpty: (text, cls, h) => utEmpty(text, cls, h),   /* t-thread-motif ④ (widgets.js, palette.js, mobile.js) */
   rvApprove: id => rvApprove(id, null), rvCanApprove: it => rvCanApprove(it), awaitsUser: it => awaitsUser(it), busy: it => busy(it), onYou: it => onYou(it), onYouCard: it => onYouCard(it), grpOf: it => grpOf(it), newReplies: () => newReplies(), nrDot: id => nrDot(id), decisions: () => decisions(),   // t-imp-p5 (palette)
   /* t-chrome-badge (home.js .hd-tool) */

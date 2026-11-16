@@ -10,7 +10,7 @@
 
 [English](README.md) · **简体中文**
 
-<img src="docs/img/crew.gif" alt="七个刺绣徽章队员排成一排，依次拿起自己的小工具" width="560">
+<img src="docs/img/crew.gif" alt="五个刺绣徽章队员排成一排，依次拿起自己的小工具" width="560">
 
 [**5 分钟跑起来**](#5-分钟跑起来) · [**认识队员**](#认识队员) · [**和小队过一天**](#和小队过一天) · [**文档**](#文档)
 
@@ -38,7 +38,7 @@
 
 ## 认识队员
 
-默认小队七个人。每人一枚刺绣徽章，干活的时候会拿起自己的小工具。
+默认小队从五个人起步，缺谁再招谁。每人一枚刺绣徽章，干活的时候会拿起自己的小工具。
 
 > **管家 = manager。** 文件、命令和 roster 里，管家的 id 是 `manager`（`manager.md`、`set-agent manager`）。其他人的 id 见第三列。
 
@@ -46,13 +46,11 @@
 |---|---|---|---|
 | <img src="avatars/seed/ut/manager.png" width="48" alt=""> | **Steward**（管家） | `manager` | 读你发的每条消息，整理成卡片、派出去，每天给你写日报。有活的时候摇一下小铃铛。 |
 | <img src="avatars/seed/ut/scout.png" width="48" alt=""> | **Scout**（研究员） | `scout` | 查资料、做对比、核事实，每条结论都带出处。放大镜不离手。 |
-| <img src="presets/classic/avatars/ut/writer.png" width="48" alt=""> | **Quill**（写作） | `writer` | 管所有文字：文档、草稿、总结、消息。想事情的时候翻小本子。 |
-| <img src="presets/classic/avatars/ut/director.png" width="48" alt=""> | **Lens**（规划） | `director` | 把大活拆成步骤：计划、清单、复查。场景就绪时打一下场记板。 |
+| <img src="avatars/seed/ut/hr.png" width="48" alt=""> | **Thimble**（HR） | `hr` | 帮你招其余的人：就你想招的岗位问你五件事（几轮就完），写好新人的角色笔记等你批准。调岗也找她。 |
 | <img src="avatars/seed/ut/artist.png" width="48" alt=""> | **Brush**（设计） | `artist` | 图片、示意图和样稿，可以接你自己的 ComfyUI 机器。走过留下一点颜料。 |
-| <img src="presets/classic/avatars/ut/ops.png" width="48" alt=""> | **Signal**（协调） | `ops` | 日程、跟进、消息草稿。会折纸飞机。 |
 | <img src="avatars/seed/ut/smith.png" width="48" alt=""> | **Smith**（工具） | `smith` | 维护看板和工具，动手前先备份。没事的时候织毛线。 |
 
-想换一支队伍？名字、职责、语气、人数都在 `roster.json` 里；招聘市场还有 24 个现成岗位。做 B站 / YouTube / 小红书 的话，`presets/content-zh/` 里有一套中文自媒体团队预设（脚本、分镜、封面、发布排期），跑 `python3 tools/preset.py apply content-zh` 就能换过去。见[组建你自己的小队](#组建你自己的小队)。
+缺人？去招聘市场（29 个岗位模板）：Thimble 问你五件事，新人就上岗，Brush 还会给他缝一枚自己的补丁头像。名字、职责、语气、人数都在 `roster.json` 里。见[组建你自己的小队](#组建你自己的小队)。
 
 ---
 
@@ -93,8 +91,8 @@ python3 server.py
 python3 make_agents.py
 ```
 
-它按 roster 给每个队员在 `.claude/agents/` 里写一个 Claude Code 子代理，并刷新 `manager.md` 里的派单表。**跳过这一步，派单全部失败**，因为管家找不到人。想改名字或角色，先改 `roster.json` 再跑；以后随时可以重跑。
-*你应该看到：* `from roster.json: wrote 6 agents → …/.claude/agents: underthread-scout, underthread-writer, …` 和 `restart the manager session to pick them up`。派单表有变化时，还会多一行 `updated dispatch table in manager.md`。
+它按 roster 给每个队员在 `.claude/agents/` 里写一个 Claude Code 子代理，并把管家的派单表写进 `local/dispatch.md`。**跳过这一步，派单全部失败**，因为管家找不到人。想改名字或角色，先改 `roster.json` 再跑；以后随时可以重跑。
+*你应该看到：* `from roster.json: wrote 4 agents → …/.claude/agents: underthread-hr, underthread-scout, …` 和 `restart the manager session to pick them up`。派单表有变化时，还会多一行 `updated local/dispatch.md`。
 
 **3. 叫醒管家。** 另开一个终端，在同一个目录里：
 
@@ -149,7 +147,7 @@ claude "Start the manager per manager.md"
   <p align="center"><img src="docs/img/phone.gif" alt="手机 App：底部浮动标签栏切换、长按看名字、下拉刷新" width="300"></p>
 
 - **一句话定时。** 「明天 9 点提醒我…」「每个工作日 9 点让 Scout 看看趋势」会变成「定时」页上的一条，有开关和一周的运行记录。
-- **招聘市场。** 24 个岗位模板，每个三种性格，一键雇佣。
+- **招聘市场。** 29 个岗位模板，每个三种性格。先让 HR 面试，或者一键雇佣。
 - **⌘K，或者直接按 `/`。** 搜索所有卡片和聊天记录。
 - **一个信箱。** 回复、交付和通知都在这里，可筛选。
 - **邮件进管家的收件箱。** 在「设置 → 连接」里连上 Gmail（应用专用密码，存在钥匙串里），新邮件每隔几分钟汇成一条只有标题的消息，分成「要你处理 / 可起草 / 知悉」。只读：什么都不会发出或删除。Slack 随后支持。见 [Feeds](docs/feeds.md)（英文）。
@@ -164,11 +162,12 @@ claude "Start the manager per manager.md"
 
 ## 组建你自己的小队
 
-Underthread 不在乎你做什么工作。管家、卡片、审核、规则、看板，对任何团队都一样。三种方式改队伍：
+Underthread 不在乎你做什么工作。管家、卡片、审核、规则、看板，对任何团队都一样。改队伍的几种方式：
 
-1. **招聘市场**（左侧栏）。选个模板，点**直接雇**，新队员带着头像、角色笔记和代理文件直接入队。roster 里有 id 为 `hr` 的角色时，还可以点**面试**，让 HR 先问你几个问题。
+1. **招聘市场**（左侧栏）。选个模板点**面试**：HR 先问你几个问题，写好新人的角色笔记，你批准后入职。**直接雇**跳过面试。两种都会给新人头像、角色笔记和代理文件。没有 HR 的老队伍会看到一个**先请 HR** 按钮。
 2. **命令行。** `python3 tools/new_role.py plan|apply|retire|rehire|update`。
-3. **手改。** 改 `roster.json` 和 `roles/<id>.md`，然后跑 `python3 make_agents.py`。
+3. **手改。** 改 `roster.json` 和 `local/roles/<id>.md`，然后跑 `python3 make_agents.py`。
+4. **整队换。** 市场顶上的预设条可以一键换整支队伍：`classic`（早先的七人通用队，多一个写作、一个规划、一个协调）或 `content-zh`（中文内容创作团队）。写入前先给你看会改什么，被替换的文件都先备份。命令行是 `python3 tools/preset.py apply <name>`。
 
 在 设置 → 角色 里还可以给队员**调岗**或让他**退休**。
 

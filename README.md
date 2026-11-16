@@ -10,7 +10,7 @@
 
 **English** · [简体中文](README.zh-CN.md)
 
-<img src="docs/img/crew.gif" alt="Seven embroidered-patch teammates standing in a row, then picking up their tools one by one" width="560">
+<img src="docs/img/crew.gif" alt="Five embroidered-patch teammates standing in a row, then picking up their tools one by one" width="560">
 
 [**Try it in 5 minutes**](#try-it-in-5-minutes) · [**Meet the crew**](#meet-the-crew) · [**A day with your crew**](#a-day-with-your-crew) · [**Docs**](#docs)
 
@@ -38,7 +38,7 @@ Everything runs on your own machine, and nothing goes out into the world unless 
 
 ## Meet the crew
 
-The default crew has seven members. Each one has an embroidered patch, and when they're busy they pick up a little tool of their own.
+The default crew starts small: five members, and you hire the rest as you need them. Each one has an embroidered patch, and when they're busy they pick up a little tool of their own.
 
 > **Steward = manager.** In files, commands and the roster, the steward's id is `manager` (`manager.md`, `set-agent manager`). The other ids are in the third column.
 
@@ -46,13 +46,11 @@ The default crew has seven members. Each one has an embroidered patch, and when 
 |---|---|---|---|
 | <img src="avatars/seed/ut/manager.png" width="48" alt=""> | **Steward** | `manager` | Reads every message you send, sorts it into cards, hands them out and writes you a daily report. Rings a tiny bell when there's work. |
 | <img src="avatars/seed/ut/scout.png" width="48" alt=""> | **Scout** | `scout` | Research, comparisons and fact-checks, with a source for every claim. Never goes anywhere without a magnifying glass. |
-| <img src="presets/classic/avatars/ut/writer.png" width="48" alt=""> | **Quill** | `writer` | Owns every word: docs, drafts, summaries, messages. Turns a page in a little notebook while thinking. |
-| <img src="presets/classic/avatars/ut/director.png" width="48" alt=""> | **Lens** | `director` | Breaks big jobs into steps: plans, checklists, reviews. Snaps a clapperboard when a scene is ready. |
+| <img src="avatars/seed/ut/hr.png" width="48" alt=""> | **Thimble** | `hr` | Hires the rest of the crew: interviews you about the job you need filled (five things, a few turns), then writes the new teammate's notes for your OK. Also handles transfers. |
 | <img src="avatars/seed/ut/artist.png" width="48" alt=""> | **Brush** | `artist` | Images, diagrams and mockups, optionally through your own ComfyUI machine. Leaves a dab of paint behind. |
-| <img src="presets/classic/avatars/ut/ops.png" width="48" alt=""> | **Signal** | `ops` | Your calendar, follow-ups and message drafts. Flies paper planes. |
 | <img src="avatars/seed/ut/smith.png" width="48" alt=""> | **Smith** | `smith` | Keeps the dashboard and the tools running, and makes a backup before touching anything. Knits when nothing is on fire. |
 
-Want a different team? Names, duties, tone and the number of teammates all live in `roster.json`, and the Hiring market has 24 ready-made job templates. A Chinese content-creator preset (B站 / YouTube / 小红书: scripts, storyboards, covers, publishing calendar) ships in `presets/content-zh/`; `python3 tools/preset.py apply content-zh` switches to it. See [Make it your crew](#make-it-your-crew).
+Short on someone? Open the Hiring market (29 job templates): Thimble interviews you about five things, the new teammate starts work, and Brush stitches them a patch of their own. Names, duties, tone and the number of teammates all live in `roster.json`. See [Make it your crew](#make-it-your-crew).
 
 ---
 
@@ -93,8 +91,8 @@ The first run copies `config.example.json`, `roster.example.json` and `state.exa
 python3 make_agents.py
 ```
 
-This writes one Claude Code subagent per teammate into `.claude/agents/` and refreshes the dispatch table in `manager.md`. **Skip it and every dispatch fails**, because the steward has nobody to send work to. Edit `roster.json` first if you want different names or roles; you can re-run it any time.
-*You should see:* `from roster.json: wrote 6 agents → …/.claude/agents: underthread-scout, underthread-writer, …` and `restart the manager session to pick them up`. If the dispatch table changed, there is also a line `updated dispatch table in manager.md`.
+This writes one Claude Code subagent per teammate into `.claude/agents/` and the steward's dispatch table into `local/dispatch.md`. **Skip it and every dispatch fails**, because the steward has nobody to send work to. Edit `roster.json` first if you want different names or roles; you can re-run it any time.
+*You should see:* `from roster.json: wrote 4 agents → …/.claude/agents: underthread-hr, underthread-scout, …` and `restart the manager session to pick them up`. If the dispatch table changed, there is also a line `updated local/dispatch.md`.
 
 **3. Wake up the steward.** In a second terminal, from the same folder:
 
@@ -149,7 +147,7 @@ Something not working? See [Troubleshooting](docs/troubleshooting.md). The long 
   <p align="center"><img src="docs/img/phone.gif" alt="The phone app: switching tabs on the floating tab bar, long press for names, pull to refresh" width="300"></p>
 
 - **Schedules in one sentence.** "Remind me tomorrow at 9…" or "every weekday at 9, ask Scout for trends" becomes a schedule on the Schedules page, with on/off switches and a week of run history.
-- **Hiring market.** 24 job templates, three personalities each. Hire in one click.
+- **Hiring market.** 29 job templates, three personalities each. HR interviews you first, or hire in one click.
 - **⌘K, or just `/`.** Search every card and everything said in chat.
 - **One mailbox** for replies, deliveries and notices, with filters.
 - **Your mail in the steward's inbox.** Connect Gmail in Settings → Connections (app password, stored in the keychain) and new mail arrives as one headers-only entry every few minutes, sorted into "needs you / can draft / FYI". Read-only: nothing is ever sent or deleted. Slack is next. See [Feeds](docs/feeds.md).
@@ -164,11 +162,12 @@ Something not working? See [Troubleshooting](docs/troubleshooting.md). The long 
 
 ## Make it your crew
 
-Underthread itself doesn't care what kind of work you do. The steward, cards, reviews, rules and dashboard work the same for any team. Three ways to change the crew:
+Underthread itself doesn't care what kind of work you do. The steward, cards, reviews, rules and dashboard work the same for any team. Ways to change the crew:
 
-1. **Hiring market** (in the left rail). Pick a template, click **Hire**, and the new teammate shows up with an avatar, a role note and an agent file. If your roster has an `hr` role, **Interview** lets HR ask you a few questions first.
+1. **Hiring market** (in the left rail). Pick a template and click **Interview**: HR asks you a few questions, writes the new teammate's notes, and they start once you approve. **Hire** skips the interview. Either way the newcomer gets an avatar, a role note and an agent file. A crew without HR gets a **Hire HR first** button.
 2. **Command line.** `python3 tools/new_role.py plan|apply|retire|rehire|update`.
-3. **By hand.** Edit `roster.json` and `roles/<id>.md`, then run `python3 make_agents.py`.
+3. **By hand.** Edit `roster.json` and `local/roles/<id>.md`, then run `python3 make_agents.py`.
+4. **A whole team at once.** The strip at the top of the market swaps in a preset crew: `classic` (an earlier seven-person team with a writer, a planner and a coordinator) or `content-zh` (a Chinese content-creator team). It shows what changes before anything is written, and backs up every file it replaces. `python3 tools/preset.py apply <name>` does the same from the command line.
 
 Teammates can also be moved to a new job (**Transfer**) or retired (**Retire**) from Settings → Roster.
 

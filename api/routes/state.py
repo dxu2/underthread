@@ -332,8 +332,27 @@ def codex_quota():
         return None
 
 
+CONFIG_JSON = os.path.join(ROOT, "config.json")
+_PLATS = {"sig": False, "val": False}
+
+
+def platforms_set():
+    """t-oss-gen-s5: config.json has a non-empty "platforms" block (the content preset sets it). With meta.studio ("on" / "off",
+    unset = auto) and any role's "pipe", the page decides whether 制作组 shows 制作线 / 频道 and drafts get platform previews.
+    Read from the file (cached on its stat), so a preset switch shows without a restart."""
+    sig = _fsig(CONFIG_JSON)
+    if sig != _PLATS["sig"]:
+        try:
+            with open(CONFIG_JSON, encoding="utf-8") as f:
+                val = bool(json.load(f).get("platforms"))
+        except (OSError, ValueError, AttributeError):
+            val = False
+        _PLATS.update(sig=sig, val=val)
+    return _PLATS["val"]
+
+
 def public_state_cached(slim):
-    k = (_fsig(S.STATE), _fsig(S.INBOX), _fsig(AVATARS), _fsig(HIRE_LOG), _fsig(S.ARCHIVE), art_sig(), avatar_stamp(), json.dumps(_comfy, sort_keys=True), json.dumps(codex_quota()), dt.datetime.now().strftime("%Y-%m-%d %H:%M"))
+    k = (_fsig(S.STATE), _fsig(CONFIG_JSON), _fsig(S.INBOX), _fsig(AVATARS), _fsig(HIRE_LOG), _fsig(S.ARCHIVE), art_sig(), avatar_stamp(), json.dumps(_comfy, sort_keys=True), json.dumps(codex_quota()), dt.datetime.now().strftime("%Y-%m-%d %H:%M"))
     with _PSL:
         c = _PSC.get(slim)
         if c and c[0] == k:
@@ -364,6 +383,7 @@ def public_state(slim=False):
     st["schedules"] = [x for x in st.get("schedules") or [] if not x.get("deleted")]   # t-schedule-backend: removed ones stay 30 days for undo, not shown
     st["meta"]["schema_code"] = MG.LATEST   # t-oss-struct E1: meta.schema > this = data from a newer version (settings shows a line)
     st["meta"]["report_time"] = str(CONFIG.get("report_time", "18:00"))   # ri1103-P1: the 日报 row of 今日日程
+    st["meta"]["platforms_set"] = platforms_set()   # t-oss-gen-s5: content mode (web/js/views/left.js contentMode)
     st["meta"]["media_v"] = 1   # t-voice-memo: this server transcribes (the page hides 转写/重试 on older servers)
     trim_state(st)
     ho = st.pop("handoffs", None) or []   # t-rb-build: the log is fetched from /api/handoffs; a poll carries only where it ends

@@ -212,6 +212,9 @@ class Golden(unittest.TestCase):
         a("widget_layout_bad", {"kind": "widget_layout", "layout": [["inbox", "x"]]})
         a("widget_layout_reset", {"kind": "widget_layout", "reset": True})
         a("widget_layout_seen", {"kind": "widget_layout", "layout": [["team", "m"], ["demo-ext_1", "s"]], "seen": ["team", "demo-ext_1", "usage"]})
+        a("studio_mode_on", {"kind": "studio_mode", "mode": "on"})   # t-oss-gen-s5
+        a("studio_mode_bad", {"kind": "studio_mode", "mode": "maybe"})
+        a("studio_mode_auto", {"kind": "studio_mode", "mode": "auto"})
         a("widget_layout_seen_bad", {"kind": "widget_layout", "layout": [["team", "m"]], "seen": ["Bad id"]})
         a("widget_layout_reset_keeps_seen", {"kind": "widget_layout", "reset": True})
         a("stamina", {"kind": "stamina", "pct": 42, "note": "golden"})

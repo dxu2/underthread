@@ -8,12 +8,12 @@
 // Theme mode (rt.themeMode auto | manual) is decided before first paint in index.html and kept live in mobile.js ui13.
 import { $, LS } from "../../core/util.js";
 import { srvLocal } from "../../core/i18n.js";
-import { UI, byAct, items } from "../../core/store.js";
+import { ST, UI, byAct, items } from "../../core/store.js";
 import { agent, aname, av } from "../../core/av.js";
 import { api, toast } from "../../core/ui.js";
 import { go } from "../../core/router.js";
 import { loadRoleUsage, ruHTML } from "../header.js";
-import { SET_TABS, STU, renderLeft } from "../left.js";
+import { SET_TABS, STU, contentMode, renderLeft } from "../left.js";
 import { MOBQ, pageHead } from "./common.js";
 import { PAGES, renderPage } from "./index.js";
 import { PIPE, contentRoles, isContent, pipeCard, pipeName, pipeOf, pipeWeek, pipeWho } from "./pipe.js";
@@ -51,7 +51,17 @@ function stGeneral() {
     + (P.on && App.pushPrefs ? `<div class="st-sub">${App.pushPrefs()}</div>` : "")
     + (P.on ? stRow(en ? "Send a test" : "发一条测试通知", "", `<em class="st-go">›</em>`, `data-set="pushtest"`) : "") : "";
   const mic = stRow(en ? "Microphone test" : "麦克风测试", en ? "Check before voice calls" : "语音通话前的真机检查", `<em class="st-go">›</em>`, `data-set="mictest"`);
-  return stSec(en ? "Appearance" : "外观", look) + stSec(en ? "Notifications" : "通知", push + mic);
+  return stSec(en ? "Appearance" : "外观", look) + stSec(en ? "Studio" : "制作", studioRow(en)) + stSec(en ? "Notifications" : "通知", push + mic);
+}
+/* t-oss-gen-s5: 制作线和频道 = content mode (views/left.js contentMode). One key, meta.studio, shared by every browser; unset = auto. */
+const studioNow = () => { const m = ST && ST.meta && ST.meta.studio; return m === "on" || m === "off" ? m : "auto"; };
+const studioSub = (en, m) => m === "on" ? (en ? "Always shown under Studio, with platform previews on drafts." : "一直显示在「制作」里，草稿带平台预览")
+  : m === "off" ? (en ? "Hidden: Studio keeps Board and Assets." : "不显示：「制作」只留委托板和素材")
+  : (en ? `Auto: shown when config.json lists platforms or a role owns a pipeline column (now ${contentMode() ? "shown" : "hidden"}).` : `自动：config.json 配了发布平台（platforms）或有角色负责制作线时显示（现在${contentMode() ? "显示" : "不显示"}）`);
+function studioRow(en) {
+  const m = studioNow();
+  return stRow(en ? "Pipeline & Channels" : "制作线和频道", `<span class="st-studio-sub">${studioSub(en, m)}</span>`,
+    stSeg("studio", [["auto", "自动", "Auto"], ["on", "开", "On"], ["off", "关", "Off"]], m, "data-studio-set"), "", "div");
 }
 function stSystem() {
   const en = UI.lang === "en";
@@ -212,6 +222,15 @@ function wireSettings() {
     try { body = k === "general" ? stGeneral() : k === "system" ? stSystem() : k === "connections" ? stConnections() : PAGES[k](); } finally { UI.noHead = false; }
     return pageHead("settings") + tabs + `<div class="st-pane st-p-${k}${UI.stDir ? " st-in-" + UI.stDir : ""}" role="tabpanel">${body || ""}</div>`;
   };
+  document.addEventListener("click", e => {   /* t-oss-gen-s5: switch in place (no page rebuild), then tell the server */
+    const b = e.target.closest && e.target.closest("[data-studio-set]"); if (!b) return;
+    const m = b.dataset.studioSet; if (m === studioNow()) return;
+    if (ST && ST.meta) { if (m === "auto") delete ST.meta.studio; else ST.meta.studio = m; }
+    b.closest(".seg").querySelectorAll("[data-studio-set]").forEach(x => { const on = x === b; x.classList.toggle("on", on); x.setAttribute("aria-checked", String(on)); });
+    const sm = b.closest(".st-row") && b.closest(".st-row").querySelector(".st-studio-sub");
+    if (sm) { sm.classList.remove("st-swap"); void sm.offsetWidth; sm.textContent = studioSub(UI.lang === "en", m); sm.classList.add("st-swap"); }
+    api("studio_mode", { mode: m });
+  });
   document.addEventListener("click", e => {
     const l = e.target.closest("[data-lang-set]"); if (l && l.dataset.langSet !== UI.lang) { UI.lang = l.dataset.langSet; LS.set("lang", UI.lang); srvLocal(); window.Push && Push.lang && Push.lang(UI.lang); render(); }
   });

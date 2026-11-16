@@ -62,9 +62,10 @@ HEALTH_WAIT = int(os.environ.get("UPDATE_HEALTH_WAIT", "60"))
 
 
 def upd_dir():
-    """<backups>/update, where <backups> is the same folder core/backup.py uses: local/backups, else .backups."""
+    """<backups>/update, where <backups> is the same folder core/backup.py uses (core/paths.backups_dir)."""
     loc = os.path.abspath(os.environ.get("UNDERTHREAD_LOCAL") or os.path.join(ROOT, "local"))
-    base = os.path.join(loc, "backups") if os.path.isdir(loc) else os.path.join(ROOT, ".backups")
+    lb, ob = os.path.join(loc, "backups"), os.path.join(ROOT, ".backups")
+    base = lb if os.path.isdir(lb) else ob if os.path.isdir(ob) else lb if os.path.isdir(loc) else ob   # core/paths.backups_dir (stdlib copy)
     return os.path.join(base, "update")
 
 

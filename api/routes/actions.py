@@ -342,6 +342,17 @@ def _widget_layout(a):   # t-widget-drag: the desktop widget home's order / size
     st["meta"]["widgets"] = w
 
 
+@action("studio_mode")
+def _studio_mode(a):   # t-oss-gen-s5: 设置 → 制作线和频道: "auto" (shown when config has platforms or a role has a pipe), "on", "off"
+    m = a.body.get("mode")
+    if m not in ("auto", "on", "off"):
+        raise ValueError("mode must be auto, on or off")
+    if m == "auto":
+        a.st["meta"].pop("studio", None)
+    else:
+        a.st["meta"]["studio"] = m
+
+
 @action("stamina")
 def _stamina(a):
     a.st["meta"]["stamina"] = {"pct": int(a.body["pct"]), "note": a.body.get("note", "手动"), "at": S.now()}

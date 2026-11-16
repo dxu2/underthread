@@ -27,8 +27,8 @@ You start with a small crew and hire as you go.
 Roles are by function: corrections to one craft (research, design…) pile up as rules on one role.
 Missing someone? Open the hiring page (招聘市场): HR interviews you about the job (five things, a few minutes), drafts the role,
 and it joins after you approve; Brush stitches the newcomer a patch avatar. You can also edit `roster.json` by hand
-(then `python3 make_agents.py`). The old seven-person crew (with Quill, Lens and Signal) is the `classic` preset, and the
-Chinese content-creator team (B站 / YouTube / 小红书) is `content-zh`: `python3 tools/preset.py apply <name>`.
+(then `python3 make_agents.py`). Whole-team presets (`classic`, the old seven-person crew; `content-zh`, a Chinese
+content-creator team) are on the market's preset strip, or `python3 tools/preset.py apply <name>`.
 
 ## A typical project
 

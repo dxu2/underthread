@@ -1659,6 +1659,29 @@
   "code": 200,
   "inbox": []
  },
+ "studio_mode_auto": {
+  "body": {
+   "inbox": null,
+   "ok": true
+  },
+  "code": 200,
+  "inbox": []
+ },
+ "studio_mode_bad": {
+  "body": {
+   "error": "mode must be auto, on or off"
+  },
+  "code": 400,
+  "inbox": []
+ },
+ "studio_mode_on": {
+  "body": {
+   "inbox": null,
+   "ok": true
+  },
+  "code": 200,
+  "inbox": []
+ },
  "unknown_item": {
   "body": {
    "error": "no item nope"

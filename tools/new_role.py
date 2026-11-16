@@ -38,7 +38,7 @@ Safety:
     - idempotent: running apply again with the same input fills in whatever is missing and changes nothing else
     - make_agents.py rewrites every agent file, so apply/retire first checks that no OTHER role's agent file would change
       (someone hand-edited it?) and stops if one would
-    - roster.json / manager.md / the agent file are copied first with core/backup.py, tag newrole-<id>-<time>
+    - roster.json / local/dispatch.md / the agent file are copied first with core/backup.py, tag newrole-<id>-<time>
       (local/backups/bak/<file>.bak-newrole-<tag>; tools/bak.py list shows them)
     - --hard never deletes: files move to archive/roles/<id>-<time>/ with their relative paths
     - never edits state.json (the server syncs roster.json on its own; a no-op stateutil.mutate() only wakes the poll), other roles' roles/*.md, common.md, config.json
@@ -48,15 +48,16 @@ import argparse, datetime as dt, filecmp, glob, json, os, re, shutil, subprocess
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 LOCAL = os.path.abspath(os.environ.get("UNDERTHREAD_LOCAL") or os.path.join(ROOT, "local"))   # core / local split (stateutil.LOCAL)
+DISPATCH = os.path.join(LOCAL, "dispatch.md")   # t-oss-gen-s5: what make_agents.py rewrites (the core manager.md is never written)
 if ROOT not in sys.path:
     sys.path.insert(0, ROOT)
 from core import backup as BK   # noqa: E402  t-oss-struct S1: backups go to local/backups/bak/, not next to the file
 
 
 def role_md(i):
-    """The rule file this tool reads and writes for role i: local/roles/<i>.md when the local layer exists (core rule files stay as
-    shipped), else roles/<i>.md. An existing core file with no local copy yet is still read from core (see role_md_read)."""
-    return os.path.join(LOCAL, "roles", f"{i}.md") if os.path.isdir(LOCAL) else os.path.join(ROOT, "roles", f"{i}.md")
+    """The rule file this tool writes for role i: always local/roles/<i>.md (made if missing), so core rule files stay as shipped
+    (t-oss-gen-s5). An existing core file with no local copy yet is still read from core (see role_md_read)."""
+    return os.path.join(LOCAL, "roles", f"{i}.md")
 
 
 def role_md_read(i):
@@ -136,7 +137,7 @@ def pick_tag(i, op):
     base = f"{i}-{op}-{now_tag()}"
     for n in range(1, 100):
         tag = base if n == 1 else f"{base}-{n}"
-        if not any(BK.exists(p, f"newrole-{tag}", root=ROOT) for p in (ROSTER, os.path.join(ROOT, "manager.md"))) and not glob.glob(
+        if not any(BK.exists(p, f"newrole-{tag}", root=ROOT) for p in (ROSTER, DISPATCH)) and not glob.glob(
                 os.path.join(ROOT, ".claude", "agents", f"*.bak-newrole-{tag}")) and not glob.glob(
                 os.path.join(BK.root_dir(ROOT), "bak", ".claude", "agents", f"*.bak-newrole-{tag}")):
             return tag
@@ -530,12 +531,12 @@ def cmd_apply(args, dry):
             if not dry and not os.path.exists(p):
                 os.makedirs(os.path.dirname(p), exist_ok=True)
                 shutil.copyfile(extra["files"][k], p); made.append(dst)
-    # 4. agent file via make_agents.py (also refreshes manager.md's dispatch table)
+    # 4. agent file via make_agents.py (also refreshes the dispatch table in local/dispatch.md)
     ag = os.path.join(ROOT, ".claude", "agents", f"{e['agent_name']}.md")
-    steps.append(f"{rel(ag)}: " + ("exists, regenerated" if os.path.exists(ag) else "new") + " via make_agents.py; manager.md dispatch table")
+    steps.append(f"{rel(ag)}: " + ("exists, regenerated" if os.path.exists(ag) else "new") + " via make_agents.py; local/dispatch.md")
     out = {}
     if not dry:
-        backup(os.path.join(ROOT, "manager.md"), tag, dry)
+        backup(DISPATCH, tag, dry)
         out["make_agents"] = run_make_agents()
         if not os.path.exists(ag):
             die(f"make_agents.py ran but {rel(ag)} is missing")
@@ -595,10 +596,10 @@ def cmd_retire(args, dry):
         if drift:
             die("agent files differ from make_agents.py output:\n  " + "\n  ".join(drift))
         if dry:
-            print(f"PLAN · soft retire {i}: roster enabled:false, make_agents.py drops its agent file (backed up), manager.md marks it (disabled)")
+            print(f"PLAN · soft retire {i}: roster enabled:false, make_agents.py drops its agent file (backed up), local/dispatch.md marks it (disabled)")
             return
         backup(ROSTER, tag, dry)
-        backup(os.path.join(ROOT, "manager.md"), tag, dry)
+        backup(DISPATCH, tag, dry)
         backup(os.path.join(ROOT, ".claude", "agents", f"{r.get('agent_name')}.md"), tag, dry)
         r["enabled"] = False
         write_json_atomic(ROSTER, roster)
@@ -634,7 +635,7 @@ def cmd_retire(args, dry):
         return
     if r:
         backup(ROSTER, tag, dry)
-        backup(os.path.join(ROOT, "manager.md"), tag, dry)
+        backup(DISPATCH, tag, dry)
     for f in files:
         dst = os.path.join(arch, rel(f))
         os.makedirs(os.path.dirname(dst), exist_ok=True)
@@ -691,7 +692,7 @@ def rehire_archive(args, dry):
         return
     tag = pick_tag(i, "unarchive")
     backup(ROSTER, tag, dry)
-    backup(os.path.join(ROOT, "manager.md"), tag, dry)
+    backup(DISPATCH, tag, dry)
     for a, b in moves:
         if os.path.exists(a):
             os.makedirs(os.path.dirname(b), exist_ok=True)
@@ -719,7 +720,7 @@ def cmd_rehire(args, dry):
         return
     tag = pick_tag(args.id, "rehire")
     backup(ROSTER, tag, dry)
-    backup(os.path.join(ROOT, "manager.md"), tag, dry)
+    backup(DISPATCH, tag, dry)
     r.pop("enabled", None)
     write_json_atomic(ROSTER, roster)
     out = run_make_agents() + "\n" + nudge()
@@ -886,7 +887,7 @@ def cmd_update(args, dry):
     if drift:
         die("these agent files differ from what make_agents.py would write (hand-edited?):\n  " + "\n  ".join(drift))
     tag = pick_tag(i, "update")
-    baks = [backup(p, tag, False) for p in (ROSTER, md, os.path.join(ROOT, "manager.md"), ag)]
+    baks = [backup(p, tag, False) for p in (ROSTER, md, DISPATCH, ag)]
     for k, x in enumerate(roster["roles"]):
         if x["id"] == i:
             roster["roles"][k] = e
@@ -954,7 +955,7 @@ def update_undo(args):
         if not bak_of(p, tag):
             die(f"backup of {rel(p)} tagged newrole-{tag} is missing")
     t2 = pick_tag(i, "undo")
-    for p in (ROSTER, md, os.path.join(ROOT, "manager.md")):
+    for p in (ROSTER, md, DISPATCH):
         backup(p, t2, False)
     for p in (ROSTER, md):
         shutil.copy2(bak_of(p, tag), p)
