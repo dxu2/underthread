@@ -4,7 +4,7 @@
     python3 tests/e2e/fixtures/load.py <dir>
 
 Writes <dir>/state.json (every timestamp shifted by now - fixture end, so the newest event is "just now" and the spacing
-is the same on every run), <dir>/config.json, <dir>/roster.json (from roster.example.json), and removes inbox.jsonl,
+is the same on every run), <dir>/config.json, <dir>/roster.json (from presets/classic/roster.json), and removes inbox.jsonl,
 archive.json, push_subs.json and the local/ layer from <dir>. Refuses the checkout this file lives in.
 """
 import datetime as dt
@@ -52,7 +52,10 @@ def load(d):
     with open(os.path.join(d, "state.json"), "w", encoding="utf-8") as f:
         json.dump(st, f, ensure_ascii=False, indent=1)
     shutil.copy(os.path.join(HERE, "config.json"), os.path.join(d, "config.json"))
-    shutil.copy(os.path.join(d, "roster.example.json"), os.path.join(d, "roster.json"))
+    # t-oss-gen-s2: the fixture board keeps the seven-person classic crew (its cards and golden answers name writer / director / ops);
+    # the four-person default (roster.example.json) is covered by tests/smoke.py and the nocrew journey
+    # (read from this checkout: test copies skip every file named roster.json)
+    shutil.copy(os.path.join(HERE, "..", "..", "..", "presets", "classic", "roster.json"), os.path.join(d, "roster.json"))
     for f in ("inbox.jsonl", "archive.json", "push_subs.json"):
         if os.path.exists(os.path.join(d, f)):
             os.remove(os.path.join(d, f))

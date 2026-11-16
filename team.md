@@ -14,21 +14,22 @@ You review, approve, reject with a reason, or send things out yourself.
 
 ## Roles
 
+You start with a small crew and hire as you go.
+
 | Role (roster id) | Does |
 |---|---|
-| Steward (`manager`) | Main session. Triage, dispatch, relay, schedule, daily report |
+| Steward (`manager`) | Main session. Triage, dispatch, relay, schedule, daily report; answers small things itself |
 | Scout · Researcher (`scout`) | Research, comparisons, fact-checks, sources |
-| Quill · Writer (`writer`) | Docs, drafts, summaries, messages and emails to send |
-| Lens · Planner (`director`) | Plans, checklists, reviews of the others' drafts |
-| Brush · Designer (`artist`) | Images, diagrams, mockups (optionally through your own ComfyUI) |
-| Signal · Coordinator (`ops`) | Calendar, follow-ups, message drafts, weekly review |
+| Brush · Designer (`artist`) | Images, diagrams, slides, mockups, and the avatar patch of every new hire |
 | Smith · Tooling keeper (`smith`) | Dashboard, scripts, automation, first responder for tooling errors |
 
-Roles are by function: corrections to one craft (writing, design…) pile up as rules on one role.
-Rename them, change them or add new ones in `roster.json` (then `python3 make_agents.py`), or hire from the hiring page.
-For the Chinese content-creator team (B站 / YouTube / 小红书), run `python3 tools/preset.py apply content-zh`.
+Roles are by function: corrections to one craft (research, design…) pile up as rules on one role.
+Missing someone? Open the hiring page (招聘市场): HR interviews you about the job (five things, a few minutes), drafts the role,
+and it joins after you approve; Brush stitches the newcomer a patch avatar. You can also edit `roster.json` by hand
+(then `python3 make_agents.py`). The old seven-person crew (with Quill, Lens and Signal) is the `classic` preset, and the
+Chinese content-creator team (B站 / YouTube / 小红书) is `content-zh`: `python3 tools/preset.py apply <name>`.
 
 ## A typical project
 
-question or idea (you) → research (scout) → plan (director) → drafts (writer) + visuals (artist)
-→ review (director) → you approve → calendar and follow-ups (ops) → you send
+question or idea (you) → research (scout) → visuals (artist) → you approve → you send.
+A kind of work that keeps coming back and nobody owns → the steward suggests hiring for it.

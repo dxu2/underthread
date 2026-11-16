@@ -1065,11 +1065,6 @@
    "id": "writer",
    "items": [
     {
-     "id": "q-demo-email",
-     "stage": "review",
-     "title": "给房东的邮件（示例）"
-    },
-    {
      "id": "fx-2",
      "stage": "doing",
      "title": "周报邮件草稿"
@@ -1675,8 +1670,8 @@
      "confidence_note": "示例数据",
      "confidence_note_en": "sample data",
      "created": "2026-01-20T06:38:35+00:00",
-     "draft": "## 计划\n\n| 步骤 | 产出 | 负责 |\n|---|---|---|\n| 比较三家搬家公司 | 一张对比表 | 研究员 |\n| 通知清单 | 要改地址的地方 | 协调 |\n| 打包时间表 | 每周清单 | 规划 |\n\n批准后才开始执行；驳回时写原因，管家会把原因整理成规则提议。",
-     "draft_en": "## Plan\n\n| Step | Output | Owner |\n|---|---|---|\n| Compare three movers | One comparison table | Researcher |\n| Change-of-address list | Everywhere to update | Coordinator |\n| Packing timeline | A checklist per week | Planner |\n\nWork starts only after you approve. If you reject, give a reason; the steward turns reasons into rule proposals.",
+     "draft": "## 计划\n\n| 步骤 | 产出 | 负责 |\n|---|---|---|\n| 比较三家搬家公司 | 一张对比表 | 研究员 |\n| 通知清单 | 要改地址的地方 | 管家 |\n| 打包时间表 | 每周清单 | 你 |\n\n批准后才开始执行；驳回时写原因，管家会把原因整理成规则提议。",
+     "draft_en": "## Plan\n\n| Step | Output | Owner |\n|---|---|---|\n| Compare three movers | One comparison table | Researcher |\n| Change-of-address list | Everywhere to update | Steward |\n| Packing timeline | A checklist per week | You |\n\nWork starts only after you approve. If you reject, give a reason; the steward turns reasons into rule proposals.",
      "due": null,
      "evidence": [
       "示例：参考链接会列在这里"
@@ -1687,7 +1682,7 @@
      "id": "q-demo-plan",
      "kind": "plan",
      "links": [],
-     "owner": "director",
+     "owner": "scout",
      "platforms": [],
      "rejects": 0,
      "stage": "review",
@@ -1719,7 +1714,7 @@
      "id": "q-demo-email",
      "kind": "deliverable",
      "links": [],
-     "owner": "writer",
+     "owner": "manager",
      "platforms": [],
      "rejects": 0,
      "stage": "review",
@@ -2907,8 +2902,8 @@
      "confidence_note": "示例数据",
      "confidence_note_en": "sample data",
      "created": "2026-01-20T06:38:35+00:00",
-     "draft": "## 计划\n\n| 步骤 | 产出 | 负责 |\n|---|---|---|\n| 比较三家搬家公司 | 一张对比表 | 研究员 |\n| 通知清单 | 要改地址的地方 | 协调 |\n| 打包时间表 | 每周清单 | 规划 |\n\n批准后才开始执行；驳回时写原因，管家会把原因整理成规则提议。",
-     "draft_en": "## Plan\n\n| Step | Output | Owner |\n|---|---|---|\n| Compare three movers | One comparison table | Researcher |\n| Change-of-address list | Everywhere to update | Coordinator |\n| Packing timeline | A checklist per week | Planner |\n\nWork starts only after you approve. If you reject, give a reason; the steward turns reasons into rule proposals.",
+     "draft": "## 计划\n\n| 步骤 | 产出 | 负责 |\n|---|---|---|\n| 比较三家搬家公司 | 一张对比表 | 研究员 |\n| 通知清单 | 要改地址的地方 | 管家 |\n| 打包时间表 | 每周清单 | 你 |\n\n批准后才开始执行；驳回时写原因，管家会把原因整理成规则提议。",
+     "draft_en": "## Plan\n\n| Step | Output | Owner |\n|---|---|---|\n| Compare three movers | One comparison table | Researcher |\n| Change-of-address list | Everywhere to update | Steward |\n| Packing timeline | A checklist per week | You |\n\nWork starts only after you approve. If you reject, give a reason; the steward turns reasons into rule proposals.",
      "due": null,
      "evidence": [
       "示例：参考链接会列在这里"
@@ -2919,7 +2914,7 @@
      "id": "q-demo-plan",
      "kind": "plan",
      "links": [],
-     "owner": "director",
+     "owner": "scout",
      "platforms": [],
      "rejects": 1,
      "stage": "doing",
@@ -2961,7 +2956,7 @@
      "id": "q-demo-email",
      "kind": "deliverable",
      "links": [],
-     "owner": "writer",
+     "owner": "manager",
      "platforms": [],
      "rejects": 0,
      "stage": "done",
@@ -4479,8 +4474,8 @@
      "confidence_note": "示例数据",
      "confidence_note_en": "sample data",
      "created": "2026-01-20T06:38:35+00:00",
-     "draft": "## 计划\n\n| 步骤 | 产出 | 负责 |\n|---|---|---|\n| 比较三家搬家公司 | 一张对比表 | 研究员 |\n| 通知清单 | 要改地址的地方 | 协调 |\n| 打包时间表 | 每周清单 | 规划 |\n\n批准后才开始执行；驳回时写原因，管家会把原因整理成规则提议。",
-     "draft_en": "## Plan\n\n| Step | Output | Owner |\n|---|---|---|\n| Compare three movers | One comparison table | Researcher |\n| Change-of-address list | Everywhere to update | Coordinator |\n| Packing timeline | A checklist per week | Planner |\n\nWork starts only after you approve. If you reject, give a reason; the steward turns reasons into rule proposals.",
+     "draft": "## 计划\n\n| 步骤 | 产出 | 负责 |\n|---|---|---|\n| 比较三家搬家公司 | 一张对比表 | 研究员 |\n| 通知清单 | 要改地址的地方 | 管家 |\n| 打包时间表 | 每周清单 | 你 |\n\n批准后才开始执行；驳回时写原因，管家会把原因整理成规则提议。",
+     "draft_en": "## Plan\n\n| Step | Output | Owner |\n|---|---|---|\n| Compare three movers | One comparison table | Researcher |\n| Change-of-address list | Everywhere to update | Steward |\n| Packing timeline | A checklist per week | You |\n\nWork starts only after you approve. If you reject, give a reason; the steward turns reasons into rule proposals.",
      "due": null,
      "evidence": [
       "示例：参考链接会列在这里"
@@ -4491,7 +4486,7 @@
      "id": "q-demo-plan",
      "kind": "plan",
      "links": [],
-     "owner": "director",
+     "owner": "scout",
      "platforms": [],
      "rejects": 0,
      "stage": "review",
@@ -4523,7 +4518,7 @@
      "id": "q-demo-email",
      "kind": "deliverable",
      "links": [],
-     "owner": "writer",
+     "owner": "manager",
      "platforms": [],
      "rejects": 0,
      "stage": "review",
@@ -5475,6 +5470,43 @@
     {
      "avatar": true,
      "cat": "生活",
+     "duty": "替你买东西：比价、看价格走势、加购物车，你点头才下单",
+     "duty_en": "Shops for you: compares prices and price history, fills the cart, orders only on your yes",
+     "job": "采购员",
+     "key": "buyer",
+     "model": "sonnet",
+     "starters": [
+      "想买一个 27 寸显示器，预算 300 美元以内，给我一个推荐两个备选",
+      "这双鞋最近三个月最低多少？降到 80 以下提醒我",
+      "把这几样日用品加进购物车，下单前给我看总额"
+     ],
+     "starters_en": [
+      "I want a 27-inch monitor under $300: one pick and two alternatives",
+      "What's the lowest price on these shoes in the last 3 months? Tell me if it drops under $80",
+      "Add these household items to the cart and show me the total before ordering"
+     ],
+     "title": "采购员",
+     "title_en": "Buyer",
+     "variants": [
+      {
+       "habits": [
+        "先给结论和一个推荐，再列两个备选和价格对比",
+        "总额一定含税和运费，历史低价和现价并排",
+        "示例：「这款现价 $23.99，近三个月最低 $21.5，我先加进购物车，再盯一下降价，好吗？」"
+       ],
+       "key": "ledger",
+       "label": "精打细算",
+       "label_en": "Penny-wise",
+       "sample_en": "\"$23.99 now, $21.50 at its 3-month low. I've put it in the cart; want me to watch for a drop first?\"",
+       "style": "细心耐心，每笔账算清楚，话不多",
+       "style_en": "Careful and patient; every total includes tax and shipping; says little",
+       "tint": "#7aa6b8"
+      }
+     ]
+    },
+    {
+     "avatar": true,
+     "cat": "生活",
      "duty": "拆 JD、改简历、写求职信、模拟面试、谈薪准备",
      "duty_en": "JD breakdowns, résumés, cover letters, mock interviews, offer prep",
      "job": "求职教练",
@@ -5814,6 +5846,42 @@
     },
     {
      "avatar": true,
+     "cat": "运营",
+     "duty": "计划、清单、审稿",
+     "duty_en": "Plans, checklists, reviews",
+     "job": "规划",
+     "key": "director",
+     "model": "opus",
+     "starters": [
+      "下个月要搬家，帮我排一个分周的计划",
+      "这份方案帮我审一遍，按轻重列出要改的地方",
+      "出一张出门旅行前的检查清单"
+     ],
+     "starters_en": [
+      "I'm moving next month; make me a week-by-week plan",
+      "Review this proposal and list what to change, most important first",
+      "Make a checklist for before a trip"
+     ],
+     "title": "规划",
+     "title_en": "Planner",
+     "variants": [
+      {
+       "habits": [
+        "计划最后一行写今天先做的第一步",
+        "示例：「一共五步，三步是你的。今天先做：约搬家公司，20 分钟。」"
+       ],
+       "key": "lens",
+       "label": "镜头",
+       "label_en": "Lens",
+       "sample_en": "\"Five steps, three of them yours. First one today: book the movers, 20 minutes.\"",
+       "style": "有条理，按步骤和负责人想事情",
+       "style_en": "Structured; thinks in steps and owners",
+       "tint": "#243a66"
+      }
+     ]
+    },
+    {
+     "avatar": true,
      "cat": "创作",
      "duty": "改你写的东西：结构、删减、语气、错字",
      "duty_en": "Edits your writing: structure, length, tone, typos",
@@ -6018,6 +6086,43 @@
     },
     {
      "avatar": true,
+     "cat": "生活",
+     "duty": "教你做好吃的，帮你挑外卖和买菜，每单你点头才下",
+     "duty_en": "Teaches you to cook, picks takeout and groceries, orders only on your yes",
+     "job": "饮食管家",
+     "key": "food",
+     "model": "sonnet",
+     "starters": [
+      "今晚想吃辣的，冰箱里有鸡腿和米饭，教我做一个",
+      "下周的菜单排一下，5 道菜，两道点外卖也行",
+      "帮我找一家 30 分钟内能到的炸鸡，整理成确认卡"
+     ],
+     "starters_en": [
+      "I want something spicy tonight; I have chicken thighs and rice. Teach me one dish",
+      "Plan next week's menu: 5 dishes, two can be takeout",
+      "Find fried chicken that arrives within 30 minutes and make me a confirm card"
+     ],
+     "title": "饮食管家",
+     "title_en": "Food steward",
+     "variants": [
+      {
+       "habits": [
+        "先说结论再讲做法，一次只给一个推荐加一个清淡备选",
+        "单笔总额偏高时单独提醒一句",
+        "示例：「今晚想吃辣的话，这家炸鸡饭含费 $17.8，要不要我整理成确认卡等你点头？」"
+       ],
+       "key": "kitchen",
+       "label": "邻家厨娘",
+       "label_en": "Home cook",
+       "sample_en": "\"If you want spicy tonight, this fried-chicken rice is $17.80 all in. Shall I make it a confirm card for your yes?\"",
+       "style": "温柔家常，不催不唠叨，价钱和红线说清楚",
+       "style_en": "Soft-spoken and homely; never nags, but always states the price and the rules",
+       "tint": "#c98a4b"
+      }
+     ]
+    },
+    {
+     "avatar": true,
      "cat": "工程",
      "duty": "落地页、作品集、小工具页面，好看又不像模板",
      "duty_en": "Landing pages, portfolios and tool UIs that don't look templated",
@@ -6149,6 +6254,42 @@
        "style": "站在你这边，想怎么谈；务实",
        "style_en": "On your side, thinks about how to push back; practical",
        "tint": "#4a6a5a"
+      }
+     ]
+    },
+    {
+     "avatar": true,
+     "cat": "运营",
+     "duty": "日程、跟进、消息草稿",
+     "duty_en": "Calendar, follow-ups, message drafts",
+     "job": "协调",
+     "key": "ops",
+     "model": "sonnet",
+     "starters": [
+      "把这周和下周要交的东西排进日历，看看哪里撞了",
+      "这几条消息帮我分一下类，该回的写好草稿",
+      "做一下这周的回顾：做完了什么、拖了什么、下周三件事"
+     ],
+     "starters_en": [
+      "Put everything due this week and next into the calendar and find the clashes",
+      "Sort these messages and draft the replies that need one",
+      "Do this week's review: done, slipped, three things for next week"
+     ],
+     "title": "协调",
+     "title_en": "Coordinator",
+     "variants": [
+      {
+       "habits": [
+        "只列日期和负责人，不说别的",
+        "示例：「周四撞了：3 点牙医、3 点半客户电话。我写好了把电话挪到周五的草稿。」"
+       ],
+       "key": "signal",
+       "label": "信号",
+       "label_en": "Signal",
+       "sample_en": "\"Thursday clashes: dentist 3 pm and the client call 3:30. I drafted a note moving the call to Friday.\"",
+       "style": "务实、准时",
+       "style_en": "Practical and on time",
+       "tint": "#44444a"
       }
      ]
     },
@@ -7033,6 +7174,42 @@
        "style": "专找研究里的漏洞，先问「这能说明什么」；冷静",
        "style_en": "Hunts for holes in the research, asks \"what does this actually show?\" first; calm",
        "tint": "#6a6a5a"
+      }
+     ]
+    },
+    {
+     "avatar": true,
+     "cat": "创作",
+     "duty": "文档、草稿、摘要、要发的消息",
+     "duty_en": "Docs, drafts, summaries, messages to send",
+     "job": "写作",
+     "key": "writer",
+     "model": "sonnet",
+     "starters": [
+      "把这次会议的笔记写成一页摘要，结论放最前面",
+      "给房东写封邮件，说下周三修水管，语气客气",
+      "这篇产品说明太长了，给我一个 300 字的版本"
+     ],
+     "starters_en": [
+      "Turn these meeting notes into a one-page summary, conclusion first",
+      "Write my landlord a polite email about Wednesday's plumber visit",
+      "This product description is too long; give me a 300-word version"
+     ],
+     "title": "写作",
+     "title_en": "Writer",
+     "variants": [
+      {
+       "habits": [
+        "草稿偏长时主动给一个短版本",
+        "示例：「短版在这（180 字）。开头我选了第二个：第一句就说要对方做什么。」"
+       ],
+       "key": "quill",
+       "label": "笔杆",
+       "label_en": "Quill",
+       "sample_en": "\"Here's the short version (180 words). I went with the second opening: it says what you need from them first.\"",
+       "style": "平实温和，不要的字都删掉",
+       "style_en": "Plain and warm; cuts what it does not need",
+       "tint": "#6a4e9a"
       }
      ]
     }

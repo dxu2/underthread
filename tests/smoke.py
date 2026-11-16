@@ -155,19 +155,24 @@ def t_agents(root):
 
 def t_preset(root):
     before = {f: os.path.exists(os.path.join(root, f)) for f in ("roster.json", "config.json")}
+    roles_before = set(os.listdir(os.path.join(root, "roles")))
+    r = subprocess.run([PY, "tools/preset.py", "apply", "classic", "--dry"], cwd=root, capture_output=True, text=True)
+    assert r.returncode == 0 and "roles/writer.md" in r.stdout, r.stdout + r.stderr   # t-oss-gen-s2: the old seven-person crew
     r = subprocess.run([PY, "tools/preset.py", "apply", "content-zh"], cwd=root, capture_output=True, text=True)
     assert r.returncode == 0, r.stderr
     with open(os.path.join(root, "roster.json"), encoding="utf-8") as f:
         assert "B站" in json.load(f).get("team", "")
     has_local = os.path.isdir(os.path.join(root, "local"))
     bk = os.path.join(root, "local", "backups", "bak") if has_local else os.path.join(root, ".backups", "bak")   # core/backup.py
-    assert glob.glob(os.path.join(bk, "roles", "writer.md.bak-preset-*")), "no backup of the replaced role notes"
+    assert glob.glob(os.path.join(bk, "team.md.bak-preset-*")), "no backup of the replaced team.md"
     assert not glob.glob(os.path.join(root, "roles", "*.bak*")), "backups must not land next to the files"
     r = subprocess.run([PY, "make_agents.py"], cwd=root, capture_output=True, text=True)
     assert r.returncode == 0, r.stderr
     # put the default crew back for the next checks
     for f in glob.glob(os.path.join(bk, "*.bak-preset-*")) + glob.glob(os.path.join(bk, "roles", "*.bak-preset-*")):
         shutil.move(f, os.path.join(root, os.path.relpath(f, bk).split(".bak-preset-")[0]))
+    for f in set(os.listdir(os.path.join(root, "roles"))) - roles_before:   # role notes the preset added (not in the default crew)
+        os.remove(os.path.join(root, "roles", f))
     for f, was in before.items():
         if not was and os.path.exists(os.path.join(root, f)):
             os.remove(os.path.join(root, f))

@@ -12,7 +12,7 @@ import unittest
 from tests.api._server import FixtureServer, ROOT as _ROOT
 
 sys.path.insert(0, _ROOT)
-from core.avatar_seed import seed  # noqa: E402
+from core.install_seed import seed  # noqa: E402
 
 NOW = dt.datetime.now().astimezone()
 

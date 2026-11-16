@@ -1,4 +1,13 @@
-"""Default Underthread avatars for this install (t-oss-generic S1). Stdlib only.
+"""Install data that core ships defaults for: Underthread avatars (t-oss-generic S1) and preset role notes (S2). Stdlib only.
+
+run(root) = role_notes(root) + seed(root). Called by server.py at start and by tools/update.py after an update, before
+make_agents.py. Neither step overwrites or deletes anything.
+
+Role notes: the classic Quill / Lens / Signal notes left core (roles/{writer,director,ops}.md -> presets/classic/roles/). A
+roster role whose notebook roles/<f>.md is missing gets the first preset copy back at roles/<f>.md (where tools/preset.py
+puts preset notes too; git-ignored), so an older crew keeps reading exactly what it read before.
+
+Avatars:
 
 avatars/ut/ is install data (git-ignored, like roster.json): every install keeps its own patches there, hired roles included.
 The defaults ship in git in seed folders:
@@ -12,7 +21,7 @@ picked or hand-made avatar always wins. Copied pictures keep the seed file's mti
 entry here, so no cwebp is needed. If a picture that was already there has no index entry (a git pull that untracked
 avatars/ut removes index.json), tools/avatar_sizes.py runs once to rebuild it.
 
-Called by server.py at start and by tools/update.py after an update.   python3 core/avatar_seed.py [--dry]
+    python3 core/install_seed.py [--dry]
 """
 import json
 import os
@@ -26,24 +35,59 @@ SMALL = ("160", "512")
 WORK = ("work-160", "work-320", "work-512")
 
 
-def sources(root):
-    out = [os.path.join(root, "avatars", "seed", "ut")]
+def preset_dirs(root, *sub):
     pre = os.path.join(root, "presets")
-    if os.path.isdir(pre):
-        out += [os.path.join(pre, p, "avatars", "ut") for p in sorted(os.listdir(pre))]
-    return [d for d in out if os.path.isdir(d)]
+    names = sorted(os.listdir(pre)) if os.path.isdir(pre) else []
+    return [d for d in (os.path.join(pre, p, *sub) for p in names) if os.path.isdir(d)]
 
 
-def roster_ids(root):
-    """Role ids of roster.json (roster.example.json before the first start). Read raw: no migration is run from here."""
+def sources(root):
+    return [d for d in [os.path.join(root, "avatars", "seed", "ut")] if os.path.isdir(d)] + preset_dirs(root, "avatars", "ut")
+
+
+def roster_roles(root):
+    """Roles of roster.json (roster.example.json before the first start). Read raw: no migration is run from here."""
     for name in ("roster.json", "roster.example.json"):
         try:
             with open(os.path.join(root, name), encoding="utf-8") as f:
                 roles = json.load(f).get("roles") or []
-            return [r.get("id") for r in roles if isinstance(r, dict) and r.get("id") and r.get("id") != "me"]
+            return [r for r in roles if isinstance(r, dict) and r.get("id") and r.get("id") != "me"]
         except (OSError, ValueError, AttributeError):
             continue
     return []
+
+
+def roster_ids(root):
+    return [r["id"] for r in roster_roles(root)]
+
+
+def role_notes(root, dry=False):
+    """Copy a missing roles/<f>.md notebook of a roster role from presets/<name>/roles/ (classic first). Returns the paths."""
+    made = []
+    try:
+        for r in roster_roles(root):
+            for n in r.get("notebooks") or ["roles/common.md", f"roles/{r['id']}.md"]:
+                if not isinstance(n, str) or not n.startswith("roles/") or not n.endswith(".md") or "/" in n[6:] or n in made:
+                    continue
+                dst = os.path.join(root, n)
+                if os.path.exists(dst):
+                    continue
+                src = next((os.path.join(d, n[6:]) for d in preset_dirs(root, "roles") if os.path.isfile(os.path.join(d, n[6:]))), None)
+                if not src:
+                    continue
+                if not dry:
+                    os.makedirs(os.path.dirname(dst), exist_ok=True)
+                    shutil.copy2(src, dst)
+                made.append(n)
+        if made and not dry:
+            print("install_seed: role notes " + ", ".join(made), flush=True)
+    except Exception as e:  # noqa: BLE001  (never stops the dashboard)
+        print("install_seed (role notes):", type(e).__name__, e, flush=True)
+    return made
+
+
+def run(root, dry=False, background=True):
+    return role_notes(root, dry=dry) + seed(root, dry=dry, background=background)
 
 
 def have(ut, i):
@@ -81,7 +125,7 @@ def _sizes(root):
         subprocess.run([sys.executable, os.path.join(root, "tools", "avatar_sizes.py")], cwd=root, capture_output=True,
                        stdin=subprocess.DEVNULL, timeout=300)
     except Exception as e:  # noqa: BLE001  (a missing cwebp or a slow disk must never stop the dashboard)
-        print("avatar_seed: avatar_sizes failed:", e, flush=True)
+        print("install_seed: avatar_sizes failed:", e, flush=True)
 
 
 def seed(root, dry=False, background=True):
@@ -119,7 +163,7 @@ def seed(root, dry=False, background=True):
             with open(tmp, "w", encoding="utf-8") as f:
                 json.dump(man, f, ensure_ascii=False, indent=1)
             os.replace(tmp, man_p)
-        print("avatar_seed: " + ", ".join(i for i, _ in todo) + f" ({len(made)} files)", flush=True)
+        print("install_seed: avatars " + ", ".join(i for i, _ in todo) + f" ({len(made)} files)", flush=True)
         stale = [f for f in os.listdir(ut) if f.lower().endswith(EXTS) and not f.startswith(".") and f.rsplit(".", 1)[0] not in man]
         if stale:
             # pictures with no index entry (hired roles after a pull removed index.json, or a seed without small copies):
@@ -130,12 +174,12 @@ def seed(root, dry=False, background=True):
                 _sizes(root)
         return made
     except Exception as e:  # noqa: BLE001
-        print("avatar_seed:", type(e).__name__, e, flush=True)
+        print("install_seed (avatars):", type(e).__name__, e, flush=True)
         return []
 
 
 if __name__ == "__main__":
     R = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     dry = "--dry" in sys.argv[1:]
-    got = seed(R, dry=dry, background=False)
+    got = run(R, dry=dry, background=False)
     print(("would copy: " if dry else "copied: ") + (", ".join(got) if got else "nothing"))

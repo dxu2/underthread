@@ -24,7 +24,7 @@
    "category": "main",
    "stage": "review",
    "kind": "plan",
-   "owner": "director",
+   "owner": "scout",
    "platforms": [],
    "tags": [
     "示例"
@@ -32,8 +32,8 @@
    "tags_en": [
     "sample"
    ],
-   "draft": "## 计划\n\n| 步骤 | 产出 | 负责 |\n|---|---|---|\n| 比较三家搬家公司 | 一张对比表 | 研究员 |\n| 通知清单 | 要改地址的地方 | 协调 |\n| 打包时间表 | 每周清单 | 规划 |\n\n批准后才开始执行；驳回时写原因，管家会把原因整理成规则提议。",
-   "draft_en": "## Plan\n\n| Step | Output | Owner |\n|---|---|---|\n| Compare three movers | One comparison table | Researcher |\n| Change-of-address list | Everywhere to update | Coordinator |\n| Packing timeline | A checklist per week | Planner |\n\nWork starts only after you approve. If you reject, give a reason; the steward turns reasons into rule proposals.",
+   "draft": "## 计划\n\n| 步骤 | 产出 | 负责 |\n|---|---|---|\n| 比较三家搬家公司 | 一张对比表 | 研究员 |\n| 通知清单 | 要改地址的地方 | 管家 |\n| 打包时间表 | 每周清单 | 你 |\n\n批准后才开始执行；驳回时写原因，管家会把原因整理成规则提议。",
+   "draft_en": "## Plan\n\n| Step | Output | Owner |\n|---|---|---|\n| Compare three movers | One comparison table | Researcher |\n| Change-of-address list | Everywhere to update | Steward |\n| Packing timeline | A checklist per week | You |\n\nWork starts only after you approve. If you reject, give a reason; the steward turns reasons into rule proposals.",
    "versions": [],
    "evidence": [
     "示例：参考链接会列在这里"
@@ -62,7 +62,7 @@
    "category": "side",
    "stage": "review",
    "kind": "deliverable",
-   "owner": "writer",
+   "owner": "manager",
    "platforms": [],
    "tags": [
     "示例"

@@ -468,6 +468,8 @@ def trial(target, patch, run):
         r = subprocess.run([PY, "stateutil.py", "schema"], cwd=wt, env=env, capture_output=True, text=True, timeout=120)
         if r.returncode:
             raise Stop("trial: the migrations failed on a copy of your data: " + (r.stderr or r.stdout).strip()[-300:])
+        if os.path.exists(os.path.join(wt, "core", "install_seed.py")):
+            subprocess.run([PY, os.path.join("core", "install_seed.py")], cwd=wt, env=env, capture_output=True, text=True, timeout=320)
         r = subprocess.run([PY, "make_agents.py"], cwd=wt, env=env, capture_output=True, text=True, timeout=120)
         if r.returncode:
             raise Stop("trial: make_agents.py failed: " + (r.stderr or r.stdout).strip()[-300:])
@@ -544,13 +546,13 @@ def after_switch(run):
     r = subprocess.run([PY, "stateutil.py", "schema"], cwd=ROOT, capture_output=True, text=True, timeout=180)
     if r.returncode:
         raise Stop("migrations failed: " + (r.stderr or r.stdout).strip()[-300:])
+    if os.path.exists(os.path.join(ROOT, "core", "install_seed.py")):   # t-oss-generic: role notes and avatars that left core, before make_agents
+        run.step("install data")
+        subprocess.run([PY, os.path.join("core", "install_seed.py")], cwd=ROOT, capture_output=True, text=True, timeout=320)
     run.step("make_agents.py")
     r = subprocess.run([PY, "make_agents.py"], cwd=ROOT, capture_output=True, text=True, timeout=180)
     if r.returncode:
         raise Stop("make_agents.py failed: " + (r.stderr or r.stdout).strip()[-300:])
-    if os.path.exists(os.path.join(ROOT, "core", "avatar_seed.py")):   # t-oss-generic S1: missing default avatars (never overwrites)
-        run.step("avatars")
-        subprocess.run([PY, os.path.join("core", "avatar_seed.py")], cwd=ROOT, capture_output=True, text=True, timeout=320)
 
 
 def notify(entry):

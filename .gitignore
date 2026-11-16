@@ -31,10 +31,14 @@ rcshots/
 .demo/
 .backups/
 # avatars/ (avatars/ut/ included) is install data, like roster.json. The default Underthread patches ship in avatars/seed/ut/
-# (presets/<name>/avatars/ut/ for preset roles); core/avatar_seed.py copies a missing one into avatars/ut/ at server start
+# (presets/<name>/avatars/ut/ for preset roles); core/install_seed.py copies a missing one into avatars/ut/ at server start
 # and after an update, and never overwrites a file that is there.
 avatars/*
 !avatars/seed/
+# role notes of a preset (presets/<name>/roles/) copied in by tools/preset.py or core/install_seed.py: yours, not core
+/roles/writer.md
+/roles/director.md
+/roles/ops.md
 tools/models/
 tools/voice/
 voices*/

@@ -102,12 +102,12 @@
  },
  "items": {
   "err": [],
-  "out": "q-demo-plan\tmain\tdoing\tdirector\t搬家计划（示例）\nq-demo-tool\tdaily\tdoing\tsmith\t整理下载文件夹（示例）\nfx-1\tdaily\tdoing\tscout\t比较三款降噪耳机\nfx-2\tside\tdoing\twriter\t周报邮件草稿\nfx-3\tmain\tdoing\tdirector\t搬家计划\nfx-4\tside\tdoing\tartist\t活动海报三版\nfx-5\tdaily\tdoing\tops\t下周日程整理\nfx-7\tdaily\treview\tscout\t要比较哪些城市？\nq-0120-a5b9\tside\ttodo\twriter\tGolden task\nq-0120-0611\tdaily\ttodo\tmanager\tNo category given\n",
+  "out": "q-demo-plan\tmain\tdoing\tscout\t搬家计划（示例）\nq-demo-tool\tdaily\tdoing\tsmith\t整理下载文件夹（示例）\nfx-1\tdaily\tdoing\tscout\t比较三款降噪耳机\nfx-2\tside\tdoing\twriter\t周报邮件草稿\nfx-3\tmain\tdoing\tdirector\t搬家计划\nfx-4\tside\tdoing\tartist\t活动海报三版\nfx-5\tdaily\tdoing\tops\t下周日程整理\nfx-7\tdaily\treview\tscout\t要比较哪些城市？\nq-0120-a5b9\tside\ttodo\twriter\tGolden task\nq-0120-0611\tdaily\ttodo\tmanager\tNo category given\n",
   "rc": 0
  },
  "items_owner_all": {
   "err": [],
-  "out": "q-demo-email\tside\tdone\twriter\t给房东的邮件（示例）\nfx-2\tside\tdoing\twriter\t周报邮件草稿\nq-0120-a5b9\tside\ttodo\twriter\tGolden task\n",
+  "out": "fx-2\tside\tdoing\twriter\t周报邮件草稿\nq-0120-a5b9\tside\ttodo\twriter\tGolden task\n",
   "rc": 0
  },
  "items_review": {

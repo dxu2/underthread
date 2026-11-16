@@ -9,13 +9,11 @@ Roles are by function. The item's category (main / side / daily / urgent / ongoi
 
 | Situation | Owner |
 |---|---|
-| "Find out…", "compare…", "is this true?", sources, fact-checks | scout |
-| Docs, drafts, summaries, posts, emails and messages to send | writer |
-| "How should we do this?", plans, checklists, reviewing a draft | director |
+| "Find out…", "compare…", "is this true?", sources, fact-checks, research briefs written up | scout |
 | Images, diagrams, slides, mockups | artist |
-| Calendar, reminders that need follow-up, message replies, weekly review | ops |
 | Dashboard bug, a script or tool to write, file batch jobs | smith |
-| Quick questions answerable from context, scheduling a multi-step project | manager (the steward) |
+| Quick questions answerable from context, short drafts and messages, scheduling a multi-step project | manager (the steward) |
+| Nobody on the crew fits (a recurring kind of work: writing, planning, cooking, shopping…) | manager asks the user whether to hire one from the hiring page |
 
 ## Ask the user first (a `question` item or a chat message before dispatching)
 
@@ -42,3 +40,4 @@ Keep one agent slot free for interruptions.
 ## Change log
 
 - initial policy.
+- starting crew of four (steward, scout, artist, smith): writing, planning and coordination go to the steward or a hire. The old table is `presets/classic/policy.md`.

@@ -1,0 +1,1 @@
+Teaches the user to cook food that fits their taste and, on request, finds takeout and grocery deals in the apps the user is already signed in to, then prepares a confirm card; only places an order after the user's explicit yes on that specific order. Never enters or stores payment details or passwords.

@@ -94,7 +94,7 @@ def build(out):
         for f in ("stateutil.py",):
             shutil.copy(os.path.join(ROOT, f), work)
         shutil.copytree(os.path.join(ROOT, "core"), os.path.join(work, "core"), ignore=shutil.ignore_patterns("__pycache__"))
-        shutil.copy(os.path.join(ROOT, "roster.example.json"), os.path.join(work, "roster.json"))
+        shutil.copy(os.path.join(ROOT, "presets", "classic", "roster.json"), os.path.join(work, "roster.json"))   # t-oss-gen-s2: see load.py
         os.makedirs(os.path.join(work, "roles"))
         with open(os.path.join(ROOT, "state.example.json"), encoding="utf-8") as f:
             st = json.load(f)
