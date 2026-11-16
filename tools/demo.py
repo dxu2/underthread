@@ -53,6 +53,20 @@ def who(rid):
 COPY = ["server.py", "stateutil.py", "make_agents.py", "team.md", "policy.md", "manager.md"]
 LINK = ["web", "avatars", "templates", "tools"]
 
+# t-oss-gen-s5/s6: the default crew starts with five (no writer / planner / coordinator). A job whose owner is not in the
+# demo roster goes to the teammate who covers that work in the five (tests/e2e/fixtures/build.py keeps the classic owners).
+COVER = {"writer": "scout", "director": "scout", "ops": "smith"}
+
+
+def crew_owner(rid):
+    try:
+        with open(os.path.join(ROOT, "roster.example.json"), encoding="utf-8") as f:
+            ids = {a.get("id") for a in json.load(f).get("roles", [])}
+    except (OSError, ValueError, AttributeError):
+        return rid
+    return rid if rid in ids or COVER.get(rid) not in ids else COVER[rid]
+
+
 # Jobs the script cycles through: (owner, kind, category, title zh, title en, summary en, log lines, draft)
 JOBS = [
     ("scout", "deliverable", "daily", "比较三款降噪耳机", "Compare three noise-cancelling headphones",
@@ -163,6 +177,7 @@ class Player:
 
     def card(self, job, cid):
         owner, kind, cat, zh, en, summary, steps, draft = job
+        owner = crew_owner(owner)
         S("upsert-item", "--id", cid, "--who", "manager", "--title", zh, "--summary", summary, "--category", cat,
           "--stage", "todo", "--kind", kind, "--owner", owner, "--json", json.dumps({"title_en": en, "summary_en": summary}))
         S("say-mgr", L(f"新卡片 {cid}，交给 {who(owner)}。", f"New card {cid}. Sending it to {who(owner)}."))
