@@ -81,7 +81,7 @@ class Repo:
         if cfg is None:
             cfg = ("`owner.display_name` = \"\", `port` = 8765, `report_time`, `routines`, `allowed_hosts`, "
                    "`legacy_headers`, `update.remote`, `update.check`, `feeds.interval_min`, `feeds.max_per_poll`, `feeds.snippet_chars`, "
-                   "`feeds.primary_only`, `feeds.classifier`, `feeds.classifier_model`, `hire_welcome.wait_avatar_min`, `role.enabled`")
+                   "`feeds.primary_only`, `feeds.classifier`, `feeds.classifier_model`, `hire_welcome.wait_avatar_min`, `image.backend`, `image.comfy_workflow`, `image.comfy_prompt`, `role.enabled`")
         text = GOOD.format(ver=ver, mig=mig, manual=manual, cfg=cfg)
         if drop:
             text = text.replace(drop, "")

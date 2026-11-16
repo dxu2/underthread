@@ -32,7 +32,8 @@ UPDATE = os.environ.get("GOLDEN_UPDATE") == "1"
 
 # dotted paths (per section key prefix) whose values depend on the machine or the moment the process started
 VOLATILE = {
-    "health": ("server.started", "server.uptime", "server.pid", "disk.free", "disk.total", "disk.work", "disk.work_at"),
+    "health": ("server.started", "server.uptime", "server.pid", "disk.free", "disk.total", "disk.work", "disk.work_at",
+               "image"),   # t-oss-gen-s3: which picture backend this machine has
     "push_key": ("key",),
     "usage": ("at",),   # usage_roll stamps its cache with the real clock (time.time)
     "ext": ("version",),   # VERSION moves with every release

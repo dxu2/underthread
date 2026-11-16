@@ -104,7 +104,31 @@ def health():
         "disk": disk if disk.get("total") else None,
         "ext": _ext_brief(),
         "feeds": _feeds(),
+        "image": _image(),
     }
+
+
+_img = {"t": 0.0, "v": None, "busy": False}
+
+
+def _image_probe():
+    try:
+        import importlib.util
+        spec = importlib.util.spec_from_file_location("rt_image", os.path.join(ROOT, "tools", "image.py"))
+        mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)   # tools/image.py (not a package)
+        _img["v"] = mod.resolve()
+    except Exception as e:  # noqa: BLE001
+        _img["v"] = {"backend": "none", "setting": "?", "why": f"probe failed ({e.__class__.__name__})"}
+    _img["t"], _img["busy"] = time.time(), False
+
+
+def _image():
+    """t-oss-gen-s3: which picture backend tools/image.py would use (cached 10 min; the first call answers None)."""
+    if time.time() - _img["t"] > 600 and not _img["busy"]:
+        _img["busy"] = True
+        threading.Thread(target=_image_probe, daemon=True).start()
+    return _img["v"]
 
 
 def _feeds():

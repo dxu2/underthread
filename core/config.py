@@ -37,6 +37,9 @@ DEFAULTS = {
     # t-hire-celebration: the welcome animation for a new hire waits this many minutes for a picked 特典 avatar when tools/new_role.py
     # gave the role the recoloured placeholder (0 = play as soon as the hire lands)
     "hire_welcome": {"wait_avatar_min": 0},
+    # t-oss-gen-s3: tools/image.py picks the picture backend. "auto" = codex if logged in with ChatGPT, else comfy if a comfy block
+    # is set, else none (hires fall back to template art). comfy_workflow "" = comfy.default_workflow; comfy_prompt = node.input for the prompt
+    "image": {"backend": "auto", "comfy_workflow": "", "comfy_prompt": "6.text"},
 }
 EXAMPLE = {"owner": {"display_name": "<your name>"}}   # placeholders shown only in config.example.json
 ROLE_DEFAULTS = {"enabled": True}

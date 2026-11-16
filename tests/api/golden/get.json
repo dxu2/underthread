@@ -197,6 +197,7 @@
    "feeds": {
     "connected": 0
    },
+   "image": "<volatile>",
    "now": "2026-01-20T10:00:00+00:00",
    "push": {
     "devices": 0,

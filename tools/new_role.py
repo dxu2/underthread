@@ -28,7 +28,7 @@ apply creates:
     .claude/agents/<agent>.md     (through make_agents.py, the way every role is built)
     avatars/<id>.png + avatars/ut/<id>.png
         default: the bundled templates/roles/_default/avatar.png recoloured to the role's tint (ffmpeg)
-        --avatar gen: generate one with tools/gpt_image.sh (only when that tool exists; costs subscription quota)
+        --avatar gen: generate one with tools/image.py (the image backend: codex or ComfyUI; may cost quota)
         --avatar none: no file, the dashboard shows a letter circle
         a template variant's art/<key>/avatar.png or spec files.avatar is used as is when given
     then tools/avatar_sizes.py for the small copies.
@@ -65,7 +65,7 @@ def role_md_read(i):
 ROSTER = os.path.join(ROOT, "roster.json")
 TPL = os.path.join(ROOT, "templates", "roles")
 BASE_AV = os.path.join(TPL, "_default", "avatar.png")
-GPT = os.path.join(ROOT, "tools", "gpt_image.sh")
+IMAGE = os.path.join(ROOT, "tools", "image.py")
 LOG = os.path.join(ROOT, "logs", "new_role.jsonl")
 RESERVED = {"me", "manager", "default", "user", "all", "_default", "_example"}
 PIPES = ("topic", "script", "board", "edit", "pack")   # web/js/app.js PIPE columns a role can own ("shoot" is the user's)
@@ -403,16 +403,14 @@ def recolour(tint, out):
 
 
 def gen_avatar(e, out):
-    if not os.access(GPT, os.X_OK):
-        die("--avatar gen needs tools/gpt_image.sh, which is not here")
     prompt = (f"A square chibi avatar of an original character for a small studio dashboard: {e['name']} ({e.get('title_en') or e['title']}). "
               f"Plain flat background in {e['tint']}, head and shoulders, centred, no text, no logo, not based on any existing character.")
     tmpd = os.path.join(ROOT, "work", "_new_role", e["id"])
     os.makedirs(tmpd, exist_ok=True)
-    r = subprocess.run([GPT, prompt, tmpd], capture_output=True, text=True)
+    r = subprocess.run([sys.executable, IMAGE, "gen", prompt, tmpd], capture_output=True, text=True, stdin=subprocess.DEVNULL)
     p = r.stdout.strip().splitlines()[-1] if r.stdout.strip() else ""
     if r.returncode or not os.path.exists(p):
-        die(f"gpt_image.sh failed (exit {r.returncode}); rerun without --avatar gen for the recolour\n{r.stderr[-300:]}")
+        die(f"tools/image.py failed (exit {r.returncode}{', no image backend' if r.returncode == 6 else ''}); rerun without --avatar gen for the recolour\n{r.stderr[-300:]}")
     shutil.copyfile(p, out)
 
 
@@ -487,13 +485,13 @@ def cmd_apply(args, dry):
         steps.append("avatar: none (letter circle)")
     elif mode == "gen":
         av_how = "gen"
-        steps.append(f"{rel(av)}: generate with tools/gpt_image.sh")
+        steps.append(f"{rel(av)}: generate with tools/image.py")
         if not dry:
             gen_avatar(e, av); made.append(rel(av))
     else:
         av_how = "recolour"
         steps.append(f"{rel(av)}: bundled default recoloured to {e['tint']}")
-        if os.access(GPT, os.X_OK):
+        if os.access(os.path.join(ROOT, "tools", "gpt_image.sh"), os.X_OK):
             steps.append("  (tools/gpt_image.sh found: add --avatar gen to generate a portrait instead)")
         if not dry:
             recolour(e["tint"], av); made.append(rel(av))

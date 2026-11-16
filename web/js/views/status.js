@@ -55,6 +55,12 @@ function statusRows() {
   if (c.configured !== false) rows.push({ k: "comfy", t: "ComfyUI", lv: c.online ? "ok" : c.online === false ? "warn" : "unk",
     s: (c.online ? (en ? "Tunnel up" : "隧道已连") : c.online === false ? (en ? "Tunnel down · image jobs will wait" : "隧道未连 · 出图会排队") : (en ? "Not probed yet" : "还没探测"))
       + (c.at ? ` · ${en ? "checked" : "探测于"} ${ageTxt(c.at)}` : "") });
+  // 4b. picture backend (t-oss-gen-s3, tools/image.py; needs /api/health)
+  if (H && H.image) {
+    const im = H.image, nm = { codex: "codex (ChatGPT)", comfy: "ComfyUI", none: en ? "Not set up" : "未配置" }[im.backend] || im.backend;
+    rows.push({ k: "image", t: en ? "Images" : "出图", lv: im.backend === "none" ? "warn" : "ok",
+      s: nm + (im.backend === "none" ? (en ? " · new hires get template art" : " · 新人用模板头像") : "") + (im.setting && im.setting !== "auto" ? ` · image.backend=${im.setting}` : "") });
+  }
   // 5. push (needs /api/health; this device's own state comes from push.js)
   if (H) {
     const p = H.push, me = window.Push ? Push.status() : null, ok = p.last_code >= 200 && p.last_code < 300;
