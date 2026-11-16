@@ -3,6 +3,7 @@
 
     python3 tools/release.py 0.2.0             # check, commit "Release v0.2.0", tag v0.2.0
     python3 tools/release.py 0.2.0 --dry-run   # run every check, write nothing
+    python3 tools/release.py lint              # check only "## Unreleased" (part of tests/run.py quick), every day
 
 It refuses (exit 1, nothing written) unless all of these hold, cheapest first:
   1. X.Y.Z is a version, higher than the last vX.Y.Z tag, and that tag does not exist yet; HEAD is on a branch
@@ -186,11 +187,17 @@ def ext_api_problems(line, ver, prev, now_src, old_src):
     return out
 
 
-def changelog_section(ver):
+def changelog_section(ver, unreleased=False):
     path = os.path.join(ROOT, "CHANGELOG.md")
     if not os.path.isfile(path):
         raise Refuse("CHANGELOG.md is missing")
     text = read(path)
+    if unreleased:   # t-iter-upgrade: lint checks the work in progress the same way
+        m = re.search(r"^## Unreleased[ \t]*$", text, re.M)
+        if not m:
+            return None
+        end = re.search(r"^## ", text[m.end():], re.M)
+        return dt.date.today().isoformat(), text[m.end(): m.end() + end.start() if end else len(text)].strip("\n")
     m = re.search(rf"^## \[{re.escape(ver)}\] - (\d{{4}}-\d{{2}}-\d{{2}})[ \t]*$", text, re.M)
     if not m:
         raise Refuse(f"CHANGELOG.md has no '## [{ver}] - YYYY-MM-DD' heading (rename '## Unreleased' and add the date)")
@@ -198,8 +205,12 @@ def changelog_section(ver):
     return m.group(1), text[m.end(): m.end() + end.start() if end else len(text)].strip("\n")
 
 
-def check_changelog(ver, prev, nums):
-    date, body = changelog_section(ver)
+def check_changelog(ver, prev, nums, unreleased=False):
+    sec = changelog_section(ver, unreleased)
+    if sec is None:
+        return None
+    date, body = sec
+    label = "Unreleased" if unreleased else ver
     try:
         dt.date.fromisoformat(date)
     except ValueError:
@@ -238,7 +249,7 @@ def check_changelog(ver, prev, nums):
                                 + "; new since " + (f"v{prev}" if prev else "the start") + ": " + ", ".join(f"{n:04d}" for n in new))
             if not new and listed:
                 problems.append("Upgrade notes: Migrations lists steps but none is new since v" + str(prev))
-            if not new and not listed and notes["migrations"].lower().rstrip(".") != "none":
+            if not new and not listed and not re.match(r"none\b", notes["migrations"].lower()):   # "none (a note)" is fine
                 problems.append("Upgrade notes: Migrations should say 'none' (no new step)")
         if notes.get("new config keys"):
             cfg = os.path.join(ROOT, "core", "config.py")
@@ -249,7 +260,7 @@ def check_changelog(ver, prev, nums):
             missing = [k for k in new if k not in named]
             if missing:
                 problems.append("Upgrade notes: New config keys does not name " + ", ".join(f"`{k}`" for k in missing))
-            if not new and notes["new config keys"].lower().rstrip(".") != "none":
+            if not new and not re.match(r"none\b", notes["new config keys"].lower()):
                 problems.append("Upgrade notes: New config keys should say 'none' (no key added to core/config.py)")
         if notes.get("extension api"):
             reg = os.path.join(ROOT, "core", "registry.py")
@@ -261,7 +272,7 @@ def check_changelog(ver, prev, nums):
             problems.append(f"Upgrade notes: 'Manual steps: {manual}' -- only a major version may need a manual step; "
                             "make the change upgrade itself (a migration or a default) or wait for the next major version")
     if problems:
-        raise Refuse(f"CHANGELOG.md [{ver}] is not complete:\n  " + "\n  ".join(problems))
+        raise Refuse(f"CHANGELOG.md [{label}] is not complete:\n  " + "\n  ".join(problems))
     return date, body
 
 
@@ -301,7 +312,29 @@ def cut(ver, body):
     return git("rev-parse", "--short", "HEAD").strip()
 
 
+def lint():
+    """t-iter-upgrade: `release.py lint` checks "## Unreleased" now, the way the next release will (as the next minor version):
+    the four parts, the four upgrade-note lines, every migration and config key added since the last tag named, the
+    extension API line, and "Manual steps: none". No section = nothing to check. Run by tests/run.py quick."""
+    try:
+        prev = last_tag()
+        if prev is None and git("rev-list", "--count", "HEAD", check=False).strip() not in ("", "0", "1"):
+            print("ok  CHANGELOG Unreleased: skipped (no vX.Y.Z tag in this clone, e.g. a shallow CI checkout: fetch the tags to check it)")
+            return 0
+        nums = check_migrations()
+        nxt = (f"{vtuple(prev)[0]}.{vtuple(prev)[1] + 1}.0" if prev else "0.1.0")
+        r = check_changelog(nxt, prev, nums, unreleased=True)
+        print("ok  CHANGELOG Unreleased: no section" if r is None else
+              f"ok  CHANGELOG Unreleased (as v{nxt}): Added / Changed / Fixed / Upgrade notes, migrations and config keys named, no manual step")
+        return 0
+    except Refuse as e:
+        print(f"LINT: {e}", file=sys.stderr)
+        return 1
+
+
 def main():
+    if sys.argv[1:2] == ["lint"]:
+        return lint()
     args = [a for a in sys.argv[1:] if not a.startswith("--")]
     dry = "--dry-run" in sys.argv[1:]
     if len(args) != 1 or "-h" in sys.argv or "--help" in sys.argv:

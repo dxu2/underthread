@@ -1,0 +1,86 @@
+/* t-hire-celebration: the new-teammate welcome (web/js/welcome.js), direction C+ (user 11-15 13:04). One 4.8 s CSS timeline, no JS timers:
+   0–1.2 s the lanyard lowers the white badge and it swings out · 0.6–1.4 s the needle sews the ring and the avatar shows where it has sewn
+   (theme-ut.css sti-sew / sti-orbit / sti-show, the 委托完成 needle) · 1.4–2.15 s name wiped in (sti-wipe), title, knot (sti-pop) ·
+   2.0–2.8 s teammates hop up from the bottom, 80 ms apart · 2.8–3.6 s wave + cross-stitch × in the main colour and gold, the badge wobbles ·
+   3.6–4.35 s all hop toward the badge and lean in, the new member's work strip plays once (ut-wsheet) · 4.35–4.8 s fade.
+   --main = the role's roster tint. Badge sizes are in --u = badge width / 104 (the storyboard's badge). Every theme; dark dim everywhere
+   so the cream badge reads. Reduced motion (.hw-rm): the finished frame, faded in and out, nothing moves. */
+.hw { position: fixed; inset: 0; z-index: 95; overflow: hidden; cursor: pointer; -webkit-tap-highlight-color: transparent; -webkit-user-select: none; user-select: none;
+  --main: #7aa6b8; --gold: #EFAF40; --ink: #2B1913; --cream: #F7ECDA;
+  --bh: min(50vh, 460px); --bw: calc(var(--bh) / 1.35); --by: max(56px, 9vh); --u: calc(var(--bw) / 104);
+  --cs: clamp(48px, 7.2vh, 72px); --cg: calc(var(--cs) * .42); --cy: calc(var(--by) + var(--bh) + 9vh);
+  font-family: var(--f-cjk, "PingFang SC", "Hiragino Sans GB", sans-serif);
+  animation: hw-life 4.8s linear both; transition: opacity .25s; }
+.hw.hw-ph { --bw: min(56vw, 220px); --bh: calc(var(--bw) * 1.364); --by: calc(env(safe-area-inset-top, 0px) + 13vh); --cs: 48px; --cg: 12px; --cy: calc(var(--by) + var(--bh) + 90px); }
+@media (max-height: 560px) { .hw { --bh: 62vh; --by: 6vh; --cs: 44px; --cy: calc(var(--by) + var(--bh) + 3vh); } }
+.hw.bye { opacity: 0; }
+@keyframes hw-life { 0% { opacity: 1; } 90.6% { opacity: 1; } 100% { opacity: 0; } }
+@keyframes hw-fade { from { opacity: 0; } to { opacity: 1; } }
+.hw > * { position: absolute; }
+.hw-dim { inset: 0; background: rgba(20, 11, 7, .84); animation: hw-fade .35s ease-out both; }
+
+/* lanyard + badge: the hang pivots at the top of the screen, so the swing is a pendulum; .hw-swing carries the later wobble */
+.hw-hang { left: 50%; top: 0; width: var(--bw); height: calc(var(--by) + var(--bh)); margin-left: calc(var(--bw) / -2); transform-origin: 50% 0;
+  animation: hw-drop 1.2s cubic-bezier(.3, .7, .4, 1) both; }
+@keyframes hw-drop { 0% { transform: translateY(-110%) rotate(10deg); } 45% { transform: translateY(0) rotate(7deg); } 62% { transform: rotate(-4deg); }
+  78% { transform: rotate(2deg); } 90% { transform: rotate(-.8deg); } 100% { transform: none; } }
+.hw-swing { position: absolute; inset: 0; transform-origin: 50% 0; animation: hw-nudge .8s ease-in-out 2.8s both; }
+@keyframes hw-nudge { 0% { transform: none; } 30% { transform: rotate(-3deg); } 65% { transform: rotate(1.8deg); } 100% { transform: none; } }
+.hw-lan { position: absolute; left: 50%; top: 0; height: calc(var(--by) + 9 * var(--u)); width: 0; border-left: max(3px, 1.1 * var(--u)) dashed var(--main);
+  margin-left: calc(max(3px, 1.1 * var(--u)) / -2); }
+.hw-badge { position: absolute; left: 0; top: var(--by); width: var(--bw); height: var(--bh); box-sizing: border-box; border-radius: calc(14 * var(--u));
+  background: var(--cream); border: max(3px, 2.4 * var(--u)) solid var(--main); box-shadow: 0 calc(5 * var(--u)) calc(14 * var(--u)) rgba(0, 0, 0, .5); }
+.hw-badge::before { content: ""; position: absolute; inset: calc(3 * var(--u)); border-radius: calc(10 * var(--u)); border: max(1.5px, 1.2 * var(--u)) dashed color-mix(in srgb, var(--main) 88%, transparent); pointer-events: none; }
+.hw-badge > * { position: absolute; }
+.hw-slot { left: 50%; top: calc(5 * var(--u)); width: calc(24 * var(--u)); height: calc(6 * var(--u)); margin-left: calc(-12 * var(--u)); border-radius: calc(3 * var(--u)); background: #2a1d17; }
+
+/* avatar: sewn in with the 委托完成 ring (sti-sew animates --sti-a, a registered angle; each masked element runs it itself) */
+.hw-av { left: calc(18.4 * var(--u)); top: calc(19 * var(--u)); width: calc(62.4 * var(--u)); height: calc(62.4 * var(--u)); }
+.hw-av > * { position: absolute; }
+.hw-img, .hw-sheet { inset: 0; width: 100%; height: 100%; border-radius: 50%; object-fit: cover; display: block;
+  -webkit-mask-image: conic-gradient(#000 var(--sti-a), transparent 0); mask-image: conic-gradient(#000 var(--sti-a), transparent 0); animation: sti-sew .8s linear .6s both; }
+.hw-sheet { background: 0 0 / 400% 100% no-repeat; visibility: hidden; -webkit-mask-image: none; mask-image: none; animation: ut-wsheet 1s steps(4) 3.65s, sti-show 1s linear 3.65s; }
+.hw-ring { left: calc(-6 * var(--u)); top: calc(-6 * var(--u)); width: calc(74.4 * var(--u)); height: calc(74.4 * var(--u)); overflow: visible;
+  -webkit-mask-image: conic-gradient(#000 var(--sti-a), transparent 0); mask-image: conic-gradient(#000 var(--sti-a), transparent 0); animation: sti-sew .8s linear .6s both; }
+.hw-ring circle { fill: none; stroke: var(--main); stroke-width: 2.8; stroke-dasharray: 7 5; stroke-linecap: round; }
+.hw-orb { left: 50%; top: 50%; width: 0; height: 0; visibility: hidden; animation: sti-orbit .8s linear .6s both, sti-show .8s linear .6s; }
+.hw-orb .sti-ndl { position: absolute; left: calc(-4 * var(--u)); top: calc(-42 * var(--u)); width: calc(34 * var(--u)); height: calc(10 * var(--u)); transform: rotate(8deg); transform-origin: 10% 50%; }
+.hw .sti-ndl path { stroke: #D9D2C4; stroke-width: 4; stroke-linecap: round; fill: none; }
+.hw .sti-ndl ellipse { fill: var(--main); }
+
+.hw-nm { left: calc(6 * var(--u)); right: calc(6 * var(--u)); top: calc(89 * var(--u)); text-align: center; font-size: calc(19 * var(--u)); line-height: 1.15; font-weight: 600;
+  letter-spacing: .14em; text-indent: .14em; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; animation: sti-wipe .45s cubic-bezier(.4, 0, .2, 1) 1.4s both; }
+.hw-tt { left: calc(8 * var(--u)); right: calc(8 * var(--u)); top: calc(113 * var(--u)); text-align: center; font-size: calc(9.5 * var(--u)); line-height: 1.2; letter-spacing: .3em; text-indent: .3em;
+  color: #6b5444; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; animation: hw-fade .3s ease-out 1.75s both; }
+.hw-knot { right: calc(9 * var(--u)); bottom: calc(9 * var(--u)); width: calc(8 * var(--u)); height: calc(8 * var(--u)); border-radius: 50%; background: #5A3A22;
+  box-shadow: inset 0 calc(-1.2 * var(--u)) 0 rgba(0, 0, 0, .35); animation: sti-pop .25s ease-out 1.95s both; }
+
+/* teammates: three nested boxes so the three hops never fight over one transform */
+.hw-crew { left: 0; right: 0; top: var(--cy); display: flex; justify-content: center; gap: var(--cg); pointer-events: none; }
+.hw-m { position: relative; width: var(--cs); height: var(--cs); flex: none; animation: hw-in .5s cubic-bezier(.3, 1.3, .5, 1) calc(2s + var(--i) * 80ms) both; }
+@keyframes hw-in { 0% { transform: translateY(45vh); } 100% { transform: none; } }
+.hw-sh { position: absolute; left: 16%; right: 16%; bottom: -7px; height: 6px; border-radius: 50%; background: rgba(0, 0, 0, .45); }
+.hw-w, .hw-l { width: 100%; height: 100%; }
+.hw-w { animation: hw-wave .45s ease-in-out calc(2.8s + var(--i) * 70ms) both; }
+@keyframes hw-wave { 0%, 100% { transform: none; } 45% { transform: translateY(-38%) rotate(calc(var(--o) * -2.5deg)); } }
+.hw-l { transform-origin: 50% 100%; animation: hw-lean .7s ease-in-out 3.6s both; }
+/* --o = distance from the middle of the row (+ left of it): the outer ones lean most, the middle two barely, so nobody bumps */
+@keyframes hw-lean { 0% { transform: none; } 40% { transform: translate(calc(var(--o) * 5%), -30%) rotate(calc(var(--o) * 4.5deg)); }
+  70% { transform: translate(calc(var(--o) * 3%), 0) rotate(calc(var(--o) * 4deg)); } 100% { transform: translate(calc(var(--o) * 2.5%), 0) rotate(calc(var(--o) * 3.4deg)); } }
+.hw-l img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; display: block; filter: drop-shadow(0 3px 6px rgba(0, 0, 0, .45)); }
+
+.hw-x { font: 700 clamp(14px, 2.2vh, 22px)/1 ui-monospace, Menlo, monospace; font-style: normal; color: var(--main); animation: hw-x 1.5s ease-out calc(2.8s + var(--k) * 45ms) both; }
+.hw-x.g { color: var(--gold); }
+.hw-x:nth-of-type(3n) { font-size: clamp(18px, 2.8vh, 28px); }
+@keyframes hw-x { 0% { opacity: 0; transform: scale(.2) rotate(-30deg); } 18% { opacity: 1; transform: scale(1.25) rotate(0); } 30% { opacity: 1; transform: scale(1); }
+  100% { opacity: 0; transform: translateY(5vh) rotate(25deg); } }
+.hw-skip { right: max(20px, env(safe-area-inset-right, 0px) + 16px); bottom: max(28px, env(safe-area-inset-bottom, 0px) + 20px); font-size: var(--fs-12, 12px); color: rgba(247, 236, 218, .6);
+  letter-spacing: .08em; animation: hw-fade .4s ease-out .8s both; }
+
+/* reduced motion: the finished frame, faded in and out (~2.4 s), nothing moves */
+@keyframes hw-life-rm { 0% { opacity: 0; } 12% { opacity: 1; } 85% { opacity: 1; } 100% { opacity: 0; } }
+.hw.hw-rm { animation: hw-life-rm 2.4s linear both !important; }   /* beats the global reduced-motion duration clamp */
+.hw.hw-rm *, .hw.hw-rm *::before { animation: none !important; }
+.hw.hw-rm .hw-img, .hw.hw-rm .hw-ring { -webkit-mask-image: none; mask-image: none; }
+.hw.hw-rm .hw-orb, .hw.hw-rm .hw-sheet, .hw.hw-rm .hw-x:nth-of-type(n+5) { display: none; }
+@media (prefers-reduced-motion: reduce) { .hw { animation: hw-life-rm 2.4s linear both !important; } .hw * { animation: none !important; } .hw-img, .hw-ring { -webkit-mask-image: none; mask-image: none; } .hw-orb, .hw-sheet { display: none; } }

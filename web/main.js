@@ -22,3 +22,4 @@ import "./js/viewer.js";
 import "./js/glass.js";
 import "./js/mobile.js";
 import "./js/push.js";
+import "./js/welcome.js";   // t-hire-celebration: the new-teammate welcome (meta.hires)

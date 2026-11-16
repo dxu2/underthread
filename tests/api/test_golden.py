@@ -36,6 +36,7 @@ VOLATILE = {
     "push_key": ("key",),
     "usage": ("at",),   # usage_roll stamps its cache with the real clock (time.time)
     "ext": ("version",),   # VERSION moves with every release
+    "state": ("meta.avv",),   # t-avatar-live-refresh: mtimes of the avatar manifests (a checkout sets them)
 }
 _V = re.compile(r"\?v=[0-9a-zA-Z._-]+")
 

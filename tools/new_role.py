@@ -474,19 +474,24 @@ def cmd_apply(args, dry):
     # 3. avatar (+ the 特典 copy: without avatars/ut/<id> the UT skin has nothing to show)
     av, ut = os.path.join(ROOT, "avatars", f"{i}.png"), os.path.join(ROOT, "avatars", "ut", f"{i}.png")
     mode = args.avatar
+    av_how = "kept"   # t-hire-celebration: logged, so the welcome animation knows a placeholder ("recolour") is waiting for a picked avatar
     if os.path.exists(av):
         steps.append(f"{rel(av)}: exists, left as is")
     elif extra["files"].get("avatar"):
+        av_how = "given"
         steps.append(f"{rel(av)}: copy of {rel(extra['files']['avatar'])}")
         if not dry:
             shutil.copyfile(extra["files"]["avatar"], av); made.append(rel(av))
     elif mode == "none":
+        av_how = "none"
         steps.append("avatar: none (letter circle)")
     elif mode == "gen":
+        av_how = "gen"
         steps.append(f"{rel(av)}: generate with tools/gpt_image.sh")
         if not dry:
             gen_avatar(e, av); made.append(rel(av))
     else:
+        av_how = "recolour"
         steps.append(f"{rel(av)}: bundled default recoloured to {e['tint']}")
         if os.access(GPT, os.X_OK):
             steps.append("  (tools/gpt_image.sh found: add --avatar gen to generate a portrait instead)")
@@ -497,6 +502,8 @@ def cmd_apply(args, dry):
             steps.append(f"{rel(ut)}: exists, left as is")
         else:
             src = extra["files"].get("ut") or av
+            if extra["files"].get("ut"):
+                av_how = "given"
             steps.append(f"{rel(ut)}: copy of {rel(src)}")
             if not dry:
                 os.makedirs(os.path.dirname(ut), exist_ok=True)
@@ -538,7 +545,7 @@ def cmd_apply(args, dry):
         if any(m.startswith("avatars/") for m in made):
             out["avatar_sizes"] = run_avatar_sizes()
         out["nudge"] = nudge()
-        log({"op": "apply", "id": i, "made": made, "from": extra["src"], "backup_tag": tag})
+        log({"op": "apply", "id": i, "made": made, "from": extra["src"], "backup_tag": tag, "avatar": av_how})
     if JSON_OUT:
         print(json.dumps({"ok": True, "applied": not dry, "id": i, "name": e["name"], "title": e["title"], "agent": e["agent_name"],
                           "template": e.get("template"), "variant": e.get("variant"), "rules": extra["rules"], "steps": steps,

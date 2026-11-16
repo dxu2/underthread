@@ -77,7 +77,8 @@ function ringOnce(fn, set) { const prev = RING1; RING1 = set || new Set(); try {
    a.tint / a.seat / a.pipe come from roster.json via state.agents. A role with no art falls back to its avatar (or the letter circle). */
 const hasArt = (a, k) => !!(a && ST && ST.meta && ST.meta.art && (ST.meta.art[a.id] || {})[k]);
 const tintOf = a => [a && a.tint, a && a.color].find(c => /^#[0-9a-f]{3,8}$/i.test(c || "")) || "var(--accent)";
-function wsheet(a, sz) { return a && document.documentElement.dataset.ut && hasArt(a, "sheet") && !AVU.bad.has(a.id) ? `;--wsheet:url('/avatars/ut/_s/${encodeURIComponent(a.id)}-work-${sz || 160}.webp?v=1')` : ""; }
+/* t-avatar-live-refresh: the sheet URL carries meta.avv, so a sheet replaced together with a tools/avatar_sizes.py run is fetched again */
+function wsheet(a, sz) { return a && document.documentElement.dataset.ut && hasArt(a, "sheet") && !AVU.bad.has(a.id) ? `;--wsheet:url('/avatars/ut/_s/${encodeURIComponent(a.id)}-work-${sz || 160}.webp?v=${encodeURIComponent(ST.meta.avv || 1)}')` : ""; }
 function av(a, cls = "", forItem) {
   if (a === "me" || a.id === "me") {   // R4-17: avatars/me.* if the user added one, else their initial (same rule as the phone chat, mobile.js meAv)
     const m = (ST.meta || {}), o = m.owner;
@@ -93,19 +94,33 @@ function av(a, cls = "", forItem) {
   return `<span class="av ${cls} ${w ? "working" : ""}${ws ? " wsheet" : ""}" style="background-image:url('${avatarUrl(a)}')${w ? `;--wp:${(-(Date.now() % 4000) / 1000).toFixed(3)}s` : ""}${ws}" title="${esc(aname(a))}"${w ? ` data-working="1"` : ""}>${w && !tb ? `<i class="aw" title="${t("working")}"></i>` : ""}${tb}</span>`;
 }
 
-function wireAv() {
-  AVS.ready = fetch("/avatars/_s/index.json", { cache: "no-cache" }).then(r => r.ok ? r.json() : null).catch(() => null).then(m => {
-    const was = JSON.stringify(AVS.m); AVS.m = m && typeof m === "object" ? m : null;
-    try { if (AVS.m) localStorage.setItem("rt.avs", JSON.stringify(AVS.m)); else localStorage.removeItem("rt.avs"); } catch (_) { }
-    if (ST && JSON.stringify(AVS.m) !== was) render();
+/* t-avatar-live-refresh: (re)read both manifests. At load (wireAv), when the server's avatar version meta.avv moves (avvSeen) and on pull to refresh
+   (App.refresh), so a swapped avatar or a new role's avatar shows without killing the app. again = a reload: the per-session ETag check runs once more
+   and the chat / cached nodes are redrawn even when only the URL query (the new ETag) changed. */
+function avLoad(again) {
+  const one = (url, o, key, ut) => fetch(url, { cache: "no-cache" }).then(r => r.ok ? r.json() : null).catch(() => null).then(m => {
+    const was = JSON.stringify(o.m); o.m = m && typeof m === "object" ? m : null;
+    try { if (o.m) localStorage.setItem(key, JSON.stringify(o.m)); else localStorage.removeItem(key); } catch (_) { }
+    return JSON.stringify(o.m) !== was && (!ut || !!document.documentElement.dataset.ut);
   });
   AVU.cold = !AVU.m;
-  AVU.ready = fetch("/avatars/ut/_s/index.json", { cache: "no-cache" }).then(r => r.ok ? r.json() : null).catch(() => null).then(m => {
-    const was = JSON.stringify(AVU.m); AVU.m = m && typeof m === "object" ? m : null;
-    try { if (AVU.m) localStorage.setItem("rt.avs.ut", JSON.stringify(AVU.m)); else localStorage.removeItem("rt.avs.ut"); } catch (_) { }
-    if (ST && JSON.stringify(AVU.m) !== was && document.documentElement.dataset.ut) { setChatCount(-1); render(); avSweep(); }   /* chatCount: the chat skips an unchanged list, and avSweep cannot rewrite the drawn (data:) fallback avatars */
+  AVS.ready = one("/avatars/_s/index.json", AVS, "rt.avs");
+  AVU.ready = one("/avatars/ut/_s/index.json", AVU, "rt.avs.ut", true);
+  return Promise.all([AVS.ready, AVU.ready]).then(([s, u]) => {
+    if (again) { AVS.bad.clear(); AVU.bad.clear(); AVS.chk = AVU.chk = false; if (ST) avsCheck(); }
+    if (ST && (s || u || again)) { setChatCount(-1); render(); avSweep(); }   /* chatCount: the chat skips an unchanged list, and avSweep cannot rewrite the drawn (data:) fallback avatars */
+    return s || u;
   });
+}
+let AVV = null;   // the meta.avv this page last loaded the manifests for (null = not seen yet: the load-time fetch covers it)
+function avvSeen(v) {
+  if (v == null) return;   // an older server sends no avv: keep the load-time manifests
+  if (AVV === null) { AVV = v; return; }
+  if (v !== AVV) { AVV = v; avLoad(true); }
+}
+function wireAv() {
+  avLoad(false);
   document.addEventListener("theme:change", () => { const on = !!document.documentElement.dataset.ut; if (on === AVU_ON) return; AVU_ON = on; if (ST) { setChatCount(-1); render(); avSweep(); } });
 }
 
-export { agents, agentAlias, agent, aname, atitle, aduty, AVS, avsCheck, AVU, utSz, avuCheck, AV_RE, avSweep, AVU_ON, AVSVG, avatarSvg, avatarUrl, RING1, ringOnce, hasArt, tintOf, wsheet, av, wireAv };
+export { agents, agentAlias, agent, aname, atitle, aduty, AVS, avsCheck, AVU, utSz, avuCheck, AV_RE, avSweep, AVU_ON, AVSVG, avatarSvg, avatarUrl, RING1, ringOnce, hasArt, tintOf, wsheet, av, wireAv, avLoad, avvSeen };

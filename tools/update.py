@@ -5,6 +5,8 @@
     python3 tools/update.py status [--json]       version, the last check, what would block an update, the history
     python3 tools/update.py apply [--to REF]      update to the newest release (or to REF: a tag or commit)
     python3 tools/update.py rollback [--data]     go back to the version before the last update
+    python3 tools/update.py apply --dry-run [--to REF]   only the trial (step 3): the new version on a copy of your data
+    python3 tools/update.py restart [--agents] [--force] restart the dashboard on the code on disk, with the update's checks
 
 Settings -> System -> Updates runs the same commands (the server starts this script in the background); you click,
 it does the rest. Git installs only: a folder without .git (a zip download) gets "install with git clone" instead.
@@ -20,7 +22,8 @@ apply, in order (nothing on the live install changes until step 4, and any failu
   4. switch: core edits saved to <backups>/update/<id>/core.patch, the tree moves to the new commit (fast-forward only),
      the patch goes back on, untracked files in the way of new files are moved to <backups>/update/<id>/aside/
   5. migrations (stateutil.py schema), make_agents.py, server restart (keepalive / launchd bring it back), then the
-     health check: /api/health and /api/state must answer within 60 s, or rollback runs by itself
+     health check: /api/health and /api/state must answer within 60 s, and the page and every file it loads must answer
+     200 (page_check; the trial in step 3 checks the same), or rollback runs by itself
   6. one inbox entry "update_done" for the steward (and "steward_restart": true when manager.md or roles/ changed)
 
 rollback moves the code back to the commit before the last update, puts your core edits back and restarts. Data stays as
@@ -43,6 +46,7 @@ import sys
 import tarfile
 import tempfile
 import time
+import urllib.error
 import urllib.request
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -193,6 +197,50 @@ def http_json(path, timeout=4, p=None):
             return json.loads(r.read().decode("utf-8"))
     except Exception:
         return None
+
+
+JS_IMPORT = re.compile(r"""(?:^|[\s;])(?:import|export)\b[^'"`;]*?\bfrom\s*["']([^"']+)["']|(?:^|[\s;])import\s*\(?\s*["']([^"']+)["']""", re.M)
+STATIC_REF = re.compile(r"""(/static/[\w./@-]+\.\w+(?:\?v=[\w.]+)?)(?=["'\s,)])""")   # a whole URL with an extension (src, href, srcset, import map)
+
+
+def page_check(p=None, timeout=8):
+    """t-iter-upgrade: the page as a browser gets it. GET / and then every /static file it names (scripts, stylesheets, the import
+    map, modulepreload, srcset, icons) and every module those scripts import, followed through; [] when all answer 200, else the
+    problems. A file missing from a release (a .gitignore that swallowed it) answers 404 here and the update goes back, instead of
+    a blank page behind a healthy /api/health."""
+    import urllib.parse
+    base = f"http://127.0.0.1:{p or port()}"
+    try:
+        with urllib.request.urlopen(base + "/", timeout=timeout) as r:
+            html = r.read().decode("utf-8", "replace")
+    except Exception as e:
+        return [f"/ did not load: {e}"]
+    if "/static/" not in html:
+        return ["/ is not the dashboard page"]
+    todo, seen, bad = sorted(set(STATIC_REF.findall(html))), set(), []
+    while todo and len(bad) < 8:
+        ref = todo.pop()
+        key = ref.split("?")[0]
+        if key in seen:
+            continue
+        seen.add(key)
+        try:
+            with urllib.request.urlopen(base + ref, timeout=timeout) as r:
+                body = r.read() if key.endswith((".js", ".mjs")) else r.read(1)
+        except urllib.error.HTTPError as e:
+            bad.append(f"{key} {e.code}")
+            continue
+        except Exception as e:
+            bad.append(f"{key} {type(e).__name__}")
+            continue
+        if key.endswith((".js", ".mjs")):
+            for a, b in JS_IMPORT.findall(body.decode("utf-8", "replace")):
+                spec = a or b
+                if spec.startswith((".", "/")):
+                    u = urllib.parse.urljoin(key, spec)
+                    if u.startswith("/static/") and u.split("?")[0] not in seen:
+                        todo.append(u)
+    return bad
 
 
 def proc_cwd(pid):
@@ -441,6 +489,9 @@ def trial(target, patch, run):
             raise Stop(f"trial: the new page did not load: {e}")
         if idx != 200:
             raise Stop(f"trial: the new page answered {idx}")
+        bad = page_check(pt)
+        if bad:
+            raise Stop("trial: the new page names files that do not load: " + ", ".join(bad))
     finally:
         if srv:
             srv.terminate()
@@ -514,13 +565,13 @@ def add_history(e):
     wj(upath("history.json"), h[-50:])
 
 
-def start_run(op):
-    """One update at a time: refuse while another runs, else claim run.json, then check the rest."""
+def start_run(op, ignore=()):
+    """One update at a time: refuse while another runs, else claim run.json, then check the rest (minus the codes in ignore)."""
     r = running()
     if r:
         raise Stop(f"an update is already running ({r.get('op')}, since {r.get('started', '')[11:16]})")
     run = Run(op)
-    b = [x for x in blockers() if x[0] != "running"]
+    b = [x for x in blockers() if x[0] != "running" and x[0] not in ignore]
     if b:
         msg = "not now: " + "; ".join(t for _, t in b)
         run.end(False, msg, blockers=[k for k, _ in b])
@@ -528,8 +579,8 @@ def start_run(op):
     return run
 
 
-def apply(to=None, rem=None, discard_mine=False, restart_server=True, do_trial=True):
-    run = start_run("apply")
+def apply(to=None, rem=None, discard_mine=False, restart_server=True, do_trial=True, dry_run=False):
+    run = start_run("trial" if dry_run else "apply", ignore=("agents", "call", "keepalive") if dry_run else ())
     uid = time.strftime("%Y%m%d-%H%M%S")
     e = None
     try:
@@ -555,6 +606,13 @@ def apply(to=None, rem=None, discard_mine=False, restart_server=True, do_trial=T
         if subprocess.run(["git", "merge-base", "--is-ancestor", frm, tgt], cwd=ROOT).returncode:
             raise Stop(f"{to} is not ahead of this install (your install has commits of its own, or {to} is older); "
                        "nothing changed")
+        if dry_run:   # t-iter-upgrade: steps 1 and 3 only; the live install, its history and its data are not touched
+            run.d.update(frm=frm[:7], to=tgt[:7], to_ref=to)
+            patch, mine = core_patch("trial-" + uid)
+            trial(tgt, patch, run)
+            msg = f"trial of {to} ({tgt[:7]}) passed on a copy of your data" + ("; your core edits fit on top" if mine else "")
+            run.end(True, msg)
+            return {"id": uid, "op": "trial", "from": frm, "to": tgt, "to_ref": to, "status": "ok", "mine": mine, "message": msg}
         e = {"id": uid, "at": now(), "op": "apply", "from": frm, "from_version": version_file(), "to": tgt,
              "to_ref": to, "status": "started"}
         run.d.update(frm=frm[:7], to=tgt[:7], to_ref=to)
@@ -592,8 +650,11 @@ def apply(to=None, rem=None, discard_mine=False, restart_server=True, do_trial=T
                 git("reset", "--quiet")   # --3way stages; leave the edits unstaged like before
             e["dropped_mine"] = bool(e["mine"] and not patch)
             after_switch(run)
-            if restart_server:
-                restart(run)
+            if restart_server and restart(run):
+                run.step("checking the page and every file it loads")
+                bad = page_check()
+                if bad:
+                    raise Stop("the new page names files that do not load: " + ", ".join(bad))
         except (Stop, subprocess.TimeoutExpired, OSError) as x:
             run.step(f"failed ({x}); going back")
             _back(frm, e, run, restart_server)
@@ -680,6 +741,57 @@ def rollback(with_data=False, restart_server=True):
         raise
 
 
+def report_window(minutes=10):
+    """True within `minutes` of config report_time (the daily report is written then; a restart there can miss or repeat it)."""
+    try:
+        hh, mm = (int(x) for x in str(cfg().get("report_time") or "18:00").split(":")[:2])
+    except ValueError:
+        return False
+    n = dt.datetime.now()
+    at = n.replace(hour=hh, minute=mm, second=0, microsecond=0)
+    return abs((n - at).total_seconds()) <= minutes * 60
+
+
+def safe_restart(force=False, agents=False):
+    """t-iter-upgrade: restart the dashboard so it runs the code on disk (after a git pull, an edit, or an update with --no-restart).
+    Waits for the same things an update waits for, except teammates at work (a restart does not stop them), and not within
+    10 minutes of the daily report unless force. Runs the migrations first (and make_agents.py with agents=True), then the
+    restart and the same checks as an update: /api/health, /api/state, the page and every file it loads, the schedules."""
+    if report_window() and not force:
+        raise Stop("the daily report is due within 10 minutes; restart after it (or pass --force)")
+    run = start_run("restart", ignore=("agents",))
+    try:
+        before = http_json("/api/state?slim=1", timeout=8) or {}
+        n_sched = len(before.get("schedules") or [])
+        run.step("migrations")
+        r = subprocess.run([PY, "stateutil.py", "schema"], cwd=ROOT, capture_output=True, text=True, timeout=180)
+        if r.returncode:
+            raise Stop("migrations failed, server left running: " + (r.stderr or r.stdout).strip()[-300:])
+        if agents:
+            run.step("make_agents.py")
+            r = subprocess.run([PY, "make_agents.py"], cwd=ROOT, capture_output=True, text=True, timeout=180)
+            if r.returncode:
+                raise Stop("make_agents.py failed, server left running: " + (r.stderr or r.stdout).strip()[-300:])
+        if not restart(run):
+            run.end(True, "no server was running")
+            return {"pid": None}
+        run.step("checking the page and every file it loads")
+        bad = page_check()
+        if bad:
+            raise Stop("the server is up but the page names files that do not load: " + ", ".join(bad))
+        after = http_json("/api/state?slim=1", timeout=8) or {}
+        n2 = len(after.get("schedules") or [])
+        if n2 < n_sched:
+            raise Stop(f"the server is up but lists {n2} schedules, {n_sched} before")
+        h = http_json("/api/health", timeout=8) or {}
+        pid = (h.get("server") or {}).get("pid")
+        run.end(True, f"restarted (pid {pid}); {n2} schedules, page ok")
+        return {"pid": pid, "schedules": n2}
+    except Stop as x:
+        run.end(False, str(x))
+        raise
+
+
 def status():
     c = rj(upath("check.json"), {}) or {}
     h = history()
@@ -724,10 +836,18 @@ def main(argv):
         if cmd == "apply":
             os.makedirs(upd_dir(), exist_ok=True)
             e = apply(opt("--to"), opt("--remote"), "--discard-mine" in argv, "--no-restart" not in argv,
-                      "--no-trial" not in argv)
+                      "--no-trial" not in argv, "--dry-run" in argv)
+            if e.get("op") == "trial":
+                print(e["message"] + "; nothing changed here")
+                return 0
             print(f"updated v{e['from_version']} -> v{e['to_version']} ({e['to'][:7]})" +
                   ("; your core edits were dropped (patch kept: " + str(e.get("patch")) + ")" if e.get("dropped_mine") else "") +
                   "\nback: python3 tools/update.py rollback")
+            return 0
+        if cmd == "restart":
+            os.makedirs(upd_dir(), exist_ok=True)
+            r = safe_restart("--force" in argv, "--agents" in argv)
+            print(f"restarted (pid {r['pid']})" if r.get("pid") else "no server was running; nothing to restart")
             return 0
         if cmd == "rollback":
             os.makedirs(upd_dir(), exist_ok=True)

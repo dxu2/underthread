@@ -16,7 +16,7 @@ function utEmpty(text, cls = "empty", h) {
   return `<div class="${cls} ue">${UE_ART}<b class="ue-h">${h || (zh ? "线头都收好了" : "All threads tied off")}</b><span class="ue-t">${text}</span></div>`;
 }
 function toast(msg, err) {
-  const el = $("#toast"); el.textContent = srvT(msg); el.className = err ? "err" : ""; el.hidden = false;
+  const el = $("#toast"); el.textContent = srvT(msg); el.className = err ? "err" : ""; el.style.translate = el.style.opacity = el.style.transition = ""; el.hidden = false;
   clearTimeout(toast._t); toast._t = setTimeout(() => el.hidden = true, 2600);
 }
 async function postAct(kind, body = {}) {   // t-perf C: the bare POST (no toast, no poll); api() and the optimistic chat send share it

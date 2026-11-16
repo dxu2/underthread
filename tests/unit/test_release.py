@@ -81,7 +81,7 @@ class Repo:
         if cfg is None:
             cfg = ("`owner.display_name` = \"\", `port` = 8765, `report_time`, `routines`, `allowed_hosts`, "
                    "`legacy_headers`, `update.remote`, `update.check`, `feeds.interval_min`, `feeds.max_per_poll`, `feeds.snippet_chars`, "
-                   "`feeds.primary_only`, `feeds.classifier`, `feeds.classifier_model`, `role.enabled`")
+                   "`feeds.primary_only`, `feeds.classifier`, `feeds.classifier_model`, `hire_welcome.wait_avatar_min`, `role.enabled`")
         text = GOOD.format(ver=ver, mig=mig, manual=manual, cfg=cfg)
         if drop:
             text = text.replace(drop, "")
@@ -126,6 +126,40 @@ class ReleaseTest(unittest.TestCase):
             chk = subprocess.run([sys.executable, "tools/manifest.py", "--check"], cwd=r.d, capture_output=True, text=True)
             self.assertEqual(chk.returncode, 0, chk.stdout)
             self.assertIn('"version": "v0.1.0"', read(os.path.join(r.d, "core.manifest.json")))
+
+    def lint(self, r):
+        p = subprocess.run([sys.executable, "tools/release.py", "lint"], cwd=r.d, env=ENV, capture_output=True, text=True)
+        return p.returncode, p.stdout + p.stderr
+
+    def unreleased(self, r, manual="none", mig="none (a note)"):
+        """t-iter-upgrade: tag the GOOD release, then put a "## Unreleased" section on top."""
+        self.assertEqual(r.release()[0], 0)
+        text = read(os.path.join(r.d, "CHANGELOG.md")).replace("## [0.1.0] - 2026-11-14", "## Unreleased", 1)
+        text = text.replace("- Migrations: 0001, 0002", "- Migrations: " + mig).replace("- Manual steps: none", "- Manual steps: " + manual)
+        text = text.replace("- New config keys: `owner", "- New config keys: none\n- Old: `owner", 1)
+        r.write("CHANGELOG.md", text.replace("## 2026-11-09", "## [0.1.0] - 2026-11-14\n\n### Added\n- A thing.\n\n## 2026-11-09", 1))
+
+    def test_lint_unreleased_ok(self):
+        with Repo() as r:
+            self.unreleased(r)
+            rc, out = self.lint(r)
+            self.assertEqual(rc, 0, out)
+            self.assertIn("Unreleased (as v0.2.0)", out)
+
+    def test_lint_unreleased_manual_step(self):
+        with Repo() as r:
+            self.unreleased(r, manual="restart by hand")
+            rc, out = self.lint(r)
+            self.assertEqual(rc, 1, out)
+            self.assertIn("only a major version may need a manual step", out)
+
+    def test_lint_unreleased_unnamed_migration(self):
+        with Repo() as r:
+            self.unreleased(r)
+            r.write("core/migrations/0003_extra.py", "TARGETS = (\"state\",)\n\n\ndef up(data, ctx):\n    pass\n")
+            rc, out = self.lint(r)
+            self.assertEqual(rc, 1, out)
+            self.assertIn("0003", out)
 
     def test_dirty_tree(self):
         with Repo() as r:

@@ -145,6 +145,94 @@ def art_sig():
     return tuple(_fsig(d) for _, d, _ in ART_DIRS)
 
 
+# t-avatar-live-refresh: the two small-avatar manifests (tools/avatar_sizes.py) as one short version string. A swapped avatar never
+# touches state.json, so rev does not move; the page compares meta.avv (in full answers and in "same" ones) and refetches both
+# manifests when it changes. stat calls only; "" when neither manifest exists.
+AVV_FILES = (os.path.join(AVATARS, "_s", "index.json"), os.path.join(AVATARS, "ut", "_s", "index.json"))
+
+
+def avatar_stamp():
+    sig = [_fsig(p) for p in AVV_FILES]
+    return ".".join("%x-%x" % (x[1], x[2]) if x else "0" for x in sig) if any(sig) else ""
+
+
+# t-hire-celebration: the welcome animation (web/js/welcome.js) plays once per browser for a role that tools/new_role.py hired in the last
+# HIRE_WINDOW hours. Source = the "apply" lines of logs/new_role.jsonl (written at the end of every hire, old installs have them too), minus
+# roles that are gone or retired since. t = when it may play: the hire time, or later when the 特典 avatar was replaced after the hire. A hire
+# that got the recoloured placeholder avatar ("avatar": "recolour") waits until avatars/ut/<id>.png is replaced (the picked avatar), at most
+# hire_welcome.wait_avatar_min minutes (config; 0 = play at once). Cached on the log's signature; the avatar stats are a few stat calls.
+HIRE_LOG = os.path.join(ROOT, "logs", "new_role.jsonl")
+HIRE_WINDOW = 72
+_HIRES = {"sig": None, "rows": []}
+
+
+def _hire_rows():
+    sig = _fsig(HIRE_LOG)
+    if sig != _HIRES["sig"]:
+        rows = {}
+        try:
+            with open(HIRE_LOG, encoding="utf-8") as f:
+                for ln in f:
+                    try:
+                        d = json.loads(ln)
+                    except ValueError:
+                        continue
+                    if not isinstance(d, dict) or not d.get("id"):
+                        continue
+                    if d.get("op") == "apply":
+                        rows[d["id"]] = d
+                    elif d.get("op") == "retire":
+                        rows.pop(d["id"], None)
+        except OSError:
+            pass
+        _HIRES.update(sig=sig, rows=list(rows.values()))
+    return _HIRES["rows"]
+
+
+def hire_welcomes(agents=None):
+    """[{id, t}] for meta.hires, oldest first."""
+    if agents is None:
+        agents = S.read().get("agents") or {}
+    now = dt.datetime.now().astimezone()
+    wait = float(((CONFIG.get("hire_welcome") or {}).get("wait_avatar_min")) or 0)
+    out = []
+    for d in _hire_rows():
+        i = d["id"]
+        a = agents.get(i)
+        if not a or a.get("enabled") is False:
+            continue
+        try:
+            at = dt.datetime.fromisoformat(d.get("t", "")).astimezone()
+        except (TypeError, ValueError):
+            continue
+        if (now - at).total_seconds() > HIRE_WINDOW * 3600:
+            continue
+        try:
+            um = dt.datetime.fromtimestamp(os.path.getmtime(os.path.join(AVATARS, "ut", f"{i}.png"))).astimezone()
+        except (OSError, ValueError):
+            um = None
+        swapped = um is not None and (um - at).total_seconds() > 20   # copied by new_role.py itself = same second as the hire
+        if d.get("avatar") == "recolour" and not swapped:
+            if (now - at).total_seconds() < wait * 60:
+                continue   # still the placeholder: wait for the picked avatar
+            t = at + dt.timedelta(minutes=wait)
+        else:
+            t = max(at, um) if swapped else at
+        out.append({"id": i, "at": at.isoformat(timespec="seconds"), "t": t.isoformat(timespec="seconds")})
+    return sorted(out, key=lambda x: x["t"])
+
+
+_HW = {"k": None, "v": []}
+
+
+def hire_welcomes_cached():
+    """For long-poll "same" answers: re-read only when the log, state.json, the avatar manifests or the minute moved."""
+    k = (_fsig(HIRE_LOG), _fsig(S.STATE), avatar_stamp(), dt.datetime.now().strftime("%Y-%m-%d %H:%M"))
+    if k != _HW["k"]:
+        _HW.update(k=k, v=hire_welcomes())
+    return _HW["v"]
+
+
 def art_scan():
     sig = art_sig()
     if sig == _ART["sig"]:
@@ -245,7 +333,7 @@ def codex_quota():
 
 
 def public_state_cached(slim):
-    k = (_fsig(S.STATE), _fsig(S.INBOX), _fsig(AVATARS), _fsig(S.ARCHIVE), art_sig(), json.dumps(_comfy, sort_keys=True), json.dumps(codex_quota()), dt.datetime.now().strftime("%Y-%m-%d %H:%M"))
+    k = (_fsig(S.STATE), _fsig(S.INBOX), _fsig(AVATARS), _fsig(HIRE_LOG), _fsig(S.ARCHIVE), art_sig(), avatar_stamp(), json.dumps(_comfy, sort_keys=True), json.dumps(codex_quota()), dt.datetime.now().strftime("%Y-%m-%d %H:%M"))
     with _PSL:
         c = _PSC.get(slim)
         if c and c[0] == k:
@@ -265,6 +353,8 @@ def public_state(slim=False):
                              if f.lower().endswith((".png", ".jpg", ".jpeg", ".webp", ".gif"))}
     st["meta"]["inbox_unacked"] = rev_unacked()[1]
     st["meta"]["art"] = art_scan()
+    st["meta"]["avv"] = avatar_stamp()   # t-avatar-live-refresh
+    st["meta"]["hires"] = hire_welcomes(st.get("agents") or {})   # t-hire-celebration
     st["meta"]["seats"] = stage_seats(st.get("agents") or {})
     a, live = archive_cached(), {i.get("id") for i in st.get("items", [])}
     ix = [[i.get("id"), i.get("title", ""), i.get("owner", ""), str(i.get("closed") or i.get("updated") or "")[:10]] for i in a["items"] if i.get("id") not in live]
@@ -384,16 +474,18 @@ def _state(h, u, q):   # t-perf B: cached rev / body (see public_state_cached)
         wait = min(25.0, max(0.0, float(q.get("wait", ["0"])[0] or 0)))
     except ValueError:
         wait = 0.0
+    avv = avatar_stamp()   # t-avatar-live-refresh: a swapped avatar wakes the wait too (the "same" answer carries the new avv)
     if wait and q.get("rev", [""])[0] == str(rev):
         t_end = time.monotonic() + wait
         while time.monotonic() < t_end:
             time.sleep(0.1)
             r2, u2 = rev_unacked()
-            if (r2, u2) != (rev, un):
-                rev, un = r2, u2
+            v2 = avatar_stamp()
+            if (r2, u2, v2) != (rev, un, avv):
+                rev, un, avv = r2, u2, v2
                 break
     if q.get("rev", [""])[0] == str(rev):
-        return h._send(200, {"same": True, "meta": {"comfy": _comfy, "server_time": S.now(), "inbox_unacked": un}})
+        return h._send(200, {"same": True, "meta": {"comfy": _comfy, "server_time": S.now(), "inbox_unacked": un, "avv": avv, "hires": hire_welcomes_cached()}})
     _, raw, gzb = public_state_cached(q.get("slim", [""])[0] == "1")
     if "gzip" in (h.headers.get("Accept-Encoding") or ""):
         return h._send(200, gzb, extra={"Content-Encoding": "gzip", "Vary": "Accept-Encoding"})

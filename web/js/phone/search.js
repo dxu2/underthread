@@ -4,7 +4,7 @@
 
 
 // ===== ui15: 搜索 tab = minimal search sheet over items and chats (nothing existed on the phone besides the chat-list filter) =====
-import { catChips, dotPop, menuExtras, renderBar, setTab, strip } from "./nav.js";
+import { catChips, dotPop, menuExtras, moreTitle, renderBar, setTab, strip } from "./nav.js";
 import { deck } from "./deck.js";
 import { composers, ui2Comp } from "./composer.js";
 import { CLEAR, SEARCH, convList, openConv, preview, retFrom } from "./chatlist.js";
@@ -72,7 +72,7 @@ function setVariant(v) {
 function sync() {
   if (!mq.matches || !App.ST) return;
   if (!ready) { setReady(true); document.body.dataset.mv = mv; setTab(...(H.get("mtab") ? [H.get("mtab"), H.get("page")] : HOME[mv])); }
-  catChips(); menuExtras(); composers(); ui2Comp(); convList(); dotPop();
+  catChips(); moreTitle(); menuExtras(); composers(); ui2Comp(); convList(); dotPop();
   if (mv === "chat") strip();
   if (mv === "deck" && App.UI.page === "review") deck();
   if (document.body.classList.contains("msearch")) searchRender();

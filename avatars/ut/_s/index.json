@@ -3,9 +3,17 @@
   "src": "artist.png",
   "etag": "\"6af42ef1-7a194\""
  },
+ "buyer": {
+  "src": "buyer.png",
+  "etag": "\"6afa19b6-8a9e6\""
+ },
  "director": {
   "src": "director.png",
   "etag": "\"6aee3054-6bc21\""
+ },
+ "food": {
+  "src": "food.png",
+  "etag": "\"6af987d2-8850e\""
  },
  "hr": {
   "src": "hr.png",

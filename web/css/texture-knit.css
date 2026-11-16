@@ -52,6 +52,12 @@ html[data-texture^="knit"] #drawer select {
   outline-offset: -3px !important;
 }
 html[data-texture^="knit"] :is(.dw-back, .dw-file, .cm-to, .rq) { outline: none !important; }   /* 太小的圆钮只要毛毡，不缝 */
+/* 详情右上角的分类下拉：⌄ 箭头叠在毛毡上面（毛毡的 background-image 曾把它盖掉，t-ri1115-a P2） */
+html[data-texture^="knit"] #drawer select[data-f="category"] {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%23888' stroke-width='1.6' stroke-linecap='round'/%3E%3C/svg%3E"), var(--kn-felt) !important;
+  background-size: 9px 6px, var(--kn-felt-size) !important;
+  background-repeat: no-repeat, repeat !important;
+}
 /* was `:is(.ab, .dw-stamp, .hd-chip) { outline-color: var(--kn-thread-acc) }`: it never applied (the felt rule above outranked it
    while #drawer select sat in its :is()), so it is left out to keep today's look; an accent stitch on these is a separate design call. */
 /* 首页右侧那列小卡本身就是按钮：同面板处理，但也给鼓起 */
@@ -72,6 +78,7 @@ html[data-texture^="knit"][data-texture^="knit"] :focus-visible { outline: 2px d
 /* 系统开了「增强对比度」：去掉所有纹理，只留缝线 */
 @media (prefers-contrast: more) {
   html[data-texture^="knit"] :is(.toc-box, .hd, .ru-card, .dc-none, .dw-dock, .sy-pop, .sy-use, .ab, .hc-mail, .dw-stamp, .tb-row, .hd-chip, .dw-back, .dw-file, #drawer select, .cm-to, .rq) { background-image: none !important; }
+  html[data-texture^="knit"] #drawer select[data-f="category"] { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%23888' stroke-width='1.6' stroke-linecap='round'/%3E%3C/svg%3E") !important; background-size: 9px 6px !important; background-repeat: no-repeat !important; }
 }
 
 /* ---- t-theme-knit 接入：扩到首页和详情以外的卡片 / 面板（同一套：淡平针纹 + 内侧一圈缝线） ---- */

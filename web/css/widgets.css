@@ -299,9 +299,12 @@ html[data-home="widgets"] .sl-full b { color: var(--ink2); font-weight: 600; fon
 html[data-home="widgets"] .sl-full .sl-old { font-style: normal; color: var(--warn); display: inline-flex; align-items: center; gap: 5px; }
 html[data-home="widgets"] .sl-full .sl-old::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--warn); }
 html[data-home="widgets"] .sl-bars { grid-column: 2 / span 2; display: grid; grid-template-columns: 1fr 1fr; gap: 14px; align-items: center; }
-html[data-home="widgets"] .sl-b { display: grid; grid-template-columns: minmax(0, auto) minmax(0, 1fr) max-content; align-items: center; gap: 7px; font-size: var(--fs-12); color: var(--dim); white-space: nowrap; min-width: 0; }
-html[data-home="widgets"] .sl-b > span { overflow: hidden; text-overflow: ellipsis; }   /* t-ui-fix-r2 B07: the % never clips; the bar, then the label, give way */
-html[data-home="widgets"] .sl-b i { position: relative; height: 6px; min-width: 24px; border-radius: 3px; background: color-mix(in srgb, #000 30%, transparent); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ink) 8%, transparent); overflow: hidden; }
+html[data-home="widgets"] .sl-b { container: slb / inline-size; display: grid; grid-template-columns: max-content minmax(0, 1fr) max-content; align-items: center; gap: 7px; font-size: var(--fs-12); color: var(--dim); white-space: nowrap; min-width: 0; }
+html[data-home="widgets"] .sl-b > span { overflow: hidden; text-overflow: ellipsis; }   /* t-ui-fix-r2 B07: the % never clips; the bar, then the label, give way. t-ui-polish-1115b: the bar track was minmax(0, 1fr) while the bar kept
+   min-width 24px, so at ~320px wide (half-screen window) the bar overflowed its 0-wide track onto the %. Now the label and the % keep their
+   full width, the bar takes what is left (min 0, so it can never reach the %), and under 100px (bar < ~14px) it is dropped, see @container slb */
+html[data-home="widgets"] .sl-b i { position: relative; height: 6px; min-width: 0; border-radius: 3px; background: color-mix(in srgb, #000 30%, transparent); box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ink) 8%, transparent); overflow: hidden; }
+@container slb (max-width: 100px) { html[data-home="widgets"] .sl-b i { display: none; } }   /* t-ui-polish-1115b: too narrow for a readable bar: label + % only */
 html[data-home="widgets"] .sl-b i em { position: absolute; inset: 0 auto 0 0; width: calc(var(--w) * 100%); border-radius: 3px; background: repeating-linear-gradient(110deg, #E9B65A 0 4px, #C9963F 4px 6px); }
 html[data-home="widgets"] .sl-b > b { color: var(--ink); font-weight: 600; font-size: var(--fs-14, 14px); font-variant-numeric: tabular-nums; min-width: 34px; text-align: right; }
 html[data-home="widgets"] .sl-b > b small { font-size: var(--fs-10, 10px); color: var(--dim); font-weight: 500; }

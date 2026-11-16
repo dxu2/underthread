@@ -5,7 +5,10 @@ migrated, config kept, your own edits to core files kept (or refused cleanly whe
 The install is a `git clone` of this repository checked out at the newest vX.Y.Z tag before HEAD. When that release
 has no tools/update.py yet (v0.1.0), that one file is dropped in untracked (the way a user would get the first
 updater); the update then moves them aside, because the new version tracks them. Needs git; the commit under test is
-HEAD (commit first: uncommitted changes are not in the clone). Takes about a minute (several trial servers).
+HEAD (commit first: uncommitted changes are not in the clone), or, with `python3 tests/run.py upgrade --worktree`, the
+working tree as it is now (committed in a throwaway clone; this checkout is not touched). UPGRADE_DATA=<install dir> uses
+a copy of that install's data files and local/ instead of the fixture board (`--data live` in run.py: this checkout's).
+Takes about a minute (several trial servers).
 """
 import json
 import os
@@ -117,7 +120,16 @@ class Upgrade(unittest.TestCase):
         cls.bootstrapped = not os.path.exists(os.path.join(d, "tools", "update.py"))
         if cls.bootstrapped:   # the first updater arrives untracked
             write(os.path.join(d, "tools", "update.py"), git("show", f"{HEAD}:tools/update.py", cwd=ROOT) + "\n")
-        sh(PY, os.path.join(ROOT, "tests", "e2e", "fixtures", "load.py"), d, cwd=ROOT)
+        real = os.environ.get("UPGRADE_DATA")   # t-iter-upgrade: rehearse on a copy of a real install's data and local/
+        if real:
+            for f in ("state.json", "config.json", "roster.json", "archive.json", "inbox.jsonl", "feeds.json"):
+                if os.path.exists(os.path.join(real, f)):
+                    shutil.copy2(os.path.join(real, f), os.path.join(d, f))
+            if os.path.isdir(os.path.join(real, "local")):
+                shutil.copytree(os.path.join(real, "local"), os.path.join(d, "local"), symlinks=True, dirs_exist_ok=True,
+                                ignore=shutil.ignore_patterns("backups", "__pycache__", "*.tar.gz"))
+        else:
+            sh(PY, os.path.join(ROOT, "tests", "e2e", "fixtures", "load.py"), d, cwd=ROOT)
         cfg = json.loads(read(os.path.join(d, "config.json")))
         cfg.update(port=cls.port, report_time="07:30")   # a value you changed; the port keeps the checks off any live dashboard
         write(os.path.join(d, "config.json"), json.dumps(cfg, ensure_ascii=False, indent=2) + "\n")
@@ -162,6 +174,12 @@ class Upgrade(unittest.TestCase):
         for i in busy:
             sh(PY, "stateutil.py", "set-agent", i, "--status", "idle", cwd=d)
 
+        # ---- trial only (t-iter-upgrade): nothing on the install changes ----
+        r = self.upd("apply", "--to", HEAD, "--dry-run")
+        self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
+        self.assertIn("nothing changed here", r.stdout)
+        self.assertEqual(git("rev-parse", "HEAD", cwd=d), self.prev, "a dry run does not switch")
+
         # ---- update ----
         r = self.upd("apply", "--to", HEAD)
         self.assertEqual(r.returncode, 0, r.stdout + r.stderr)
@@ -187,6 +205,9 @@ class Upgrade(unittest.TestCase):
         with Server(d, self.port) as s:
             self.assertEqual(len(get(s.port, "/api/state?rev=-1").get("items") or []), self.cards)
             self.assertEqual(get(s.port, "/api/hello"), {"hello": 1}, "an old-style extension still loads")
+            pc = sh(PY, "-c", "import importlib.util as I, sys; s = I.spec_from_file_location('u', 'tools/update.py'); "
+                    "u = I.module_from_spec(s); s.loader.exec_module(u); print(u.page_check(int(sys.argv[1])))", str(s.port), cwd=d)
+            self.assertEqual(pc.stdout.strip(), "[]", "the new page and every file it loads answer 200 (t-iter-upgrade)")
             u = get(s.port, "/api/update")
             self.assertEqual((u["version"], u["git"]), (read(os.path.join(d, "VERSION")).strip(), True))
             self.assertTrue(u["rollback"], "the settings page offers a way back")

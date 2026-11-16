@@ -25,6 +25,49 @@ def _work_size():
         _health["work"], _health["work_t"], _health["work_busy"] = total, time.time(), False
 
 
+CODE_DIRS = ("core", "api", os.path.join("local", "ext"))
+CODE_FILES = ("server.py", "stateutil.py")
+
+
+def _code_sig():
+    """t-iter-upgrade: {relative path: (mtime_ns, size)} of the Python this server runs (server.py, stateutil.py, core/, api/,
+    local/ext/). Taken once at start; /api/health compares, so a git pull, an update without a restart or an edit on disk shows
+    up as "restart needed" instead of the old code quietly running on."""
+    out = {}
+    for f in CODE_FILES:
+        try:
+            st = os.stat(os.path.join(ROOT, f))
+            out[f] = (st.st_mtime_ns, st.st_size)
+        except OSError:
+            pass
+    for d in CODE_DIRS:
+        for base, dirs, files in os.walk(os.path.join(ROOT, d)):
+            dirs[:] = [x for x in dirs if x not in ("__pycache__", "backups", "node_modules") and not x.startswith(".")]
+            for f in files:
+                if f.endswith(".py"):
+                    p = os.path.join(base, f)
+                    try:
+                        st = os.stat(p)
+                    except OSError:
+                        continue
+                    out[os.path.relpath(p, ROOT)] = (st.st_mtime_ns, st.st_size)
+    return out
+
+
+_CODE0 = _code_sig()
+_code = {"t": 0.0, "changed": []}
+
+
+def code_changed():
+    """Python files added, removed or changed since this server started (sorted, cached 20 s)."""
+    t = time.time()
+    if t - _code["t"] > 20:
+        now = _code_sig()
+        _code["changed"] = sorted(k for k in set(now) | set(_CODE0) if now.get(k) != _CODE0.get(k))
+        _code["t"] = t
+    return _code["changed"]
+
+
 def health():
     """t-imp-p4: the 系统状态 panel. Cheap and cached; NOT part of /api/state (polled every 2.5 s).
     Usage and the manager heartbeat are already in /api/state, so they are not repeated here."""
@@ -50,7 +93,8 @@ def health():
         "now": S.now(),
         "server": {"started": dt.datetime.fromtimestamp(START).astimezone().isoformat(timespec="seconds"),
                    "uptime": int(t - START), "pid": os.getpid(), "rev": st["meta"].get("rev"),
-                   "loops": not os.environ.get("NO_LOOPS")},
+                   "loops": not os.environ.get("NO_LOOPS"),
+                   "code_stale": bool(code_changed()), "code_changed": code_changed()[:8]},   # t-iter-upgrade: restart needed
         "comfy": dict(_comfy),
         "schema": MG.status(ROOT, st),   # t-oss-struct E1: code / state / config / roster schema numbers, "ahead" after a rollback
         "push": {"devices": len(subs), "last_at": last and last["last_at"], "last_code": last and last.get("last_code"),

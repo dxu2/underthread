@@ -102,6 +102,59 @@
   document.addEventListener("focusin", e => { const el = e.target.closest && e.target.closest("#wtoasts .wt"); if (el) pause(el); });
   document.addEventListener("focusout", e => { const el = e.target.closest && e.target.closest("#wtoasts .wt"); if (el && !el.contains(e.relatedTarget)) arm(el); });
   document.addEventListener("visibilitychange", () => (T.box ? [...T.box.children] : []).forEach(el => document.hidden ? pause(el) : arm(el)));   // nothing times out unseen in a background tab
+  /* t-ui-polish-1115b: swipe right to dismiss, like a Chrome / macOS notification. Pointer events, so a mouse drag and a finger both work.
+   * Desk: the #wtoasts cards. Phone has no cards (OS push), so the short #toast pill gets the same gesture there (and on desk).
+   * Follows the pointer (leftward drags only stretch a little), fades with distance; let go past 35% of the width or with a flick (> .5 px/ms)
+   * and it slides off, else it springs back. A drag never counts as a click (no card opens). Reduced motion: no slide, it just goes. */
+  const SW = { el: null };
+  const swGone = el => {
+    if (el.id === "toast") { el.hidden = true; el.style.translate = el.style.opacity = el.style.transition = ""; return; }
+    el._gone = true; clearTimeout(el._t); el.remove();
+  };
+  document.addEventListener("pointerdown", e => {
+    if (e.button !== 0 || SW.el) return;
+    const el = e.target.closest && e.target.closest("#wtoasts .wt, #toast"); if (!el || e.target.closest(".wt-x") || el._gone) return;
+    SW.el = el; SW.id = e.pointerId; SW.x0 = e.clientX; SW.y0 = e.clientY; SW.on = false; SW.dx = 0; SW.pts = [[e.timeStamp, e.clientX]];
+  });
+  document.addEventListener("pointermove", e => {
+    const el = SW.el; if (!el || e.pointerId !== SW.id) return;
+    const dx = e.clientX - SW.x0, dy = e.clientY - SW.y0;
+    if (!SW.on) {
+      if (Math.abs(dy) > 10 && Math.abs(dy) > Math.abs(dx)) { SW.el = null; return; }   // a vertical move is a scroll, not ours
+      if (Math.abs(dx) < 6) return;
+      SW.on = true; el.classList.add("sw-drag"); try { el.setPointerCapture(e.pointerId); } catch (_) {}
+      if (el.classList.contains("wt")) pause(el);
+    }
+    e.preventDefault();
+    SW.dx = dx; SW.pts.push([e.timeStamp, e.clientX]); if (SW.pts.length > 6) SW.pts.shift();
+    const tx = dx > 0 ? dx : dx / 4, w = el.offsetWidth || 300;
+    el.style.translate = tx + "px 0"; el.style.opacity = String(Math.max(.15, 1 - Math.max(0, tx) / (w * 1.1)));
+  }, { passive: false });
+  const swEnd = e => {
+    const el = SW.el; if (!el || e.pointerId !== SW.id) return; SW.el = null;
+    if (!SW.on) return;
+    el.classList.remove("sw-drag"); el._swiped = Date.now();   // the click that follows this pointerup is eaten below
+    /* flick speed over the last 100 ms before release: a drag that stopped before letting go is not a flick */
+    const w = el.offsetWidth || 300, rec = SW.pts.filter(q => e.timeStamp - q[0] <= 100), v = rec.length ? (e.clientX - rec[0][1]) / Math.max(16, e.timeStamp - rec[0][0]) : 0;
+    const off = e.type === "pointerup" && (SW.dx > w * .35 || (v > .5 && SW.dx > 20));
+    if (off) {
+      if (RM.matches) return swGone(el);
+      if (el.classList.contains("wt")) el._gone = true;
+      el.style.transition = "translate .22s cubic-bezier(.4, 0, 1, 1), opacity .2s ease";
+      el.style.translate = (w + 40) + "px 0"; el.style.opacity = "0";
+      setTimeout(() => swGone(el), 230);
+    } else {
+      el.style.transition = RM.matches ? "none" : "translate .28s cubic-bezier(.2, .8, .2, 1), opacity .2s ease";
+      el.style.translate = ""; el.style.opacity = "";
+      setTimeout(() => { if (!SW.el || SW.el !== el) el.style.transition = ""; }, 300);
+      if (el.classList.contains("wt") && !el.matches(":hover")) arm(el);
+    }
+  };
+  document.addEventListener("pointerup", swEnd); document.addEventListener("pointercancel", swEnd);
+  document.addEventListener("click", e => {   // capture: runs before the open-the-card handler above
+    const el = e.target.closest && e.target.closest("#wtoasts .wt, #toast");
+    if (el && el._swiped && Date.now() - el._swiped < 400) { e.stopImmediatePropagation(); e.preventDefault(); }
+  }, true);
   App.on(k => { if (k === "all") check(); });
   window.WebToast = { check, show, _T: T };   // test hook (journeys/wtoast.js)
 })();

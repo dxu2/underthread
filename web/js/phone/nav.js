@@ -14,6 +14,7 @@ function setTab(tab, page) {
   if (tab === "page" && page && App.UI.page !== page) App.go(page);
   if (tab === "chat") setCv("list");   // the 管家 tab opens on the conversation list
   renderBar();
+  moreTitle();   // t-ri1115-a P3: a 更多 row tap renders the page before this switch, so the title row is placed here too
 }
 function activeKey() {
   let tab = document.body.dataset.mtab, p = App.UI.page;
@@ -218,6 +219,26 @@ function strip() {
   }).join("") : `<div class="m-chip none">${App.t("empty_review")}</div>`) + `</div>`;
   if (wrap._html !== html) { wrap.innerHTML = html; wrap._html = html; }
 }
+/* t-ri1115-a P3: pages opened from 更多 (招聘市场 / 制作 / 报告 / 设置 …) have no tab or segment bar naming them, and t-home-title hid the
+   masthead on phones. A small title row puts back 「‹ 页名」: the round chevron (same look as the card detail's back) returns to 更多.
+   The name is read from the page's own (hidden) .ph h1, so studio sub-pages say 制作 like the desk masthead. Inserted per render like
+   catChips(); a page that patches itself keeps the row, and its text is refreshed when the page or language changes. */
+function moreTitle() {
+  const body = $("#pagebody"); if (!body) return;
+  const on = document.body.dataset.mtab === "page" && activeKey() === "more";
+  let row = $(":scope > .m-subh", body);
+  if (!on) { if (row) row.remove(); return; }
+  const h1 = $(":scope > .ph h1", body), name = (h1 && h1.textContent.trim()) || App.t(App.UI.page), back = en() ? "Back to More" : "返回更多";
+  if (!row) {
+    row = document.createElement("div"); row.className = "m-subh";
+    row.innerHTML = `<button type="button" class="m-subh-b"><svg viewBox="0 0 12 20" width="12" height="20" aria-hidden="true"><path d="M10 2 2 10l8 8" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></button><h2></h2>`;
+    $(".m-subh-b", row).addEventListener("click", () => { setTab("menu"); const it = BAR5.find(x => x.k === "more"); if (it) tbmPageIn(it); });
+    body.prepend(row);
+  }
+  const b = $(".m-subh-b", row), h2 = $("h2", row);
+  if (h2.textContent !== name) h2.textContent = name;
+  if (b.getAttribute("aria-label") !== back) b.setAttribute("aria-label", back);
+}
 const onSettings = () => App.UI.page === "settings" && App.ST;   // t-settings-tab: the settings rows moved from 更多 to the 设置 page
 function menuExtras() {
   const left = $("#left"); if (!left) return;
@@ -382,4 +403,4 @@ function wirePhNav2() {
   fitViewport();
 }
 
-export { setTab, activeKey, badges, TBM, TBM_EASE, tbmAnim, tbmSel, tbmPop, tbmDots, tbmName, tbmNames, tbmTip, tbmPageIn, tbmPress, renderBar, catChips, strip, onSettings, menuExtras, pushPrefs, dotSeen, dotPop, dw, dwSync, isField, standalone, fitViewport, refit, vpBox, vpReport, SEND, sendVia, wirePhNav, wirePhNav2 };
+export { setTab, activeKey, badges, TBM, TBM_EASE, tbmAnim, tbmSel, tbmPop, tbmDots, tbmName, tbmNames, tbmTip, tbmPageIn, tbmPress, renderBar, catChips, moreTitle, strip, onSettings, menuExtras, pushPrefs, dotSeen, dotPop, dw, dwSync, isField, standalone, fitViewport, refit, vpBox, vpReport, SEND, sendVia, wirePhNav, wirePhNav2 };

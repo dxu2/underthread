@@ -44,8 +44,10 @@ function statusRows() {
   // 3. dashboard server (needs /api/health)
   if (H) {
     const sv = H.server, sc = H.schema, ahead = !!(sc && sc.ahead && sc.ahead.length);   /* t-oss-struct E1: data schema; ahead = data from a newer version (after a rollback) */
-    rows.push({ k: "srv", t: en ? "Dashboard server" : "看板服务器", lv: sv.loops && !ahead ? "ok" : "warn",
+    const stale = !!sv.code_stale;   /* t-iter-upgrade: its Python changed on disk since it started; Settings -> System -> Updates restarts it */
+    rows.push({ k: "srv", t: en ? "Dashboard server" : "看板服务器", lv: sv.loops && !ahead && !stale ? "ok" : "warn",
       s: (en ? `up ${upTxt(sv.uptime)} · started ${hm(sv.started)}` : `已运行 ${upTxt(sv.uptime)} · ${hm(sv.started)} 启动`) + ` · rev ${sv.rev}` + (sv.loops ? "" : (en ? " · background loops off" : " · 后台循环未开（测试模式）"))
+        + (stale ? (en ? " · code changed on disk, restart to use it (Settings → System)" : " · 服务端代码已更新，重启后生效（设置 → 系统）") : "")
         + (sc ? (ahead ? (en ? ` · data from a newer version (schema ${sc.state}, this code ${sc.code})` : ` · 数据来自较新版本（数据 v${sc.state}，代码 v${sc.code}）`) : ` · ${en ? "data" : "数据"} v${sc.state}`) : "") });
   }
   // 4. ComfyUI tunnel (already in /api/state)
@@ -237,17 +239,37 @@ function ghOpen() { modalStatus(); setTimeout(() => { const g = $("#modal #gt");
 
 
 // ===== t-new-ver: the page keeps running the JS/CSS it loaded; after a web/ release (?v bump in index.html) it says so with a pill.
-// Checks when the page comes back to the foreground and every 5 min while visible; never reloads on its own (drafts survive anyway). =====
-const VER = { mine: "", t: 0, shown: false };
+// Checks when the page comes back to the foreground, right after the server comes back (rt-reconnect from store.js: a restart or an
+// update) and every 5 min while visible.
+// t-iter-upgrade: a page you are not looking at picks the new version up by itself. When the check finds a new build while the page
+// is hidden, or on the way back to the foreground after at least 20 s away, it reloads at once, but only when nothing would be lost or
+// interrupted (verSafe: no dialog, no field in use, no voice call, no body[data-noreload] set by an extension) and not twice for the
+// same build within 10 minutes (no reload loop). Otherwise, and whenever you are using the page, it shows the pill as before. =====
+const VER = { mine: "", t: 0, shown: false, away: 0 };
 /* S9: the server stamps <meta name="ut-build"> (a hash of the whole page: every file's ?v= and the import map); an older server has none,
    so fall back to the list of ?v= script / stylesheet URLs */
 const verSig = html => { const b = /<meta name="ut-build" content="(\w+)"/.exec(String(html)); return b ? "b:" + b[1] : (String(html).match(/\/static\/[\w.-]+\.(?:js|css)\?v=[\w.]+/g) || []).sort().join(" "); };
 const verMine = () => VER.mine || (VER.mine = (m => m ? "b:" + m.content : verSig([...document.querySelectorAll("script[src],link[rel=stylesheet][href]")].map(e => e.getAttribute("src") || e.getAttribute("href")).join(" ")))(document.querySelector('meta[name="ut-build"]')));   // read after load: the scripts below app.js are not parsed yet when it runs
-async function verCheck(force) {
+async function verCheck(force, back) {
   if (document.readyState !== "complete") return;
-  if (VER.shown || !verMine() || document.visibilityState !== "visible" || (!force && Date.now() - VER.t < 60e3)) return;
+  if (VER.shown || !verMine() || (document.visibilityState !== "visible" && !force) || (!force && Date.now() - VER.t < 60e3)) return;
   VER.t = Date.now();
-  try { const r = await fetch("/", { cache: "no-store" }); if (!r.ok) return; const sig = verSig(await r.text()); if (sig && sig !== VER.mine) verShow(); } catch (_) { }
+  try { const r = await fetch("/", { cache: "no-store" }); if (!r.ok) return; const sig = verSig(await r.text()); if (sig && sig !== VER.mine) { if (!verAuto(sig, back)) verShow(); } } catch (_) { }
+}
+/* t-iter-upgrade: is a silent reload harmless right now? */
+function verSafe() {
+  const m = document.getElementById("modal"); if (m && !m.hidden) return false;
+  const b = document.body; if (!b || b.dataset.noreload != null || b.classList.contains("vc-on")) return false;
+  const a = document.activeElement;
+  if (a && a !== b && (a.isContentEditable || (/^(TEXTAREA|SELECT)$/.test(a.tagName)) || (a.tagName === "INPUT" && !/^(button|checkbox|radio|range|submit|reset)$/.test(a.type)))) return false;
+  return true;
+}
+function verAuto(sig, back) {
+  if (!(document.hidden || back) || !verSafe()) return false;
+  let last = null; try { last = JSON.parse(sessionStorage.getItem("rt.verauto") || "null"); } catch (_) { }
+  if (last && last.sig === sig && Date.now() - last.t < 10 * 60e3) return false;   // reloaded for this build already and it still differs: pill
+  try { sessionStorage.setItem("rt.verauto", JSON.stringify({ sig, t: Date.now() })); } catch (_) { return false; }   // no storage, no loop guard: pill
+  location.reload(); return true;
 }
 function verShow() {
   if (VER.shown) return; VER.shown = true; const en = UI.lang === "en";
@@ -260,8 +282,12 @@ function wireStatus() {
   hooks.push(k => { if (k !== "all") return; const m = $("#modal .mdl.sys"); if (m && m._paint) m._paint(); });
   document.addEventListener("click", e => { const b = e.target.closest("#modal #gt [data-gt]"); if (b && !b.disabled) { e.preventDefault(); ghDo(b.dataset.gt, b); } });
   document.addEventListener("keydown", e => { if (e.key === "Enter" && !e.isComposing && e.target.closest && e.target.closest("#modal #gt .gt-in")) { e.preventDefault(); const b = $("#modal #gt [data-gt=set]"); if (b && !b.disabled) ghDo("set", b); } });
-  document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") verCheck(); });
-  setInterval(() => verCheck(true), 5 * 60e3);
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState !== "visible") { VER.away = Date.now(); return; }
+    const away = VER.away && Date.now() - VER.away >= 20e3; VER.away = 0; verCheck(away, away);   // back after 20 s+: check now, reload if new and safe
+  });
+  document.addEventListener("rt-reconnect", () => verCheck(true, document.hidden));   // the server restarted: hidden page reloads, visible one gets the pill
+  setInterval(() => { if (document.visibilityState === "visible") verCheck(true); }, 5 * 60e3);
 }
 
-export { HL, loadHealth, gb, upTxt, statusRows, statusSummary, statusHTML, modalStatus, GT, gz, ghLoad, ghApi, ghWhen, ghWhenT, ghSoon, ghLabel, ghProbeLine, ghHTML, ghPaint, ghDo, ghOpen, VER, verSig, verMine, verCheck, verShow, wireStatus };
+export { HL, loadHealth, gb, upTxt, statusRows, statusSummary, statusHTML, modalStatus, GT, gz, ghLoad, ghApi, ghWhen, ghWhenT, ghSoon, ghLabel, ghProbeLine, ghHTML, ghPaint, ghDo, ghOpen, VER, verSig, verMine, verCheck, verShow, verSafe, verAuto, wireStatus };

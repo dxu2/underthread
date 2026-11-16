@@ -19,5 +19,8 @@
     "primary_only": true,
     "classifier": "auto",
     "classifier_model": "haiku"
+  },
+  "hire_welcome": {
+    "wait_avatar_min": 0
   }
 }

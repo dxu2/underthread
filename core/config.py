@@ -34,6 +34,9 @@ DEFAULTS = {
     # Settings -> Connections); passwords live in the keychain. classifier: "auto" (claude if on PATH) | "claude" | "off"
     "feeds": {"interval_min": 5, "max_per_poll": 30, "snippet_chars": 120, "primary_only": True, "classifier": "auto",
               "classifier_model": "haiku"},
+    # t-hire-celebration: the welcome animation for a new hire waits this many minutes for a picked 特典 avatar when tools/new_role.py
+    # gave the role the recoloured placeholder (0 = play as soon as the hire lands)
+    "hire_welcome": {"wait_avatar_min": 0},
 }
 EXAMPLE = {"owner": {"display_name": "<your name>"}}   # placeholders shown only in config.example.json
 ROLE_DEFAULTS = {"enabled": True}

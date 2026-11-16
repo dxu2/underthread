@@ -78,34 +78,39 @@ const SCH = { hold: new Set(), order: null, pend: null, timer: 0 }, SCH_HOLD = 5
 const schZh = () => UI.lang !== "en";
 const schAll = () => (ST.schedules || []).filter(s => s && !s.deleted && !SCH.hold.has(s.id));
 const schFin = s => !s.enabled && (!!s.finished || (s.rule && s.rule.type === "once" && !s.next));
-function schRule(r) {
+/* freqOnly (t-ri1115-a P4): the row subtitle says only how often (「每天」「每周一、三」「一次性 11-20」); the big time on the left already
+   says when, so the time is not repeated there. The row menu header keeps the full rule. */
+function schRule(r, freqOnly) {
   const zh = schZh(); if (!r) return "—";
-  const at = String(r.at || "");
-  if (r.type === "once") { const [d, t0] = at.split("T"); return `${zh ? "一次性" : "Once"} ${(d || "").slice(5)} ${t0 || ""}`.trim(); }
-  if (r.type === "daily") return `${zh ? "每天" : "Daily"} ${at}`;
+  const at = String(r.at || ""), t = x => freqOnly ? x : `${x} ${at}`;
+  if (r.type === "once") { const [d, t0] = at.split("T"); return `${zh ? "一次性" : "Once"} ${(d || "").slice(5)} ${freqOnly ? "" : t0 || ""}`.trim(); }
+  if (r.type === "daily") return t(zh ? "每天" : "Daily");
   if (r.type === "weekly") {
     const ds = (r.days || []).map(d => zh ? "一二三四五六日"[d - 1] : "Mon Tue Wed Thu Fri Sat Sun".split(" ")[d - 1]);
-    return zh ? `每周${ds.join("、")} ${at}` : `Weekly ${ds.join(", ")} ${at}`;
+    return t(zh ? `每周${ds.join("、")}` : `Weekly ${ds.join(", ")}`);
   }
-  if (r.type === "monthly") return r.mday === -1 ? `${zh ? "每月最后一天" : "Monthly, last day"} ${at}` : `${zh ? `每月 ${r.mday} 号` : `Monthly, day ${r.mday}`} ${at}`;
+  if (r.type === "monthly") return t(r.mday === -1 ? (zh ? "每月最后一天" : "Monthly, last day") : (zh ? `每月 ${r.mday} 号` : `Monthly, day ${r.mday}`));
   return at;
 }
 const schAt = s => { const a = String((s.rule && s.rule.at) || ""); return a.includes("T") ? a.split("T")[1] : a || "—"; };
-function schNext(s) {
+function schNext(s, noRan) {
   const zh = schZh();
   if (schFin(s)) return zh ? "已完成" : "Done";
   if (!s.enabled) return zh ? "已暂停" : "Paused";
   const nd = s.next && new Date(s.next); if (!nd || isNaN(nd)) return "—";
   const m = Math.round((nd - Date.now()) / 6e4);
   if (m <= 0) return zh ? "到点" : "due now";
-  if (m < 60) return zh ? `还有 ${m} 分钟` : `in ${m} min`;
+  if (m < 60) return zh ? `${m} 分钟后` : `in ${m} min`;
   const days = Math.round((new Date(nd.getFullYear(), nd.getMonth(), nd.getDate()) - new Date(new Date().setHours(0, 0, 0, 0))) / 864e5), t0 = hm(s.next);
-  if (days === 0) return zh ? `今天 ${t0}` : `today ${t0}`;
+  /* t-ri1115-a P4: later today = a countdown (「2:17 后」); already run today and next one not today = 「✓ 已跑」 (the rail's word) */
+  if (days === 0) { const hh = Math.floor(m / 60), mm = String(m % 60).padStart(2, "0"); return zh ? `${hh}:${mm} 后` : `in ${hh}:${mm}`; }
+  if (!noRan && schRanToday(s)) return zh ? "✓ 已跑" : "✓ Ran";
   if (days === 1) return zh ? `明天 ${t0}` : `tomorrow ${t0}`;
   if (days < 7) return zh ? `周${"日一二三四五六"[nd.getDay()]} ${t0}` : `${"Sun Mon Tue Wed Thu Fri Sat".split(" ")[nd.getDay()]} ${t0}`;
   return `${nd.getMonth() + 1}/${nd.getDate()} ${t0}`;
 }
 const schLastRun = s => { const rs = s.runs || []; return rs[rs.length - 1] || null; };
+const schRanToday = s => { const x = schLastRun(s), v = (x && (x.for || x.at)) || s.last || ""; const d = v && new Date(/T/.test(v) ? v : v + "T12:00:00"); return !!d && !isNaN(d) && dayKey(d) === dayKey(new Date()); };
 const schLate = s => { const x = schLastRun(s); return x && x.late > 0 ? x.late : 0; };
 const schRt = s => ((ST.meta && ST.meta.routines) || []).find(r => r.schedule === s.id || (s.routine && r.id === s.routine)) || null;
 function schWho(s) {
@@ -152,7 +157,7 @@ function schRow(s) {
   const sw = fin ? "" : `<button type="button" class="rs-tg sc-tg" data-sct="${esc(s.id)}" role="switch" aria-checked="${!!s.enabled}" aria-label="${s.enabled ? (zh ? "暂停" : "Pause") : (zh ? "开启" : "Turn on")}"><i></i></button>`;
   return `<div class="rs-row sc-row${s.enabled ? "" : " rs-off"}${fin ? " sc-fin" : ""}" data-sc="${esc(s.id)}"${it ? ` data-item="${esc(it)}"` : ""}>
       <div class="rs-t">${esc(schAt(s))}</div>
-      <div class="rs-m"><div class="rs-n">${a ? av(a, "rs-av", it || undefined) : ""}<b>${esc(schName(s, a))}</b></div><div class="rs-s"><span class="sc-k ${s.kind === "remind" ? "rm" : "tk"}">${kind}</span>${late ? `<span class="sc-late">${zh ? `迟到 ${late} 分` : `late ${late}m`}</span>` : ""}${a ? esc(aname(a)) + " · " : ""}${esc(schRule(s.rule))}</div></div>
+      <div class="rs-m"><div class="rs-n">${a ? av(a, "rs-av", it || undefined) : ""}<b>${esc(schName(s, a))}</b></div><div class="rs-s"><span class="sc-k ${s.kind === "remind" ? "rm" : "tk"}">${kind}</span>${late ? `<span class="sc-late">${zh ? `迟到 ${late} 分` : `late ${late}m`}</span>` : ""}${a ? esc(aname(a)) + " · " : ""}${esc(schRule(s.rule, true))}</div></div>
       <div class="rs-r"><div class="sc-ctl">${sw}<button type="button" class="sc-more" data-scm="${esc(s.id)}" aria-label="${zh ? "更多操作" : "More"}" aria-haspopup="menu"><svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><circle cx="3.5" cy="8" r="1.4"/><circle cx="8" cy="8" r="1.4"/><circle cx="12.5" cy="8" r="1.4"/></svg></button></div><span class="rs-nx">${esc(schNext(s))}</span></div>
       ${fin ? "" : schDots(s, r)}${schLastLine(s, r)}</div>`;
 }
@@ -218,7 +223,7 @@ function schToggle(b) {
   b.setAttribute("aria-checked", String(!on)); b.disabled = true;
   if (row) { row.classList.toggle("rs-off", on); const nx = row.querySelector(".rs-nx"); if (nx && on) nx.textContent = zh ? "已暂停" : "Paused"; }
   api(on ? "schedule_pause" : "schedule_resume", { schedule: s.id })
-    .then(() => { const n = schById(s.id); toast(on ? (zh ? "已暂停 · 到点不会再触发" : "Paused") : (zh ? `已开启 · 下次 ${n ? schNext(n) : ""}` : `On · next ${n ? schNext(n) : ""}`)); })
+    .then(() => { const n = schById(s.id); toast(on ? (zh ? "已暂停 · 到点不会再触发" : "Paused") : (zh ? `已开启 · 下次 ${n ? schNext(n, true) : ""}` : `On · next ${n ? schNext(n, true) : ""}`)); })
     .catch(() => { b.setAttribute("aria-checked", String(on)); if (row) row.classList.toggle("rs-off", !on); renderPage(); })
     .finally(() => { b.disabled = false; });
 }
@@ -277,6 +282,15 @@ function wireSchedule() {
     if (e.target.closest("[data-sc-undo]")) { e.stopPropagation(); schUndo(); }
   });
   addEventListener("pagehide", () => schDelCommit(true));
+  /* t-ri1115-a P4: the countdown moves with the clock even when no poll re-renders the page (long poll stays quiet). Only the
+     .rs-nx text is touched; the row's _h stays as drawn, so the next poll's patch still sees the change and swaps the row. */
+  setInterval(() => {
+    if (document.hidden) return;
+    document.querySelectorAll("#pagebody .sc-page .sc-live > [data-sc]").forEach(el => {
+      const s = schById(el.dataset.sc), nx = el.querySelector(".rs-r > .rs-nx"); if (!s || !nx) return;
+      const v = schNext(s); if (nx.textContent !== v) nx.textContent = v;
+    });
+  }, 20000);
 }
 
-export { ongoingPage, SCH, SCH_HOLD, schZh, schAll, schFin, schRule, schAt, schNext, schLastRun, schLate, schRt, schWho, schName, schDots, schLastLine, schRow, schSort, schedPage, schPatch, schById, schToggle, schMenu, schUndoBar, schUndoHide, schDelStart, schDelCommit, schUndo, wireSchedule };
+export { ongoingPage, SCH, SCH_HOLD, schZh, schAll, schFin, schRule, schAt, schNext, schLastRun, schRanToday, schLate, schRt, schWho, schName, schDots, schLastLine, schRow, schSort, schedPage, schPatch, schById, schToggle, schMenu, schUndoBar, schUndoHide, schDelStart, schDelCommit, schUndo, wireSchedule };

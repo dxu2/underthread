@@ -1,6 +1,6 @@
 """Settings -> System -> Updates (t-oss-struct S5). GET /api/update: version, the last check, what would make an update
-wait, the running update's steps and whether a rollback is possible. POST /api/update {"op": "check" | "apply" |
-"rollback"}: starts tools/update.py in its own process group (it restarts this server; keepalive / launchd bring the new
+wait, the running update's steps, whether a rollback is possible and whether the server needs a restart (its Python changed on
+disk since it started). POST /api/update {"op": "check" | "apply" | "rollback" | "restart"}: starts tools/update.py in its own process group (it restarts this server; keepalive / launchd bring the new
 one up) and answers at once; the page polls GET for the steps. The daily check runs in api/loops.py (update_check_loop)."""
 import datetime as dt
 import importlib.util
@@ -73,7 +73,18 @@ def view():
                      if last_ok and head == last_ok.get("to") else None),
         "last": h[-1] if h else None,
         "auto_check": (CONFIG.get("update") or {}).get("check", True) is not False,
+        "restart": _restart_view(),
     }
+
+
+def _restart_view():
+    """t-iter-upgrade: {"needed": bool, "changed": [...]} from api/routes/health.code_changed (files changed since start)."""
+    try:
+        from api.routes.health import code_changed
+        ch = code_changed()
+    except Exception:  # noqa: BLE001
+        ch = []
+    return {"needed": bool(ch), "changed": ch[:8], "count": len(ch)}
 
 
 def spawn(op):
@@ -97,13 +108,13 @@ def _get(h, u, q):
 @route("POST", "/api/update")
 def _post(h, u, body):
     op = body.get("op")
-    if op not in ("check", "apply", "rollback"):
-        return h._send(400, {"error": "op must be check, apply or rollback"})
+    if op not in ("check", "apply", "rollback", "restart"):
+        return h._send(400, {"error": "op must be check, apply, rollback or restart"})
     with _U["lock"]:
         if time.time() - _U["spawned"] < 3 or U().running():
             return h._send(409, {"error": "an update is already running"})
         if op != "check":
-            b = [x for x in _blockers() if x["code"] != "running"]
+            b = [x for x in _blockers() if x["code"] != "running" and not (op == "restart" and x["code"] == "agents")]   # a restart does not stop teammates
             if b:
                 return h._send(409, {"error": "not now", "blockers": b})
         spawn(op)

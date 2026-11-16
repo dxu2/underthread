@@ -169,6 +169,12 @@ html[data-theme="white"][data-ut][data-ut="light-warm"] ::selection { background
 html[data-theme="white"][data-ut][data-ut="light-warm"] .card { --card-bg: var(--panel); }
 html[data-theme="white"][data-ut][data-ut="light-warm"] .roster > .rc, html[data-theme="white"][data-ut][data-ut="light-warm"] .roster > .rc:hover { --rc-bg: var(--panel); }
 html[data-theme="white"][data-ut][data-ut="light-warm"] .hd { background: var(--panel); border-color: var(--line2); }
+/* t-ri1115-a P1: the card detail was still the old white theme's #fff (08-white-theme.css). Desk: a sheet of --panel paper floating over
+   the --bg page; phone (full screen): the same --bg as every other page. No grain: the texture layers keep the drawer face plain. */
+html[data-theme="white"][data-ut][data-ut="light-warm"] #drawer { background: var(--panel); }
+@media (max-width: 760px) { html[data-theme="white"][data-ut][data-ut="light-warm"] #drawer { background: var(--bg); } }
+/* code blocks were the old white theme's cool grey #f5f5f5 too: warm --panel2 on the cream paper */
+html[data-theme="white"][data-ut][data-ut="light-warm"] .md pre.code { background: var(--panel2); }
 /* t-m-tabbar-ig: full-width #tabbar band removed, see the end of this file */
 html[data-theme="white"][data-ut][data-ut="light-warm"] #right .msg .mb, html[data-theme="white"][data-ut][data-ut="light-warm"] .m-typing .mb { background: var(--bub); color: var(--ink); }
 html[data-theme="white"][data-ut][data-ut="light-warm"] #right .msg:not(.me) > .mb::before, html[data-theme="white"][data-ut][data-ut="light-warm"] .m-typing .mb::before { background: var(--bub); }
@@ -430,3 +436,7 @@ html[data-ut="light-warm"] .mc.sti .mc-k { color: #B4642A; }
    --warn（过期提示、待你看）和 --ok（在线）同理。 */
 html[data-theme="dark"][data-ut][data-ut="dark-warm"] { --dot: #F5493A; }
 html[data-theme="white"][data-ut][data-ut="light-warm"] { --accent: #84490A; --glow: #84490A; --selc: #84490A; --dotc: #84490A; --focus: #9A5A0E; --warn: #8A3D07; --warn-rgb: 138,61,7; --ok: #32632C; }
+
+/* t-ri1115-a P5: phone DM list / search avatars are round under Underthread, so the working ring is a circle too
+   (mobile/02-chat.css keeps the 6 / 8 px corners from the square-avatar days for the other skins) */
+html[data-ut] .cl-av .av, html[data-ut] .ms-av .av { --wk-r: 50%; }

@@ -203,9 +203,10 @@ html[data-theme]:not([data-glass="0"]) .dw-toc .toc-bar i { background: linear-g
 }
 /* press: glass.js (motion 4) scales the control with WAAPI on the `scale` property, .97 for buttons / tabs and --m-press-row (.98) for rows,
    and skips anything that already presses itself (an :active rule with transform / scale), so presses never stack. */
-/* hover for the controls that had none (audit, 11-04): rows get a 5% ink wash, bare text gets an underline */
+/* hover for the controls that had none (audit, 11-04): rows get a 5% ink wash, bare text gets an underline.
+   t-ui-polish-1115b: widget title rows (.wg-eb) left the list (user: a title needs no hover); body rows get an 8px outset, see polish-1115b.css */
 @media (hover: hover) {
-  :where(.sync, .wg-eb, .ru-tot, .ru-q, .wg h3[data-chat], .wg-job, .wg-wk, .rep-h, .lib-cap, .vd-h, .vc-sumh, .cal-i, .ch-more, .hd-srch):hover {
+  :where(.sync, .ru-tot, .ru-q, .wg h3[data-chat], .wg-job, .wg-wk, .rep-h, .lib-cap, .vd-h, .vc-sumh, .cal-i, .ch-more, .hd-srch):hover {
     background-color: color-mix(in srgb, var(--ink) 5%, transparent); border-radius: var(--r-xs); }
   :where(span.it[data-item], .lib-cap):hover { color: var(--ink); text-decoration: underline; text-decoration-color: var(--line3, currentColor); text-underline-offset: 3px; }
 }

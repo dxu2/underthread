@@ -1,0 +1,43 @@
+/* ===== t-ui-polish-1115b (user 11-15 13:17 / 13:19): small polish, loaded after the texture sheets so the chat panel's frame wins.
+   Item 1 (no hover wash on widget titles) lives in glass.css, item 3 (usage bar under the %) in widgets.css, item 4's JS in toast.js.
+   Rollback: drop this file's <link> in index.html (plus python3 tools/bak.py restore ui15b ... for the other files). ===== */
+
+/* 2. widget body rows: the hover wash now reaches 6px past the content (more would touch the leather stitch) (a box-shadow ring in the same 5% ink, so nothing moves) */
+@media (hover: hover) and (min-width: 761px) {
+  html[data-home="widgets"] :is(.wg-wk, .wg-job, .ru-tot):hover {
+    border-radius: 8px; box-shadow: 0 0 0 6px color-mix(in srgb, var(--ink) 5%, transparent); }
+}
+
+/* 4. swipe to dismiss: no text selection or image drag while a card / the pill follows the pointer */
+#wtoasts .wt, #toast { touch-action: pan-y; -webkit-user-select: none; user-select: none; }
+#wtoasts .wt img { -webkit-user-drag: none; }
+#wtoasts .wt.sw-drag, #toast.sw-drag { transition: none !important; cursor: grabbing; }
+
+@media (min-width: 761px) {
+  /* 5. the chat column floats like the card detail: 14px off the edges, 26px corners, a hairline and a soft shadow.
+     Fold, drag-to-resize (.ch-grip sits on the panel's left edge) and the 761-1180px pop-over all keep working. */
+  #right { margin: 14px 14px 14px 0; border-radius: 26px; box-shadow: 0 0 0 1px var(--line2), 0 12px 34px rgba(0,0,0,.12); }
+  [data-theme="dark"] #right { box-shadow: 0 0 0 1px var(--line2), 0 16px 40px rgba(0,0,0,.4); }
+  body.chat-pop #right { top: 14px; right: 14px; bottom: 14px; margin: 0; border-left: 0; border-radius: 26px;
+    box-shadow: 0 0 0 1px var(--line2), -20px 0 56px rgba(0,0,0,.35), 0 0 0 100vmax rgba(0,0,0,.3); }
+  html[data-texture^="leather"] #right { outline: 1px solid var(--lt-groove); outline-offset: -9px; }
+  html[data-texture^="knit"] #right { outline: var(--kn-sw, 1.5px) dashed var(--kn-thread, var(--line3)); outline-offset: -9px; }
+
+  /* 6 + 7. the send plane and the ⌘↵ hint sit inside the field: one reserved line at the bottom of the textarea, hint left of the plane */
+  #right .ch-comp { position: relative; align-items: flex-end; padding-bottom: 14px; }
+  #right .ch-comp > .att { margin-bottom: 7px; }
+  #right .ch-comp textarea { min-height: 70px; padding: 11px 54px 32px 16px; scroll-padding-bottom: 32px; }
+  #right .ch-kb { right: 66px; bottom: 26px; z-index: 1; line-height: 14px; }
+  #right .ch-comp > .ch-send { position: absolute; right: 22px; bottom: 20px; z-index: 1; width: 34px; height: 34px; padding: 0; display: grid; place-items: center;
+    border: 0; border-radius: 50%; background: var(--accent); color: var(--accent-ink, #fff); cursor: pointer;
+    box-shadow: 0 2px 6px color-mix(in srgb, var(--accent) 35%, transparent); }
+  #right .ch-comp > .ch-send svg { width: 17px; height: 17px; margin: 1px 1px 0 0; fill: none; stroke: currentColor; stroke-width: 1.9; stroke-linejoin: round; stroke-linecap: round; }
+  #right .ch-comp > .ch-send:hover { background: color-mix(in srgb, var(--accent) 86%, var(--ink)); box-shadow: 0 4px 12px color-mix(in srgb, var(--accent) 45%, transparent); }
+  #right .ch-comp > .ch-send:hover svg { translate: 1px -1px; }
+  #right .ch-comp > .ch-send svg { transition: translate var(--m-fast, .18s) var(--m-ease, ease); }
+  /* nothing to send (empty field, no tile waiting) = a grey plane that ignores clicks */
+  #right:not(:has(.pending-att .ap-tile)) .ch-comp:has(textarea:placeholder-shown) > .ch-send {
+    background: color-mix(in srgb, var(--ink) 12%, transparent); color: var(--dim); box-shadow: none; pointer-events: none; }
+}
+@media (max-width: 760px) { #right .ch-comp > .ch-send { display: none; } }   /* the phone keeps its own send button (phone/composer.js) */
+@media (prefers-reduced-motion: reduce) { #right .ch-comp > .ch-send svg { transition: none; } }

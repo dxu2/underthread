@@ -62,3 +62,12 @@ html[data-skin="ink"]:not([data-ut]):is([data-texture^="knit"], [data-texture^="
 .rv-list .ri13-grp { margin: 0 0 14px; padding: 14px 16px; border-radius: 22px; }
 .rv-list .ri13-acts { margin-left: 36px; gap: 8px; }
 .rv-list .ri13-o, .rv-list .ri13-x { padding: 7px 14px; font-size: var(--fs-14); }
+
+/* ===== t-ri1115-a P3: pages opened from 更多 get a small title row 「‹ 页名」 (web/js/phone/nav.js moreTitle). No masthead comes back:
+   one 40 px row, the round chevron in the same glass as the card detail's back button, then the page name. glass.js gives the press. ===== */
+#pagebody > .m-subh { display: flex; align-items: center; gap: 12px; margin: 0 0 14px; min-height: 40px; }
+#pagebody > .m-subh .m-subh-b { flex: none; display: grid; place-items: center; width: 40px; height: 40px; padding: 0; border-radius: 50%; background: var(--gl); border: 1px solid var(--glb); box-shadow: var(--gsh); color: var(--ink); cursor: pointer;
+  transition: background-color .2s, border-color .2s; }
+#pagebody > .m-subh .m-subh-b svg { width: 11px; height: 18px; }
+#pagebody > .m-subh h2 { margin: 0; min-width: 0; font: 600 var(--fs-20, 20px)/1.2 var(--f-sys); letter-spacing: .04em; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+@media (prefers-reduced-motion: reduce) { #pagebody > .m-subh .m-subh-b { transition: none; } }

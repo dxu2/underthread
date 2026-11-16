@@ -1,11 +1,13 @@
 #!/usr/bin/env python3
 """One entry point for every test. Stdlib only; the browser tests also need Node 18+ and npm.
 
-    python3 tests/run.py quick      leak scan, fixture check, unit tests                 (seconds)
+    python3 tests/run.py quick      leak scan, CHANGELOG lint, fixture check, unit tests (seconds)
     python3 tests/run.py unit       tests/unit (stdlib unittest)
     python3 tests/run.py api        tests/api: HTTP contract on a fixture server        (seconds)
     python3 tests/run.py e2e        tests/e2e/journeys in a real browser on a fixture server
-    python3 tests/run.py upgrade    tests/upgrade (skipped until tools/update.py exists)
+    python3 tests/run.py upgrade    tests/upgrade: the previous release updated to HEAD and rolled back
+                                    --worktree: to the working tree as it is now (nothing committed here)
+                                    --data live: on a copy of this install's data and local/ (not the fixture board)
     python3 tests/run.py all        scan + smoke + unit + api + e2e + upgrade
 
 Options:
@@ -61,6 +63,46 @@ def scan():
 
 def smoke():
     return sh([PY, os.path.join(TESTS, "smoke.py")], cwd=ROOT)
+
+
+def upgrade():
+    """tests/upgrade. --worktree: the working tree as it is now becomes HEAD of a throwaway clone (tracked changes, deletions
+    and untracked files git does not ignore, exactly what `git add -A` would commit), and the test runs there, so a change is
+    rehearsed before it is committed. --data live: on a copy of this install's data and local/ instead of the fixture board."""
+    env = dict(os.environ)
+    if opt("--data") == "live":
+        env["UPGRADE_DATA"] = ROOT
+    if "--worktree" not in sys.argv:
+        return subprocess.run([PY, "-m", "unittest", "discover", "-s", os.path.join(TESTS, "upgrade"), "-t", ROOT, "-p", "test_*.py"],
+                              cwd=ROOT, env=env).returncode
+    import tempfile
+    tmp = tempfile.mkdtemp(prefix="ut-worktree-")
+    src = os.path.join(tmp, "src")
+    try:
+        if sh(["git", "clone", "--quiet", "--no-hardlinks", ROOT, src]):
+            return 1
+        sh(["git", "checkout", "--quiet", "-B", "worktree", subprocess.run(["git", "rev-parse", "HEAD"], cwd=ROOT, capture_output=True, text=True).stdout.strip()], cwd=src)
+        ls = subprocess.run(["git", "ls-files", "-z", "--cached", "--others", "--exclude-standard"], cwd=ROOT, capture_output=True).stdout
+        for rel in filter(None, ls.decode("utf-8", "surrogateescape").split("\0")):
+            a, b = os.path.join(ROOT, rel), os.path.join(src, rel)
+            if os.path.lexists(a):
+                os.makedirs(os.path.dirname(b), exist_ok=True)
+                shutil.copy2(a, b, follow_symlinks=False)
+            elif os.path.lexists(b):
+                os.remove(b)
+        gid = dict(os.environ, GIT_AUTHOR_NAME="worktree", GIT_AUTHOR_EMAIL="worktree@example.com",
+                   GIT_COMMITTER_NAME="worktree", GIT_COMMITTER_EMAIL="worktree@example.com")
+        subprocess.run(["git", "add", "-A"], cwd=src, check=True)
+        subprocess.run(["git", "commit", "-q", "--allow-empty", "-m", "working tree (tests/run.py upgrade --worktree)"], cwd=src, env=gid, check=True)
+        print("rehearsing on", src, "HEAD = the working tree", flush=True)
+        return subprocess.run([PY, "-m", "unittest", "discover", "-s", os.path.join(src, "tests", "upgrade"), "-t", src, "-p", "test_*.py"],
+                              cwd=src, env=env).returncode
+    finally:
+        shutil.rmtree(tmp, ignore_errors=True)
+
+
+def changelog_lint():   # t-iter-upgrade: "## Unreleased" checked every day, not first on release day
+    return sh([PY, os.path.join(ROOT, "tools", "release.py"), "lint"], cwd=ROOT)
 
 
 def fixtures_check():
@@ -122,13 +164,13 @@ def e2e():
 
 
 SUITES = {
-    "quick": [("scan", scan), ("fixtures", fixtures_check), ("unit", lambda: unittest_dir("unit"))],
+    "quick": [("scan", scan), ("changelog", changelog_lint), ("fixtures", fixtures_check), ("unit", lambda: unittest_dir("unit"))],
     "unit": [("unit", lambda: unittest_dir("unit"))],
     "api": [("api", lambda: unittest_dir("api"))],
     "e2e": [("e2e", e2e)],
-    "upgrade": [("upgrade", lambda: unittest_dir("upgrade"))],
-    "all": [("scan", scan), ("smoke", smoke), ("fixtures", fixtures_check), ("unit", lambda: unittest_dir("unit")),
-            ("api", lambda: unittest_dir("api")), ("e2e", e2e), ("upgrade", lambda: unittest_dir("upgrade"))],
+    "upgrade": [("upgrade", upgrade)],
+    "all": [("scan", scan), ("changelog", changelog_lint), ("smoke", smoke), ("fixtures", fixtures_check), ("unit", lambda: unittest_dir("unit")),
+            ("api", lambda: unittest_dir("api")), ("e2e", e2e), ("upgrade", upgrade)],
 }
 
 

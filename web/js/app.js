@@ -6,7 +6,7 @@
 import { $, DRAFT, LS } from "./core/util.js";
 import { PLAT, ago, agoH, srvT, stageLabel, t, titleEn, tplEn, tplSeed, when, whenH } from "./core/i18n.js";
 import { ARCH, LP, REV, ST, UI, archAll, archIx, busy, byAct, grpOf, histAll, items, lpAbort, lpLoop, mailAll, mailUnread, onYou, onYouCard, poll, qBadge, queueOf, snapBoot, snoozed } from "./core/store.js";
-import { agent, aname, atitle, av, avatarUrl, hasArt, ringOnce, tintOf, wireAv, wsheet } from "./core/av.js";
+import { agent, aname, atitle, av, avatarUrl, avLoad, hasArt, ringOnce, tintOf, wireAv, wsheet } from "./core/av.js";
 import { api, closeModal, modalReject, openModal, toast, utEmpty, wireUi } from "./core/ui.js";
 import { go, pageAlias, route } from "./core/router.js";
 import { attachPick, vmSync, wireAttach } from "./views/attach.js";
@@ -135,7 +135,7 @@ window.App = {
   wsheet: (a, sz) => wsheet(a, sz),   /* t-chibi-anim (home.js .hd-mini / .dp-uti) */
   hasArt: (a, k) => hasArt(a, k), tintOf: a => tintOf(a),   /* t-hr-registry (home.js, widgets.js) */
   UI, get ST() { return ST; }, roll, modalStatus: () => modalStatus(), ghOpen: () => ghOpen(), ghLabel: () => ghLabel(), statusSummary: () => statusSummary(statusRows()), loadHealth: a => loadHealth(a), refreshPage: () => renderPage(), phaseFree, avatarUrl, t, items, agent, aname, atitle, av, when, whenH, agoH, ago, byAct, PLAT, stageLabel,
-  refresh: async () => { await poll(true); return !UI.down; },   // t-m2-c ④ pull-to-refresh: a forced full fetch; false = the server did not answer
+  refresh: async () => { await poll(true); if (!UI.down) await avLoad(true); return !UI.down; },   // t-m2-c ④ pull-to-refresh: a forced full fetch; false = the server did not answer; t-avatar-live-refresh: then reread the avatar manifests
   tablePv: s => tablePv(s),   // t-chat-table (mobile.js chat list preview)
   mailPv: (s, a) => mailPv(s, a),   /* t-ri1108-a P1 (widgets.js 新回复 rows) */
   srvT: (s, th) => srvT(s, th), titleEn: (s, it) => titleEn(s, it), tplSeed: d => tplSeed(d), tplEn: (j, v) => tplEn(j, v),   /* t-i18n-c (market.js) */   /* t-i18n-b: server-written zh -> en at display (transfer.js, market.js) */

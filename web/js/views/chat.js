@@ -86,13 +86,15 @@ function buildChat() {
     <button class="ch-fold" title="${UI.lang === "en" ? "Collapse" : "收起 / 展开"}"><span></span></button>
     <div class="ch-head"><div class="ch-who"></div>${orn(160)}<div class="crs-wrap"><div class="ch-roster"></div><button type="button" class="crs-a crs-prev" tabindex="-1" aria-label="${UI.lang === "en" ? "Scroll left" : "向左"}"><span></span></button><button type="button" class="crs-a crs-next" tabindex="-1" aria-label="${UI.lang === "en" ? "Scroll right" : "向右"}"><span></span></button></div></div><div class="ch-msgs"></div>
     <div class="pending-att" style="padding:0 16px"></div>
-    <div class="ch-comp"><button type="button" class="att" title="${attTitle()}" aria-label="${UI.lang === "en" ? "Attach" : "添加附件"}">${ATT_IC}</button><input type="file" multiple hidden><textarea rows="1"></textarea><span class="ch-kb" aria-hidden="true">${UI.lang === "en" ? "⌘/Ctrl ↵ send · ↵ new line" : "⌘/Ctrl ↵ 发送 · ↵ 换行"}</span></div>`;
+    <div class="ch-comp"><button type="button" class="att" title="${attTitle()}" aria-label="${UI.lang === "en" ? "Attach" : "添加附件"}">${ATT_IC}</button><input type="file" multiple hidden><textarea rows="1"></textarea><span class="ch-kb" aria-hidden="true">${UI.lang === "en" ? "⌘/Ctrl ↵ send · ↵ new line" : "⌘/Ctrl ↵ 发送 · ↵ 换行"}</span><button type="button" class="ch-send" aria-label="${UI.lang === "en" ? "Send" : "发送"}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.5 3.5 3.6 10.4l6.6 2.9 2.9 6.6z"/><path d="m10.2 13.3 4.6-4.6"/></svg></button></div>`;
   const ta = $("textarea", r), fi = $("input[type=file]", r);
   const showAtt = () => attTiles($(".pending-att", r), chatAtt, showAtt);   // ui19
   const add = wireUploads(ta, chatAtt, showAtt);
   ta.addEventListener("input", () => { if (!ta._dmLoad) DRAFT.set("dm:" + UI.chat, ta.value); });   // t-draft-keep
   $(".ch-comp button", r).onclick = () => fi.click();
   fi.onchange = () => { add(Array.from(fi.files)); fi.value = ""; };
+  /* t-ui-polish-1115b: the paper plane = the same ⌘↵ path below (empty field + no attachment = no-op; the CSS greys it out then) */
+  $(".ch-send", r).onclick = () => { ta.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", metaKey: true, ctrlKey: true, bubbles: true })); ta.focus(); };
   ta.addEventListener("input", () => deskFit(ta, 200));   /* t-hdr-trim ⑨ (was height:auto, which jumped to two rows on the first letter) */   // jit: on the phone mobile.js fit() is the only owner of this height (a second measure here flushed height:auto = 62px and re-animated it on every keystroke)
   ta.addEventListener("keydown", async e => {
     if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
@@ -355,7 +357,8 @@ function renderChat() {
   const r = $("#right");
   /* t-ui-fix-r2 B04: switching 界面语言 without a reload left sender names and the ⌘/Ctrl hint in the old language (the message cache kept the old HTML) */
   if (chatLang !== UI.lang) { if (chatLang) { chatRenderedFor = null; const kb = $(".ch-kb", r); if (kb) kb.textContent = UI.lang === "en" ? "⌘/Ctrl ↵ send · ↵ new line" : "⌘/Ctrl ↵ 发送 · ↵ 换行";
-    const at = $(".ch-comp .att", r); if (at) { at.title = attTitle(); at.setAttribute("aria-label", UI.lang === "en" ? "Attach" : "添加附件"); } } chatLang = UI.lang; }
+    const at = $(".ch-comp .att", r); if (at) { at.title = attTitle(); at.setAttribute("aria-label", UI.lang === "en" ? "Attach" : "添加附件"); }
+    const sd = $(".ch-comp .ch-send", r); if (sd) sd.setAttribute("aria-label", UI.lang === "en" ? "Send" : "发送"); } chatLang = UI.lang; }
   if (!ST.agents[UI.chat]) UI.chat = "manager";
   if (firstBuild) chatDraftLoad();   // t-draft-keep: restore this partner's unsent text after a reload
   const a = agent(UI.chat);

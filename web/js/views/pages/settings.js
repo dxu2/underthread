@@ -92,13 +92,20 @@ function stUpdate(en) {
   let rows = stRow(`${T("当前版本", "Version")} v${H(d.version)}`, `<span class="upd-c">${H(d.commit)}</span> · ${sub}`,
     `<em class="st-act" aria-hidden="true">${T("检查更新", "Check")}</em>`, `data-upd="check"` + (run ? ' aria-disabled="true"' : ""));
   if (run) {
-    rows += `<div class="st-row upd-run" role="status"><span class="st-tx"><b>${run.op === "rollback" ? T("正在回退…", "Going back…") : T("正在更新…", "Updating…")}</b><small>${H(run.step)}</small></span><span class="upd-spin" aria-hidden="true"></span></div>`;
+    rows += `<div class="st-row upd-run" role="status"><span class="st-tx"><b>${run.op === "rollback" ? T("正在回退…", "Going back…") : run.op === "restart" ? T("正在重启…", "Restarting…") : T("正在更新…", "Updating…")}</b><small>${H(run.step)}</small></span><span class="upd-spin" aria-hidden="true"></span></div>`;
   } else if (d.available) {
     rows += stRow(`${T("有新版 ", "New version ")}v${H(c.latest)}`, why ? `${T("先等一下：", "Waiting: ")}${H(why)}`
       : T("先在一份副本上试跑，再换到新版；数据、设置和 local/ 都保留，出问题会自己退回", "Tried on a copy first, then switched; your data, settings and local/ stay, and it goes back by itself if anything fails"),
       `<em class="st-act" aria-hidden="true">${T("更新", "Update")}</em>`, `data-upd="apply"` + dis);
     const notes = (d.notes || []).map(n => `<li><b>v${H(n.version)}</b> <span>${H(n.date)}</span>${updHeads(n.text).map(h => `<i>${H(h)}</i>`).join("")}</li>`).join("");
     if (notes) rows += `<div class="upd-notes${UPD.notes ? " open" : ""}"><button type="button" class="upd-nt" data-upd-notes aria-expanded="${UPD.notes}">${T("这次更新了什么", "What's new")} <em aria-hidden="true">›</em></button>${UPD.notes ? `<ul>${notes}</ul>` : ""}</div>`;
+  }
+  const rs = d.restart || {};   /* t-iter-upgrade: the server's Python changed on disk (a git pull, an edit) since it started */
+  if (!run && rs.needed) {
+    const rwhy = updWhy((d.blockers || []).filter(x => x.code !== "running" && x.code !== "agents"), en);
+    rows += stRow(T("服务端代码已更新，重启后生效", "Server code changed; restart to use it"), rwhy ? `${T("先等一下：", "Waiting: ")}${H(rwhy)}`
+      : T(`${rs.count} 个文件变了（${(rs.changed || []).slice(0, 3).join("、")}${rs.count > 3 ? "…" : ""}）。重启几秒钟，正在干活的队友不受影响`, `${rs.count} file${rs.count > 1 ? "s" : ""} changed (${(rs.changed || []).slice(0, 3).join(", ")}${rs.count > 3 ? "…" : ""}). Takes a few seconds; teammates at work are not affected`),
+      `<em class="st-act" aria-hidden="true">${T("重启", "Restart")}</em>`, `data-upd="restart"` + (rwhy ? ' aria-disabled="true"' : ""));
   }
   if (!run && d.rollback) rows += stRow(`${T("退回 ", "Go back to ")}v${H(d.rollback.version)}`, why ? `${T("先等一下：", "Waiting: ")}${H(why)}`
     : T("代码回到上一个版本，数据不动", "The code goes back to the previous version; your data stays"), `<em class="st-act" aria-hidden="true">${T("退回", "Go back")}</em>`, `data-upd="rollback"` + dis);
@@ -114,12 +121,13 @@ function updClick(e) {
   const op = b.dataset.upd, en = UI.lang === "en", d = UPD.d || {};
   if (op === "apply" && !confirm(en ? `Update to v${(d.check || {}).latest}? The dashboard restarts once (a few seconds).` : `更新到 v${(d.check || {}).latest}？看板会重启一次（几秒钟）。`)) return;
   if (op === "rollback" && !confirm(en ? `Go back to v${(d.rollback || {}).version}? The dashboard restarts once.` : `退回到 v${(d.rollback || {}).version}？看板会重启一次。`)) return;
+  if (op === "restart" && !confirm(en ? "Restart the dashboard now? It is back in a few seconds." : "现在重启看板？几秒钟就回来。")) return;
   b.setAttribute("aria-disabled", "true");
   fetch("/api/update", { method: "POST", headers: { "Content-Type": "application/json", "X-Underthread": "1" }, body: JSON.stringify({ op }) })
     .then(r => r.json().then(j => ({ ok: r.ok, j })))
     .then(({ ok, j }) => {
       if (!ok) toast((en ? "Not now: " : "现在不行：") + (j.blockers ? updWhy(j.blockers, en) : j.error || ""), true);
-      else toast(op === "check" ? (en ? "Checking…" : "正在检查…") : op === "apply" ? (en ? "Updating… the dashboard restarts in a moment" : "开始更新…看板稍后会重启") : (en ? "Going back…" : "开始退回…"));
+      else toast(op === "check" ? (en ? "Checking…" : "正在检查…") : op === "apply" ? (en ? "Updating… the dashboard restarts in a moment" : "开始更新…看板稍后会重启") : op === "restart" ? (en ? "Restarting…" : "正在重启…") : (en ? "Going back…" : "开始退回…"));
     })
     .catch(err => toast(String(err), true))
     .finally(() => { UPD.t = 0; setTimeout(() => loadUpdate(0), 800); });
