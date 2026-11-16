@@ -25,7 +25,8 @@
   const starters = t => (t.starters || []).map((s, i) => en() && (t.starters_en || [])[i] || s);
 
   async function load(force) {
-    if (MK.busy || (!force && MK.data && Date.now() - MK.at < 60e3)) return;
+    if (MK.busy) { if (force) MK.again = true; return; }   /* t-oss-gen-s4a-wire: a forced load during another one re-runs after it (hrFirst saw the pre-hire roster) */
+    if (!force && MK.data && Date.now() - MK.at < 60e3) return;
     MK.busy = true;
     try {
       const r = await fetch("/api/templates", { cache: "no-store" });
@@ -36,6 +37,7 @@
       if (App.tplSeed) App.tplSeed(MK.data);   /* t-i18n-c: English job names for old interview cards */
     } catch (e) { MK.err = String(e.message || e); }
     MK.busy = false; MK.at = Date.now();
+    if (MK.again) { MK.again = false; return load(true); }
     if (App.UI.page === "market") App.renderPage();
   }
   async function hireApi(body) {
@@ -179,6 +181,10 @@
     const ps = MK.pre || []; if (!ps.length) return "";
     return `<div class="mk-pre"><span class="mk-pre-l">${L("整队预设", "Team presets")}</span>${ps.map(p => `<button type="button" class="mk-pre-b${p.current ? " on" : ""}" data-mk-pre="${esc(p.key)}"${p.current ? ` aria-current="true" disabled` : ""}>${esc(preLabel(p))}<b>${p.current ? L("当前", "current") : p.roles.length + L(" 人", "")}</b></button>`).join("")}<small>${L("一次换整支队伍，先看预演再确认", "Swap the whole crew; you see a dry run first")}</small></div>`;
   }
+  async function preOpen(key) {   /* t-oss-gen-s4a-wire: fresh who-leaves list on open; a hire writes roster.json seconds before /api/hire returns */
+    try { const r = await fetch("/api/presets", { cache: "no-store" }); if (r.ok) MK.pre = (await r.json()).presets || []; } catch (_) {}
+    const p = (MK.pre || []).find(x => x.key === key); if (p && !p.current) preSheet(p);
+  }
   function preSheet(p) {
     const name = id => { const a = (App.ST.agents || {})[id]; return a ? App.aname(a) : id; };
     const chip = (t, cls) => `<span class="mk-pre-r${cls ? " " + cls : ""}">${esc(t)}</span>`;
@@ -291,7 +297,7 @@
     }
     if (!pg) return;
     const pb = e.target.closest("[data-mk-pre]");
-    if (pb) { const p = (MK.pre || []).find(x => x.key === pb.dataset.mkPre); if (p && !p.current) preSheet(p); return; }
+    if (pb) { preOpen(pb.dataset.mkPre); return; }
     const c = e.target.closest("[data-mk-cat]");
     if (c) { MK.cat = c.dataset.mkCat; pg.querySelectorAll("[data-mk-cat]").forEach(b => { const on = b === c; b.classList.toggle("on", on); b.setAttribute("aria-selected", on); });
       const g = $(".mk-grid", pg); g.innerHTML = gridHTML(); g.classList.remove("in"); void g.offsetWidth; g.classList.add("in"); return; }
