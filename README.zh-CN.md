@@ -47,7 +47,7 @@
 | <img src="avatars/seed/ut/manager.png" width="48" alt=""> | **Steward**（管家） | `manager` | 读你发的每条消息，整理成卡片、派出去，每天给你写日报。有活的时候摇一下小铃铛。 |
 | <img src="avatars/seed/ut/scout.png" width="48" alt=""> | **Scout**（研究员） | `scout` | 查资料、做对比、核事实，每条结论都带出处。放大镜不离手。 |
 | <img src="avatars/seed/ut/hr.png" width="48" alt=""> | **Thimble**（HR） | `hr` | 帮你招其余的人：就你想招的岗位问你五件事（几轮就完），写好新人的角色笔记等你批准。调岗也找她。 |
-| <img src="avatars/seed/ut/artist.png" width="48" alt=""> | **Brush**（设计） | `artist` | 图片、示意图和样稿，可以接你自己的 ComfyUI 机器。走过留下一点颜料。 |
+| <img src="avatars/seed/ut/artist.png" width="48" alt=""> | **Brush**（设计） | `artist` | 图片、示意图和样稿，走 ChatGPT 订阅里的 Codex，或者你自己的 ComfyUI 机器（见[出图](#出图codexcomfyui-或不出图)）。走过留下一点颜料。 |
 | <img src="avatars/seed/ut/smith.png" width="48" alt=""> | **Smith**（工具） | `smith` | 维护看板和工具，动手前先备份。没事的时候织毛线。 |
 
 缺人？去招聘市场（29 个岗位模板）：Thimble 问你五件事，新人就上岗，Brush 还会给他缝一枚自己的补丁头像。名字、职责、语气、人数都在 `roster.json` 里。见[组建你自己的小队](#组建你自己的小队)。
@@ -55,6 +55,17 @@
 ---
 
 ## 5 分钟跑起来
+
+**60 秒版**，适合已经登录好 Claude Code 的人：
+
+```bash
+git clone https://github.com/dxu2/underthread.git && cd underthread
+python3 server.py                                 # 终端 1：看板在 http://127.0.0.1:8765
+python3 make_agents.py                            # 终端 2：给每个队员生成一个子代理
+claude "Start the manager per manager.md"         # 终端 2：叫醒管家
+```
+
+然后在看板的聊天框里说一句话就行。只想看看？`python3 server.py --demo` 完全不需要 Claude Code。下面是同样的步骤，慢慢讲，每一步都写了你应该看到什么。
 
 ### 需要什么
 
@@ -169,11 +180,26 @@ Underthread 不在乎你做什么工作。管家、卡片、审核、规则、�
 3. **手改。** 改 `roster.json` 和 `local/roles/<id>.md`，然后跑 `python3 make_agents.py`。
 4. **整队换。** 市场顶上的预设条可以一键换整支队伍：`classic`（早先的七人通用队，多一个写作、一个规划、一个协调）或 `content-zh`（中文内容创作团队）。写入前先给你看会改什么，被替换的文件都先备份。命令行是 `python3 tools/preset.py apply <name>`。
 
+5. **内容创作者。** 「制作线」和「频道」两页（一条制作流水线，加上 B站 / YouTube / 小红书 的分平台预览）在新装时是关的。用 `content-zh` 预设、或者 `config.json` 里配了发布平台时会自动打开，也可以在 设置 → 制作线和频道 手动开。
+
 在 设置 → 角色 里还可以给队员**调岗**或让他**退休**。
 
 <p align="center"><img src="docs/img/market.png" alt="招聘市场：岗位卡片，每个三种性格，面试和直接雇按钮" width="720"></p>
 
 完整说明（所有 roster 字段和一个实例）：[docs/custom-crew.md](docs/custom-crew.md)（英文）。
+
+### 出图：Codex、ComfyUI 或不出图
+
+Brush、新队员的头像和几个工具都通过 `tools/image.py` 出图，后端由 `config.json` → `image.backend` 决定：
+
+| 设置 | 用什么 |
+|---|---|
+| `auto`（默认） | Codex 登录了 ChatGPT 就用 Codex；否则 `config.json` 有 `comfy` 段就用 ComfyUI；都没有就不出图 |
+| `codex` | Codex CLI（或 ChatGPT.app 里自带的），走你的 ChatGPT 订阅，从不用 API key |
+| `comfy` | 你自己的 ComfyUI 机器，经 `tools/comfy.py`，用 `image.comfy_workflow` 里的工作流。见[安装指南第 9 节](docs/setup-guide.md#9-comfyui-optional)（英文） |
+| `none` | 不出图。新队员用岗位模板自带的补丁头像，其他一切照常 |
+
+`python3 tools/image.py backend` 会告诉你现在用的是哪个、为什么。每张图都花额度或显卡时间，所以不会自动重试。
 
 ---
 

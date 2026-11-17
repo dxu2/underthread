@@ -47,7 +47,7 @@ The default crew starts small: five members, and you hire the rest as you need t
 | <img src="avatars/seed/ut/manager.png" width="48" alt=""> | **Steward** | `manager` | Reads every message you send, sorts it into cards, hands them out and writes you a daily report. Rings a tiny bell when there's work. |
 | <img src="avatars/seed/ut/scout.png" width="48" alt=""> | **Scout** | `scout` | Research, comparisons and fact-checks, with a source for every claim. Never goes anywhere without a magnifying glass. |
 | <img src="avatars/seed/ut/hr.png" width="48" alt=""> | **Thimble** | `hr` | Hires the rest of the crew: interviews you about the job you need filled (five things, a few turns), then writes the new teammate's notes for your OK. Also handles transfers. |
-| <img src="avatars/seed/ut/artist.png" width="48" alt=""> | **Brush** | `artist` | Images, diagrams and mockups, optionally through your own ComfyUI machine. Leaves a dab of paint behind. |
+| <img src="avatars/seed/ut/artist.png" width="48" alt=""> | **Brush** | `artist` | Images, diagrams and mockups, through Codex on your ChatGPT plan or your own ComfyUI machine (see [Pictures](#pictures-codex-comfyui-or-none)). Leaves a dab of paint behind. |
 | <img src="avatars/seed/ut/smith.png" width="48" alt=""> | **Smith** | `smith` | Keeps the dashboard and the tools running, and makes a backup before touching anything. Knits when nothing is on fire. |
 
 Short on someone? Open the Hiring market (29 job templates): Thimble interviews you about five things, the new teammate starts work, and Brush stitches them a patch of their own. Names, duties, tone and the number of teammates all live in `roster.json`. See [Make it your crew](#make-it-your-crew).
@@ -55,6 +55,17 @@ Short on someone? Open the Hiring market (29 job templates): Thimble interviews 
 ---
 
 ## Try it in 5 minutes
+
+**The 60-second version**, for people who already have Claude Code signed in:
+
+```bash
+git clone https://github.com/dxu2/underthread.git && cd underthread
+python3 server.py                                 # terminal 1: dashboard on http://127.0.0.1:8765
+python3 make_agents.py                            # terminal 2: one subagent per teammate
+claude "Start the manager per manager.md"         # terminal 2: wake up the steward
+```
+
+Then type a request into the dashboard's chat. Just looking? `python3 server.py --demo` needs no Claude Code at all. The rest of this section is the same thing, slowly, with what you should see at each step.
 
 ### What you need
 
@@ -169,11 +180,26 @@ Underthread itself doesn't care what kind of work you do. The steward, cards, re
 3. **By hand.** Edit `roster.json` and `local/roles/<id>.md`, then run `python3 make_agents.py`.
 4. **A whole team at once.** The strip at the top of the market swaps in a preset crew: `classic` (an earlier seven-person team with a writer, a planner and a coordinator) or `content-zh` (a Chinese content-creator team). It shows what changes before anything is written, and backs up every file it replaces. `python3 tools/preset.py apply <name>` does the same from the command line.
 
+5. **Content creators.** The Pipeline and Channels pages (a production line and per-platform previews for B站 / YouTube / 小红书) are off on a fresh install. They switch on by themselves with the `content-zh` preset or when `config.json` lists platforms, or by hand in Settings → Pipeline & Channels.
+
 Teammates can also be moved to a new job (**Transfer**) or retired (**Retire**) from Settings → Roster.
 
 <p align="center"><img src="docs/img/market.png" alt="The hiring market: job cards with three personalities each, Interview and Hire buttons" width="720"></p>
 
 Full guide, with every roster field and a worked example: [docs/custom-crew.md](docs/custom-crew.md).
+
+### Pictures: codex, ComfyUI or none
+
+Brush, avatars for new hires and a few tools draw through `tools/image.py`, which picks a backend from `config.json` → `image.backend`:
+
+| Setting | What it uses |
+|---|---|
+| `auto` (default) | Codex if it is signed in with ChatGPT, else ComfyUI if `config.json` has a `comfy` block, else none |
+| `codex` | The Codex CLI (or the one inside ChatGPT.app) on your ChatGPT subscription. Never an API key |
+| `comfy` | Your own ComfyUI machine, through `tools/comfy.py` and the workflow in `image.comfy_workflow`. See [setup guide §9](docs/setup-guide.md#9-comfyui-optional) |
+| `none` | No drawing. New hires get their job template's patch instead, and everything else still works |
+
+`python3 tools/image.py backend` tells you which one is active and why. Every picture costs quota or GPU time, so there are no automatic retries.
 
 ---
 
