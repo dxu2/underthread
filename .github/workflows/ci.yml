@@ -18,13 +18,13 @@ jobs:
         os: [ubuntu-latest, macos-latest]
         python: ["3.10", "3.12"]
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
         with:
           python-version: ${{ matrix.python }}
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
-          node-version: "20"
+          node-version: "24"
       - name: Leak scan
         run: python3 tests/scan.py
       - name: Smoke test
@@ -47,7 +47,8 @@ jobs:
     # WebKit on Linux differs from Safari on macOS / iOS in a few places, so it runs but does not block a merge
     # (continue-on-error) until it has been green for a week; Chromium blocks.
     name: e2e (${{ matrix.engine }}${{ matrix.engine == 'webkit' && ', non-blocking' || '' }})
-    runs-on: ubuntu-latest
+    # Pinned: ubuntu-latest moved to 26.04 in 11-2026 and Playwright has no browser builds for it yet.
+    runs-on: ubuntu-24.04
     continue-on-error: ${{ matrix.engine == 'webkit' }}
     timeout-minutes: 45
     strategy:
@@ -55,13 +56,13 @@ jobs:
       matrix:
         engine: [chromium, webkit]
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.12"
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
-          node-version: "20"
+          node-version: "24"
           cache: npm
           cache-dependency-path: tests/e2e/package-lock.json
       - name: Install Playwright
@@ -74,7 +75,7 @@ jobs:
         run: python3 tests/run.py e2e --engines ${{ matrix.engine }} --no-install
       - name: Keep the evidence
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: e2e-${{ matrix.engine }}
           path: tests/e2e/out/
@@ -86,10 +87,10 @@ jobs:
     name: upgrade (from last tag; placeholder until S5)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.12"
       - name: Upgrade tests

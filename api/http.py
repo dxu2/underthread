@@ -397,6 +397,15 @@ class QuietServer(ThreadingHTTPServer):
         self._qn = 0
         self._qt = time.time()
 
+    def server_bind(self):
+        """HTTPServer.server_bind asks socket.getfqdn(host) for a name nobody reads here; on macOS CI runners that reverse
+        lookup of 127.0.0.1 can stall past the smoke test's 20 s start wait (CI red 11-16..11-17). Same bind, no lookup."""
+        import socketserver
+        socketserver.TCPServer.server_bind(self)
+        host, port = self.server_address[:2]
+        self.server_name = host
+        self.server_port = port
+
     def handle_error(self, request, client_address):
         e = sys.exc_info()[1]
         if not isinstance(e, self.QUIET):

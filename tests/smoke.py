@@ -23,6 +23,7 @@ import json
 import re
 import os
 import shutil
+import signal
 import socket
 import subprocess
 import sys
@@ -85,11 +86,17 @@ def wait_up(port, timeout=20):
 class Server:
     def __init__(self, root, env=None, args=None):
         self.port = free_port()
-        e = dict(os.environ, PORT=str(self.port), NO_LOOPS="1")
+        e = dict(os.environ, PORT=str(self.port), NO_LOOPS="1", PYTHONFAULTHANDLER="1")
         e.update(env or {})
         self.log = open(os.path.join(root, "server-test.log"), "w")
         self.p = subprocess.Popen([PY, *(args or ["server.py"])], cwd=root, env=e, stdout=self.log, stderr=subprocess.STDOUT)
         if not wait_up(self.port):
+            if os.name == "posix" and self.p.poll() is None:   # a stuck start: faulthandler prints every thread's stack into the log
+                self.p.send_signal(signal.SIGABRT)
+                try:
+                    self.p.wait(5)
+                except subprocess.TimeoutExpired:
+                    pass
             self.stop()
             raise AssertionError("server did not come up:\n" + open(os.path.join(root, "server-test.log")).read()[-2000:])
 

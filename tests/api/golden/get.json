@@ -1371,7 +1371,7 @@
    "checked_at": null,
    "configured": false,
    "expires": null,
-   "helper": true,
+   "helper": "<volatile>",
    "method": "keychain",
    "note": "",
    "ok": null,
