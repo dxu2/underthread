@@ -6,7 +6,7 @@
 // ---------- pages ----------
 // t-visual-ink: date eyebrow above every page title (hidden unless html[data-skin="ink"])
 import { EN_SUB, PLAT, rtTag, stageLabel, t, whenH } from "../../core/i18n.js";
-import { UI, idleDoing, pauseL } from "../../core/store.js";
+import { UI, idleDoing, idleL } from "../../core/store.js";
 import { agent, aname, av } from "../../core/av.js";
 import { orn } from "../../core/ui.js";
 import { routineOf } from "../drawer.js";
@@ -29,7 +29,7 @@ function card(it, o) {   /* o.noCat (r-improve-1116 P3): on that category's own 
   const a = agent(it.owner), ws = workersOf(it.id);
   const kind = it.stage === "review" || awaitsUser(it) ? (it.kind === "task" ? "deliverable" : it.kind) : null;
   return `<div class="card${ws.length ? " wk-on" : ""}" data-item="${it.id}"${wkAttr(ws)}>${wkFx(ws)}
-    <div class="meta">${kind ? `<span class="tag ${kind}"><span class="gl" aria-hidden="true">◆</span>${t(kind)}</span>${waitTag(it)}` : `<span class="tag">${rtTag(it) || (idleDoing(it) ? pauseL() : stageLabel(it.stage))}</span>`}
+    <div class="meta">${kind ? `<span class="tag ${kind}"><span class="gl" aria-hidden="true">◆</span>${t(kind)}</span>${waitTag(it)}` : `<span class="tag">${rtTag(it) || (idleDoing(it) ? idleL(it) : stageLabel(it.stage))}</span>`}
       ${o && o.noCat ? "" : `<span>${t(it.category)}${it.category === "urgent" ? " ⚑" : ""}</span>`}
       <span>${whenH(it.created)}</span><span class="dim">${UI.lang === "en" ? "act." : "动态"} ${whenH(it.activity)}</span>
       <span>${(it.platforms || []).map(p => `<span class="tag pf">${PLAT[p] || p}</span>`).join(" ")}</span></div>

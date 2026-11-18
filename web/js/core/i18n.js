@@ -4,7 +4,7 @@
 
 
 // ---------- i18n ----------
-import { ST, UI, busy, grpOf, idleDoing, pauseL, snoozed } from "./store.js";
+import { ST, UI, busy, grpOf, idleDoing, idleL, pauseL, snoozed } from "./store.js";
 import { agent, aname } from "./av.js";
 import { routineOf, snzText } from "../views/drawer.js";
 import { render } from "../app.js";
@@ -100,7 +100,7 @@ const PLAT = new Proxy({}, {  // platform names follow the UI language
 const stageLabel = s => t(s === "review" ? "review_s" : s);
 // t-routine-btn: a routine's main card says 「暂停」 only when the routine is really paused; running, idle between runs, it says 每天 HH:MM
 const rtTag = i => { const r = i && i.stage !== "done" && !busy(i) && routineOf(i); return !r ? null : r.paused ? pauseL() : r.time ? (UI.lang === "en" ? `Daily ${r.time}` : `每天 ${r.time}`) : null; };
-const rowLabel = i => rtTag(i) || (snoozed(i) ? (UI.lang === "en" ? "Later · " : "稍后 · ") + snzText(i) : idleDoing(i) ? pauseL() : grpLabel(grpOf(i)));
+const rowLabel = i => rtTag(i) || (snoozed(i) ? (UI.lang === "en" ? "Later · " : "稍后 · ") + snzText(i) : idleDoing(i) ? idleL(i) : grpLabel(grpOf(i)));
 const grpLabel = s => s === "review" ? (UI.lang === "en" ? "On you" : "等你拍板") : stageLabel(s);
 
 // ---------- helpers ----------

@@ -4,8 +4,8 @@
 
 
 import { $, LS } from "../../core/util.js";
-import { PLAT, STAGES, ago, grpLabel, rowLabel, srvT, stageLabel, t, when, whenH, whoName } from "../../core/i18n.js";
-import { ST, UI, byAct, byCreated, grpOf, idleDoing, items, logsFor, mailAll, onYouCard, pauseL } from "../../core/store.js";
+import { PLAT, STAGES, ago, grpLabel, rowLabel, rtTag, srvT, stageLabel, t, when, whenH, whoName } from "../../core/i18n.js";
+import { ST, UI, byAct, byCreated, grpOf, idleDoing, idleL, items, logsFor, mailAll, onYouCard } from "../../core/store.js";
 import { aduty, agent, agents, aname, atitle, av, hasArt, ringOnce } from "../../core/av.js";
 import { UE_ART, api, toast, utEmpty } from "../../core/ui.js";
 import { route } from "../../core/router.js";
@@ -64,7 +64,7 @@ const PAGES = {
       let g = list.filter(i => grpOf(i) === s).sort(byAct); const total = g.length;
       const more = s === "done" && !UI.boardAll && !MOBQ.matches && total > 12 ? total - 12 : 0; if (more) g = g.slice(0, 12);   // t-web-audit 01: the done column shows the latest 12
       return `<div class="col" data-drop="${s}"><div class="col-h"><span>${grpLabel(s)}</span><span>${total}</span></div>${g.map(i =>
-        { const ws = workersOf(i.id); return `<div class="mini${ws.length ? " wk-on" : ""}" draggable="true" data-drag="${i.id}" data-item="${i.id}"${wkAttr(ws)}>${wkFx(ws)}<div class="t">${esc(i.title)}</div>${wkTag(ws)}<div class="m">${av(agent(i.owner), "sm", i.id)}${idleDoing(i) ? `<span class="tag">${pauseL()}</span>` : ""}<span>${t(i.category)}</span><span>${when(i.activity)}</span></div></div>`; }).join("")}${more ? `<button class="col-more" data-board-all>${UI.lang === "en" ? `${more} more · show all` : `还有 ${more} 张 · 展开`}</button>` : ""}</div>`;
+        { const ws = workersOf(i.id); return `<div class="mini${ws.length ? " wk-on" : ""}" draggable="true" data-drag="${i.id}" data-item="${i.id}"${wkAttr(ws)}>${wkFx(ws)}<div class="t">${esc(i.title)}</div>${wkTag(ws)}<div class="m">${av(agent(i.owner), "sm", i.id)}${idleDoing(i) ? `<span class="tag">${rtTag(i) || idleL(i)}</span>` : ""}<span>${t(i.category)}</span><span>${when(i.activity)}</span></div></div>`; }).join("")}${more ? `<button class="col-more" data-board-all>${UI.lang === "en" ? `${more} more · show all` : `还有 ${more} 张 · 展开`}</button>` : ""}</div>`;
     }).join("")}</div>`;
   },
   logs() {

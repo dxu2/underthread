@@ -52,6 +52,9 @@ const qBadge = (id, small) => { const n = queueOf(id).length; return !n ? "" : s
 const grpOf = i => busy(i) ? "doing" : snoozed(i) ? "todo" : (awaitsUser(i) || onYouCard(i)) ? "review" : idleDoing(i) ? "todo" : i.stage;   // ri1103-P2: a snoozed card waits under 待办
 // t-idle-pause-tag: such a card says 「暂停」 where a row shows its stage, so it stands apart from a real 待办
 const pauseL = () => UI.lang === "en" ? "Paused" : "暂停";
+// t-standing-paused: a standing card (ongoing / routine / target of a live 定时) is idle between runs by design, so it says 「常驻」, not 「暂停」.
+// A real pause (routine or 按需常驻 paused) still says 暂停 through rtTag, which every caller checks first.
+const idleL = i => standing(i) ? (UI.lang === "en" ? "Ongoing" : "常驻") : pauseL();
 const items = () => (ST.items || []).filter(i => !i.archived);
 const byAct = (a, b) => (b.activity || b.updated || "").localeCompare(a.activity || a.updated || "");
 const byCreated = (a, b) => (b.created || "").localeCompare(a.created || "");
@@ -247,4 +250,4 @@ async function pollOnce(force, wait, ctl) {
   }
 }
 
-export { UI, ST, REV, idleDoing, busy, snzReplied, snzEnd, snoozed, onYouCard, onYou, schedItem, standing, queueOf, qBadge, grpOf, pauseL, items, byAct, byCreated, FULL, FULLP, rehydrate, fullItem, ARCH, archIx, archKnown, archTitle, archFlag, archMerge, archItem, archAll, bootDone, SNAP, snapDb, snapSave, snapLoad, snapBoot, HIST, trimOf, chatBase, histSet, olderN, chatOlder, histAll, IXdirty, mailUnread, mailAll, mailOlder, logsFor, LP, lpAbort, lpLoop, poll, pollOnce };
+export { UI, ST, REV, idleDoing, busy, snzReplied, snzEnd, snoozed, onYouCard, onYou, schedItem, standing, queueOf, qBadge, grpOf, pauseL, idleL, items, byAct, byCreated, FULL, FULLP, rehydrate, fullItem, ARCH, archIx, archKnown, archTitle, archFlag, archMerge, archItem, archAll, bootDone, SNAP, snapDb, snapSave, snapLoad, snapBoot, HIST, trimOf, chatBase, histSet, olderN, chatOlder, histAll, IXdirty, mailUnread, mailAll, mailOlder, logsFor, LP, lpAbort, lpLoop, poll, pollOnce };
