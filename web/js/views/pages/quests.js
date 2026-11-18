@@ -20,13 +20,13 @@ function stageGroups(list, pg, quiet) {   /* quiet: no 「这里的活都做完�
   let html = "", live = 0;
   for (const s of ["review", "doing", "todo", "waiting"]) {
     const g = list.filter(i => grpOf(i) === s).sort(byAct); if (!g.length) continue;
-    live += g.length; html += `<div class="grp-h"><b>${grpLabel(s)}</b> · ${g.length}</div>` + g.map(card).join("");
+    live += g.length; html += `<div class="grp-h"><b>${grpLabel(s)}</b> · ${g.length}</div>` + g.map(i => card(i, { noCat: i.category === pg })).join("");
   }
   const done = list.filter(i => grpOf(i) === "done").sort(byAct); if (!done.length) return html;
   const en = UI.lang === "en", open = doneOpen(pg), shown = done.slice(0, 12);
   if (!live && !quiet) html += `<div class="df-empty">${en ? "All done here." : "这里的活都做完了"}</div>`;
   html += `<button type="button" class="df-row${live ? "" : " solo"}" data-donefold="${esc(pg)}" aria-expanded="${open}"><span>${en ? `Done · ${done.length}` : `已完成 · ${done.length} 张`}</span><i aria-hidden="true">▸</i></button>`;
-  if (open) html += `<div class="df-list">${shown.map(card).join("")}${done.length > shown.length ? `<div class="df-note">${en ? `Latest ${shown.length} shown · the rest are on the board` : `只列出最近 ${shown.length} 张，更早的在看板里`}</div>` : ""}</div>`;
+  if (open) html += `<div class="df-list">${shown.map(i => card(i, { noCat: i.category === pg })).join("")}${done.length > shown.length ? `<div class="df-note">${en ? `Latest ${shown.length} shown · the rest are on the board` : `只列出最近 ${shown.length} 张，更早的在看板里`}</div>` : ""}</div>`;
   return html;
 }
 function catPage(c) {

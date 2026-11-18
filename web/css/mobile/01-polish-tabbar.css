@@ -57,7 +57,7 @@ body.kb #page, body.kb #left { padding-bottom: 24px; }
 .card { padding: 15px 14px 14px 16px; margin-bottom: 10px; }
 .card .body h3 { font-size: var(--fs-16); margin-bottom: 5px; }
 .card .meta { gap: 3px 9px; }
-.card .meta > span:nth-child(4) { display: none; }  /* "activity" timestamp: one time is enough on a phone */
+.card .meta > span.dim { display: none; }  /* "activity" timestamp: one time is enough on a phone (r-improve-1116 P3: by class, the category span can be missing) */
 
 /* menu screen */
 .m-hero { padding: 18px 0 8px; }

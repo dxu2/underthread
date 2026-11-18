@@ -246,6 +246,9 @@ html[data-home="widgets"] .wg-usage .wg-eb:hover .ru-all { background: color-mix
 
     /* the tick stays short: a longer one would cut through the row above */
 
+/* r-improve-1116 P5: 非皮革下数字和单位之间留一个空格宽（「1 在忙」，同顶栏）；皮革下数字有自己的皮标，不加 */
+html[data-home="widgets"]:not([data-texture^="leather"]) .wg-eb .wnb-num + .wnb-unit { margin-left: .3em; }
+
 /* t-widget-num-b: 首页 widget 计数 = 小块深色皮标 + 一圈平针（选 B「皮标」，原型 work/t-home-yarn-concept/src/num.css）。
    只在桌面 + 皮革质感下生效；手机不变。每块颜色跟着该 widget 的皮色走（--wnb-t 线色 / --wnb-d 皮色）。 */
 html[data-home="widgets"] .wg-review  { --wnb-t:#F2955C; --wnb-d:#B4642A; }

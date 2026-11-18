@@ -25,12 +25,12 @@ function pageHead(k, extra = "") {
 
 
 /* t-card-fn-fix: restored from app.js.bak-hstrim1; t-home-style-trim dropped it, but stageGroups / catPage / the board still draw .card with it */
-function card(it) {
+function card(it, o) {   /* o.noCat (r-improve-1116 P3): on that category's own page the footer drops the category word; map(card) passes an index here, which has no .noCat */
   const a = agent(it.owner), ws = workersOf(it.id);
   const kind = it.stage === "review" || awaitsUser(it) ? (it.kind === "task" ? "deliverable" : it.kind) : null;
   return `<div class="card${ws.length ? " wk-on" : ""}" data-item="${it.id}"${wkAttr(ws)}>${wkFx(ws)}
     <div class="meta">${kind ? `<span class="tag ${kind}"><span class="gl" aria-hidden="true">◆</span>${t(kind)}</span>${waitTag(it)}` : `<span class="tag">${rtTag(it) || (idleDoing(it) ? pauseL() : stageLabel(it.stage))}</span>`}
-      <span>${t(it.category)}${it.category === "urgent" ? " ⚑" : ""}</span>
+      ${o && o.noCat ? "" : `<span>${t(it.category)}${it.category === "urgent" ? " ⚑" : ""}</span>`}
       <span>${whenH(it.created)}</span><span class="dim">${UI.lang === "en" ? "act." : "动态"} ${whenH(it.activity)}</span>
       <span>${(it.platforms || []).map(p => `<span class="tag pf">${PLAT[p] || p}</span>`).join(" ")}</span></div>
     <div class="body"><h3>${nrDot(it.id)}${esc(it.title)}</h3><p>${esc(mailPv(it.summary || ""))}</p>${wkTag(ws)}${askRow(it)}</div>

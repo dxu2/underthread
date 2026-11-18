@@ -13,7 +13,7 @@
   // ---------- copy (zh | en, follows App.UI.lang) ----------
   const COPY = {
     zh: { busy: n => `<b>${n}</b> 在忙`, rest: `都在休息 · ${REPORT} 日报`, rev: n => `${n} 等你`, team: "团队",
-      st: ["待你拍板", "进行中", "待办", "近 7 天交付"], wait: n => `${n} 件等你拍板`, oldest: d => `最久 ${d}`,
+      st: ["等你拍板", "进行中", "待办", "近 7 天交付"], wait: n => `${n} 件等你拍板`, oldest: d => `最久 ${d}`,
       m: n => `${n} 分钟`, hm: (h, m) => `${h} 时 ${m} 分`, h: n => `${n} 小时`, d: n => `${n} 天`,
       working: "工作中", resting: "休息中", chat: "点一下，和 TA 聊聊", since: (c, d) => `${c} 起 · ${d}`, mgr: "在线 · 看着信箱", online: "在线", ago: d => `${d}前活动`,
       aria: (nm, w, t, act) => `${nm}，${w}${t ? "：" + t : ""}。${act}`, tapOpen: "点按打开单子", tapChat: "点按打开私信", tapExp: "点按展开",
