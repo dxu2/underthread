@@ -155,7 +155,7 @@ Something not working? See [Troubleshooting](docs/troubleshooting.md). The long 
 
 - **On your phone, too.** Add the dashboard to your home screen and it runs like an app, with push notifications that respect quiet hours. See [Phone and push](docs/phone-and-push.md).
 
-  <p align="center"><img src="docs/img/phone.gif" alt="The phone app: switching tabs on the floating tab bar, long press for names, pull to refresh" width="300"></p>
+  <p align="center"><img src="docs/img/phone.gif" alt="The phone app: switching tabs on the floating tab bar, pull to refresh" width="300"></p>
 
 - **Schedules in one sentence.** "Remind me tomorrow at 9…" or "every weekday at 9, ask Scout for trends" becomes a schedule on the Schedules page, with on/off switches and a week of run history.
 - **Hiring market.** 29 job templates, three personalities each. HR interviews you first, or hire in one click.
