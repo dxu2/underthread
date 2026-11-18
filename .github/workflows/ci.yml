@@ -74,7 +74,7 @@ jobs:
         run: |
           npm ci --no-audit --no-fund
           npx playwright install --with-deps ${{ matrix.engine }}
-          sudo apt-get install -y --no-install-recommends fonts-noto-cjk
+          sudo apt-get install -y --no-install-recommends fonts-noto-cjk webp   # webp: cwebp for tools/avatar_sizes.py (avrefresh journey)
       - name: Journeys
         run: python3 tests/run.py e2e --engines ${{ matrix.engine }} --no-install
       - name: Keep the evidence
