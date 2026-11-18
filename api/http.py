@@ -34,19 +34,33 @@ def _gz_type(ctype):
 # 2) Browser guard on every POST, against cross-site requests: a request that carries Origin or Sec-Fetch-Site comes from a
 #    browser and must be same-origin AND carry X-Underthread: 1 (a custom header forces a CORS preflight, which this server never
 #    grants). Scripts, curl and the iPhone Shortcut send neither header and are not affected.
-_HOSTS = {"at": 0.0, "names": set()}
+_HOSTS = {"at": 0.0, "names": set(), "resolved": set(), "busy": False}
+LOOPBACK = {"127.0.0.1", "localhost", "::1"}
+
+
+def _resolve_hostname(hn):
+    """The addresses this machine's hostname resolves to. Runs in a thread: where the name is not in DNS (macOS CI runners,
+    some offline Macs) getaddrinfo waits on mDNS for many seconds, which stalled every request behind the Host check."""
+    got = set()
+    try:
+        for info in socket.getaddrinfo(hn, None):
+            got.add(str(info[4][0]).lower())
+    except OSError:
+        pass
+    _HOSTS.update(resolved=got, busy=False)
 
 
 def local_names():
     if time.time() - _HOSTS["at"] < 60:
-        return _HOSTS["names"]
-    names = {"127.0.0.1", "localhost", "::1"}
+        return _HOSTS["names"] | _HOSTS["resolved"]
+    names = set(LOOPBACK)
     try:
         hn = socket.gethostname().lower().rstrip(".")
         short = hn.split(".")[0]
         names |= {hn, short, short + ".local"}
-        for info in socket.getaddrinfo(hn, None):
-            names.add(str(info[4][0]).lower())
+        if not _HOSTS["busy"]:
+            _HOSTS["busy"] = True
+            threading.Thread(target=_resolve_hostname, args=(hn,), daemon=True).start()
     except OSError:
         pass
     try:   # the LAN address of the default route; connect() on UDP sends nothing
@@ -60,7 +74,7 @@ def local_names():
         pass
     names |= {str(h).lower().rstrip(".") for h in (CONFIG.get("allowed_hosts") or [])}
     _HOSTS.update(at=time.time(), names=names)
-    return names
+    return names | _HOSTS["resolved"]
 
 
 def host_name(h):
@@ -77,7 +91,7 @@ def host_ok(h):
     if not (h or "").strip():
         return True
     n = host_name(h)
-    return n in local_names() or n.endswith(".ts.net")
+    return n in LOOPBACK or n in local_names() or n.endswith(".ts.net")
 
 
 _GUARD_LOG = {"at": 0.0, "n": 0}

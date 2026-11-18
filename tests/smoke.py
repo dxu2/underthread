@@ -98,7 +98,7 @@ class Server:
                 except subprocess.TimeoutExpired:
                     pass
             self.stop()
-            raise AssertionError("server did not come up:\n" + open(os.path.join(root, "server-test.log")).read()[-2000:])
+            raise AssertionError("server did not come up:\n" + open(os.path.join(root, "server-test.log")).read()[-8000:])
 
     def stop(self):
         self.p.terminate()

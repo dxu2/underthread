@@ -29,6 +29,10 @@ jobs:
         run: python3 tests/scan.py
       - name: Smoke test
         run: python3 tests/smoke.py
+      - name: ffmpeg (the golden API test renders a template avatar)
+        run: |
+          command -v ffmpeg && exit 0
+          if [ "$RUNNER_OS" = Linux ]; then sudo apt-get update -q && sudo apt-get install -y -q --no-install-recommends ffmpeg; else brew install ffmpeg; fi
       - name: Fixtures, unit and API tests
         run: |
           python3 tests/e2e/fixtures/build.py --check
