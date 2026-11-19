@@ -21,7 +21,6 @@ Underthread runs on one machine for one person. Its safety rests on a few lines:
 
 Please don't open a public issue for a security problem.
 
-<!-- TODO(user): enable GitHub private vulnerability reporting on the repo, or give a contact email here. -->
-Use GitHub's **Report a vulnerability** button on the repository's Security tab. Include what you found, how to reproduce it, and which version or commit you tested. You should get a first answer within a week.
+Use GitHub's **Report a vulnerability** button on the repository's Security tab (GitHub private vulnerability reporting). The report is visible only to you and the maintainer; there is no email address to write to. Include what you found, how to reproduce it, and which version or commit you tested. You should get a first answer within a week.
 
 Supported version: the latest commit on `main`.

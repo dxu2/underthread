@@ -272,7 +272,7 @@ flowchart LR
 
 ## 许可
 
-代码采用 [MIT](LICENSE)。你接入的模型、字体、声音和图片各自保留原许可。自带字体（Nunito、Cinzel）采用 SIL Open Font License 1.1，许可文本在 `web/fonts/`。Underthread 的标志、徽章头像和质感贴图都是为本项目制作的，不含第三方作品。
+代码采用 [MIT](LICENSE)。你接入的模型、字体、声音和图片各自保留原许可。自带字体（Nunito、Cinzel）采用 SIL Open Font License 1.1，许可文本在 `web/fonts/`。Underthread 的标志、徽章头像、`templates/roles/` 下的岗位模板头像和 `web/` 下的质感贴图都是为本项目制作的，不含第三方作品，和代码一样采用 MIT。
 
 名字和标志用来识别本项目。如果你分发改过的分支，请换一个名字。
 
