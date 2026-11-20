@@ -39,7 +39,7 @@ from api.router import route, action, ME
 STEPS = ("board", "team", "wake", "say", "card", "decide")
 REQUIRED = STEPS
 OPTIONAL = ("codex", "chrome", "app", "look", "phone")
-CMD = 'claude "Start the manager per manager.md"'
+CMD = './start'   # t-first-run-simple: checks, starts or reuses the dashboard, then wakes the steward (tools/start.py)
 
 
 def _agents_ready():
