@@ -5,8 +5,7 @@
 
 .claude/settings.json runs it as an async PostToolUse hook on mcp__claude-in-chrome__* tools, so the first time any session in this
 folder really uses Claude in Chrome, meta.onboarding.chrome_at is written (once; every later call returns after one read of
-state.json). The hook payload on stdin is not read. Never fails the tool call: every error exits 0 quietly."""
-import json
+the state through core.store). The hook payload on stdin is not read. Never fails the tool call: every error exits 0 quietly."""
 import os
 import sys
 
@@ -19,15 +18,17 @@ def main(argv):
     if k not in FIELD:
         print("usage: onb_mark.py chrome", file=sys.stderr)
         return 2
-    try:
-        with open(os.path.join(ROOT, "state.json"), encoding="utf-8") as f:
-            ob = (json.load(f).get("meta") or {}).get("onboarding")
-        if isinstance(ob, dict) and ob.get(FIELD[k]):
-            return 0
-    except (OSError, ValueError):
-        return 0   # no board here (or mid-write): nothing to tick
     sys.path.insert(0, ROOT)
     from core import store as S
+    from core.paths import STATE
+    if not os.path.exists(STATE):
+        return 0   # no board here: nothing to tick (and never seed one from a hook)
+    try:
+        ob = (S.read().get("meta") or {}).get("onboarding")   # shared lock, the same reader as everything else
+    except (OSError, ValueError):
+        return 0
+    if isinstance(ob, dict) and ob.get(FIELD[k]):
+        return 0   # already ticked: one read and out
     with S.mutate() as st:
         ob = st["meta"].get("onboarding")
         if not isinstance(ob, dict):
