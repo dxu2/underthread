@@ -489,6 +489,8 @@ def _unacked_count():
 
 @route("GET", "/api/state")
 def _state(h, u, q):   # t-perf B: cached rev / body (see public_state_cached)
+    from api.routes import setup as SU
+    SU.note_phone(h)   # t-onb-polish: a phone through Tailscale Serve ticks the optional phone step (header check only; writes once)
     sync_roster()   # t-hr-registry: mtime check only; a roster edit shows up even when the watch loop is off (NO_LOOPS) or stuck
     rev, un = rev_unacked()
     # ri1105-P5: ?wait=N (<= 25) holds a "same" answer until rev or the inbox count moves, checked every 0.1 s (stat calls only:

@@ -587,6 +587,7 @@
     "/static/js/team.js?v=<h>",
     "/static/js/widgets.js?v=<h>",
     "/static/js/core/quickguide.js?v=<h>",
+    "/static/js/vendor/qrcode.js?v=<h>",
     "/static/js/onboard.js?v=<h>",
     "/static/js/toast.js?v=<h>",
     "/static/js/rolefiles.js?v=<h>",
@@ -720,6 +721,7 @@
     "/static/js/team.js": "/static/js/team.js?v=<h>",
     "/static/js/toast.js": "/static/js/toast.js?v=<h>",
     "/static/js/transfer.js": "/static/js/transfer.js?v=<h>",
+    "/static/js/vendor/qrcode.js": "/static/js/vendor/qrcode.js?v=<h>",
     "/static/js/viewer.js": "/static/js/viewer.js?v=<h>",
     "/static/js/views/attach.js": "/static/js/views/attach.js?v=<h>",
     "/static/js/views/cardref.js": "/static/js/views/cardref.js?v=<h>",
@@ -2484,6 +2486,7 @@
      "n": 3,
      "next": "team",
      "of": 6,
+     "opt": "<volatile>",
      "retired": false,
      "root": "<ROOT>",
      "steps": [
@@ -4134,6 +4137,7 @@
      "n": 5,
      "next": "team",
      "of": 6,
+     "opt": "<volatile>",
      "retired": false,
      "root": "<ROOT>",
      "steps": [
@@ -5382,6 +5386,7 @@
      "n": 3,
      "next": "team",
      "of": 6,
+     "opt": "<volatile>",
      "retired": false,
      "root": "<ROOT>",
      "steps": [

@@ -290,7 +290,7 @@ Not in this repository: voice calls with the steward (the author's own build has
 
 ## License
 
-Code is [MIT](LICENSE). Any models, fonts, voices and images you plug in keep their own licences. The bundled fonts (Nunito, Cinzel) are under the SIL Open Font License 1.1, with licence texts in `web/fonts/`. The Underthread logo, patch avatars, the job-template avatars under `templates/roles/` and the textures under `web/` were made for this project, contain no third-party artwork, and are MIT-licensed like the code.
+Code is [MIT](LICENSE). Any models, fonts, voices and images you plug in keep their own licences. The bundled fonts (Nunito, Cinzel) are under the SIL Open Font License 1.1, with licence texts in `web/fonts/`. The QR code generator in `web/js/vendor/qrcode.js` is Kazuhiko Arase's, MIT-licensed (from the qrcode-terminal package, Apache-2.0; notices in `web/js/vendor/qrcode.LICENSE.txt`). The Underthread logo, patch avatars, the job-template avatars under `templates/roles/` and the textures under `web/` were made for this project, contain no third-party artwork, and are MIT-licensed like the code.
 
 The name and logo identify this project. If you redistribute a modified fork, please give it a different name.
 
