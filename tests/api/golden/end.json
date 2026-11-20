@@ -2426,14 +2426,16 @@
      "from": 0,
      "ran": [
       "0001_baseline",
-      "0002_routines_log"
+      "0002_routines_log",
+      "0003_onboarding"
      ],
-     "to": 2
+     "to": 3
     }
    ],
+   "onboarding": {},
    "rev": 121,
    "routines_log": {},
-   "schema": 2,
+   "schema": 3,
    "stamina": {
     "at": "2026-01-20T10:00:00+00:00",
     "note": "cli",

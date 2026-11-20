@@ -79,7 +79,7 @@ class Golden(unittest.TestCase):
     @classmethod
     def scrub(cls, v):
         s = json.dumps(v, ensure_ascii=False, sort_keys=True)
-        s = s.replace(cls.s.root, "<ROOT>").replace(cls.s.dir, "<TMP>").replace(cls.tmp, "<TMP>").replace(str(cls.s.port), "<PORT>")
+        s = s.replace(os.path.realpath(cls.s.root), "<ROOT>").replace(cls.s.root, "<ROOT>")   # realpath first: on macOS /tmp is /private/tmp (meta.setup.root).replace(cls.s.dir, "<TMP>").replace(cls.tmp, "<TMP>").replace(str(cls.s.port), "<PORT>")
         return json.loads(s)
 
     @classmethod

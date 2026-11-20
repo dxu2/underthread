@@ -21,7 +21,7 @@
   const SIZES = new Proxy({}, { get: (_, k) => { const w = REG()(k); return w ? w.sizes : undefined; } });
   const allIds = () => window.UTExt ? UTExt.widgets().map(w => w.id) : [];
   /* the default layout: the core nine in this order, then any extension widget at its own size; 恢复默认 shows this */
-  const DEF_CORE = [["team", "m"], ["usage", "l"], ["review", "l"], ["busy", "l"], ["replies", "l"], ["today", "m"], ["week", "m"], ["ongoing", "m"], ["media", "m"]];
+  const DEF_CORE = [["setup", "w"], ["team", "m"], ["usage", "l"], ["review", "l"], ["busy", "l"], ["replies", "l"], ["today", "m"], ["week", "m"], ["ongoing", "m"], ["media", "m"]];
   const defL = () => [...DEF_CORE.filter(x => REG()(x[0])), ...(window.UTExt ? UTExt.widgets().filter(w => !w.core) : []).map(w => [w.id, w.size])];
   const DEF = { map: f => defL().map(f) };   // DEF.map(x => x.slice()) as before
   const KEY = "rt.widgets";
@@ -102,6 +102,9 @@
     const imgs = []; its.slice().sort((a, b) => ms(b.activity) - ms(a.activity)).forEach(i => [...(i.draft_attachments || []), ...(i.attachments || [])].forEach(p => { if (/\.(png|jpe?g|webp|gif)$/i.test(p) && !imgs.some(x => x.p === p) && imgs.length < 6) imgs.push({ p, it: i }); }));
     return { waiting, busy, nr, shipped, days, doing: live.filter(i => app.grpOf(i) === "doing").length, todo: live.filter(i => app.grpOf(i) === "todo").length, ongoing, rp, imgs };
   }
+  /* t-onboarding P0: gone() = the widget is retired (the 开工清单 once setup is done): no tile, no calm line, and 「添加小组件」 offers it,
+     whose click calls revive() to bring it back. A layout keeps its entry, so nothing has to be saved when it retires. */
+  const isGone = k => { const w = REG()(k); try { return !!(w && w.gone && w.gone()); } catch (e) { return false; } };
   const isEmpty = (k, D) => { const w = REG()(k); try { return !!(w && w.empty && w.empty(D)); } catch (e) { return false; } };
   const calmText = k => { const c = (REG()(k) || {}).calm || [nm(k), nm(k)]; return en() ? c[1] || c[0] : c[0]; };
   /* html(size, D, kit): kit = the helpers core widgets use (eb = the eyebrow line). A widget that throws draws a quiet line instead of breaking the home. */
@@ -235,13 +238,14 @@
     const L = load(), D = data(), calm = [], tiles = [];
     const count = { review: D.waiting.length, replies: D.nr.length, today: D.shipped.length };
     L.forEach(([k, s0], i) => {
+      if (isGone(k)) return;
       const s = !EDIT && s0 === "l" && count[k] != null && count[k] <= 2 ? "m" : s0;   // a big widget with one or two rows drops to M so the grid stays tight
       if (!EDIT && isEmpty(k, D)) { calm.push(calmText(k)); return; }
       const inner = EDIT && isEmpty(k, D) ? eb(k) + `<div class="wg-calm-in">${calmText(k)}</div>` : tileHTML(k, s, D);
       const multi = k === "busy" && D.busy.length > 1 ? " multi" : "";
       tiles.push([k, `<section class="wg wg-${k} sz-${s}${k === "busy" && !isEmpty(k, D) ? (document.documentElement.dataset.ut ? " utav" : " hero") + multi : ""}" data-wg="${k}">${inner}${EDIT ? editBar(k, s0, i, L.length) : ""}</section>`]);
     });
-    const hidden = allIds().filter(k => !L.some(x => x[0] === k));
+    const hidden = allIds().filter(k => !L.some(x => x[0] === k) || isGone(k));
     const P = { edit: EDIT, tiles,
       hd: `<div class="wg-hd">${calm.length ? `<span class="wg-calm">✓ ${calm.map(esc).join(" · ")}</span>` : ""}${A().snzLine ? A().snzLine() : ""}<span class="sp"></span>${EDIT ? `<button type="button" class="wg-btn" data-wg-reset>${en() ? "Reset" : "恢复默认"}</button>` : ""}<button type="button" class="wg-btn${EDIT ? " on" : ""}" data-wg-edit>${EDIT ? (en() ? "Done" : "完成") : (en() ? "Edit widgets" : "编辑小组件")}</button></div>`,
       tail: tail ? `<div class="wg-tail">${tail}</div>` : "",
@@ -267,7 +271,8 @@
     else if (t.dataset.wgReset != null) reset();
     else if (t.dataset.wgHide) { save(L.filter(x => x[0] !== t.dataset.wgHide));   /* t-ui-fix-r5 R5-04: a keyboard remove keeps focus on the next tile's − (or 完成) */
       if (document.activeElement === t) { const i = [...document.querySelectorAll("[data-wg-hide]")].indexOf(t); setTimeout(() => { const H = document.querySelectorAll("[data-wg-hide]"), n = H[Math.min(i, H.length - 1)] || document.querySelector("[data-wg-edit]"); if (n) n.focus({ preventScroll: true }); }, 80); } }
-    else if (t.dataset.wgAdd) { const x = [t.dataset.wgAdd, SIZES[t.dataset.wgAdd].includes("m") ? "m" : SIZES[t.dataset.wgAdd][0]]; if (REG()(x[0]).first) L.unshift(x); else L.push(x); save(L); }   /* t-rb-build: 团队交接 comes back first (first: true) */
+    else if (t.dataset.wgAdd) { const w = REG()(t.dataset.wgAdd); if (isGone(t.dataset.wgAdd) && w.revive) w.revive();   /* t-onboarding P0 */
+      if (!L.some(y => y[0] === t.dataset.wgAdd)) { const x = [t.dataset.wgAdd, SIZES[t.dataset.wgAdd].includes("m") ? "m" : SIZES[t.dataset.wgAdd][0]]; if (w.first) L.unshift(x); else L.push(x); save(L); } }   /* t-rb-build: 团队交接 comes back first (first: true) */
     else if (t.dataset.wgSize) { const [k, z] = t.dataset.wgSize.split(":"); const x = L.find(y => y[0] === k); if (x) x[1] = z; save(L); }
     else if (t.dataset.wgMove) { const [k, d] = t.dataset.wgMove.split(":"); const i = L.findIndex(y => y[0] === k), j = i + +d; if (i >= 0 && j >= 0 && j < L.length) { [L[i], L[j]] = [L[j], L[i]]; save(L); } }
     redraw();

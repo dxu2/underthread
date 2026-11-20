@@ -45,6 +45,7 @@ function stGeneral() {
     + (ut => { const st = ut ? stageSaved() : !!R.dataset.stage; return stRow(en ? "Stage background" : "舞台背景", stageSub(en, ut), stSw(st), `data-stage-tog aria-pressed="${st}"` + (ut ? ' aria-disabled="true"' : ""), "button").replace('class="st-row"', `class="st-row${ut ? " st-dis" : ""}"`); })(!!R.dataset.ut)
     + stRow(en ? "Power saving" : "省电模式", psSub(psNow()), stSw(psNow()), `data-power-tog aria-pressed="${psNow()}"`)
     + spRow(en)
+    + (window.Onboard ? Onboard.settingsRow(en) : "")   /* t-onboarding P0: quick phrases above the steward's chat field */
     + stRow(en ? "Language" : "界面语言", "", stSeg("lang", [["zh", "中文", "中文"], ["en", "English", "English"]], UI.lang, "data-lang-set"), "", "div");
   const P = window.Push ? Push.status() : null;
   const push = P ? stRow(en ? "Notifications" : "推送通知", esc(P.label) + (P.diag ? `<span class="st-diag">${esc(P.diag)}</span>` : ""), stSw(P.on), `data-set="push" aria-pressed="${!!P.on}"`)

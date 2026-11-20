@@ -76,6 +76,12 @@ def main():
               f"Stop it, or start this one with PORT=<other port>.", file=sys.stderr, flush=True)
         sys.exit(1)
     print(f"Underthread → http://127.0.0.1:{port}", flush=True)
+    try:   # t-onboarding P0: a fresh board points at the 开工清单 (setup checklist) once; a board in use stays quiet
+        from api.routes import setup as SU
+        if not SU.retired(S.read()["meta"].get("onboarding") or {}):
+            print(f"Open http://127.0.0.1:{port} — the setup checklist on the home page walks you through the rest.", flush=True)
+    except Exception:
+        pass
     try:
         srv.serve_forever()
     except KeyboardInterrupt:

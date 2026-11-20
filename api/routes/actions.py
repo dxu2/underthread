@@ -9,7 +9,7 @@ from api.router import route, action, ACTIONS, NOLOCK, ME, OpenAsks
 from api.routes.hr import HR_ID, XFER_MAX, _hire_apply
 
 TOUCH = ("approve", "reject", "done", "comment", "answer", "reopen", "set_stage", "archive")   # ri1103-P2: you dealt with it: the snooze ends
-NO_LOG = ("widget_layout", "chat_seen")   # t-widget-drag: dragging tiles is not activity worth a log line; t-ri1113-a: nor is reading a chat
+NO_LOG = ("widget_layout", "chat_seen", "onboarding")   # t-widget-drag: dragging tiles is not activity worth a log line; t-ri1113-a: nor is reading a chat
 
 
 class Act:
@@ -332,7 +332,7 @@ def _widget_layout(a):   # t-widget-drag: the desktop widget home's order / size
         out, ids = [], set()
         for x in lay:
             if not (isinstance(x, list) and len(x) == 2 and isinstance(x[0], str) and re.fullmatch(idre, x[0])
-                    and x[1] in ("s", "m", "l") and x[0] not in ids):
+                    and x[1] in ("s", "m", "l", "w") and x[0] not in ids):
                 raise ValueError("bad layout entry")
             ids.add(x[0])
             out.append([x[0], x[1]])

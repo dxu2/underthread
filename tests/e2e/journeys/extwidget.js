@@ -21,7 +21,7 @@ module.exports = {
     await p.evaluate(L => fetch("/api/action", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ kind: "widget_layout", layout: L }) }), before);
     await p.reload({ waitUntil: "load" }); await ready();
     const core = await p.evaluate(() => UTExt.widgets().filter(w => w.core).map(w => w.id));
-    c.check("core nine registered through UTExt", core.length === 9 && ["team", "usage", "review", "busy", "replies", "today", "week", "ongoing", "media"].every(k => core.includes(k)), core);
+    c.check("core widgets registered through UTExt (the nine + t-onboarding setup)", core.length === 10 && ["team", "usage", "review", "busy", "replies", "today", "week", "ongoing", "media", "setup"].every(k => core.includes(k)), core);
     c.check("App.ext is UTExt", await p.evaluate(() => App.ext === window.UTExt && App.ext.api === 1));
     await c.until(async () => { const w = (await c.state()).meta.widgets; return w && Array.isArray(w.seen); }, 8000);
     let w = (await c.state()).meta.widgets;

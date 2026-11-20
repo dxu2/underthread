@@ -18,7 +18,7 @@
     api: 1,
     widget(spec) {
       if (!spec || !idOk(spec.id) || typeof spec.html !== "function") { console.warn("UTExt.widget: needs id (a-z0-9_-) and html()", spec); return; }
-      const sizes = (spec.sizes || ["m"]).filter(z => ["s", "m", "l"].includes(z));
+      const sizes = (spec.sizes || ["m"]).filter(z => ["s", "m", "l", "w"].includes(z));   /* t-onboarding P0: w = a full-width row (the 开工清单) */
       W.set(spec.id, { ...spec, sizes: sizes.length ? sizes : ["m"], name: spec.name || [spec.id, spec.id], size: sizes.includes(spec.size) ? spec.size : sizes.includes("m") ? "m" : sizes[0] });
       changed();
     },

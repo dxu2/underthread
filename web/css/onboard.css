@@ -1,0 +1,116 @@
+/* t-onboarding P0: 开工清单 (desktop widget "setup" + phone card), steward offline card, quick phrases (chip row, examples, all-phrases pop),
+   the 点亮 ring + bubble. web/js/onboard.js draws all of it. Colours come from the theme tokens, so every skin / texture gets its own look. */
+
+/* ---------- 开工清单: shared ---------- */
+.ob-bar { display: flex; gap: 6px; margin: 2px 0 10px; }
+.ob-bar span { flex: 1; height: 4px; border-radius: 99px; background: color-mix(in srgb, var(--ink) 14%, transparent); }
+.ob-bar span.on { background: var(--accent); }
+.ob-st { display: flex; align-items: center; gap: 7px; min-width: 0; padding: 6px 9px; border: 0; border-radius: 12px; background: none; color: var(--ink); font: inherit; font-size: var(--fs-13); text-align: left; cursor: pointer; transition: background-color .15s ease; }
+.ob-st:hover { background: var(--glass-lite, color-mix(in srgb, var(--ink) 7%, transparent)); }
+.ob-st > i { flex: none; width: 20px; height: 20px; border-radius: 50%; display: grid; place-items: center; font-style: normal; font-size: var(--fs-11); font-variant-numeric: tabular-nums;
+  border: 1.5px solid color-mix(in srgb, var(--ink) 30%, transparent); color: var(--dim); }
+.ob-st > b { font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.ob-st > small { color: var(--dim); font-size: var(--fs-12); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; flex: 1 1 0; }
+.ob-st.done { cursor: default; } .ob-st.done:hover { background: none; }
+.ob-st.done > i { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.ob-st.done > b { color: var(--dim); font-weight: 400; }
+.ob-st.cur { background: color-mix(in srgb, var(--accent) 12%, transparent); }
+.ob-st.cur > i { border-color: var(--accent); color: var(--accent); font-weight: 600; }
+.ob-st.cur > b { font-weight: 600; }
+.ob-st.opt > b { color: var(--dim); }
+.ob-hint { display: flex; align-items: center; gap: 12px; margin-top: auto; padding-top: 8px; font-size: var(--fs-13); color: var(--ink2); line-height: 1.45; }
+.ob-hint > span { flex: 1; min-width: 0; }
+.ob-go { flex: none; border: 0; border-radius: 999px; padding: 6px 13px; background: var(--accent); color: var(--accent-ink); font: inherit; font-size: var(--fs-12); font-weight: 600; cursor: pointer; }
+.ob-go:hover { filter: brightness(1.06); }
+.ob-lnk { border: 0; background: none; padding: 4px 2px; color: var(--dim); font: inherit; font-size: var(--fs-12); cursor: pointer; }
+.ob-lnk:hover { color: var(--ink); }
+.ob-done { display: flex; align-items: baseline; gap: 10px; margin-top: auto; padding-top: 6px; font-size: var(--fs-13); color: var(--dim); }
+.ob-done b { color: var(--ink); font-weight: 600; flex: none; }
+
+/* desktop widget: one full row of the grid; the seven steps sit in one line (ellipsis when the column is narrow; the hint line has the words) */
+html[data-home="widgets"] .wg.sz-w { grid-column: 1 / -1; }
+html[data-home="widgets"] .wg-setup .ob-steps { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 2px; margin: 0 -6px; }
+html[data-home="widgets"] .wg-setup .ob-st { align-items: center; gap: 6px; padding: 7px 6px; }
+html[data-home="widgets"] .wg-setup .ob-st > b { max-width: 100%; white-space: normal; line-height: 1.3; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
+/* the one-line notes do not fit a seventh of the row; the hint line under the steps says the current one in full (title= has the rest) */
+html[data-home="widgets"] .wg-setup .ob-st > small { display: none; }
+html[data-home="widgets"] .wg-setup .ob-hint { padding-top: 4px; }
+
+/* phone card: under the stat row, above usage */
+.ob-card { margin: 0 0 14px; padding: 14px 14px 12px; border-radius: 22px; background: var(--panel, var(--bg2)); box-shadow: 0 0 0 .5px var(--line2) inset; }
+.ob-card .ob-hd { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+.ob-card .ob-hd b { font-size: var(--fs-17); font-weight: 600; }
+.ob-card .ob-hd .n { color: var(--dim); font-size: var(--fs-14); font-variant-numeric: tabular-nums; }
+.ob-card .ob-hd .ob-lnk { margin-left: auto; font-size: var(--fs-14); }
+.ob-card .ob-steps { display: flex; flex-direction: column; gap: 2px; margin: 0 -4px; }
+.ob-card .ob-st { padding: 9px 10px; font-size: var(--fs-15); }
+.ob-card .ob-hint { font-size: var(--fs-14); padding-top: 10px; }
+.ob-card .ob-done { flex-wrap: wrap; }
+
+/* ---------- steward chat: offline / online card ---------- */
+.ob-off { margin: 4px 0 14px; padding: 13px 15px 12px; border-radius: 16px; border: 1.5px dashed color-mix(in srgb, var(--ink) 22%, transparent); background: color-mix(in srgb, var(--bg2, var(--bg)) 70%, transparent); color: var(--ink); }
+.ob-off .ob-t { display: flex; align-items: center; gap: 8px; font-size: var(--fs-15); font-weight: 600; }
+.ob-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--urgent, #d33); flex: none; }
+.ob-off.on .ob-dot { background: var(--ok, #3a9a5b); }
+.ob-off p { margin: 7px 0 9px; font-size: var(--fs-13); line-height: 1.55; color: var(--ink2); }
+.ob-off.on p { margin-bottom: 0; }
+.ob-cmd { display: flex; align-items: center; gap: 10px; padding: 9px 12px; border-radius: 10px; background: color-mix(in srgb, var(--ink) 7%, transparent); }
+.ob-cmd code { flex: 1; min-width: 0; font-family: var(--f-mono, ui-monospace, monospace); font-size: var(--fs-12); line-height: 1.5; word-break: break-word; -webkit-user-select: all; user-select: all; }
+.ob-copy { flex: none; border: 0; background: none; padding: 4px 2px; color: var(--accent); font: inherit; font-size: var(--fs-12); font-weight: 600; cursor: pointer; }
+.ob-off small { display: block; margin-top: 8px; font-size: var(--fs-12); color: var(--dim); line-height: 1.5; word-break: break-word; }
+
+/* ② examples in an empty steward chat */
+.qg-ex { margin: 6px 0 10px; }
+.qg-ex h5 { margin: 0 0 8px; font-size: var(--fs-12); font-weight: 500; color: var(--dim); letter-spacing: .02em; }
+.qg-exb { display: block; width: 100%; margin: 0 0 7px; padding: 10px 13px; border: 0; border-radius: 13px; background: var(--panel, var(--bg2)); box-shadow: 0 0 0 .5px var(--line2) inset; color: var(--ink); font: inherit; text-align: left; cursor: pointer; transition: background-color .15s ease; }
+.qg-exb:hover { background: color-mix(in srgb, var(--accent) 8%, var(--panel, var(--bg2))); }
+.qg-exb span { display: block; font-size: var(--fs-14); }
+.qg-exb small { display: block; margin-top: 3px; font-size: var(--fs-12); color: var(--dim); }
+.qg-hire { color: var(--accent); cursor: pointer; }
+
+/* ① chip row above the field */
+.qg-row { position: relative; display: flex; gap: 7px; padding: 8px 16px 2px; overflow-x: auto; scrollbar-width: none; flex: none; }
+.qg-row::-webkit-scrollbar { display: none; }
+.qg-row[hidden] { display: none; }
+.qg-c { flex: none; padding: 6px 12px; border: 0; border-radius: 999px; background: var(--panel, var(--bg2)); box-shadow: 0 0 0 .5px var(--line2) inset; color: var(--ink2); font: inherit; font-size: var(--fs-12); white-space: nowrap; cursor: pointer; }
+.qg-c:hover { color: var(--ink); background: color-mix(in srgb, var(--accent) 9%, var(--panel, var(--bg2))); }
+.qg-c.qg-all { color: var(--accent); }
+.qg-bulb { flex: none; width: 30px; height: 30px; border: 0; border-radius: 50%; background: var(--panel, var(--bg2)); box-shadow: 0 0 0 .5px var(--line2) inset; font-size: var(--fs-14); cursor: pointer; }
+.qg-pop { position: absolute; left: 12px; right: 12px; bottom: calc(100% + 6px); max-height: min(60vh, 520px); overflow: auto; z-index: 30; padding: 12px 14px; border-radius: 16px;
+  background: var(--panel, var(--bg2)); box-shadow: 0 0 0 .5px var(--line2) inset, 0 12px 40px rgba(0,0,0,.18); color: var(--ink); }
+.qg-row:has(.qg-pop) { overflow: visible; }
+.qg-ph { display: flex; align-items: center; margin-bottom: 6px; } .qg-ph b { flex: 1; font-size: var(--fs-14); }
+.qg-x { border: 0; background: none; font-size: var(--fs-20); line-height: 1; color: var(--dim); cursor: pointer; padding: 0 4px; }
+.qg-pop section { padding: 8px 0; border-top: .5px solid var(--line2); }
+.qg-pop h6 { display: flex; gap: 8px; align-items: baseline; margin: 0 0 5px; font-size: var(--fs-13); font-weight: 600; }
+.qg-pop h6 small { font-weight: 400; color: var(--dim); font-size: var(--fs-12); }
+.qg-pe { display: block; margin: 0 0 4px; padding: 4px 0; border: 0; background: none; color: var(--ink); font: inherit; font-size: var(--fs-13); text-align: left; cursor: pointer; }
+.qg-pe:hover { color: var(--accent); }
+.qg-pop p { margin: 2px 0 0; font-size: var(--fs-12); color: var(--dim); line-height: 1.5; }
+/* phone: the chips sit above the composer; the keyboard (body.kb) hides them, the field needs the room */
+@media (max-width: 760px) {
+  .qg-row { padding: 8px 10px 4px; background: var(--bg2); }
+  body.kb .qg-row:not(:has(.qg-pop)) { display: none; }
+  .qg-c { padding: 7px 13px; font-size: var(--fs-13); }
+  /* the phone composer is a pill floating over the list (mobile/04-white-glass.css §3, --comp-h from phone/composer.js): the chips float just above it,
+     at the same three bottoms the pill uses; the list gets the chips' height at its end so the last message clears them */
+  body[data-cv] #right > .qg-row { position: absolute; left: 0; right: 0; z-index: 6; padding: 0 max(12px, env(safe-area-inset-left)) 6px; background: none; bottom: calc(var(--tb-h) + var(--comp-h, 66px)); }
+  body.kb[data-cv] #right > .qg-row { bottom: calc(8px + var(--comp-h, 66px)); }
+  body:not(.kb)[data-mtab="chat"][data-cv="thread"] #right > .qg-row { bottom: calc(env(safe-area-inset-bottom) + 8px + var(--comp-h, 66px)); }
+  body[data-cv] #right > .qg-row .qg-c, body[data-cv] #right > .qg-row .qg-bulb { background: var(--glass-lite, var(--panel, var(--bg2))); -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px); }
+  body[data-cv] #right > .qg-row .qg-pop { left: max(12px, env(safe-area-inset-left)); right: max(12px, env(safe-area-inset-right)); }
+  body[data-cv] #right:has(> .qg-row:not([hidden])) .ch-msgs::after { content: ""; display: block; flex: none; height: 42px; }
+}
+
+/* ---------- 点亮: ring + bubble (no scrim; the page stays usable) ---------- */
+.ob-ring { position: fixed; z-index: 9000; pointer-events: none; border-radius: 16px; box-shadow: 0 0 0 2px var(--accent), 0 0 0 7px color-mix(in srgb, var(--accent) 22%, transparent); animation: ob-pulse 1.6s ease-in-out infinite; }
+@keyframes ob-pulse { 50% { box-shadow: 0 0 0 2px var(--accent), 0 0 0 11px color-mix(in srgb, var(--accent) 10%, transparent); } }
+@media (prefers-reduced-motion: reduce) { .ob-ring { animation: none; } }
+.ob-bub { position: fixed; z-index: 9001; width: min(320px, calc(100vw - 16px)); padding: 13px 15px 11px; border-radius: 16px; background: var(--panel, var(--bg2)); color: var(--ink);
+  box-shadow: 0 0 0 .5px var(--line2) inset, 0 14px 44px rgba(0,0,0,.22); font-size: var(--fs-13); }
+.ob-bub[hidden], .ob-ring[hidden] { display: none; }
+.ob-bub b { display: block; font-size: var(--fs-14); margin-bottom: 4px; }
+.ob-bub p { margin: 0 0 8px; color: var(--ink2); line-height: 1.5; }
+.ob-bq { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; margin-bottom: 6px; }
+.ob-bq .qg-c { white-space: normal; text-align: left; }
+.ob-bb { display: flex; align-items: center; justify-content: flex-end; gap: 12px; }
