@@ -17,6 +17,7 @@ import "./js/home.js";
 import "./js/team.js";
 import "./js/widgets.js";
 import "./js/core/quickguide.js";   // t-onboarding P0: 快捷指南 data (window.QGDATA)
+import "./js/vendor/qrcode.js";   // t-onb-polish: QR code for the phone step (window.QRLite; Kazuhiko Arase, MIT)
 import "./js/onboard.js";   // t-onboarding P0: 开工清单 widget / phone card, steward offline card, quick phrases, 点亮
 import "./js/toast.js";
 import "./js/rolefiles.js";
