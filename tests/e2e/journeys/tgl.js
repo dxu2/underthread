@@ -46,7 +46,7 @@ module.exports = {
       const k2 = await knob(p);
       c.check(`${name} ${theme}: tap again -> back on`, k2.aria === "true" && k2.on && k2.x >= 18, k2);
       if (c.view === "desk") {
-        await p.focus(SW); const tab = c.engine === "webkit" ? "Alt+Tab" : "Tab";   /* WebKit on macOS skips buttons on plain Tab (system setting); Alt+Tab is its full keyboard access */
+        await p.focus(SW); const tab = c.engine === "webkit" && process.platform === "darwin" ? "Alt+Tab" : "Tab";   /* WebKit on macOS skips buttons on plain Tab (system setting); Alt+Tab is its full keyboard access. Linux WebKit (CI) has no such setting: Alt+Tab there moves no focus, so it is plain Tab */
         await p.keyboard.press("Shift+" + tab); await p.keyboard.press(tab); await c.sleep(200);
         const ring = await p.evaluate(s => { const sw = document.querySelector(s + " .sw") || document.querySelector(s); const cs = getComputedStyle(sw); return { fv: document.querySelector(s).matches(":focus-visible"), o: cs.outlineStyle, w: cs.outlineWidth }; }, SW);
         await c.shot(`${name}-${theme}-focus`, sec);

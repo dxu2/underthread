@@ -215,7 +215,7 @@ function strip() {
   const list = App.items().filter(i => App.onYouCard ? App.onYouCard(i) : i.stage === "review" && !(App.busy && App.busy(i))).sort(App.byAct);   // t-doing-first, t-home-newreplies
   const html = `<div class="m-strip-h"><span>${en() ? "WAITING ON YOU" : "等你拍板"}</span><b>${list.length}</b></div><div class="m-strip">` + (list.length ? list.map(it => {
     const a = App.agent(it.owner), kind = it.kind === "task" ? "deliverable" : it.kind;
-    return `<button class="m-chip" data-open="${it.id}"><span class="tag ${kind}"><span class="gl" aria-hidden="true">◆</span>${App.t(kind)}</span><div class="t">${esc(it.title)}</div><div class="m">${App.av(a, "sm")}${esc(App.aname(a))} · ${App.t(it.category)} · ${App.whenH(it.activity)}</div></button>`;
+    return `<button class="m-chip" data-open="${it.id}"><span class="tag ${kind}"><span class="gl" aria-hidden="true">◆</span>${App.t(kind)}</span><div class="t">${window.Onboard ? Onboard.exT(it) : esc(it.title)}</div><div class="m">${App.av(a, "sm")}${esc(App.aname(a))} · ${App.t(it.category)} · ${App.whenH(it.activity)}</div></button>`;
   }).join("") : `<div class="m-chip none">${App.t("empty_review")}</div>`) + `</div>`;
   if (wrap._html !== html) { wrap.innerHTML = html; wrap._html = html; }
 }

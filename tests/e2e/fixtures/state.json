@@ -1080,8 +1080,8 @@
    "id": "n-welcome",
    "level": "info",
    "t": "2026-01-15T09:00:00+00:00",
-   "text": "欢迎使用 Underthread：示例卡片可以在卡片上「归档」掉",
-   "text_en": "Welcome to Underthread: you can Archive the sample cards from the card itself",
+   "text": "欢迎使用 Underthread：带「示例」的卡可以放心点着试，在「等你拍板」底部一键清掉",
+   "text_en": "Welcome to Underthread: cards marked Example are safe to try; clear them at the bottom of Waiting on you",
    "until": null
   }
  ],

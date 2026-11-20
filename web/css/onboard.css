@@ -27,12 +27,12 @@
 .ob-done { display: flex; align-items: baseline; gap: 10px; margin-top: auto; padding-top: 6px; font-size: var(--fs-13); color: var(--dim); }
 .ob-done b { color: var(--ink); font-weight: 600; flex: none; }
 
-/* desktop widget: one full row of the grid; the seven steps sit in one line (ellipsis when the column is narrow; the hint line has the words) */
+/* desktop widget: one full row of the grid; the six steps sit in one line (ellipsis when the column is narrow; the hint line has the words) */
 html[data-home="widgets"] .wg.sz-w { grid-column: 1 / -1; }
-html[data-home="widgets"] .wg-setup .ob-steps { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 2px; margin: 0 -6px; }
+html[data-home="widgets"] .wg-setup .ob-steps { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 2px; margin: 0 -6px; }
 html[data-home="widgets"] .wg-setup .ob-st { align-items: center; gap: 6px; padding: 7px 6px; }
 html[data-home="widgets"] .wg-setup .ob-st > b { max-width: 100%; white-space: normal; line-height: 1.3; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
-/* the one-line notes do not fit a seventh of the row; the hint line under the steps says the current one in full (title= has the rest) */
+/* the one-line notes do not fit a sixth of the row; the hint line under the steps says the current one in full (title= has the rest) */
 html[data-home="widgets"] .wg-setup .ob-st > small { display: none; }
 html[data-home="widgets"] .wg-setup .ob-hint { padding-top: 4px; }
 
@@ -114,3 +114,17 @@ html[data-home="widgets"] .wg-setup .ob-hint { padding-top: 4px; }
 .ob-bq { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; margin-bottom: 6px; }
 .ob-bq .qg-c { white-space: normal; text-align: left; }
 .ob-bb { display: flex; align-items: center; justify-content: flex-end; gap: 12px; }
+
+/* t-onb-polish: sample cards (q-demo-*) read as examples: a dashed Example tag after the title, a note in the detail, 清掉示例 */
+.ex-tag { display: inline-flex; align-items: center; margin-left: 6px; padding: 0 7px; border-radius: 99px; border: 1px dashed currentColor;
+  font-size: var(--fs-11); font-weight: 600; letter-spacing: .04em; line-height: 1.6; color: var(--dim); vertical-align: 2px; white-space: nowrap; text-transform: uppercase; }
+.dw-title .ex-tag { vertical-align: 4px; }
+.ex-note { display: flex; align-items: center; gap: 10px; margin: 8px 0 4px; padding: 8px 10px; border-radius: 12px;
+  border: 1px dashed color-mix(in srgb, var(--ink) 24%, transparent); font-size: var(--fs-13); color: var(--ink2); line-height: 1.45; }
+.ex-note span { flex: 1; min-width: 0; }
+.ex-clr { flex: none; border: 0; border-radius: 99px; padding: 4px 11px; font: inherit; font-size: var(--fs-12); font-weight: 600; cursor: pointer;
+  background: color-mix(in srgb, var(--ink) 10%, transparent); color: var(--ink); }
+.ex-clr:hover { background: color-mix(in srgb, var(--ink) 16%, transparent); }
+.wg-more.ex-foot { display: flex; align-items: center; gap: 8px; }
+.wg-more.ex-foot span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.wg-more.ex-foot .ex-clr { padding: 2px 9px; }

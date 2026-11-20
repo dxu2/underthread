@@ -1,7 +1,7 @@
 /* t-onboarding P0: the 开工清单 (setup checklist), quick phrases and the 点亮 ring, on the fixture board (a fresh board: meta.onboarding = {}).
  * Desk: the full-width setup widget fits its row; the chip row fills the steward's field without sending; 全部说法 lists the nine groups;
  * Settings → 快捷句 hides / shows the row; 点亮 step 3 rings the offline card and Esc closes it. Phone: the checklist card under the numbers, 全部 › opens
- * all seven steps; the chips float above the composer pill without covering it.
+ * all six steps; the chips float above the composer pill without covering it.
  *   node tests/e2e/drive.js run tests/e2e/journeys/onboard.js --out work/<item>/verify/<run> --engines chromium,webkit
  */
 async function boot(c) {
@@ -18,13 +18,13 @@ module.exports = {
     const p = c.p;
     await boot(c);
     const su = await p.evaluate(() => App.ST.meta.setup && { n: App.ST.meta.setup.n, of: App.ST.meta.setup.of, next: App.ST.meta.setup.next, steps: App.ST.meta.setup.steps.length });
-    c.check("fresh board: meta.setup is there (checklist not retired)", !!su && su.of === 6 && su.steps === 7, su);
+    c.check("fresh board: meta.setup is there (checklist not retired)", !!su && su.of === 6 && su.steps === 6, su);
 
     if (c.view === "desk") {
       const w = await p.evaluate(() => { const e = document.querySelector(".wg-setup"); if (!e) return null; const r = e.getBoundingClientRect(), g = e.parentElement.getBoundingClientRect();
         return { h: Math.round(r.height), sh: e.scrollHeight, ch: e.clientHeight, full: Math.abs(r.width - g.width) < 2, steps: e.querySelectorAll(".ob-st").length, cur: (e.querySelector(".ob-st.cur b") || {}).textContent }; });
       await c.shot("desk-setup", ".wg-setup");
-      c.check("desk: setup widget spans the grid row, seven steps, nothing clipped", !!w && w.full && w.steps === 7 && w.sh <= w.ch + 1, w);
+      c.check("desk: setup widget spans the grid row, six steps, nothing clipped", !!w && w.full && w.steps === 6 && w.sh <= w.ch + 1, w);
 
       const n0 = await chatCount(p);
       await c.tap("#right .qg-row .qg-c"); await c.sleep(500);
@@ -68,7 +68,7 @@ module.exports = {
       await c.tap(".ob-card [data-ob-all]"); await c.sleep(500);
       const all = await p.evaluate(() => document.querySelectorAll(".ob-card .ob-st").length);
       await c.shot("phone-card-all", ".ob-card");
-      c.check("phone: 全部 › opens all seven steps", all === 7, all);
+      c.check("phone: 全部 › opens all six steps", all === 6, all);
 
       await p.evaluate(() => App.route("#dm=manager")); await c.sleep(1500);
       const g = await p.evaluate(() => { const r = document.querySelector("#right .qg-row"), m = document.querySelector("#right .ch-comp"); if (!r || r.hidden) return null;

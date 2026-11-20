@@ -8,7 +8,11 @@ Where the numbers come from
 
 Role of a session (resolved when asked, so a late custom title still counts)
 - subagent with agentType underthread-<id>  -> <id>
-- top-level session titled "...管家..." -> manager
+- top-level session that does the steward's own heartbeat (a Bash tool call running `stateutil.py set-agent manager` or
+  `stateutil.py inbox-ack`, or whose prompt starts with "Start the manager per manager.md") -> manager; remembered in the ledger.
+  Only real tool calls count: a session that merely quotes manager.md in its text stays what it was. Since t-onb-polish the session
+  title does not matter, so nobody has to /rename the steward. Ledger key "_marker_v" says the one-time backfill ran.
+- top-level session titled "...管家..." -> manager (older installs)
 - top-level session found in work/voice/sessions.json (now or ever: we keep our own ledger) -> that role
 - anything else -> "other"
 
@@ -35,6 +39,44 @@ def _agent_role(t):
     except (OSError, ValueError, KeyError, ImportError):
         pass
     return t[len("underthread-"):] if t.startswith("underthread-") else "other"
+
+MARKER_V = 1
+_HB = re.compile(r"stateutil\.py\S*\s+(?:set-agent\s+manager\b|inbox-ack\b)")
+_START = "Start the manager per manager.md"
+_HINTS = (b"set-agent manager", b"inbox-ack", _START.encode())
+
+
+def steward_line(d):
+    """True when one transcript line shows the steward at work: a Bash tool call with its heartbeat, or the steward's start prompt."""
+    m = d.get("message") if isinstance(d, dict) else None
+    if not isinstance(m, dict):
+        return False
+    c = m.get("content")
+    if d.get("type") == "user":
+        if isinstance(c, list):
+            c = next((x.get("text") for x in c if isinstance(x, dict) and x.get("type") == "text"), "")
+        return isinstance(c, str) and c.lstrip().startswith(_START)
+    if d.get("type") != "assistant" or not isinstance(c, list):
+        return False
+    for x in c:
+        if isinstance(x, dict) and x.get("type") == "tool_use" and x.get("name") == "Bash":
+            cmd = (x.get("input") or {}).get("command") or ""
+            if isinstance(cmd, str) and _HB.search(cmd):
+                return True
+    return False
+
+
+def _steward_in(buf):
+    if not any(h in buf for h in _HINTS):
+        return False
+    for line in buf.split(b"\n"):
+        if any(h in line for h in _HINTS):
+            try:
+                if steward_line(json.loads(line)):
+                    return True
+            except ValueError:
+                continue
+    return False
 
 KEEP_DAYS = 14
 CACHE_S = 60
@@ -85,6 +127,32 @@ class Roll:
         if changed:
             self._save(self.ledger_path, self.ledger)
 
+    def _mark(self, key):
+        """A top-level session showed the steward's heartbeat: it is the manager, unless a voice session already claimed it."""
+        if self.ledger.get(key) in (None, "other"):
+            self.ledger[key] = "manager"
+            return True
+        return False
+
+    def _backfill(self):
+        """Once per install (ledger _marker_v): read the top-level sessions we already counted for the steward's heartbeat, so usage from before
+        this version moves from Other sessions to Steward. Only files inside the kept window are read."""
+        if self.ledger.get("_marker_v") == MARKER_V:
+            return
+        horizon = time.time() - KEEP_DAYS * 86400
+        for p in glob.glob(os.path.join(self.proj, "*.jsonl")):
+            key = os.path.basename(p)[:-6]
+            try:
+                if os.stat(p).st_mtime < horizon or key in self.ledger:
+                    continue
+                with open(p, "rb") as f:
+                    if _steward_in(f.read()):
+                        self._mark(key)
+            except OSError:
+                continue
+        self.ledger["_marker_v"] = MARKER_V
+        self._save(self.ledger_path, self.ledger)
+
     def _role(self, key):
         if "/" in key:   # "<session>/agent-xxx"
             meta = os.path.join(self.proj, key.split("/")[0], "subagents", key.split("/")[1] + ".meta.json")
@@ -109,6 +177,7 @@ class Roll:
 
     def _scan(self):
         t0 = time.time()
+        marked = False
         files, days = self.data["files"], self.data["days"]
         horizon = time.time() - KEEP_DAYS * 86400
         for key, p in self._files():
@@ -133,6 +202,8 @@ class Roll:
             end = buf.rfind(b"\n")
             if end < 0:
                 continue
+            if "/" not in key and self.ledger.get(key) in (None, "other") and _steward_in(buf[:end]) and self._mark(key):
+                marked = True
             for line in buf[:end].split(b"\n"):
                 if b'"usage"' not in line:
                     continue
@@ -163,6 +234,8 @@ class Roll:
         for d in [d for d in days if d < keep]:
             del days[d]
         self._save(self.path, self.data)
+        if marked:
+            self._save(self.ledger_path, self.ledger)
         self.scan_ms = int((time.time() - t0) * 1000)
 
     def refresh(self, force=False):
@@ -174,6 +247,7 @@ class Roll:
                     self.err = None   # no Claude Code session has run in this folder yet: nothing to count, not an error
                 else:
                     self._ledger_sync()
+                    self._backfill()
                     self._scan()
                     self.err = None
             except Exception as e:  # noqa: BLE001  (never take /api/usage down; say why instead)

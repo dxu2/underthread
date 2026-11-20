@@ -43,3 +43,25 @@ class Retire(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class Polish(unittest.TestCase):
+    """t-onb-polish: six numbered steps for six counted ones; 清掉示例 archives only the q-demo-* samples."""
+    def setUp(self):
+        self.SU = importlib.import_module("api.routes.setup")
+
+    def test_steps_match_the_count(self):
+        v = self.SU.view({"meta": {}, "items": [], "chat": [], "agents": {}}, archived=[])
+        self.assertEqual(len(v["steps"]), v["of"])
+        self.assertFalse(any(s["optional"] for s in v["steps"]))
+
+    def test_clear_samples(self):
+        from api.router import ACTIONS
+
+        class A:
+            pass
+        a = A()
+        a.body = {"op": "clear_samples"}
+        a.st = {"meta": {}, "log": [], "items": [{"id": "q-demo-plan"}, {"id": "q-demo-ask", "archived": True}, {"id": "t-real"}]}
+        ACTIONS["onboarding"](a)
+        self.assertEqual([bool(i.get("archived")) for i in a.st["items"]], [True, True, False])
