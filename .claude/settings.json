@@ -9,5 +9,11 @@
       "Bash(ffprobe:*)",
       "Bash(ffmpeg:*)"
     ]
+  },
+  "hooks": {
+    "PostToolUse": [
+      {"matcher": "mcp__claude-in-chrome__.*",
+       "hooks": [{"type": "command", "command": "python3 \"$CLAUDE_PROJECT_DIR/tools/onb_mark.py\" chrome", "async": true, "timeout": 20}]}
+    ]
   }
 }

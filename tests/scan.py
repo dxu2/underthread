@@ -17,7 +17,7 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 PATTERNS = [
     ("home path", re.compile(r"/(?:Users|home)/(?!<|\$|you\b|me\b|runner\b|name\b|user\b|USER\b)[A-Za-z0-9._-]+/")),
     ("private IP", re.compile(r"\b(?:10\.\d{1,3}|192\.168|172\.(?:1[6-9]|2\d|3[01])|100\.(?:6[4-9]|[7-9]\d|1[01]\d|12[0-7]))\.\d{1,3}\.\d{1,3}\b")),
-    ("tailnet name", re.compile(r"\b[a-z0-9-]+\.[a-z0-9-]+\.ts\.net\b")),
+    ("tailnet name", re.compile(r"\b[a-z0-9-]+\.(?!example\.ts\.net)[a-z0-9-]+\.ts\.net\b")),
     ("token", re.compile(r"\b(?:ghp_[A-Za-z0-9]{20,}|github_pat_[A-Za-z0-9_]{20,}|sk-ant-[A-Za-z0-9-]{10,}|sk-[A-Za-z0-9]{32,}|xox[bpa]-[A-Za-z0-9-]{10,}|AKIA[0-9A-Z]{16})")),
     ("email", re.compile(r"\b[A-Za-z0-9._%+-]+@(?!\dx\b)(?!example\.(?:com|org)\b|users\.noreply\.github\.com\b|anthropic\.com\b)[A-Za-z0-9.-]+\.[a-z]{2,}\b")),
 ]
