@@ -117,6 +117,26 @@ There's nothing to copy: the repository ships `.claude/settings.json`. It lets t
 **4. Say something.** Type a request into the chat, the way you'd text a colleague.
 *You should see:* a new card appears, and a teammate's patch lights up as they start on it.
 
+The **Getting started** checklist on the home page walks you through these steps and ticks each one by itself. It goes away the day after the last tick (Edit widgets brings it back).
+
+### What to say to the steward
+
+Plain sentences work. These are the usual kinds of request; the same list sits above the chat field (tap one to fill the field, nothing is sent until you press send), and **All phrases** opens it in full.
+
+| You want to | Say something like | Who takes it | What comes back |
+|---|---|---|---|
+| Ask where things are | "Where's the “X” card at?" · "Who's busy right now?" | Steward | an answer in the chat, no new card |
+| Set up a schedule | "Every Sunday night, plan next week's meals" · "A morning brief at 8 every day" | Steward | a schedule; the card stays on Schedules and each run reports back to it |
+| Look something up | "Search Xiaohongshu for reviews of X, give me three points" · "Compare rents in these three cities" | Scout | a research card: every point has a link and a screenshot |
+| Shop | "Any X worth buying?" · "Put the best one in my cart, don't order" | Buyer (hire from the Hiring market) | 3 options with price history; it always asks before ordering |
+| Plan a trip | "A quiet 3-day trip for the holiday" · "Plan a week for family visiting" | Travel planner (hire) | three plans, a budget and a packing list; it never books |
+| Write something | "Reply to this email, politely" · "Turn these notes into one page" | Steward, or a writer once you hire one | a draft card that ships when you approve it |
+| Make images | "Three cover ideas for X" · "Make this image portrait" | Brush | a sample card with a few images to pick from |
+| Fix a tool or the dashboard | "A script to file my downloads by date" · "This button does nothing, is it a bug?" | Smith | a plan first, a backup before any change |
+| Hire or wrap up | "I want someone to handle X" · "Going to bed, finish what you can" | Thimble / Steward | an interview in a DM, or the next morning's report |
+
+When a card comes back: reject it with a reason ("too long, keep it under 300 words from now on" becomes a rule), tap an option to answer a question, or ask for a tweak in a comment.
+
 Something not working? See [Troubleshooting](docs/troubleshooting.md). The long version of setup, including the phone app, push notifications and ComfyUI, is in [docs/setup-guide.md](docs/setup-guide.md).
 
 **Updating later.** Settings → System → Updates says when a new version is out; click **Update**, and it is tried on a copy of your data first, then the dashboard restarts on the new version with your cards, settings and `local/` layer as they were. **Go back** returns to the version before. Or from a terminal: `python3 tools/update.py check | apply | rollback` (`apply --dry-run` only tries the new version on a copy). Open pages switch to the new version by themselves the next time you come back to them (or show a "Dashboard updated" pill while you are using them), and if you update with `git pull` instead, Settings → System → Updates offers **Restart** once the server's code has changed on disk. This needs the `git clone` install above: a folder downloaded as a zip cannot update itself (clone again and copy `local/` and your `*.json` data files over).

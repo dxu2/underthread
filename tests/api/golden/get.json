@@ -212,13 +212,14 @@
    },
    "schema": {
     "ahead": [],
-    "code": 2,
+    "code": 3,
     "config": 0,
     "roster": 0,
-    "state": 2,
+    "state": 3,
     "steps": [
      "0001_baseline",
-     "0002_routines_log"
+     "0002_routines_log",
+     "0003_onboarding"
     ]
    },
    "server": {
@@ -585,6 +586,8 @@
     "/static/js/home.js?v=<h>",
     "/static/js/team.js?v=<h>",
     "/static/js/widgets.js?v=<h>",
+    "/static/js/core/quickguide.js?v=<h>",
+    "/static/js/onboard.js?v=<h>",
     "/static/js/toast.js?v=<h>",
     "/static/js/rolefiles.js?v=<h>",
     "/static/js/viewer.js?v=<h>",
@@ -673,6 +676,7 @@
     "/static/css/welcome.css?v=<h>",
     "/static/css/texture-knit.css?v=<h>",
     "/static/css/texture-leather.css?v=<h>",
+    "/static/css/onboard.css?v=<h>",
     "/static/css/polish-1115b.css?v=<h>",
     "/static/css/oss.css?v=<h>",
     "/static/brand/wordmark-on-dark@2x.png?v=<h>",
@@ -683,6 +687,7 @@
     "/static/js/app.js": "/static/js/app.js?v=<h>",
     "/static/js/core/av.js": "/static/js/core/av.js?v=<h>",
     "/static/js/core/i18n.js": "/static/js/core/i18n.js?v=<h>",
+    "/static/js/core/quickguide.js": "/static/js/core/quickguide.js?v=<h>",
     "/static/js/core/router.js": "/static/js/core/router.js?v=<h>",
     "/static/js/core/store.js": "/static/js/core/store.js?v=<h>",
     "/static/js/core/ui.js": "/static/js/core/ui.js?v=<h>",
@@ -696,6 +701,7 @@
     "/static/js/market.js": "/static/js/market.js?v=<h>",
     "/static/js/md.js": "/static/js/md.js?v=<h>",
     "/static/js/mobile.js": "/static/js/mobile.js?v=<h>",
+    "/static/js/onboard.js": "/static/js/onboard.js?v=<h>",
     "/static/js/palette.js": "/static/js/palette.js?v=<h>",
     "/static/js/phone/chatlist.js": "/static/js/phone/chatlist.js?v=<h>",
     "/static/js/phone/composer.js": "/static/js/phone/composer.js?v=<h>",
@@ -2427,19 +2433,21 @@
       "from": 0,
       "ran": [
        "0001_baseline",
-       "0002_routines_log"
+       "0002_routines_log",
+       "0003_onboarding"
       ],
-      "to": 2
+      "to": 3
      }
     ],
+    "onboarding": {},
     "owner": "You",
     "platforms_set": false,
     "report_time": "18:00",
     "rev": 56,
     "routines": [],
     "routines_log": {},
-    "schema": 2,
-    "schema_code": 2,
+    "schema": 3,
+    "schema_code": 3,
     "seats": {
      "artist": [
       0.46,
@@ -2467,6 +2475,55 @@
      ]
     },
     "server_time": "2026-01-20T10:00:00+00:00",
+    "setup": {
+     "agents_cmd": "python3 make_agents.py",
+     "all": false,
+     "cmd": "claude \"Start the manager per manager.md\"",
+     "done_at": null,
+     "keep": false,
+     "n": 3,
+     "next": "team",
+     "of": 6,
+     "retired": false,
+     "root": "<ROOT>",
+     "steps": [
+      {
+       "done": true,
+       "id": "board",
+       "optional": false
+      },
+      {
+       "done": false,
+       "id": "team",
+       "optional": false
+      },
+      {
+       "done": false,
+       "id": "wake",
+       "optional": false
+      },
+      {
+       "done": true,
+       "id": "say",
+       "optional": false
+      },
+      {
+       "done": true,
+       "id": "card",
+       "optional": false
+      },
+      {
+       "done": false,
+       "id": "decide",
+       "optional": false
+      },
+      {
+       "done": false,
+       "id": "about",
+       "optional": true
+      }
+     ]
+    },
     "stamina": {
      "at": "2026-01-20T06:38:35+00:00",
      "note": "",
@@ -4031,19 +4088,21 @@
       "from": 0,
       "ran": [
        "0001_baseline",
-       "0002_routines_log"
+       "0002_routines_log",
+       "0003_onboarding"
       ],
-      "to": 2
+      "to": 3
      }
     ],
+    "onboarding": {},
     "owner": "You",
     "platforms_set": false,
     "report_time": "18:00",
     "rev": 121,
     "routines": [],
     "routines_log": {},
-    "schema": 2,
-    "schema_code": 2,
+    "schema": 3,
+    "schema_code": 3,
     "seats": {
      "artist": [
       0.46,
@@ -4071,6 +4130,55 @@
      ]
     },
     "server_time": "2026-01-20T10:00:00+00:00",
+    "setup": {
+     "agents_cmd": "python3 make_agents.py",
+     "all": false,
+     "cmd": "claude \"Start the manager per manager.md\"",
+     "done_at": null,
+     "keep": false,
+     "n": 5,
+     "next": "team",
+     "of": 6,
+     "retired": false,
+     "root": "<ROOT>",
+     "steps": [
+      {
+       "done": true,
+       "id": "board",
+       "optional": false
+      },
+      {
+       "done": false,
+       "id": "team",
+       "optional": false
+      },
+      {
+       "done": true,
+       "id": "wake",
+       "optional": false
+      },
+      {
+       "done": true,
+       "id": "say",
+       "optional": false
+      },
+      {
+       "done": true,
+       "id": "card",
+       "optional": false
+      },
+      {
+       "done": true,
+       "id": "decide",
+       "optional": false
+      },
+      {
+       "done": false,
+       "id": "about",
+       "optional": true
+      }
+     ]
+    },
     "stamina": {
      "at": "2026-01-20T10:00:00+00:00",
      "note": "cli",
@@ -5233,19 +5341,21 @@
       "from": 0,
       "ran": [
        "0001_baseline",
-       "0002_routines_log"
+       "0002_routines_log",
+       "0003_onboarding"
       ],
-      "to": 2
+      "to": 3
      }
     ],
+    "onboarding": {},
     "owner": "You",
     "platforms_set": false,
     "report_time": "18:00",
     "rev": 56,
     "routines": [],
     "routines_log": {},
-    "schema": 2,
-    "schema_code": 2,
+    "schema": 3,
+    "schema_code": 3,
     "seats": {
      "artist": [
       0.46,
@@ -5273,6 +5383,55 @@
      ]
     },
     "server_time": "2026-01-20T10:00:00+00:00",
+    "setup": {
+     "agents_cmd": "python3 make_agents.py",
+     "all": false,
+     "cmd": "claude \"Start the manager per manager.md\"",
+     "done_at": null,
+     "keep": false,
+     "n": 3,
+     "next": "team",
+     "of": 6,
+     "retired": false,
+     "root": "<ROOT>",
+     "steps": [
+      {
+       "done": true,
+       "id": "board",
+       "optional": false
+      },
+      {
+       "done": false,
+       "id": "team",
+       "optional": false
+      },
+      {
+       "done": false,
+       "id": "wake",
+       "optional": false
+      },
+      {
+       "done": true,
+       "id": "say",
+       "optional": false
+      },
+      {
+       "done": true,
+       "id": "card",
+       "optional": false
+      },
+      {
+       "done": false,
+       "id": "decide",
+       "optional": false
+      },
+      {
+       "done": false,
+       "id": "about",
+       "optional": true
+      }
+     ]
+    },
     "stamina": {
      "at": "2026-01-20T06:38:35+00:00",
      "note": "",

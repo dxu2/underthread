@@ -49,7 +49,12 @@ def read(path):
 class Repo:
     def __enter__(self):
         self.d = tempfile.mkdtemp(prefix="rt-release-")
-        shutil.copytree(os.path.join(ROOT, "core"), os.path.join(self.d, "core"), ignore=shutil.ignore_patterns("__pycache__"))
+        # the fake history knows the 0.1.0 migrations only (0001, 0002); later real steps (0003_onboarding, ...) would read as unnamed. Tests add their own 0003.
+        base = shutil.ignore_patterns("__pycache__")
+        def ign(d, names):
+            later = {n for n in names if os.path.basename(d) == "migrations" and n[:4].isdigit() and n[:4] not in ("0001", "0002")}
+            return set(base(d, names)) | later
+        shutil.copytree(os.path.join(ROOT, "core"), os.path.join(self.d, "core"), ignore=ign)
         os.makedirs(os.path.join(self.d, "tools"))
         os.makedirs(os.path.join(self.d, "tests"))
         for f in ("release.py", "manifest.py"):

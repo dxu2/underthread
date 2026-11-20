@@ -49,7 +49,7 @@ ROUTES = [
     ("GET", "/api/push/latest", "", "api.routes.push"), ("GET", "/api/push/status", "", "api.routes.push"),
     ("GET", "/api/presets", "", "api.routes.hr"), ("POST", "/api/preset", "", "api.routes.hr"),
     ("GET", "/api/retire-plan", "", "api.routes.hr"), ("GET", "/api/roster", "", "api.routes.state"),
-    ("GET", "/api/secret/github", "", "api.routes.secret"), ("GET", "/api/state", "", "api.routes.state"),
+    ("GET", "/api/secret/github", "", "api.routes.secret"), ("GET", "/api/setup", "", "api.routes.setup"), ("GET", "/api/state", "", "api.routes.state"),
     ("GET", "/api/templates", "", "api.routes.hr"), ("GET", "/api/thumb", "", "api.routes.media"),
     ("GET", "/api/tpl-av", "", "api.routes.hr"), ("GET", "/api/transfer-plan", "", "api.routes.hr"),
     ("GET", "/api/update", "", "api.routes.update"), ("POST", "/api/update", "", "api.routes.update"),
@@ -69,7 +69,7 @@ ROUTES = [
 
 A, SC, SN = "api.routes.actions", "api.routes.schedules", "api.routes.snooze"
 ACTIONS = {"answer": A, "approve": A, "archive": A, "calendar_add": A, "calendar_del": A, "chat": A, "chat_seen": A, "comment": A,
-           "dm": A, "done": A, "lesson": A, "mail_read": A, "new_task": A, "notice_dismiss": A, "ping": A, "reassign": A, "reject": A,
+           "dm": A, "done": A, "lesson": A, "mail_read": A, "new_task": A, "notice_dismiss": A, "onboarding": "api.routes.setup", "ping": A, "reassign": A, "reject": A,
            "reopen": A, "report_request": A, "routine_pause": SC, "routine_resume": SC, "schedule_fire": SC, "schedule_pause": SC,
            "schedule_resume": SC, "schedule_rm": SC, "set_category": A, "set_stage": A, "snooze": SN, "stamina": A, "studio_mode": A, "unsnooze": SN,
            "widget_layout": A}

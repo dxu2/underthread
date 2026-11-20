@@ -375,7 +375,9 @@ function renderChat() {
   $("textarea", r).placeholder = UI.lang === "en" ? `Message ${aname(a)}…` : `对${aname(a)}说……`;   // t-web-dm: desktop moves the shortcut hint below the field; t-ui-fix-r2 audit P2-12: a phone has no ⌘ key, so no hint there at all
   pendSync();
   const real = chatList(UI.chat), pl = pendOf(UI.chat), list = pl.length ? real.concat(pl) : real;   // t-perf C: local bubbles ride at the end
-  const sig = olderN(UI.chat) + "/" + list.length + (pl.length ? "|" + pl.map(p => p.pend + p.st).join(",") : "");
+  const obTop = UI.chat === "manager" && window.Onboard ? Onboard.chatTop() : "";   /* t-onboarding P0: steward offline / online card (onboard.js); part of sig so it follows the heartbeat */
+  if (window.Onboard) Onboard.row(r);   /* t-onboarding P0 ①: quick-phrase chips above the field */
+  const sig = olderN(UI.chat) + "/" + list.length + (pl.length ? "|" + pl.map(p => p.pend + p.st).join(",") : "") + (obTop ? "|" + obTop : "");
   const box = $(".ch-msgs", r);
   if (chatRenderedFor === UI.chat && chatCount === sig) { decorateDesk(box, list); return; }
   if (chatRenderedFor !== UI.chat) chatHold = false;
@@ -407,12 +409,13 @@ function renderChat() {
     const r = nextMe[chatFrom + i]; if (!r || r.reply_to) return optChips(m.options, m.id, m.multi); return optDone(m.options, r.text); };
   const pendSt = m => m.st === "fail" ? `<span class="pend-x">${UI.lang === "en" ? "Not sent" : "没发出去"}</span><button type="button" class="pend-b" data-pend-retry="${m.pend}">${UI.lang === "en" ? "Retry" : "重试"}</button><button type="button" class="pend-b" data-pend-drop="${m.pend}">${UI.lang === "en" ? "Delete" : "删除"}</button>`
     : m.st === "ok" ? whenH(m.t) : (UI.lang === "en" ? "Sending…" : "发送中…");
-  chatPatch(box, list.length ? [more].concat(view.map((m, i) => sepHTML(i) + (m.pend
+  chatPatch(box, list.length ? [obTop, more].concat(view.map((m, i) => sepHTML(i) + (m.pend
     ? `<div class="msg me pend${m.st === "ok" ? " pend-ok" : m.st === "fail" ? " pend-fail" : ""}" data-t="${esc(m.t)}" data-pend="${m.pend}">${rqLine(m)}<div class="mb">${md(m.text)}${attHTML(m.attachments)}</div><div class="mt">${pendSt(m)}</div></div>`
     : m.who === "me"
     ? `<div class="msg me" data-t="${esc(m.t)}"${m.id ? ` data-mid="${esc(m.id)}"` : ""}>${rqLine(m)}<div class="mb">${md(m.text)}${attHTML(m.attachments)}</div><div class="mt">${whenH(m.t)}</div></div>`
     : `<div class="msg" data-t="${esc(m.t)}"${m.id ? ` data-mid="${esc(m.id)}"` : ""} data-who="${esc(m.who)}"><div class="mh">${mav(m, i)}${esc(aname(agent(m.who)))} <small>${whenH(m.t)}</small></div><div class="mb md">${chipParens(md(m.text))}</div>${attHTML(m.attachments)}
        ${optsOf(m, i)}</div>`)))
+    : UI.chat === "manager" && window.Onboard ? [obTop, Onboard.chatEmpty()]   /* t-onboarding P0 ②: three examples instead of one line */
     : [`<div class="empty">${UI.chat === "manager" ? (UI.lang === "en" ? "Tell the manager what you want done." : "跟管家说你想做什么。") : (UI.lang === "en" ? "DM goes through the manager to this agent." : "私信会由管家转给这个角色。")}</div>`]);
   if (nearBottom) box.scrollTop = box.scrollHeight;
   const opened = !!CHN.fresh; CHN.fresh = false;

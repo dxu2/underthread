@@ -217,7 +217,7 @@ function wirePages() {
     if (d) x.done = !x.done; else x.all = !x.all; renderPage();
   });
   document.addEventListener("keydown", e => { const r = e.target.closest && e.target.closest(".rt-r"); if (r && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); openItem(r.dataset.item); } });
-  { const r0 = PAGES.review; PAGES.review = function () { if (widgetHome()) return r0.call(this); return ruCard() + r0.call(this) + rulesBlock(); }; }   /* t-home-usage: ruCard() is "" off phones */   // t-home-widgets: the widget home puts the rules inside #wg itself
+  { const r0 = PAGES.review; PAGES.review = function () { if (widgetHome()) return r0.call(this); return (window.Onboard ? Onboard.phoneCard() : "") + ruCard() + r0.call(this) + rulesBlock(); };   /* t-onboarding P0: the 开工清单 card under the stat row */ }   /* t-home-usage: ruCard() is "" off phones */   // t-home-widgets: the widget home puts the rules inside #wg itself
 }
 
 function wirePages2() {

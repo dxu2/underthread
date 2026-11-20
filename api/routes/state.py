@@ -384,6 +384,9 @@ def public_state(slim=False):
     st["meta"]["schema_code"] = MG.LATEST   # t-oss-struct E1: meta.schema > this = data from a newer version (settings shows a line)
     st["meta"]["report_time"] = str(CONFIG.get("report_time", "18:00"))   # ri1103-P1: the 日报 row of 今日日程
     st["meta"]["platforms_set"] = platforms_set()   # t-oss-gen-s5: content mode (web/js/views/left.js contentMode)
+    from api.routes import setup as SU   # t-onboarding P0: the 开工清单, only while it is not retired (the page draws nothing without it)
+    if not SU.retired(st["meta"].get("onboarding") or {}):
+        st["meta"]["setup"] = SU.view(st, a["items"])
     st["meta"]["media_v"] = 1   # t-voice-memo: this server transcribes (the page hides 转写/重试 on older servers)
     trim_state(st)
     ho = st.pop("handoffs", None) or []   # t-rb-build: the log is fetched from /api/handoffs; a poll carries only where it ends
