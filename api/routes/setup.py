@@ -1,13 +1,14 @@
 """t-onboarding P0: the 开工清单 (setup checklist) and GET /api/setup.
 
-Seven steps, each ticked from what is really there (nothing is ticked by a click):
+Six steps, each ticked from what is really there (nothing is ticked by a click):
   1 board   the dashboard answered (always true once a page asks)
   2 team    .claude/agents/ has at least one agent file (make_agents.py ran)
   3 wake    the manager has a heartbeat (agents.manager.last_seen)
   4 say     a chat message from you
   5 card    a card that is not one of the q-demo-* samples (live or archived)
   6 decide  you approved, rejected or answered something (samples count)
-  7 about   optional; 「让管家认识你」 arrives in P1, so it is never required
+(「让管家认识你」 was listed as an optional 7th step that could never be ticked; t-onb-polish took it out until it exists, so the page
+no longer shows "3 / 6" next to seven numbered steps.)
 meta.onboarding = {done_at, retired_at, keep, by}: done_at is written once (action onboarding op=done, sent by the page the first time it sees
 1-6 ticked); the checklist retires the day after done_at; 「添加小组件」 brings it back (op=show sets keep). Existing boards are recorded as
 done + retired by core/migrations/0003_onboarding.py, so an update never shows it. public_state() carries meta.setup (the view below) only
@@ -18,8 +19,8 @@ import os
 from api.ctx import S, ROOT
 from api.router import route, action, ME
 
-STEPS = ("board", "team", "wake", "say", "card", "decide", "about")
-REQUIRED = STEPS[:6]
+STEPS = ("board", "team", "wake", "say", "card", "decide")
+REQUIRED = STEPS
 CMD = 'claude "Start the manager per manager.md"'
 
 
@@ -72,11 +73,10 @@ def view(st, archived=None):
         "say": any(m.get("who") == ME for m in st.get("chat") or []),
         "card": any(_real(i) for i in items),
         "decide": any(_decided(i) for i in items),
-        "about": False,
     }
     req = [k for k in REQUIRED if done[k]]
     nxt = next((k for k in REQUIRED if not done[k]), None)
-    return {"steps": [{"id": k, "done": done[k], "optional": k == "about"} for k in STEPS],
+    return {"steps": [{"id": k, "done": done[k], "optional": False} for k in STEPS],
             "n": len(req), "of": len(REQUIRED), "next": nxt, "all": nxt is None,
             "done_at": ob.get("done_at"), "keep": bool(ob.get("keep")), "retired": retired(ob),
             "cmd": CMD, "root": ROOT, "agents_cmd": "python3 make_agents.py"}
@@ -90,7 +90,8 @@ def _setup(h, u, q):
 @action("onboarding")
 def _onboarding(a):
     """op=done: record done_at once (only when steps 1-6 really are ticked); op=show: 「添加小组件」 brought the checklist back (keep);
-    op=hide: retire it now (the − on the tile only removes it from the layout; this is for the phone card's 不再显示)."""
+    op=hide: retire it now (the − on the tile only removes it from the layout; this is for the phone card's 不再显示);
+    op=clear_samples: archive every live q-demo-* sample card (t-onb-polish 清掉示例; they stay findable in the archive)."""
     op, ob = a.body.get("op"), a.st["meta"].setdefault("onboarding", {})
     if not isinstance(ob, dict):
         ob = a.st["meta"]["onboarding"] = {}
@@ -100,6 +101,12 @@ def _onboarding(a):
     elif op == "show":
         ob["keep"] = True
         ob.pop("retired_at", None)
+    elif op == "clear_samples":
+        for it in a.st.get("items") or []:
+            if not _real(it) and not it.get("archived"):
+                it["archived"] = True
+                it["updated"] = S.now()
+        return
     elif op == "hide":
         ob["keep"] = False
         ob["retired_at"] = S.now()

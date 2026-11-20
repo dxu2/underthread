@@ -10,7 +10,7 @@ import { UI, idleDoing, idleL } from "../../core/store.js";
 import { agent, aname, av } from "../../core/av.js";
 import { orn } from "../../core/ui.js";
 import { routineOf } from "../drawer.js";
-import { STU, stuTabs } from "../left.js";
+import { STU, stuName, stuTabs } from "../left.js";
 import { mailPv, nrDot } from "../mail.js";
 import { askRow, awaitsUser, waitTag } from "./review.js";
 import { wkAttr, wkFx, wkTag, workersOf } from "../../app.js";
@@ -19,7 +19,7 @@ function inkEb(right) { const d = new Date(), en = UI.lang === "en";
   return `<div class="ink-eb">${day}<i></i>${right}</div>`; }
 function pageHead(k, extra = "") {
   if (UI.noHead) return extra;   // t-settings-tab: a page drawn inside a 设置 tab keeps its bars, not its masthead
-  if (STU.includes(k)) return `<div class="ph ph-studio ph-${k}">${inkEb("Underthread")}<h1>${t("studio")}</h1>${UI.lang === "zh" ? `<div class="en">${EN_SUB.studio}</div>` : ""}${orn()}</div>${stuTabs(k)}${extra}`;   // t-nav-shoot
+  if (STU.includes(k)) return `<div class="ph ph-studio ph-${k}">${inkEb("Underthread")}<h1>${stuName()}</h1>${UI.lang === "zh" ? `<div class="en">${stuName(true)}</div>` : ""}${orn()}</div>${stuTabs(k)}${extra}`;   // t-nav-shoot
   return `<div class="ph ph-${k}">${inkEb("Underthread")}<h1>${t(k)}</h1>${UI.lang === "zh" ? `<div class="en">${EN_SUB[k] || ""}</div>` : ""}${orn()}</div>${extra}`;
 }
 
@@ -33,7 +33,7 @@ function card(it, o) {   /* o.noCat (r-improve-1116 P3): on that category's own 
       ${o && o.noCat ? "" : `<span>${t(it.category)}${it.category === "urgent" ? " ⚑" : ""}</span>`}
       <span>${whenH(it.created)}</span><span class="dim">${UI.lang === "en" ? "act." : "动态"} ${whenH(it.activity)}</span>
       <span>${(it.platforms || []).map(p => `<span class="tag pf">${PLAT[p] || p}</span>`).join(" ")}</span></div>
-    <div class="body"><h3>${nrDot(it.id)}${esc(it.title)}</h3><p>${esc(mailPv(it.summary || ""))}</p>${wkTag(ws)}${askRow(it)}</div>
+    <div class="body"><h3>${nrDot(it.id)}${window.Onboard ? Onboard.exT(it) : esc(it.title)}</h3><p>${esc(mailPv(it.summary || ""))}</p>${wkTag(ws)}${askRow(it)}</div>
     <div class="owner">${av(a, "sm", it.id)}<span>${esc(aname(a))}</span></div>
     <div class="acts"><button data-arch="${it.id}">${t("archive")}</button>${it.stage !== "done" && !routineOf(it) ? `<button data-quickdone="${it.id}">${t("complete")}</button>` : ""}</div></div>`;
 }

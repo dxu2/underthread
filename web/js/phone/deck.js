@@ -16,7 +16,7 @@ function deck() {
     const a = App.agent(it.owner), kind = it.kind === "task" ? "deliverable" : it.kind;
     return `<div class="dk-card ${cls}" data-id="${it.id}">
       <div class="dk-meta"><span class="tag ${kind}"><span class="gl" aria-hidden="true">◆</span>${App.t(kind)}</span><span>${App.t(it.category)}</span><span class="dim">${App.whenH(it.activity)}</span>${(it.platforms || []).map(p => `<span class="tag pf">${App.PLAT[p] || p}</span>`).join("")}</div>
-      <h3>${esc(it.title)}</h3><p class="dk-sum">${esc(it.summary || "")}</p>
+      <h3>${window.Onboard ? Onboard.exT(it) : esc(it.title)}</h3><p class="dk-sum">${esc(it.summary || "")}</p>
       <div class="dk-draft md">${it.draft ? md(it.draft) : `<p class="dim">${en() ? "No draft yet." : "还没有草稿。"}</p>`}</div>
       <div class="dk-who">${App.av(a, "sm")}${esc(App.aname(a))} · ${esc(App.atitle(a))}${App.askLeft(it) ? `<b class="ok-ask">${App.askLeft(it)}</b>` : ""}</div>
       <div class="dk-stamp ok">${en() ? (it.kind === "plan" ? "START" : it.kind === "question" ? "ANSWER" : "ACCEPT") : App.okLabel(it, false).replace(" · ", "·")}</div><div class="dk-stamp no">${en() ? "REJECT" : "驳回"}</div><div class="dk-stamp skip">${en() ? "LATER" : "稍后"}</div></div>`;

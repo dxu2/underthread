@@ -31,7 +31,7 @@ function reviewCard(it, fresh) {
   const ok = rvCanApprove(it);
   return `<div class="rv-card${img ? "" : " no-img"}" data-item="${it.id}">${media}<div class="rv-body">
     <div class="rv-meta">${av(a, "sm", it.id)}<b>${esc(aname(a))}</b>${fresh ? `<i class="rv-dot"></i>` : ""}<span>· ${t(it.category)} · ${agoH(it.activity || it.updated)}</span>${waitTag(it)}${img ? "" : `<span class="rv-kind sm">${kind}</span>`}</div>
-    <h3>${nrDot(it.id)}${esc(it.title)}</h3>${it.summary ? `<p>${esc(mailPv(it.summary))}</p>` : ""}${askRow(it)}
+    <h3>${nrDot(it.id)}${window.Onboard ? Onboard.exT(it) : esc(it.title)}</h3>${it.summary ? `<p>${esc(mailPv(it.summary))}</p>` : ""}${askRow(it)}
     <div class="rv-acts${ok ? "" : " one"}"><button class="rv-open" data-rv-open="${it.id}">${zh ? "看详情" : "Open"}</button>${ok ? `<button class="rv-ok${openAsks(it).length ? " has-ask" : ""}" data-rv-ok="${it.id}">${okBtnIn(it)}</button>` : ""}</div>
   </div></div>`;
 }
@@ -255,7 +255,7 @@ function decHead(nRev, dec) {
 function decRow(it) {
   const a = agent(it.owner), zh = UI.lang !== "en", plan = it.kind === "plan";
   const what = plan ? (zh ? "方案待批" : "Plan to approve") : (zh ? "问题待答" : "Question for you");
-  return `<div class="dc-row" data-item="${it.id}">${av(a, "", it.id)}<div class="dc-main"><div class="dc-t">${nrDot(it.id)}${esc(it.title)}</div>
+  return `<div class="dc-row" data-item="${it.id}">${av(a, "", it.id)}<div class="dc-main"><div class="dc-t">${nrDot(it.id)}${window.Onboard ? Onboard.exT(it) : esc(it.title)}</div>
     <div class="dc-s">${what} · ${esc(aname(a))} · ${agoH(it.activity || it.updated)}${waitTag(it)}${openAsks(it).length ? ` · <b class="ask-n">${zh ? `${openAsks(it).length} 个问题要你选` : `${openAsks(it).length} to answer`}</b>` : ""}</div></div>
     <button class="dc-btn${plan ? "" : " g"}" data-rv-open="${it.id}">${plan ? (zh ? "看方案" : "Review") : (zh ? "去回答" : "Answer")}</button></div>`;
 }

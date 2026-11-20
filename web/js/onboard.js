@@ -24,6 +24,23 @@
   const LSS = (k, v) => { try { localStorage.setItem("rt." + k, JSON.stringify(v)); } catch (e) { } };
   const post = body => fetch("/api/action", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(Object.assign({ kind: "onboarding" }, body)) }).catch(() => { });
 
+  // ---------- sample cards (q-demo-*, from state.example.json) ----------
+  /* t-onb-polish: a sample reads as one at a glance. exT(it) = the title without its 「（示例）」 / "(sample)" suffix plus an Example tag;
+     exNote(it) = the line in the card detail saying what a click does; the Waiting on you widget's footer and that line offer 清掉示例
+     (action onboarding op=clear_samples archives every live sample; archived cards can still be opened from search). */
+  const isEx = it => !!it && /^q-demo-/.test(String(it.id || ""));
+  const exTag = () => `<span class="ex-tag">${esc(L("示例", "Example"))}</span>`;
+  const exT = it => isEx(it) ? esc(String(it.title || "").replace(/\s*[（(](?:示例|sample)[)）]\s*$/i, "")) + exTag() : esc(it && it.title);
+  const exLive = () => ((A().ST && A().ST.items) || []).filter(i => isEx(i) && !i.archived);
+  const exClear = `<button type="button" class="ex-clr" data-ex-clear>${esc(L("清掉示例", "Clear examples"))}</button>`;
+  const exNote = it => isEx(it) ? `<div class="ex-note"><span>${esc(L("这是示例卡：批准、驳回、回答都可以点着试，什么都不会真的发出去或被执行。", "This is an example card: try approve, reject or answer. Nothing is sent or done for real."))}</span>${exClear}</div>` : "";
+  const exFoot = () => { const n = exLive().length; return n ? `<div class="wg-more ex-foot"><span>${esc(L(`${n} 张示例卡，点开试试，不会真的执行`, `${n} example card${n > 1 ? "s" : ""}, safe to try`))}</span>${exClear}</div>` : ""; };
+  function clearSamples() {
+    const n = exLive().length; if (!n) return;
+    post({ op: "clear_samples" }).then(() => { A().toast(L(`已归档 ${n} 张示例卡`, `${n} example card${n > 1 ? "s" : ""} archived`)); if (A().refresh) A().refresh(); });
+    if (A().UI && A().UI.item && isEx({ id: A().UI.item }) && A().closeItem) A().closeItem();
+  }
+
   // ---------- steps ----------
   const NAME = { board: ["看板跑起来了", "Board is up"], team: ["团队就位", "Team in place"], wake: ["叫醒管家", "Wake the steward"], say: ["说第一句话", "Say your first line"],
     card: ["派出第一张卡", "First card goes out"], decide: ["拍一次板", "Make one call"], about: ["让管家认识你", "Let the steward know you"] };
@@ -52,7 +69,7 @@
   const doneLine = () => `<div class="ob-done"><b>✓ ${esc(L("全部完成", "All set"))}</b><span>${esc(phone() ? L("明天起这张卡会自己退下。", "This card steps aside tomorrow.") : L("明天起这一格会自己退下；想再看，在「编辑小组件」里加回。", "This tile steps aside tomorrow; add it back from Edit widgets any time."))}</span></div>`;
   const count = d => `${d.n} / ${d.of}`;
 
-  /* desktop widget: one full row, all seven steps in a line, the current step's hint under it */
+  /* desktop widget: one full row, all six steps in a line, the current step's hint under it */
   function widget(s, D, kit) {
     const d = SU(); if (!d) return kit.eb("setup");
     const cur = d.next;
@@ -204,6 +221,8 @@
 
   // ---------- clicks ----------
   document.addEventListener("click", e => {
+    const xc = e.target.closest && e.target.closest("[data-ex-clear]");
+    if (xc) { e.preventDefault(); e.stopPropagation(); return clearSamples(); }
     const t = e.target.closest && e.target.closest("[data-qg],[data-qg-all],[data-qg-close],[data-qg-open],[data-ob-step],[data-ob-copy],[data-ob-unlight],[data-ob-all],[data-ob-hide],[data-ob-hire],[data-qg-tog]");
     if (!t) { if (QG.pop && !(e.target.closest && e.target.closest(".qg-pop"))) { QG.pop = false; row($("#right")); } return; }
     if (t.dataset.qgTog != null) return;   // the settings switch has its own listener below
@@ -253,5 +272,5 @@
 
   if (window.UTExt) UTExt.widget({ id: "setup", name: ["开工清单", "Getting started"], sizes: ["w"], size: "w", first: true, core: true, html: widget,
     gone: () => !SU(), revive: () => post({ op: "show" }) });
-  window.Onboard = { chatTop, chatEmpty, row, phoneCard, settingsRow, light, unlight, fill };
+  window.Onboard = { chatTop, chatEmpty, row, phoneCard, settingsRow, light, unlight, fill, isEx, exT, exNote, exFoot };
 })();

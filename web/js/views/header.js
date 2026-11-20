@@ -230,7 +230,8 @@ function soulHTML() {
   const claude = `<div class="sl-m${U.stale ? " old" : ""}" title="${esc(U.tip)}">${soulSw(U.left)}<div class="sl-mn"><b>Claude</b></div><div class="sl-full">${cRight}</div>`
     + `<div class="sl-bars">${bar(en ? "5-hour" : "5 小时", U.left, U.approx)}${bar(en ? "Week" : "本周", U.week, U.approxW)}</div></div>`;
   let codex;
-  if (!C || C.used == null) codex = `<div class="sl-m old">${soulSw(null)}<div class="sl-mn"><b>Codex</b><small>${en ? "not read yet" : "还没读到"}</small></div><div class="sl-full"></div><div class="sl-bars">${bar(en ? "Week" : "本周", null)}</div></div>`;
+  // t-onb-polish: no Codex quota ever read (no ~/.codex/sessions log with rate_limits) = Codex is not set up here, so no row at all
+  if (!C || C.used == null) codex = "";
   else {
     const at = D(C.at), old = !at || Date.now() - at > 864e5, rs = C.resets_at && D(C.resets_at), reset = !!rs && rs <= Date.now();
     const left = reset ? 100 : Math.round(100 - C.used), plan = C.plan ? C.plan[0].toUpperCase() + C.plan.slice(1) : "";

@@ -5,7 +5,7 @@
 
 // ---------- left ----------
 import { $, LS } from "../core/util.js";
-import { CATS, dayKey, pad, t } from "../core/i18n.js";
+import { CATS, EN_SUB, dayKey, pad, t } from "../core/i18n.js";
 import { ST, UI, items, mailUnread, onYou, qBadge } from "../core/store.js";
 import { aduty, agent, agents, aname, av } from "../core/av.js";
 import { api } from "../core/ui.js";
@@ -67,7 +67,7 @@ function renderLeft() {
   const navs = ["review", ...CATS, "sep", "market",   /* t-drop-team-tab (11-12): 团队 row removed; the 团队交接 widget stays (web/team.js) */ "studio", "reports", "mail", "settings"];   /* t-nav-shoot (11-05): 制作线 / 委托板 / 频道 / 素材 are one 制作 row; the pages keep their own ids */   /* t-hdr-trim ①: 信箱 moved here from the top bar (phone: same row in 更多) */   // t-settings-tab: 日志 / 文档 / 角色 moved into 设置
   const selK = STU.includes(UI.page) ? "studio" : UI.page, sew = UI.navSew !== selK; UI.navSew = selK;   /* t-thread-motif ②: the thread sews in only when the selection changes, not on every poll rebuild */
   $("#nav").innerHTML = navs.map(k => k === "sep" ? `<div class="nav-sep"></div>` :
-    `<button class="nav-i ${selK === k ? "on" : ""} ${k === "urgent" && c.urgent ? "urgent" : ""}" data-go="${k}"${k === "ongoing" ? ` title="${esc(ogTip)}"` : ""}><span>${NAV_IC[k] ? `<i class="nv-ic" aria-hidden="true"><svg viewBox="0 0 24 24">${NAV_IC[k]}</svg></i>` : ""}<span class="nv-t">${t(k)}${selK === k ? `<svg class="nv-ul${sew ? " sew" : ""}" viewBox="0 0 100 6" preserveAspectRatio="none" aria-hidden="true"><path pathLength="1" d="M1 3.6C20 2.2 40 4.4 60 3.2S88 2.6 96 3.4"/></svg><i class="nv-knot${sew ? " sew" : ""}" aria-hidden="true"></i>` : ""}</span></span>${k === "mail" ? (c.mail ? `<span class="n mb">${YARN}${c.mail > 99 ? "99+" : c.mail}</span>` : `<span class="n z"></span>`) : `<span class="n${c[k] === 0 ? " z" : ""}">${c[k] ?? ""}</span>`}</button>`).join("");
+    `<button class="nav-i ${selK === k ? "on" : ""} ${k === "urgent" && c.urgent ? "urgent" : ""}" data-go="${k}"${k === "ongoing" ? ` title="${esc(ogTip)}"` : ""}><span>${NAV_IC[k] ? `<i class="nv-ic" aria-hidden="true"><svg viewBox="0 0 24 24">${NAV_IC[k]}</svg></i>` : ""}<span class="nv-t">${k === "studio" ? stuName() : t(k)}${selK === k ? `<svg class="nv-ul${sew ? " sew" : ""}" viewBox="0 0 100 6" preserveAspectRatio="none" aria-hidden="true"><path pathLength="1" d="M1 3.6C20 2.2 40 4.4 60 3.2S88 2.6 96 3.4"/></svg><i class="nv-knot${sew ? " sew" : ""}" aria-hidden="true"></i>` : ""}</span></span>${k === "mail" ? (c.mail ? `<span class="n mb">${YARN}${c.mail > 99 ? "99+" : c.mail}</span>` : `<span class="n z"></span>`) : `<span class="n${c[k] === 0 ? " z" : ""}">${c[k] ?? ""}</span>`}</button>`).join("");
 
   // calendar
   const today = dayKey(new Date()), tmr = dayKey(new Date(Date.now() + 864e5));
@@ -122,6 +122,9 @@ const STU_L = { pipe: ["制作线", "Pipeline"], board: ["委托板", "Board"], 
    Off: the pages still render from a direct #page= link, they just leave the tabs, the palette and the default. */
 const contentMode = () => { const m = (ST && ST.meta) || {}; if (m.studio === "on" || m.studio === "off") return m.studio === "on"; return m.platforms_set !== false || agents().some(a => a.pipe && a.enabled !== false); };   /* platforms_set missing = an older server: keep the tabs */
 const stuList = () => contentMode() ? STU : STU.filter(x => x !== "pipe" && x !== "channels");
+/* t-onb-polish: without content mode the row only holds 委托板 + 素材, so 「制作 / Studio」 says what is there: 委托与素材 / Board & files.
+   Content installs (platforms set, a pipe role, or 设置 → 制作线和频道 on) keep 制作 / Studio. */
+const stuName = (cap) => contentMode() ? (cap ? EN_SUB.studio : t("studio")) : cap ? "BOARD & FILES" : UI.lang === "en" ? "Board & files" : "委托与素材";
 /* t-thread-motif: left rail icons (work/t-thread-motif/icons, 24 grid, stroke = currentColor); shown only under 特典 and only on desktop (CSS) */
 const NAV_IC = {
   review: '<path d="M3.5 11 12 4l8.5 7"/><path d="M5.5 9.5V20h13V9.5"/><path d="M10 20v-3.2a2 2 0 0 1 4 0V20"/>',
@@ -155,4 +158,4 @@ function wireLeft() {
   });
 }
 
-export { counts, rtShort, rtFull, schToday, CALPF, calFold, renderLeft, SET_TABS, STU, STU_L, NAV_IC, stuTabs, wireLeft, contentMode, stuList };
+export { counts, rtShort, rtFull, schToday, CALPF, calFold, renderLeft, SET_TABS, STU, STU_L, NAV_IC, stuTabs, wireLeft, contentMode, stuList, stuName };
