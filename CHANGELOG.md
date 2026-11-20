@@ -13,7 +13,7 @@ Versions follow [semantic versioning](https://semver.org) and the `VERSION` file
 
 Work in progress goes under `## Unreleased`; the release renames it to `## [X.Y.Z] - YYYY-MM-DD`. Sections dated before 0.1.0 are from before versioning.
 
-## Unreleased
+## [0.2.0] - 2026-11-20
 
 ### Added
 - **Mail feed (Settings → Connections)**: a new 连接 / Connections tab links a Gmail account with an app password (IMAP, read-only: it never sends, deletes, archives or marks mail). Off until you connect. The server then checks every 5 minutes (1 / 5 / 15 / 30 / 60, with an on/off switch, **Fetch now**, **New password** and **Disconnect**) and writes one headers-only `kind: feed` entry to the steward's inbox when there is new mail: one row per thread, threads seen before marked `again`, an unacknowledged entry merged into the next, old mail never replayed. An optional tool-less classifier (`claude -p`, haiku) sorts each mail into needs_user / can_draft / fyi with a one-line reason and falls back to headers when it is off or fails; every field is cleaned and marked untrusted. The password goes to the macOS keychain (or, after you confirm, a 0600 file for Linux or a locked keychain) and never into config, `feeds.json`, the inbox, logs or a command line. The steward's rules for feed entries are in `roles/manager.md` → Feeds (quiet for two weeks, cards only for needs_user, drafts only). Slack is listed as coming soon. See [docs/feeds.md](docs/feeds.md).
