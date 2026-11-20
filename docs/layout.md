@@ -9,6 +9,7 @@ What every top-level folder and file is, and which ones are yours. Two rules cov
 
 | Path | What it is |
 |---|---|
+| `start` | One-step start (`./start`): dashboard, browser, steward, and the Underthread icon. The work is in `tools/start.py` |
 | `server.py` | The dashboard. `python3 server.py` (env `PORT`, `NO_LOOPS=1`, `--demo`) |
 | `stateutil.py` | The command line every teammate uses (`python3 stateutil.py …`); also `import stateutil` for scripts |
 | `make_agents.py` | Rebuilds `.claude/agents/*.md` and the steward's dispatch table from `roster.json` |
@@ -29,7 +30,7 @@ The data files stay in the root on purpose: scripts and extensions that read the
 | `web/` | The page. Plain HTML, CSS and JavaScript, no build step (below) |
 | `roles/` | One rule file per teammate (`roles/<id>.md`); your own rules go in `local/roles/` |
 | `templates/`, `presets/` | Role templates for the 招聘市场 and whole-crew presets (`tools/preset.py`) |
-| `tools/` | Command-line tools: `update.py`, `release.py`, `bak.py`, `new_role.py`, `preset.py`, `ensure_server.py` / `keepalive.sh` / `install_service.sh`, `webpush.py`, `comfy.py`, `avatar_sizes.py`, `statusline.py`, `demo.py`, … |
+| `tools/` | Command-line tools: `start.py` (+ `app/icon-1024.png`, the icon's artwork), `update.py`, `release.py`, `bak.py`, `new_role.py`, `preset.py`, `ensure_server.py` / `keepalive.sh` / `install_service.sh`, `webpush.py`, `comfy.py`, `avatar_sizes.py`, `statusline.py`, `demo.py`, … |
 | `tests/` | `python3 tests/run.py quick | unit | api | e2e | upgrade | all` |
 | `docs/` | Guides: [setup-guide.md](setup-guide.md), [architecture.md](architecture.md), [custom-crew.md](custom-crew.md), [extensions.md](extensions.md), [local.md](local.md), [phone-and-push.md](phone-and-push.md), [troubleshooting.md](troubleshooting.md), this file |
 | `avatars/` | Teammate pictures: yours, git-ignored like `roster.json`. Defaults ship in `avatars/seed/ut/` (preset roles in `presets/<name>/avatars/ut/`) and are copied in when missing, never over yours |

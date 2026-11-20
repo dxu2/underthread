@@ -1,0 +1,11 @@
+#!/bin/sh
+# One step to a working Underthread board: ./start   (./start --help for the options; the work is in tools/start.py)
+DIR=$(cd "$(dirname "$0")" && pwd) || exit 1
+for py in python3 python3.13 python3.12 python3.11 python3.10; do
+  if command -v "$py" >/dev/null 2>&1 && "$py" -c 'import sys; sys.exit(sys.version_info < (3, 10))' 2>/dev/null; then
+    exec "$py" "$DIR/tools/start.py" "$@"
+  fi
+done
+command -v python3 >/dev/null 2>&1 && exec python3 "$DIR/tools/start.py" "$@"   # too old: start.py says which version is needed
+echo "Underthread needs Python 3.10 or newer: https://www.python.org/downloads/" >&2
+exit 1

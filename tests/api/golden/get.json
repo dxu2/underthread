@@ -2480,7 +2480,7 @@
     "setup": {
      "agents_cmd": "python3 make_agents.py",
      "all": false,
-     "cmd": "claude \"Start the manager per manager.md\"",
+     "cmd": "./start",
      "done_at": null,
      "keep": false,
      "n": 3,
@@ -4131,7 +4131,7 @@
     "setup": {
      "agents_cmd": "python3 make_agents.py",
      "all": false,
-     "cmd": "claude \"Start the manager per manager.md\"",
+     "cmd": "./start",
      "done_at": null,
      "keep": false,
      "n": 5,
@@ -5380,7 +5380,7 @@
     "setup": {
      "agents_cmd": "python3 make_agents.py",
      "all": false,
-     "cmd": "claude \"Start the manager per manager.md\"",
+     "cmd": "./start",
      "done_at": null,
      "keep": false,
      "n": 3,

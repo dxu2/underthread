@@ -7,7 +7,7 @@ Start with the log: `tail -n 80 logs/server.log`. Most problems show up there fi
 | Symptom | Likely cause | Fix |
 |---|---|---|
 | `http://127.0.0.1:8765` doesn't load | The server isn't running, or another program holds the port (the server then prints one line saying the port is taken and exits) | `python3 tools/ensure_server.py`. Port taken: `lsof -nP -iTCP:8765 -sTCP:LISTEN` shows who; set another `port` in `config.json` or run with `PORT=8766` |
-| The header says the manager is offline and requests are waiting | The steward session isn't running, or its Monitor expired | Check the terminal running `claude`. If it's gone, start it again (`claude "Start the manager per manager.md"`); it picks up the backlog from `inbox.jsonl`. If it's alive, tell it "re-arm your inbox Monitor" |
+| The header says the manager is offline and requests are waiting | The steward session isn't running, or its Monitor expired | Check the terminal running `claude`. If it's gone, start it again (click the Underthread icon, run `./start`, or `claude "Start the manager per manager.md"`); it picks up the backlog from `inbox.jsonl`. If it's alive, tell it "re-arm your inbox Monitor" |
 | You type in chat and nothing happens | Same as above: nobody is watching `inbox.jsonl` | As above. Your messages are not lost; they wait in the inbox |
 | The steward says it can't find a teammate / dispatch fails | `make_agents.py` never ran, or ran after the steward started | `python3 make_agents.py`, then restart the steward |
 | A teammate keeps asking for permission to run `stateutil.py` | `.claude/settings.json` is missing or was replaced | Restore it from git: `git checkout -- .claude/settings.json` |
@@ -24,6 +24,8 @@ Start with the log: `tail -n 80 logs/server.log`. Most problems show up there fi
 | ComfyUI shows offline | SSH tunnel down | `python3 tools/comfy.py tunnel`, then `python3 tools/comfy.py ping` |
 | No ComfyUI line in the status popover at all | `config.json` has no `comfy` block (that's the default) | Only needed for image generation: [SETUP-GUIDE section 9](setup-guide.md#9-comfyui-optional) |
 | The dashboard stops when you close the terminal (Linux) | `tools/install_service.sh` is macOS only | Run `bash tools/keepalive.sh` instead (for example under `nohup`, `tmux` or your own systemd user unit) |
+| The Underthread icon says the folder moved, or does nothing | The app remembers the folder it was made in | Run `./start --app` in the folder you use now; clicks are logged in `logs/start.log` |
+| The steward's Terminal window doesn't minimise | You said no (or didn't answer) when macOS asked whether Underthread may control Terminal | Harmless: the window works the same. To allow it later: System Settings → Privacy & Security → Automation → Underthread → Terminal |
 | A finished card disappeared | It was archived after 3 quiet days | Search still finds it. `python3 stateutil.py archive list`; `archive unarchive-all` restores everything |
 | `state.json` looks broken | Hand edits, or a crash mid-write elsewhere | Don't edit it by hand. Stop the server and the steward, keep a copy, and open an issue with the server log |
 

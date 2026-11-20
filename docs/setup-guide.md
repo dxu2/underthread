@@ -12,6 +12,25 @@ How the pieces fit together is in [docs/architecture.md](architecture.md). Probl
 
 ---
 
+## 0. The short way: `./start` and the Underthread icon
+
+`./start` (the work is in `tools/start.py`, standard library only) does sections 4 to 6 for you: it checks Python, git and `claude`, starts or reuses the dashboard (`tools/ensure_server.py`), runs `make_agents.py` when `.claude/agents/` is missing or older than `roster.json`, opens the browser and then turns the terminal into the steward. It starts no second steward when one is running: a `claude` process in this folder started with the steward prompt, or a steward heartbeat newer than 30 minutes (`./start --steward` starts one anyway).
+
+| Option | What it does |
+|---|---|
+| `--no-steward` | Everything but the steward (for the Claude desktop app) |
+| `--no-open` | Don't open the browser |
+| `--demo` | The demo board, same as `python3 server.py --demo` |
+| `--app` | Make the icon again (or for the first time) |
+
+It asks two questions once, only in a terminal, and keeps the answers in `local/start.json` (delete the file to be asked again):
+- **Icon** (default yes). macOS: `~/Applications/Underthread.app`, built on your Mac with `osacompile`, `sips` and `iconutil` from `tools/app/icon-1024.png`, then signed ad hoc. A locally built app has no quarantine flag, so Gatekeeper opens it without a warning; a copy downloaded or sent from another Mac would be blocked, so don't share the app, run `./start` on each Mac. The app remembers this folder and the `PATH` of the terminal it was made in. Clicking it runs `./start --from-app`: no questions, problems in a dialog, a log in `logs/start.log`, and the steward in a Terminal window (`logs/steward.command`) that is then minimised. Minimising is an Apple event to Terminal, so macOS asks once whether Underthread may control Terminal; if you say no, the window stays open. Linux: `~/.local/share/applications/underthread.desktop` (`Terminal=false`, icon `web/icons/icon-512.png`); the steward opens in `x-terminal-emulator`, `gnome-terminal`, `konsole` or `xterm`.
+- **Start at login** (macOS only, default no). Yes runs `bash tools/install_service.sh` (section 5).
+
+Everything below still works by hand, exactly as before.
+
+---
+
 ## 1. Prerequisites
 
 | Need | Check |
@@ -107,7 +126,7 @@ The server log is `logs/server.log`.
 
 ## 6. Start the steward
 
-From the project folder:
+From the project folder (or just `./start`, or click the Underthread icon; see [section 0](#0-the-short-way-start-and-the-underthread-icon)):
 
 ```bash
 claude "Start the manager per manager.md"
