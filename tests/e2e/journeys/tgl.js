@@ -46,9 +46,20 @@ module.exports = {
       const k2 = await knob(p);
       c.check(`${name} ${theme}: tap again -> back on`, k2.aria === "true" && k2.on && k2.x >= 18, k2);
       if (c.view === "desk") {
-        await p.focus(SW); const tab = c.engine === "webkit" && process.platform === "darwin" ? "Alt+Tab" : "Tab";   /* WebKit on macOS skips buttons on plain Tab (system setting); Alt+Tab is its full keyboard access. Linux WebKit (CI) has no such setting: Alt+Tab there moves no focus, so it is plain Tab */
-        await p.keyboard.press("Shift+" + tab); await p.keyboard.press(tab); await c.sleep(200);
-        const ring = await p.evaluate(s => { const sw = document.querySelector(s + " .sw") || document.querySelector(s); const cs = getComputedStyle(sw); return { fv: document.querySelector(s).matches(":focus-visible"), o: cs.outlineStyle, w: cs.outlineWidth }; }, SW);
+        /* Keyboard focus without knowing the platform's Tab rules: WebKit on macOS skips buttons on plain Tab unless Alt is held (full keyboard
+           access); Linux WebKit (CI) and Chromium do not. Try plain Tab first, then Alt+Tab, then a forward Tab walk, and keep the first that lands on the switch (the log says which). */
+        let ring = null;
+        for (const tab of ["Tab", "Alt+Tab", "walk"]) {
+          if (tab === "walk") {   /* last resort: from the top of the page, Tab forward until the switch has focus (no Shift+Tab involved) */
+            await p.evaluate(() => document.activeElement && document.activeElement.blur());
+            for (let i = 0; i < 80 && !(await p.evaluate(s => document.activeElement === document.querySelector(s), SW)); i++) await p.keyboard.press("Tab");
+            await c.sleep(200);
+          } else { await p.focus(SW); await p.keyboard.press("Shift+" + tab); await p.keyboard.press(tab); await c.sleep(200); }
+          ring = await p.evaluate(s => { const t = document.querySelector(s), sw = t.querySelector(".sw") || t, cs = getComputedStyle(sw), a = document.activeElement;
+            return { fv: t.matches(":focus-visible"), o: cs.outlineStyle, w: cs.outlineWidth, on: a === t, active: a ? a.tagName + (a.className ? "." + String(a.className).split(" ")[0] : "") : null }; }, SW);
+          ring.key = tab;
+          if (ring.on && ring.fv) break;
+        }
         await c.shot(`${name}-${theme}-focus`, sec);
         c.check(`${name} ${theme}: keyboard focus shows a ring on the switch`, ring.fv && ring.o === "solid", ring);
       }
