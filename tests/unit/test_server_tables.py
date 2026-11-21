@@ -69,7 +69,7 @@ ROUTES = [
 
 A, SC, SN = "api.routes.actions", "api.routes.schedules", "api.routes.snooze"
 ACTIONS = {"answer": A, "approve": A, "archive": A, "calendar_add": A, "calendar_del": A, "chat": A, "chat_seen": A, "comment": A,
-           "dm": A, "done": A, "lesson": A, "mail_read": A, "new_task": A, "notice_dismiss": A, "onboarding": "api.routes.setup", "owner_name": A, "ping": A, "reassign": A, "reject": A,
+           "dm": A, "done": A, "lesson": A, "mail_read": A, "new_task": A, "notice_dismiss": A, "onboarding": "api.routes.setup", "owner_location": A, "owner_name": A, "ping": A, "reassign": A, "reject": A,
            "reopen": A, "report_request": A, "routine_pause": SC, "routine_resume": SC, "schedule_fire": SC, "schedule_pause": SC,
            "schedule_resume": SC, "schedule_rm": SC, "set_category": A, "set_stage": A, "snooze": SN, "stamina": A, "studio_mode": A, "unsnooze": SN,
            "widget_layout": A}

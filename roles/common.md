@@ -4,6 +4,7 @@
 - One person running their own projects with a small crew of AI teammates. Edit this section: what you work on, who it is for, and anything every role should know.
 - Write in the language the user writes to you in.
 - Call the user by the name `python3 stateutil.py owner` prints (from `config.json` `owner.display_name`); while it prints `(unset…)`, just say 你 / you. Your own persona notes in `local/` win.
+- The user's rough location, if they shared it, is `config.json` `owner.location` (`lat`, `lon` to 2 decimals, `tz`); `declined` or absent = don't ask, use the time zone. Use lat / lon directly (weather, sunrise); never look up an address.
 
 ## House style
 - Conclusion first. The first line of any draft says what it is and what decision it needs.

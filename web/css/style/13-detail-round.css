@@ -258,6 +258,14 @@ html:not([data-theme="dark"]) .tag.deliverable::selection, html:not([data-theme=
 .ask-nm-skip:hover { border-color: var(--accent); color: var(--accent); }
 .ask-nm.done { display: block; font-size: var(--fs-13); color: var(--ink2); }
 .ask-nm.done small { color: var(--dim); font-size: var(--fs-12); }
+/* t-oss-location: 「用我的位置」 under the name field and in Settings → General → You */
+.ask-loc { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 8px 0 2px; max-width: 460px; font-size: var(--fs-12); color: var(--dim); }
+.ask-loc.done { display: block; font-size: var(--fs-13); color: var(--ink2); } .ask-loc.done small { color: var(--dim); font-size: var(--fs-12); }
+.ask-loc-go { display: inline-flex; align-items: center; gap: 5px; }
+.ask-loc-go svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linejoin: round; }
+.ask-loc-go.busy { opacity: .6; pointer-events: none; }
+.ask-loc-no { border-style: dotted; color: var(--dim); }
+.st-loc { cursor: default; } .st-loc-b { display: flex; flex: none; gap: 8px; align-items: center; }
 @media (max-width: 760px) { .ask-nm input, .ask-nm-go { height: 40px; font-size: 16px; } }   /* 16px: iOS does not zoom into the field */
 /* t-detail-send: the detail composer gets the right-hand chat's paper plane (desk; the phone has its own .m-send) */
 /* t-detail-send v2: the plane sits inside the field, bottom-right like the right-hand chat; the text keeps clear of it */
