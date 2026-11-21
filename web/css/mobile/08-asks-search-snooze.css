@@ -183,3 +183,5 @@ body.kb .dw-toc:not(.open) { display: none; }
 .snz-wrap.sheet .snz-o span { font-size: var(--fs-14); }
 .snz-cus input { font-size: var(--fs-16); padding: 8px 10px; }
 
+/* t-phone-snooze-gap (user 11-21): the 「1 snoozed · back …」 pill sat on the sort row's rule (margin 0 0 12px); give it the same 12px breathing room above */
+.ph-bar + .snz-line { margin: 12px 0 4px; }
