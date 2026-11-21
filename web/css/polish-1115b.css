@@ -22,6 +22,10 @@
     box-shadow: 0 0 0 1px var(--line2), -20px 0 56px rgba(0,0,0,.35), 0 0 0 100vmax rgba(0,0,0,.3); }
   html[data-texture^="leather"] #right { outline: 1px solid var(--lt-groove); outline-offset: -9px; }
   html[data-texture^="knit"] #right { outline: var(--kn-sw, 1.5px) dashed var(--kn-thread, var(--line3)); outline-offset: -9px; }
+  /* t-panel-crowd: that inner frame sits 9px in, and the 「>」 fold button (left 10px, top 16px) touched it. Inside the frame, move the button
+     and the name row in by about the frame's inset so the button has ~11px of air on both sides; folded and frameless textures are unchanged. */
+  html:is([data-texture^="leather"], [data-texture^="knit"]) body:not(.chat-folded) #right .ch-fold { left: 21px; top: 22px; }
+  html:is([data-texture^="leather"], [data-texture^="knit"]) body:not(.chat-folded) #right .ch-head { padding-top: 22px; padding-left: 60px; }
 
   /* 6 + 7. the send plane and the ⌘↵ hint sit inside the field: one reserved line at the bottom of the textarea, hint left of the plane */
   #right .ch-comp { position: relative; align-items: flex-end; padding-bottom: 14px; }
