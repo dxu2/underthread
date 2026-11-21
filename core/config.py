@@ -79,9 +79,8 @@ def clean_owner(name):
     return n
 
 
-def set_owner(root, name):
-    """Write owner.display_name into config.json; every other key (and _schema) stays as it is. Creates the file if missing."""
-    n = clean_owner(name)
+def _write_owner(root, key, value):
+    """Set (or, with value None, drop) owner.<key> in config.json; every other key (and _schema) stays as it is. Creates the file if missing."""
     path = os.path.join(root, "config.json")
     try:
         with open(path, encoding="utf-8") as f:
@@ -92,14 +91,66 @@ def set_owner(root, name):
         raise ValueError("config.json is not an object")
     if not isinstance(data.get("owner"), dict):
         data["owner"] = {}
-    data["owner"]["display_name"] = n
+    if value is None:
+        data["owner"].pop(key, None)
+    else:
+        data["owner"][key] = value
     tmp = path + ".tmp"
     with open(tmp, "w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False, indent=2)
         f.write("\n")
     os.replace(tmp, path)
     _OWN["m"] = None
+
+
+def set_owner(root, name):
+    """Write owner.display_name into config.json; every other key (and _schema) stays as it is. Creates the file if missing."""
+    n = clean_owner(name)
+    _write_owner(root, "display_name", n)
     return n
+
+
+# ---------- t-oss-location: where you are, from the browser (navigator.geolocation), never from a third party ----------
+# owner.location = {"lat": 37.77, "lon": -122.42, "tz": "America/Los_Angeles", "at": "<iso>"} (2 decimals, about 1 km), or
+# {"declined": true, "at": "<iso>"} when you said no (the board never asks again). Absent = never asked. No reverse geocoding:
+# whatever needs weather or sunrise reads lat / lon from here.
+_TZ_RE = r"[A-Za-z][A-Za-z0-9_+\-]*(/[A-Za-z0-9_+\-]+){0,2}"
+
+
+def clean_location(lat, lon, tz=""):
+    """{lat, lon, tz} rounded to 2 decimals; ValueError when they are not real coordinates or tz is not an IANA-looking name."""
+    import re
+    try:
+        la, lo = float(lat), float(lon)
+    except (TypeError, ValueError):
+        raise ValueError("location: lat / lon must be numbers")
+    if not (-90 <= la <= 90 and -180 <= lo <= 180) or la != la or lo != lo:
+        raise ValueError("location: lat -90..90, lon -180..180")
+    tz = str(tz or "").strip()
+    if tz and (len(tz) > 64 or not re.fullmatch(_TZ_RE, tz)):
+        raise ValueError("location: tz must look like Area/City")
+    out = {"lat": round(la, 2), "lon": round(lo, 2)}
+    if tz:
+        out["tz"] = tz
+    return out
+
+
+def set_location(root, loc):
+    """loc = clean_location(...) result, {"declined": True}, or None (forget it, so the board may ask again). Stamps "at"."""
+    import datetime as _dt
+    if loc is not None:
+        loc = dict(loc, at=_dt.datetime.now().astimezone().isoformat(timespec="seconds"))
+    _write_owner(root, "location", loc)
+    return loc
+
+
+def owner_location(root):
+    """owner.location as config.json says now: the dict above, or None when never asked."""
+    try:
+        v = (user(root).get("owner") or {}).get("location")
+    except (OSError, ValueError):
+        return None
+    return v if isinstance(v, dict) else None
 
 
 _OWN = {"m": None, "v": ""}
