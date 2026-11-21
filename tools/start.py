@@ -8,6 +8,7 @@
     ./start --demo          the demo board (no Claude Code needed); same as python3 server.py --demo
     ./start --app           (re)make the Underthread icon: ~/Applications/Underthread.app on macOS,
                             ~/.local/share/applications/underthread.desktop on Linux
+    ./start --uninstall     take it off this computer (asks first; --dry-run only lists): see tools/uninstall.py
     ./start --from-app      what the icon runs: no questions, errors in a dialog, the steward in a minimised Terminal window
 
 Order: Python >= 3.10 → git / claude present (a warning only) → .claude/agents/ (make_agents.py when missing or older than
@@ -183,17 +184,27 @@ def open_browser(url):
 # ---------- is a steward already running? ----------
 def steward_process():
     """pid of a `claude` process started with the steward prompt whose working folder is this install, else None."""
+    p = steward_pids()
+    return p[0] if p else None
+
+
+def steward_pids():
+    """Every such process (tools/uninstall.py stops them all)."""
+    found = []
     try:
         ps = subprocess.run(["ps", "-axww", "-o", "pid=,command="], capture_output=True, text=True).stdout
     except OSError:
-        return None
+        return found
     for line in ps.splitlines():
         pid, _, cmd = line.strip().partition(" ")
         if PROMPT not in cmd or "claude" not in cmd or "start.py" in cmd or "steward.command" in cmd:
             continue
+        t = cmd.split()
+        if len(t) > 1 and os.path.basename(t[0]).lstrip("-") in ("sh", "bash", "zsh", "dash", "fish") and t[1] == "-c":
+            continue   # a shell running a command line that merely mentions the prompt (scripts, test harnesses)
         if proc_cwd(pid) == os.path.realpath(ROOT):
-            return int(pid)
-    return None
+            found.append(int(pid))
+    return found
 
 
 def proc_cwd(pid):
@@ -507,6 +518,8 @@ def main():
     if "-h" in ARGS or "--help" in ARGS:
         print(__doc__.strip())
         return
+    if "--uninstall" in ARGS:   # tools/uninstall.py: only what belongs to this folder; asks before any data goes
+        os.execv(sys.executable, [sys.executable, os.path.join(ROOT, "tools", "uninstall.py")] + [a for a in ARGS if a != "--uninstall"])
     if "--demo" in ARGS:
         rest = [a for a in ARGS if a not in ("--demo", "--no-open", "--no-steward")]
         if "--no-open" not in ARGS:
