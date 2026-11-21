@@ -367,6 +367,7 @@ def public_state(slim=False):
     st["meta"].pop("inbox_acked", None)
     st["meta"]["comfy"] = _comfy
     st["meta"]["codex"] = codex_quota()   # t-soul-widget
+    C.owner_live(ROOT, CONFIG)   # t-onboard-name: a name set by stateutil owner set shows without a restart
     st["meta"]["owner"] = (CONFIG.get("owner") or {}).get("display_name", "")
     st["meta"]["avatars"] = {f.rsplit(".", 1)[0]: f for f in sorted(os.listdir(AVATARS))
                              if f.lower().endswith((".png", ".jpg", ".jpeg", ".webp", ".gif"))}

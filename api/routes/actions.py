@@ -4,7 +4,7 @@ api/routes/snooze.py, routine_* / schedule_* in api/routes/schedules.py. Every h
 import datetime as dt
 import re
 
-from api.ctx import S
+from api.ctx import S, C, ROOT, CONFIG
 from api.router import route, action, ACTIONS, NOLOCK, ME, OpenAsks
 from api.routes.hr import HR_ID, XFER_MAX, _hire_apply
 
@@ -309,6 +309,20 @@ def _chat_seen(a):   # t-ri1113-a P1: how far the user has read each chat / DM, 
     if t > was:   # only ever forward
         cs[aid] = t
     print(f"[{S.now()}] chat_seen {aid} {t}" + ("" if t > was else f" (kept {was})"), flush=True)   # cross-device path: always logged
+
+
+@action("owner_name")
+def _owner_name(a):
+    """t-onboard-name: the name field under the steward's first message. {name} -> config.json owner.display_name; {skip: true} -> keep
+    saying 你 / you and do not ask again. Either way meta.owner_ask records it and the steward gets an owner_name inbox entry."""
+    if a.body.get("skip"):
+        a.st["meta"]["owner_ask"] = "skip"
+        a.inbox = {"kind": "owner_name", "skip": True, "text": "（用户选了「叫我『你』就行」/ \"just you\"）"}
+        return
+    n = C.set_owner(ROOT, a.body.get("name"))
+    CONFIG.setdefault("owner", {})["display_name"] = n
+    a.st["meta"]["owner_ask"] = "done"
+    a.inbox = {"kind": "owner_name", "name": n, "text": f"以后叫我 {n} / call me {n}"}
 
 
 @action("widget_layout")

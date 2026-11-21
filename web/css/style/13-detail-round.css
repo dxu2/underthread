@@ -245,3 +245,17 @@ html[data-theme="dark"] .tag.deliverable::selection, html[data-theme="dark"] .ta
 html:not([data-theme="dark"]) #right .msg.me .mb::selection, html:not([data-theme="dark"]) #right .msg.me .mb *::selection,
 html:not([data-theme="dark"]) .tag.deliverable::selection, html:not([data-theme="dark"]) .tag.plan::selection, html:not([data-theme="dark"]) .aq-n::selection { background: rgba(255,255,255,.34); color: #fff; }
 
+
+/* t-onboard-name: the name field under the steward's first message (chat.js askName) */
+.ask-nm { display: flex; flex-direction: column; gap: 8px; margin: 10px 0 2px; max-width: 460px; }
+.ask-nm-r { display: flex; gap: 8px; align-items: center; }
+.ask-nm input { flex: 1; min-width: 0; height: 36px; padding: 0 12px; border-radius: 12px; border: 1.5px dashed color-mix(in srgb, var(--ink) 32%, transparent);
+  background: var(--panel, var(--bg)); color: var(--ink); font: inherit; font-size: var(--fs-14); }
+.ask-nm input:focus { outline: none; border-color: var(--accent); border-style: solid; }
+.ask-nm-go { flex: none; height: 36px; padding: 0 16px; border-radius: 999px; border: 0; background: var(--accent); color: var(--accent-ink, #fff); font: inherit; font-size: var(--fs-14); font-weight: 600; cursor: pointer; }
+.ask-nm-r2 { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; font-size: var(--fs-12); color: var(--dim); }
+.ask-nm-skip { padding: 5px 12px; border-radius: 999px; border: 1.5px dashed color-mix(in srgb, var(--accent) 55%, transparent); background: none; color: var(--ink); font: inherit; font-size: var(--fs-13); cursor: pointer; }
+.ask-nm-skip:hover { border-color: var(--accent); color: var(--accent); }
+.ask-nm.done { display: block; font-size: var(--fs-13); color: var(--ink2); }
+.ask-nm.done small { color: var(--dim); font-size: var(--fs-12); }
+@media (max-width: 760px) { .ask-nm input, .ask-nm-go { height: 40px; font-size: 16px; } }   /* 16px: iOS does not zoom into the field */
