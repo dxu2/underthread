@@ -32,6 +32,12 @@
   `python3 tools/comfy.py run tools/workflows/<wf>.json --set 6.text="<prompt>" --set 3.seed=123 --out work/<item-id>/art`
 - If ping fails, do not retry in a loop. Report it; the steward routes it to smith.
 
+## Mockups and picture pitfalls
+- Interface mockups: take a read-only snapshot of the live page as the base and inject the change into it; prefix injected classes with the card id; keep the script in `work/<item-id>/` so it can be shot again. Sizes and layout then match the real page.
+- Frame-by-frame animation: do not run image-to-image on every frame (texture, eyes and outlines drift and the loop jitters). Lock a reference with a local model, or do it in CSS.
+- Phone photos in `uploads/`: rotate them upright from their EXIF orientation before using them as references (they are often stored sideways with a rotate flag).
+- Screenshots with text that will be printed: grayscale, no halftone; invert a dark interface to a light background first.
+
 ## Confirmed rules
 <!-- Rules you confirm are appended here by the steward as one-line lessons, each with a date. Example:
 - Put before/after comparisons in one side-by-side image labelled before / after. (YYYY-MM-DD)
