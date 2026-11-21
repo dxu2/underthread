@@ -24,16 +24,25 @@ function tickerItems() {
   return out;
 }
 let tickIdx = 0;
+const NTY_BALL = '<svg class="nty-ball" viewBox="0 0 20 20" aria-hidden="true"><circle class="b0" cx="10" cy="10" r="9"/><path class="bw" d="M2 7.4Q10 3 18.2 8.2M1.8 12.6Q10 8.6 18.2 13.4M6.6 1.8Q2.2 9.8 7 18.2M13.2 1.8Q18 9.8 13 18.2"/></svg>';
+const NTY_THR = `<span class="nty-thr" aria-hidden="true"><svg viewBox="0 0 220 12" preserveAspectRatio="none"><path d="M0 6 ${Array.from({ length: 14 }, (_, i) => `Q${i * 16 + 8} ${i % 2 ? 10 : 2} ${i * 16 + 16} 6`).join(" ")}"/></svg></span>`;
 function renderTicker() {
   const list = tickerItems();
   const el = $("#ticker");
   if (!list.length) { el.innerHTML = ""; return; }
   tickIdx %= list.length;
   const n = list[tickIdx];
-  const html = `<span class="k">${UI.lang === "en" ? "Notice" : "通知"}</span><span class="msg ${n.level === "urgent" ? "urgent" : ""}" data-ti="${tickIdx}">${esc(n.text)}</span>
+  /* t-notice-yarn: under Underthread a thread is drawn in from the left and a yarn ball rolls along it to the message; the pager dots
+     become knots on a thread. Other looks keep the plain line. CSS: theme-ut.css (nty-). */
+  const ut = !!document.documentElement.dataset.ut;
+  const html = `<span class="k">${UI.lang === "en" ? "Notice" : "通知"}</span>${ut ? NTY_THR + NTY_BALL : ""}<span class="msg ${n.level === "urgent" ? "urgent" : ""}" data-ti="${tickIdx}">${esc(n.text)}</span>
     ${n.id ? `<button class="dim" data-dismiss="${n.id}" title="dismiss">✕</button>` : ""}
-    <span class="pager">${list.map((_, i) => `<i class="${i === tickIdx ? "on" : ""}"></i>`).join("")}</span>`;
-  if (html !== renderTicker.last) { el.innerHTML = html; renderTicker.last = html; }  // re-animate only when the notice changes
+    <span class="pager${ut ? " nty-knots" : ""}">${list.map((_, i) => `<i class="${i === tickIdx ? "on" : ""}"></i>`).join("")}</span>`;
+  if (html !== renderTicker.last) {  // re-animate only when the notice changes
+    el.innerHTML = html; renderTicker.last = html;
+    const thr = ut && el.querySelector(".nty-thr"), ball = thr && el.querySelector(".nty-ball");
+    if (ball) ball.style.setProperty("--run", thr.getBoundingClientRect().width + "px");   // the ball starts at the thread's left end
+  }
   el.onclick = e => {
     const d = e.target.closest("[data-dismiss]"); if (d) return api("notice_dismiss", { id: d.dataset.dismiss });
     if (e.target.closest(".msg") && n.item) openItem(n.item);

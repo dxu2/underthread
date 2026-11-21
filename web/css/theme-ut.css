@@ -464,3 +464,31 @@ html[data-ut] #mailbox .mb-i.unread { background: color-mix(in srgb, var(--accen
 html[data-ut] #mailbox .mb-i.unread:hover { background: color-mix(in srgb, var(--accent) 11%, transparent); }
 html[data-ut] #mailbox .mb-all { border-top: 1.5px dashed var(--mbt-thr); margin: 0 10px 6px; }
 html[data-ut] #mailbox .seg { background: color-mix(in srgb, var(--ink) 6%, transparent); }
+
+/* ===== t-notice-yarn: the notice line under Underthread. A thread is drawn in from the left, a yarn ball
+   rolls along it and stops before the message; the pager dots are knots on a thread, the current one a filled brown knot. Brown = --accent
+   (gold at night). Markup: views/ticker.js (nty-thr, nty-ball, .pager.nty-knots), only when html[data-ut]. ===== */
+html[data-ut] { --nty-y: var(--accent); }
+html[data-ut] #ticker { gap: 12px; }
+html[data-ut] #ticker .k::before, html[data-ut] #ticker .pager::after { display: none; }
+html[data-ut] #ticker .nty-thr { flex: 0 1 220px; min-width: 40px; height: 12px; position: relative; }
+html[data-ut] #ticker .nty-thr svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; animation: nty-draw 1.1s cubic-bezier(.2,.7,.2,1) both; }
+html[data-ut] #ticker .nty-thr path { fill: none; stroke: color-mix(in srgb, var(--nty-y) 70%, var(--dim)); stroke-width: 1.4; stroke-linecap: round; vector-effect: non-scaling-stroke; }
+html[data-ut] #ticker .nty-ball { width: 16px; height: 16px; flex: none; overflow: visible; margin-left: -12px; animation: nty-roll 1.1s cubic-bezier(.2,.7,.2,1) both; }
+html[data-ut] #ticker .nty-ball .b0 { fill: var(--nty-y); }
+html[data-ut] #ticker .nty-ball .bw { fill: none; stroke: color-mix(in srgb, var(--nty-y), #000 32%); stroke-width: 1.1; opacity: .8; }
+html[data-ut] #ticker .nty-ball + .msg { animation: nty-in .5s .75s ease-out both; }
+html[data-ut] #ticker .pager.nty-knots { flex: 0 1 150px; gap: 0; margin-left: 6px; height: 12px; position: relative; }
+html[data-ut] #ticker .nty-knots::before { content: ""; position: absolute; left: 0; right: 0; top: 50%; border-top: 1.4px solid var(--kn-thread, var(--line3)); }
+html[data-ut] #ticker .nty-knots i { position: relative; flex: 1; display: grid; place-items: center; width: auto; height: auto; transform: none; border: 0; background: none; box-shadow: none; }
+html[data-ut] #ticker .nty-knots i::after { content: ""; width: 5px; height: 5px; border-radius: 50%; background: var(--bg); border: 1.4px solid var(--kn-thread, var(--line3)); }
+html[data-ut] #ticker .nty-knots i.on::after { width: 8px; height: 8px; background: var(--nty-y); border-color: color-mix(in srgb, var(--nty-y), #000 30%); }
+@keyframes nty-draw { from { clip-path: inset(0 100% 0 0); } to { clip-path: inset(0 0 0 0); } }
+@keyframes nty-roll { from { transform: translateX(calc(-1 * var(--run, 200px))) rotate(-540deg); } }
+@keyframes nty-in { from { opacity: 0; transform: translateX(-6px); } }
+@media (max-width: 760px) {
+  html[data-ut] #ticker { gap: 8px; }
+  html[data-ut] #ticker .nty-thr { flex: 0 0 34px; min-width: 0; }
+  html[data-ut] #ticker .nty-ball ~ .msg::before { display: none; }   /* the ball replaces the phone ◆ */
+}
+@media (prefers-reduced-motion: reduce) { html[data-ut] #ticker .nty-thr svg, html[data-ut] #ticker .nty-ball, html[data-ut] #ticker .nty-ball + .msg { animation: none; } }
