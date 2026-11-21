@@ -16,7 +16,6 @@ flowchart LR
   end
   MGR[Steward<br/>long-running Claude Code session]
   AG[Teammates<br/>Claude Code subagents<br/>.claude/agents/*.md]
-  GPU[Optional GPU machine<br/>ComfyUI over SSH]
 
   UI <-->|/api/state, /api/action| SRV
   SRV --> SU --> ST
@@ -26,12 +25,11 @@ flowchart LR
   MGR -->|Agent tool / SendMessage| AG
   MGR -->|stateutil| SU
   AG -->|stateutil| SU
-  AG -->|tools/comfy.py| GPU
 ```
 
 | File | What it is |
 |---|---|
-| `server.py` | Standard-library HTTP server for the dashboard and its JSON API (the code is in `api/`, below). Also runs timers: daily report, schedules, archive sweep, ComfyUI probe (only when `config.json` has a `comfy` block), roster sync, push. `NO_LOOPS=1` turns the timers off |
+| `server.py` | Standard-library HTTP server for the dashboard and its JSON API (the code is in `api/`, below). Also runs timers: daily report, schedules, archive sweep, roster sync, push. `NO_LOOPS=1` turns the timers off |
 | `stateutil.py` | The only writer of `state.json`. Every change goes through it under an exclusive file lock, so the server, the steward and every teammate can write at the same time. Run it with no arguments for the command list |
 | `state.json` | The single source of truth: cards, agents' statuses, chat, DMs, mail, lessons, reports, schedules, usage. Never hand-edit it |
 | `archive.json` | Finished cards moved out of `state.json` after 3 quiet days |

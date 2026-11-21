@@ -189,14 +189,14 @@ class ConfigDefaults(unittest.TestCase):
     def test_merge_fills_missing_and_keeps_yours(self):
         C = self.C
         path = os.path.join(self.c.dir, "config.json")
-        write(path, {"report_time": "20:30", "owner": {"display_name": "Me", "extra": 1}, "comfy": {"ssh_host": "h"}}, indent=2)
+        write(path, {"report_time": "20:30", "owner": {"display_name": "Me", "extra": 1}, "voice": {"x": "h"}}, indent=2)
         raw = readb(path)
         eff = C.load(self.c.dir)
         self.assertEqual(eff["report_time"], "20:30")
         self.assertEqual(eff["port"], 8765)
         self.assertEqual(eff["owner"], {"display_name": "Me", "extra": 1})
         self.assertEqual(eff["allowed_hosts"], [])
-        self.assertEqual(eff["comfy"], {"ssh_host": "h"})
+        self.assertEqual(eff["voice"], {"x": "h"})
         self.assertEqual(readb(path), raw, "defaults are never written into config.json")
         src = dict((k, f) for k, _, f in C.sources(self.c.dir))
         self.assertEqual(src["report_time"], "yours")
@@ -204,7 +204,7 @@ class ConfigDefaults(unittest.TestCase):
         self.assertEqual(src["owner.display_name"], "yours")
 
     def test_no_feature_block_defaults(self):
-        """A present comfy / voice / github block switches a feature on; DEFAULTS must not invent one."""
+        """A present voice / github / platforms block switches a feature on; DEFAULTS must not invent one."""
         for k in ("comfy", "voice", "github", "platforms"):
             self.assertNotIn(k, self.C.DEFAULTS)
         self.assertEqual(self.C.load(self.c.dir), self.C.DEFAULTS, "missing config.json = defaults")

@@ -4,7 +4,6 @@
     "allow": [
       "Bash(python3 stateutil.py:*)",
       "Bash(python3 tools/ensure_server.py)",
-      "Bash(python3 tools/comfy.py:*)",
       "Bash(tail -n0 -F inbox.jsonl)",
       "Bash(ffprobe:*)",
       "Bash(ffmpeg:*)"

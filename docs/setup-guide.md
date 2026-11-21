@@ -42,7 +42,7 @@ Everything below still works by hand, exactly as before.
 | A Claude Code version that has the **Monitor** tool (the steward watches its inbox with it) | Ask Claude Code "do you have the Monitor tool?" |
 | A browser | Any recent one; Safari on iPhone for the phone app |
 | Optional: ffmpeg, if a teammate works on audio or video | `ffmpeg -version` |
-| Optional: SSH access to a machine running ComfyUI, for images | `ssh <host> nvidia-smi` |
+| Optional: the Codex CLI signed in with ChatGPT, for images | `python3 tools/image.py backend` |
 | Optional: whisper.cpp, for voice memo transcription | see `tools/transcribe.py` |
 | Optional: Tailscale, to use the dashboard from your phone | `tailscale status` |
 
@@ -70,7 +70,7 @@ On first start, `server.py` copies each template to its live name if the live fi
 | `report_time` | `18:00` | When the server asks the steward for the daily report |
 | `routines` | `[]` | **Read once.** On first start any routine listed here is imported into Schedules; after that, edit schedules on the Schedules page or with `S schedule`, not here |
 | `platforms` | not set | Your channels' names and home links, shown on cards. Only the optional content-zh preset adds it ([Presets](#presets)); while it is set (or a role has a `pipe`), the 制作组 page shows the production-line and channel tabs |
-| `comfy` (optional): `ssh_host`, `remote_port`, `local_port`, `default_workflow` | not set | Only for image generation through ComfyUI ([section 9](#9-comfyui-optional)). Without it the dashboard shows no ComfyUI status at all |
+| `image.backend` | `auto` | Picture backend: `auto`, `codex` or `none` ([section 9](#9-pictures)) |
 | `allowed_hosts` | not set | Extra host names the dashboard accepts, besides `localhost`, this machine's names and any `*.ts.net` (Tailscale) name |
 
 Environment variables for `server.py`: `PORT` (default 8765), `NO_LOOPS=1` (no timers, for test copies), `VERBOSE=1` (log every request).
@@ -80,7 +80,7 @@ Environment variables for `server.py`: `PORT` (default 8765), `NO_LOOPS=1` (no t
 ## 3. Permissions for Claude Code
 
 `.claude/settings.json` ships with the repository; there is no example file to copy over it. It does two things:
-- lets the steward and teammates run `stateutil.py`, `tools/comfy.py`, `tools/ensure_server.py`, `ffmpeg`, `ffprobe` and the inbox `tail` without asking you each time;
+- lets the steward and teammates run `stateutil.py`, `tools/ensure_server.py`, `ffmpeg`, `ffprobe` and the inbox `tail` without asking you each time;
 - sets `tools/statusline.py` as Claude Code's status line, which feeds your plan usage to the dashboard.
 
 Leave it as it is. Put your own extra permissions in `.claude/settings.local.json`: git ignores it and Claude Code applies it on top of `settings.json`.
@@ -201,13 +201,15 @@ and merges only the keys the preset lists into `config.json` (your port, owner a
 first backed up under the tag `preset-<time>` (see `tools/bak.py`); to undo, run the `tools/bak.py restore …` line it
 prints, delete the new `local/` files it lists, then run `make_agents.py` again.
 
-## 9. ComfyUI (optional)
+## 9. Pictures
 
-For a teammate that makes images on your own GPU machine:
+Brush (the designer), avatars for new hires and a few tools draw through `tools/image.py`. It uses the Codex CLI (or the one
+inside ChatGPT.app) on your ChatGPT subscription, never an API key. `python3 tools/image.py backend` says whether it is ready
+and why. Without it, new hires get their job template's patch as an avatar and everything else still works.
 
-1. Add a `comfy` block to `config.json`: `ssh_host` (for example `you@gpu-box`), `remote_port`, `local_port` (both usually `8188`) and `default_workflow`. Restart `server.py`; the ComfyUI line in the status popover and in System status only appears once this block exists.
-2. `python3 tools/comfy.py tunnel`, then `python3 tools/comfy.py ping`. Within a minute ComfyUI shows as online.
-3. In ComfyUI, export each workflow with **Save (API)** into `tools/workflows/`. `python3 tools/comfy.py nodes <wf>.json` lists the node inputs a teammate can change with `--set`.
+Earlier versions could also drive a ComfyUI machine over SSH. That was removed: an old `image.backend: "comfy"` is read as
+`auto`, and a leftover `comfy` block in `config.json` is ignored. If you still want ComfyUI, keep your own copy of the old
+`tools/comfy.py` in `local/` (updates never touch it) and call it from your own role notes.
 
 ---
 

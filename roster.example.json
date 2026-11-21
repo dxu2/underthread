@@ -134,7 +134,7 @@
         "Diagrams as SVG or Mermaid when that is enough",
         "Notes the source and license of every asset"
       ],
-      "duty_long": "Makes the visual side: images, diagrams, slide layouts and mockups. Can drive a ComfyUI server through tools/comfy.py if you set one up. Writes outputs to work/<item-id>/art/.",
+      "duty_long": "Makes the visual side: images, diagrams, slide layouts and mockups, through tools/image.py (Codex on the ChatGPT plan). Writes outputs to work/<item-id>/art/.",
       "skills": [],
       "notebooks": [
         "roles/common.md",

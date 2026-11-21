@@ -47,7 +47,7 @@
 | <img src="avatars/seed/ut/manager.png" width="48" alt=""> | **Steward**（管家） | `manager` | 读你发的每条消息，整理成卡片、派出去，每天给你写日报。有活的时候摇一下小铃铛。 |
 | <img src="avatars/seed/ut/scout.png" width="48" alt=""> | **Scout**（研究员） | `scout` | 查资料、做对比、核事实，每条结论都带出处。放大镜不离手。 |
 | <img src="avatars/seed/ut/hr.png" width="48" alt=""> | **Thimble**（HR） | `hr` | 帮你招其余的人：就你想招的岗位问你五件事（几轮就完），写好新人的角色笔记等你批准。调岗也找她。 |
-| <img src="avatars/seed/ut/artist.png" width="48" alt=""> | **Brush**（设计） | `artist` | 图片、示意图和样稿，走 ChatGPT 订阅里的 Codex，或者你自己的 ComfyUI 机器（见[出图](#出图codexcomfyui-或不出图)）。走过留下一点颜料。 |
+| <img src="avatars/seed/ut/artist.png" width="48" alt=""> | **Brush**（设计） | `artist` | 图片、示意图和样稿，走 ChatGPT 订阅里的 Codex（见[出图](#出图codex-或不出图)）。走过留下一点颜料。 |
 | <img src="avatars/seed/ut/smith.png" width="48" alt=""> | **Smith**（工具） | `smith` | 维护看板和工具，动手前先备份。没事的时候织毛线。 |
 
 缺人？去招聘市场（29 个岗位模板）：Thimble 问你五件事，新人就上岗，Brush 还会给他缝一枚自己的补丁头像。名字、职责、语气、人数都在 `roster.json` 里。见[组建你自己的小队](#组建你自己的小队)。
@@ -130,7 +130,7 @@ git clone https://github.com/dxu2/underthread.git && cd underthread
 
 卡回来以后：驳回时写上原因（「太长了，以后都控制在 300 字」会变成规矩），问题直接点卡上的选项，想改一点就在评论里说（「第二段换个开头」）。
 
-哪一步不对？看[排障](docs/troubleshooting.md)。完整安装（手机 App、推送、ComfyUI）见 [docs/setup-guide.md](docs/setup-guide.md)（英文）。
+哪一步不对？看[排障](docs/troubleshooting.md)。完整安装（手机 App、推送）见 [docs/setup-guide.md](docs/setup-guide.md)（英文）。
 
 **以后怎么升级。** 有新版时，设置 → 系统 → 更新 会提示；点「更新」，会先在一份数据副本上试跑，再换到新版并重启看板，卡片、设置和 `local/` 都原样保留。「退回」回到更新前的版本。也可以在终端跑 `python3 tools/update.py check | apply | rollback`。前提是用上面的 `git clone` 安装：下载 zip 解压的目录不能自己升级（重新 clone 一份，把 `local/` 和 `*.json` 数据文件拷过去）。
 
@@ -201,18 +201,17 @@ Underthread 不在乎你做什么工作。管家、卡片、审核、规则、�
 
 完整说明（所有 roster 字段和一个实例）：[docs/custom-crew.md](docs/custom-crew.md)（英文）。
 
-### 出图：Codex、ComfyUI 或不出图
+### 出图：Codex 或不出图
 
 Brush、新队员的头像和几个工具都通过 `tools/image.py` 出图，后端由 `config.json` → `image.backend` 决定：
 
 | 设置 | 用什么 |
 |---|---|
-| `auto`（默认） | Codex 登录了 ChatGPT 就用 Codex；否则 `config.json` 有 `comfy` 段就用 ComfyUI；都没有就不出图 |
+| `auto`（默认） | Codex 登录了 ChatGPT 就用 Codex，否则不出图 |
 | `codex` | Codex CLI（或 ChatGPT.app 里自带的），走你的 ChatGPT 订阅，从不用 API key |
-| `comfy` | 你自己的 ComfyUI 机器，经 `tools/comfy.py`，用 `image.comfy_workflow` 里的工作流。见[安装指南第 9 节](docs/setup-guide.md#9-comfyui-optional)（英文） |
 | `none` | 不出图。新队员用岗位模板自带的补丁头像，其他一切照常 |
 
-`python3 tools/image.py backend` 会告诉你现在用的是哪个、为什么。每张图都花额度或显卡时间，所以不会自动重试。
+`python3 tools/image.py backend` 会告诉你现在用的是哪个、为什么。每张图都花额度，所以不会自动重试。这一版去掉了 ComfyUI；旧配置里的 `image.backend: "comfy"` 会按 `auto` 处理。
 
 ---
 
@@ -258,7 +257,7 @@ flowchart LR
 
 | | |
 |---|---|
-| [docs/setup-guide.md](docs/setup-guide.md) | 完整安装：配置、roster、重启、ComfyUI、工具 |
+| [docs/setup-guide.md](docs/setup-guide.md) | 完整安装：配置、roster、重启、出图、工具 |
 | [docs/layout.md](docs/layout.md) | 目录一览：每个文件和文件夹是什么、哪些是你自己的（英文） |
 | [docs/architecture.md](docs/architecture.md) | 各部分怎么配合、卡片生命周期、记忆 |
 | [docs/custom-crew.md](docs/custom-crew.md) | 增加、修改、退休队员 |
@@ -279,7 +278,7 @@ flowchart LR
 - 带范围的批准：「这张卡都行」「这类改动都行」。
 - 把整套东西打包成 Claude Code 插件。
 
-不在这个仓库里的：和管家语音通话（作者自己的版本有），以及任何模型权重（whisper、ComfyUI 模型等各有各的许可）。
+不在这个仓库里的：和管家语音通话（作者自己的版本有），以及任何模型权重（whisper 等各有各的许可）。
 
 ---
 

@@ -6,7 +6,7 @@ import shutil
 import threading
 import time
 
-from api.ctx import S, MG, ROOT, CONFIG, START, USAGE, _comfy, _health
+from api.ctx import S, MG, ROOT, CONFIG, START, USAGE, _health
 from api.router import route
 from core import registry as REG
 from api.routes.push import _subs
@@ -95,7 +95,6 @@ def health():
                    "uptime": int(t - START), "pid": os.getpid(), "rev": st["meta"].get("rev"),
                    "loops": not os.environ.get("NO_LOOPS"),
                    "code_stale": bool(code_changed()), "code_changed": code_changed()[:8]},   # t-iter-upgrade: restart needed
-        "comfy": dict(_comfy),
         "schema": MG.status(ROOT, st),   # t-oss-struct E1: code / state / config / roster schema numbers, "ahead" after a rollback
         "push": {"devices": len(subs), "last_at": last and last["last_at"], "last_code": last and last.get("last_code"),
                  "failing": sum(1 for s in subs if s.get("last_code") and not 200 <= s["last_code"] < 300)},

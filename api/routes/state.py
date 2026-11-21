@@ -8,7 +8,7 @@ import threading
 import time
 import uuid
 
-from api.ctx import S, C, MG, ROOT, WEB, AVATARS, CONFIG, _comfy
+from api.ctx import S, C, MG, ROOT, WEB, AVATARS, CONFIG
 from api.router import route
 from api.routes.schedules import routines_view
 
@@ -90,7 +90,7 @@ def public_item(iid):
 # ---------- t-perf B: nothing is re-read or re-encoded unless a file it comes from changed ----------
 # A poll used to read state.json twice (public_state + _unacked_count, ~43 ms for a "same") and json-encode + gzip the whole state for
 # every client (~75 ms). Now: rev + unacked count are cached by the (inode, mtime_ns, size) of state.json and inbox.jsonl; the encoded
-# body (raw + gzip) by those plus avatars/, archive.json, the ComfyUI probe and the minute (routines' next run moves with the clock).
+# body (raw + gzip) by those plus avatars/, archive.json and the minute (routines' next run moves with the clock).
 # state.json is only ever replaced with os.replace (stateutil._save), so a new inode / mtime always marks a new version.
 def _fsig(p):
     try:
@@ -352,7 +352,7 @@ def platforms_set():
 
 
 def public_state_cached(slim):
-    k = (_fsig(S.STATE), _fsig(CONFIG_JSON), _fsig(S.INBOX), _fsig(AVATARS), _fsig(HIRE_LOG), _fsig(S.ARCHIVE), art_sig(), avatar_stamp(), json.dumps(_comfy, sort_keys=True), json.dumps(codex_quota()), dt.datetime.now().strftime("%Y-%m-%d %H:%M"))
+    k = (_fsig(S.STATE), _fsig(CONFIG_JSON), _fsig(S.INBOX), _fsig(AVATARS), _fsig(HIRE_LOG), _fsig(S.ARCHIVE), art_sig(), avatar_stamp(), json.dumps(codex_quota()), dt.datetime.now().strftime("%Y-%m-%d %H:%M"))
     with _PSL:
         c = _PSC.get(slim)
         if c and c[0] == k:
@@ -365,7 +365,6 @@ def public_state_cached(slim):
 def public_state(slim=False):
     st = S.read()
     st["meta"].pop("inbox_acked", None)
-    st["meta"]["comfy"] = _comfy
     st["meta"]["codex"] = codex_quota()   # t-soul-widget
     C.owner_live(ROOT, CONFIG)   # t-onboard-name: a name set by stateutil owner set shows without a restart
     st["meta"]["owner"] = (CONFIG.get("owner") or {}).get("display_name", "")
@@ -518,7 +517,7 @@ def _state(h, u, q):   # t-perf B: cached rev / body (see public_state_cached)
                 rev, un, avv = r2, u2, v2
                 break
     if q.get("rev", [""])[0] == str(rev):
-        return h._send(200, {"same": True, "meta": {"comfy": _comfy, "server_time": S.now(), "inbox_unacked": un, "avv": avv, "hires": hire_welcomes_cached()}})
+        return h._send(200, {"same": True, "meta": {"server_time": S.now(), "inbox_unacked": un, "avv": avv, "hires": hire_welcomes_cached()}})
     _, raw, gzb = public_state_cached(q.get("slim", [""])[0] == "1")
     if "gzip" in (h.headers.get("Accept-Encoding") or ""):
         return h._send(200, gzb, extra={"Content-Encoding": "gzip", "Vary": "Accept-Encoding"})

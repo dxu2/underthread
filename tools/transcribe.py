@@ -34,7 +34,7 @@ MODEL_TAG = "large-v3-turbo-q5_0"
 LOCK = os.path.join(ROOT, ".transcribe.lock")
 LOG = os.path.join(ROOT, "logs", "transcribe.log")
 PEAKS = 48
-GLOSSARY = ["ComfyUI", "工作流", "B站", "小红书", "YouTube", "看板", "延时摄影", "分镜", "口播", "封面"]
+GLOSSARY = ["工作流", "B站", "小红书", "YouTube", "看板", "延时摄影", "分镜", "口播", "封面"]
 
 
 def log(msg):
