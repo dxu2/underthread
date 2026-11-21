@@ -35,7 +35,7 @@ function renderTicker() {
   /* t-notice-yarn: under Underthread a thread is drawn in from the left and a yarn ball rolls along it to the message; the pager dots
      become knots on a thread. Other looks keep the plain line. CSS: theme-ut.css (nty-). */
   const ut = !!document.documentElement.dataset.ut;
-  const html = `<span class="k">${UI.lang === "en" ? "Notice" : "通知"}</span>${ut ? NTY_THR + NTY_BALL : ""}<span class="msg ${n.level === "urgent" ? "urgent" : ""}" data-ti="${tickIdx}">${esc(n.text)}</span>
+  const html = `<span class="k">${UI.lang === "en" ? "Notice" : "通知"}</span>${ut ? NTY_THR + NTY_BALL : ""}<span class="msg ${n.level === "urgent" ? "urgent" : ""}" data-ti="${tickIdx}">${esc(n.text)}</span>${ut ? '<span class="nty-tail" aria-hidden="true"></span>' : ""}
     ${n.id ? `<button class="dim" data-dismiss="${n.id}" title="dismiss">✕</button>` : ""}
     <span class="pager${ut ? " nty-knots" : ""}">${list.map((_, i) => `<i class="${i === tickIdx ? "on" : ""}"></i>`).join("")}</span>`;
   if (html !== renderTicker.last) {  // re-animate only when the notice changes

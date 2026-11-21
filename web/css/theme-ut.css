@@ -482,8 +482,13 @@ html[data-ut] #ticker .nty-ball .bw { fill: none; stroke: color-mix(in srgb, var
 html[data-ut] #ticker .nty-ball + .msg { animation: nty-in .45s .15s ease-out both; }
 html[data-ut] #ticker.nty-first .nty-ball + .msg { animation: nty-in .5s .75s ease-out both; }
 html[data-ut]:has(#ut-splash) #ticker.nty-first * { animation-play-state: paused; }   /* the first slide waits for the opening splash to go */
-/* the ball stays put across switches: the message box keeps one width (text left-aligned), so the centred row does not shift */
-html[data-ut] #ticker .nty-ball ~ .msg { flex: 0 1 760px; text-align: left; }
+/* the ball stays put across switches and the strip has no empty right half: the row is one fixed width (capped at 1100px,
+   centred by the padding), the message takes its own width and the thread carries on after it to the knots */
+html[data-ut] #ticker:has(.nty-ball) { padding-inline: max(28px, calc((100% - 1100px) / 2)); }
+html[data-ut] #ticker .nty-ball ~ .msg { flex: 0 1 auto; text-align: left; }
+html[data-ut] #ticker .nty-tail { flex: 1 1 0; min-width: 24px; height: 0; border-top: 1.4px solid color-mix(in srgb, var(--kn-thread, var(--line3)) 70%, transparent); margin-right: -12px; }
+html[data-ut] #ticker.nty-first .nty-tail { animation: nty-in .5s .9s ease-out both; }
+html[data-ut] #ticker .nty-tail + .dim, html[data-ut] #ticker .nty-tail + .pager { position: relative; }
 html[data-ut] #ticker .pager.nty-knots { flex: 0 1 150px; gap: 0; margin-left: 6px; height: 12px; position: relative; }
 html[data-ut] #ticker .nty-knots::before { content: ""; position: absolute; left: 0; right: 0; top: 50%; border-top: 1.4px solid var(--kn-thread, var(--line3)); }
 html[data-ut] #ticker .nty-knots i { position: relative; flex: 1; display: grid; place-items: center; width: auto; height: auto; transform: none; border: 0; background: none; box-shadow: none; }
@@ -496,6 +501,9 @@ html[data-ut] #ticker .nty-knots i.on::after { width: 8px; height: 8px; backgrou
 @media (max-width: 760px) {
   html[data-ut] #ticker { gap: 8px; }
   html[data-ut] #ticker .nty-thr { flex: 0 0 34px; min-width: 0; }
+  html[data-ut] #ticker .nty-tail { display: none; }
+  html[data-ut] #ticker:has(.nty-ball) { padding-inline: max(16px, env(safe-area-inset-left)) max(16px, env(safe-area-inset-right)); }
+  html[data-ut] #ticker .nty-ball ~ .msg { flex: 1; }
   html[data-ut] #ticker .nty-ball ~ .msg::before { display: none; }   /* the ball replaces the phone ◆ */
 }
 @media (prefers-reduced-motion: reduce) { html[data-ut] #ticker .nty-thr svg, html[data-ut] #ticker .nty-ball, html[data-ut] #ticker .nty-ball + .msg { animation: none !important; } }
