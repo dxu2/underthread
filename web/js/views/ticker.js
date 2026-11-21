@@ -39,7 +39,11 @@ function renderTicker() {
     ${n.id ? `<button class="dim" data-dismiss="${n.id}" title="dismiss">✕</button>` : ""}
     <span class="pager${ut ? " nty-knots" : ""}">${list.map((_, i) => `<i class="${i === tickIdx ? "on" : ""}"></i>`).join("")}</span>`;
   if (html !== renderTicker.last) {  // re-animate only when the notice changes
+    /* the thread slides in from the left only the first time a notice shows; after that a switch keeps the thread still and the
+       ball rolls once in place while the text changes (.nty-first gates the slide in theme-ut.css). */
+    el.classList.toggle("nty-first", ut && !renderTicker.slid);
     el.innerHTML = html; renderTicker.last = html;
+    if (ut) renderTicker.slid = true;
     const thr = ut && el.querySelector(".nty-thr"), ball = thr && el.querySelector(".nty-ball");
     if (ball) ball.style.setProperty("--run", thr.getBoundingClientRect().width + "px");   // the ball starts at the thread's left end
   }
