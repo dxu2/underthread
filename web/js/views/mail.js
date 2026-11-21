@@ -3,7 +3,7 @@
 // the code used to run, so listeners register in the same order as before.
 
 import { $ } from "../core/util.js";
-import { agoH, rowLabel, srvT, stageLabel, t, whenH, whoName } from "../core/i18n.js";
+import { agoH, rowLabel, srvT, stageLabel, t, titleEn, whenH, whoName } from "../core/i18n.js";
 import { ST, UI, archIx, archTitle, busy, grpOf, items, mailAll, mailOlder, mailUnread, onYou, onYouCard, snoozed } from "../core/store.js";
 import { agent, aname, av } from "../core/av.js";
 import { api, postAct, utEmpty } from "../core/ui.js";
@@ -114,19 +114,29 @@ function mbGroups(list) {
   for (const g of gs) { g.rv = g.ms.some(x => REV_MAIL.test(x.text || "")); g.body = g.ms.find(x => !REV_MAIL.test(x.text || "")) || g.last; }
   return gs;
 }
+/* t-mailbox-theme A: each row names its card (the same reply sent on 3 cards no longer reads as 3 identical rows); letters without a card say 私信.
+   r-improve-1121 P2 reuses mbCard for the full 信箱 page rows. */
+const MB_TAG = '<svg viewBox="0 0 12 12" aria-hidden="true"><path d="M1.5 2.5h5l4 3.5-4 3.5h-5z"/><circle cx="4" cy="6" r=".9"/></svg>';
+function mbCard(m, ix) {
+  const en = UI.lang === "en";
+  let tt = "";
+  if (m.item) { const it = ix ? ix.get(m.item) : items().find(i => i.id === m.item); tt = it ? (en ? titleEn(it.title, it) : it.title) : archTitle(m.item) || m.item; }
+  else tt = en ? "Direct message" : "私信";
+  return `<div class="mb-card">${MB_TAG}<span>${esc(tt)}</span></div>`;
+}
 function renderMailbox(enter) {
   if (!MB.open) return;
   const { box } = mailboxEls(), f = UI.mailFilter;
   const unread = mailUnread();
   const fs = [["all", t("all")], ["unread", t("unread")], ["reply", t("replies")], ["update", t("updates")], ["urgent", t("urgent")]];
   const kindName = { reply: t("replies"), update: t("updates") };
-  const list = mbGroups(mailFiltered(40)), en = UI.lang === "en";
+  const list = mbGroups(mailFiltered(40)), en = UI.lang === "en", ix = new Map(items().map(i => [i.id, i]));
   const keep = $(".mb-list", box) ? $(".mb-list", box).scrollTop : 0;
   box.innerHTML = `<div class="mb-h"><div class="mb-t"><b>${t("mail")}</b><span>${UI.lang === "en" ? `${unread} unread` : `${unread} 条未读`}</span></div><button class="btn-s" data-mailall>${t("mark_all")}</button></div>
     <div class="mb-f"><div class="seg" data-seg="mailbox">${fs.map(([k, n]) => `<button class="seg-i ${f === k ? "on" : ""}" data-mailf="${k}">${n}</button>`).join("")}</div></div>
     <div class="mb-list ${enter ? "mb-enter" : ""}">${list.length ? list.map((g, i) => { const m = g.body, rv = g.rv, n = g.ms.length;
       return `<div class="mb-i ${g.ms.some(x => !x.read) ? "unread" : ""}" data-mail="${g.last.id}"${n > 1 ? ` data-mailids="${g.ms.map(x => x.id).join(",")}"` : ""} style="--i:${Math.min(i, 8)}">
-      ${m.agent ? av(agent(m.agent), "sm") : "<span class=\"av sm\"></span>"}<div class="mb-b"><div class="mb-m"><b>${m.agent ? esc(aname(agent(m.agent))) : ""}</b>${rv ? `<i class="ri14-rv">${en ? "Review" : "待审核"}</i>` : kindName[m.kind] ? `<i>${esc(kindName[m.kind])}</i>` : ""}<span>${whenH(g.last.t)}${n > 1 ? (en ? ` · ${n}` : ` · ${n} 条`) : ""}</span></div><div class="mb-x">${esc(mailPv(m.text, m.agent && agent(m.agent)))}</div></div><span class="u"></span></div>`; }).join("") : utEmpty(t("empty"))}</div>
+      ${m.agent ? av(agent(m.agent), "sm") : "<span class=\"av sm\"></span>"}<div class="mb-b"><div class="mb-m"><b>${m.agent ? esc(aname(agent(m.agent))) : ""}</b>${rv ? `<i class="ri14-rv">${en ? "Review" : "待审核"}</i>` : kindName[m.kind] ? `<i>${esc(kindName[m.kind])}</i>` : ""}<span>${whenH(g.last.t)}${n > 1 ? (en ? ` · ${n}` : ` · ${n} 条`) : ""}</span></div>${mbCard(g.last, ix)}<div class="mb-x">${esc(mailPv(m.text, m.agent && agent(m.agent)))}</div></div><span class="u"></span></div>`; }).join("") : utEmpty(t("empty"))}</div>
     <button class="mb-all" data-mbfull>${UI.lang === "en" ? "View all" : "查看全部"} →</button>`;
   $(".mb-list", box).scrollTop = keep;
   if (enter) setTimeout(() => { const l = $(".mb-list", box); l && l.classList.remove("mb-enter"); }, 700);
@@ -216,4 +226,4 @@ function wireMail2() {
   });
 }
 
-export { mailGroups, tablePv, mailPv, LOG_ZH, logText, logRows, REV_MAIL, cardLine, mailRep, mailRow, mailFiltered, MB, mailboxEls, mbGroups, renderMailbox, openMailbox, closeMailbox, wkFrom, homeCounts, nrMail, nrCard, newReplies, nrDot, nrFirst, nrBlock, chatMail, chatSeenSrv, srvSeen, seenOf, unreadOf, unreadTag, chatMailRead, itemMailRead, doneMailRead, nrRead, wireMail, wireMail2 };
+export { mailGroups, tablePv, mailPv, LOG_ZH, logText, logRows, REV_MAIL, cardLine, mailRep, mailRow, mailFiltered, MB, mailboxEls, mbGroups, mbCard, renderMailbox, openMailbox, closeMailbox, wkFrom, homeCounts, nrMail, nrCard, newReplies, nrDot, nrFirst, nrBlock, chatMail, chatSeenSrv, srvSeen, seenOf, unreadOf, unreadTag, chatMailRead, itemMailRead, doneMailRead, nrRead, wireMail, wireMail2 };
