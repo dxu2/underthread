@@ -42,7 +42,7 @@ function stGeneral() {
   const look = stRow(en ? "Theme" : "主题", (mode === "auto" ? (en ? "Auto follows your system light / dark setting." : "自动：跟着系统的深浅色走（Mac 和 iPhone 选「自动」外观时，会按日出日落切换）") : (en ? "Fixed on this device." : "手动：固定用选好的这一套，只在这台设备生效")) + now,
       stSeg("tmode", [["auto", "自动", "Auto"], ["dark", "夜", "Night"], ["white", "昼", "Day"]], mode === "auto" ? "auto" : cur, "data-tmode"), "", "div")
     + utRow(en) + texRow(en)
-    + (ut => { const st = ut ? stageSaved() : !!R.dataset.stage; return stRow(en ? "Stage background" : "舞台背景", stageSub(en, ut), stSw(st), `data-stage-tog aria-pressed="${st}"` + (ut ? ' aria-disabled="true"' : ""), "button").replace('class="st-row"', `class="st-row${ut ? " st-dis" : ""}"`); })(!!R.dataset.ut)
+    + (ut => { const st = ut ? stageSaved() : !!R.dataset.stage; return stRow(en ? "Stage background" : "舞台背景", stageSub(en, ut), stSw(st), `data-stage-tog aria-pressed="${st}"` + (ut ? ' aria-disabled="true" style="display:none"' : ""), "button").replace('class="st-row"', `class="st-row${ut ? " st-dis" : ""}"`); })(!!R.dataset.ut)
     + stRow(en ? "Power saving" : "省电模式", psSub(psNow()), stSw(psNow()), `data-power-tog aria-pressed="${psNow()}"`)
     + spRow(en)
     + (window.Onboard ? Onboard.settingsRow(en) : "")   /* t-onboarding P0: quick phrases above the steward's chat field */
@@ -250,7 +250,7 @@ function wireSettings() {
         <div class="pl-d">${esc(en ? p.de : p.d)}</div>${g.map(x => pipeCard(x.i, x.p.guess)).join("")}</div>`;
     }).join("");
     /* t-ri1108-a P5: one line + 「展开 ›」; the list opens one card per line. RI8.skip keeps it open across poll rebuilds; the click flips the class in place. */
-    const skip = skipped.length ? `<div class="pl-skip${RI8.skip ? " ri8-open" : ""}"><div class="ri8-skip-h"><span>${en ? `${skipped.length} more main/side card(s) are not in the pipeline (no platform, no pipe tag, owner not in the content group)` : `另有 ${skipped.length} 张主线/支线卡没放进制作线（没平台、没 pipe 标签、负责人不在内容组）`}</span><button type="button" class="ri8-skip-t" data-ri8-skip aria-expanded="${RI8.skip}">${RI8.skip ? (en ? "Hide ‹" : "收起 ‹") : (en ? "Show ›" : "展开 ›")}</button></div><div class="ri8-skip-l"><div>${skipped.map(i => `<a href="#" data-item="${i.id}">${esc(i.title)}</a>`).join("")}</div></div></div>` : "";
+    const skip = skipped.length ? `<div class="pl-skip${RI8.skip ? " ri8-open" : ""}"><div class="ri8-skip-h"><span>${en ? `${skipped.length} more main/side card${skipped.length > 1 ? "s are" : " is"} not in the pipeline: no platform chosen, and the owner does not make content` : `另有 ${skipped.length} 张主线/支线卡不进制作线：没选发布平台，负责人也不做内容`   /* r-improve-1120 P5: no 「pipe 标签」 jargon */}</span><button type="button" class="ri8-skip-t" data-ri8-skip aria-expanded="${RI8.skip}">${RI8.skip ? (en ? "Hide ‹" : "收起 ‹") : (en ? "Show ›" : "展开 ›")}</button></div><div class="ri8-skip-l"><div>${skipped.map(i => `<a href="#" data-item="${i.id}">${esc(i.title)}</a>`).join("")}</div></div></div>` : "";
     /* t-ui-fix-r2 audit P2-10: at 1100 the last columns sit past the edge behind a faint fade only; a line under the board says so (shown only while .more) and scrolls on click */
     return pageHead("pipe", bar) + wk.html + empty + `<div class="pl-board">${cols}</div><button type="button" class="pl-more-h" data-pl-next>${en ? "More stages to the right · scroll →" : "右边还有阶段 · 横向滚动 →"}</button>` + skip;
   };

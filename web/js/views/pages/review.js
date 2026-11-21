@@ -4,7 +4,7 @@
 
 import { $, LS } from "../../core/util.js";
 import { agoH, dayKey, hm, rowLabel, t, when, whenH } from "../../core/i18n.js";
-import { ST, UI, byAct, items, onYou, onYouCard, poll, snoozed } from "../../core/store.js";
+import { ST, UI, byAct, items, onYou, onYouCard, poll, snoozed, waitMs, waitSince } from "../../core/store.js";
 import { agent, agents, aname, av, avatarUrl } from "../../core/av.js";
 import { api, closeModal, openModal, postAct, toast } from "../../core/ui.js";
 import { DW, jumpState, openItem, renderDrawer } from "../drawer.js";
@@ -40,12 +40,12 @@ function reviewCard(it, fresh) {
 const awaitsUser = it => !!it && it.stage === "waiting" && (it.kind === "plan" || it.kind === "question");
 // t-wait-days: a card on the user (review, or waiting on a plan / question) for more than 24 h gets an amber 「等了 N 天」 tag (same idea as 暂停).
 // The wait starts at the last 提交审核 event in the thread; no such event -> it.updated.
-const waitSince = it => { const th = it.thread || []; for (let i = th.length - 1; i >= 0; i--) if (th[i].kind === "event" && /^提交审核/.test(th[i].text || "")) return th[i].t; return it.updated; };
+/* r-improve-1119 P1: waitSince now lives in core/store.js (shared with widgets, ticker and the phone hero) */
 function waitTag(it) { return snzWas(it) + waitTag0(it); }
 const snzWas = it => it && it.snoozed && !snoozed(it) ? `<span class="snz-was" title="${UI.lang === "en" ? "Came back from Later" : "之前点过稍后，到点回来了"}">${UI.lang === "en" ? "Snoozed" : "推迟过"}</span>` : "";   // ri1103-P2
 function waitTag0(it) {
   if (!it || !(it.stage === "review" || awaitsUser(it))) return "";
-  const h = (Date.now() - new Date(waitSince(it))) / 36e5; if (!(h >= 24)) return "";
+  const h = waitMs(it) / 36e5; if (!(h >= 24)) return "";
   const d = Math.floor(h / 24); return `<span class="wait-d">${UI.lang === "en" ? `Waiting ${d}d` : `等了 ${d} 天`}</span>`;
 }
 // ===== t-open-questions: it.asks = questions for the user with clickable options (stateutil ask / upsert-item --ask). An older server sends no asks: nothing shows. =====

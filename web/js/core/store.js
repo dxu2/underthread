@@ -54,8 +54,17 @@ const grpOf = i => busy(i) ? "doing" : snoozed(i) ? "todo" : (awaitsUser(i) || o
 const pauseL = () => UI.lang === "en" ? "Paused" : "暂停";
 // t-standing-paused: a standing card (ongoing / routine / target of a live 定时) is idle between runs by design, so it says 「常驻」, not 「暂停」.
 // A real pause (routine or 按需常驻 paused) still says 暂停 through rtTag, which every caller checks first.
-const idleL = i => standing(i) ? (UI.lang === "en" ? "Ongoing" : "常驻") : pauseL();
+/* r-improve-1119 P2: an idle in-progress card whose last word (events skipped) is a team message to the user that the user has not
+   answered is waiting on the user, not paused: 「等你回 N 天」 (days rounded down; under a day just 「等你回」). A log line or the user's own
+   words last = 暂停 as before. Text only: counts, red dots and 等你拍板 do not change. */
+const ballOnYou = i => { const th = i.thread || []; for (let k = th.length - 1; k >= 0; k--) { const e = th[k]; if (!e || e.kind === "event") continue; return e.who !== "me" && e.kind === "msg" ? e : null; } return null; };
+const youOweL = e => { const d = Math.floor((Date.now() - (Date.parse(e.t) || Date.now())) / 864e5); return UI.lang === "en" ? (d >= 1 ? `Your reply · ${d}d` : "Your reply") : (d >= 1 ? `等你回 ${d} 天` : "等你回"); };
+const idleL = i => { if (standing(i)) return UI.lang === "en" ? "Ongoing" : "常驻"; const e = ballOnYou(i); return e ? youOweL(e) : pauseL(); };
 const items = () => (ST.items || []).filter(i => !i.archived);
+/* r-improve-1119 P1: one 「等了多久」 for every place (card tag, 等你拍板 widget rows + footer, notice line, phone 「最久 N」): the wait starts at the
+   last 提交审核 event in the thread (a manager log line or a comment does not reset it); no such event -> it.updated. Always rounded down. */
+const waitSince = it => { const th = (it && it.thread) || []; for (let i = th.length - 1; i >= 0; i--) if (th[i].kind === "event" && /^提交审核/.test(th[i].text || "")) return th[i].t; return it.updated || it.activity; };
+const waitMs = it => Math.max(0, Date.now() - (Date.parse(waitSince(it)) || Date.now()));
 const byAct = (a, b) => (b.activity || b.updated || "").localeCompare(a.activity || a.updated || "");
 const byCreated = (a, b) => (b.created || "").localeCompare(a.created || "");
 
@@ -171,7 +180,9 @@ function histAll() {   // every older chat message (⌘K over old chat, a ↩ ju
   return HIST.allP || (HIST.allP = chatOlder(HIST.chat.start).catch(() => { HIST.allFail = true; return 0; }).finally(() => { HIST.allP = null; }));
 }
 const IXdirty = () => document.dispatchEvent(new Event("rt-hist"));
-const mailUnread = () => { const M = ST && ST.meta; return M && M.mail_unread != null ? M.mail_unread : ((ST && ST.mail) || []).filter(m => !m.read).length; };
+/* r-improve-1120 P2: a ⏰ reminder letter is never unread (pushed on time, kept in the mailbox, but no bold, dot or count). Mirrors api/routes/state.py mail_unread(). */
+const unreadM = m => !!m && !m.read && m.kind !== "remind";
+const mailUnread = () => { const M = ST && ST.meta; return M && M.mail_unread != null ? M.mail_unread : ((ST && ST.mail) || []).filter(unreadM).length; };
 function mailAll() {
   if (!HIST.mail || !HIST.mail.length) return ST.mail || [];
   const seen = new Set((ST.mail || []).map(m => m.id));
@@ -250,4 +261,4 @@ async function pollOnce(force, wait, ctl) {
   }
 }
 
-export { UI, ST, REV, idleDoing, busy, snzReplied, snzEnd, snoozed, onYouCard, onYou, schedItem, standing, queueOf, qBadge, grpOf, pauseL, idleL, items, byAct, byCreated, FULL, FULLP, rehydrate, fullItem, ARCH, archIx, archKnown, archTitle, archFlag, archMerge, archItem, archAll, bootDone, SNAP, snapDb, snapSave, snapLoad, snapBoot, HIST, trimOf, chatBase, histSet, olderN, chatOlder, histAll, IXdirty, mailUnread, mailAll, mailOlder, logsFor, LP, lpAbort, lpLoop, poll, pollOnce };
+export { UI, ST, REV, idleDoing, busy, snzReplied, snzEnd, snoozed, onYouCard, onYou, schedItem, standing, queueOf, qBadge, grpOf, pauseL, idleL, ballOnYou, items, waitSince, waitMs, byAct, byCreated, FULL, FULLP, rehydrate, fullItem, ARCH, archIx, archKnown, archTitle, archFlag, archMerge, archItem, archAll, bootDone, SNAP, snapDb, snapSave, snapLoad, snapBoot, HIST, trimOf, chatBase, histSet, olderN, chatOlder, histAll, IXdirty, mailUnread, unreadM, mailAll, mailOlder, logsFor, LP, lpAbort, lpLoop, poll, pollOnce };

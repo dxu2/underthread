@@ -42,7 +42,9 @@
   const dur = m => m < 60 ? L().m(Math.max(1, m)) : L().hm(Math.floor(m / 60), String(m % 60).padStart(2, "0"));
   const durShort = m => m < 60 ? L().m(Math.max(1, m)) : m < 48 * 60 ? L().h(Math.round(m / 60)) : L().d(Math.round(m / 1440));
   const ordered = ag => ag.slice().sort((a, b) => (a.order ?? 99) - (b.order ?? 99));
-  function oldest(c) { if (c.nr) return L().split(c.cards || 0, c.nr); if (!c.oldest) return ""; const m = mins(new Date(c.oldest).toISOString()); return L().oldest(durShort(m)); }
+  /* r-improve-1119 P1: 「最久 N」 rounds down like the card's 「等了 N 天」 (durShort rounds and keeps hours up to 48 h) */
+  const waitShort = m => m < 60 ? L().m(Math.max(1, m)) : m < 1440 ? L().h(Math.floor(m / 60)) : L().d(Math.floor(m / 1440));
+  function oldest(c) { if (c.nr) return L().split(c.cards || 0, c.nr); if (!c.oldest) return ""; const m = mins(new Date(c.oldest).toISOString()); return L().oldest(waitShort(m)); }
   const urgent = c => c.review >= 3 || (c.review > 0 && c.oldest && mins(new Date(c.oldest).toISOString()) > 12 * 60);
   const itemStage = id => { const it = (A().ST.items || []).find(i => i.id === id); return it && it.stage; };
   const sumHTML = (ag, c) => { const w = ag.filter(isW).length; return (w ? L().busy(w) : L().rest) + (c.review ? ` · <span class="hd-rd"><i></i>${L().rev(c.review)}</span>` : ""); };

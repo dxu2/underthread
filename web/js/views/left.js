@@ -77,17 +77,26 @@ function renderLeft() {
   const rts = (ST.meta && ST.meta.routines) || [], nowM = new Date().getHours() * 60 + new Date().getMinutes();
   const rtName = rtShort;   /* t-ri1109-a P4: shared with widgets.js (App.rtShort) */
   const rtLeft = hm => { const [h, m] = hm.split(":").map(Number), d = h * 60 + m - nowM; return d > 0 ? `${Math.floor(d / 60)}:${pad(d % 60)}${UI.lang === "en" ? "" : " 后"}` : null; };
+  /* r-improve-1120 P3: only the next run to come keeps a countdown, said in words (「2 小时后」 / 「12 分钟后」); later rows already show their time
+     on the left, so their name gets the room. A reminder's name is its first clause (to the first ：，；。), so 「饭后别马上坐下，慢走 10 分钟」 reads 「饭后别马上坐下」. */
+  const minsTo = hm => { const [h, m] = String(hm).split(":").map(Number); return h * 60 + m - nowM; };
+  const leftWords = d => UI.lang === "en" ? (d < 60 ? `in ${d} min` : `in ${Math.floor(d / 60)} h`) : (d < 60 ? `${d} 分后` : `${Math.floor(d / 60)} 小时后`);
+  const clause = s => { const c = String(s || "").split(/[：:，,；;。]/)[0].trim(); return c.length >= 2 ? c : String(s || ""); };
+  const nextTm = (() => { const c = []; for (const r of ((ST.meta && ST.meta.routines) || [])) if (!r.paused && !r.disabled && r.time && r.last !== today) c.push(r.time);
+    for (const r of schToday()) if (!r.ran) c.push(r.time);
+    if (ST.meta && ST.meta.report_time && ST.meta.last_report_date !== today) c.push(ST.meta.report_time);
+    return c.filter(tm => tm && minsTo(tm) > 0).sort()[0] || null; })();
   const rtRow = (tm, who, name, done, itemId, full) => {   /* t-ri1109-a P4: a dispatched row says only ✓ (the grey row already reads as done); the title carries time, full name and state */
-    const left = !done && tm && rtLeft(tm), a = who && agent(who);
-    const st = done ? "✓" : left || (tm ? (UI.lang === "en" ? "due" : "到点") : (UI.lang === "en" ? "tonight" : "今晚"));
-    const tip = `${tm ? tm + " " : ""}${full || name} · ${done || st}`;
-    return { k: "0" + (tm || "99"), done: !!done, a, tm, tip, h: `<div class="cal-i cal-rt ${done ? "past" : ""}"${itemId ? ` data-item="${esc(itemId)}"` : ""} title="${esc(tip)}"><span class="tm">${esc(tm || "—")}</span>${a ? av(a, "cal-av") : ""}<span class="cal-nm">${esc(name)}</span><span class="cal-st${left ? " soon" : ""}">${esc(st)}</span></div>` };
+    const left = !done && tm && rtLeft(tm), a = who && agent(who), isNext = !!left && tm === nextTm;
+    const st = done ? "✓" : left ? (isNext ? leftWords(minsTo(tm)) : "") : (tm ? (UI.lang === "en" ? "due" : "到点") : (UI.lang === "en" ? "tonight" : "今晚"));
+    const tip = `${tm ? tm + " " : ""}${full || name} · ${done || st || left}`;
+    return { k: "0" + (tm || "99"), done: !!done, a, tm, tip, h: `<div class="cal-i cal-rt ${done ? "past" : ""}"${itemId ? ` data-item="${esc(itemId)}"` : ""} title="${esc(tip)}"><span class="tm">${esc(tm || "—")}</span>${a ? av(a, "cal-av") : ""}<span class="cal-nm">${esc(name)}</span><span class="cal-st${isNext ? " soon" : ""}">${esc(st)}</span></div>` };
   };
   const itemOwner = id => { const it = (ST.items || []).find(x => x.id === id); return it && it.owner; };
   const rtLive = rts.filter(r => !r.paused && !r.disabled && r.time), rtOff = rts.filter(r => r.paused || r.disabled);
   const sent = UI.lang === "en" ? "sent" : "已派";
   const rtRows = rtLive.map(r => rtRow(r.time, itemOwner(r.item), rtName(r), r.last === today ? sent : "", r.item, rtFull(r)));
-  for (const r of schToday()) rtRows.push(rtRow(r.time, (r.item && itemOwner(r.item)) || r.who, rtName(r), r.ran ? sent : "", r.item, rtFull(r)));   /* t-ri1110-a P2 */
+  for (const r of schToday()) rtRows.push(rtRow(r.time, (r.item && itemOwner(r.item)) || r.who, clause(rtName(r)), r.ran ? sent : "", r.item, rtFull(r)));   /* t-ri1110-a P2 */
   if (ST.meta) rtRows.push(rtRow(ST.meta.report_time || "", "manager", UI.lang === "en" ? "Daily report" : "日报", ST.meta.last_report_date === today ? (UI.lang === "en" ? "sent" : "已发") : "", ""));
   const nowHM = `${pad(new Date().getHours())}:${pad(new Date().getMinutes())}`;
   $("#cal").classList.toggle("cal-empty", !evs.length && !rtRows.length && !UI.calForm);   // t-cal-fold: nothing today or tomorrow -> one faint row, "+" still there

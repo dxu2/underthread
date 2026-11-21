@@ -70,6 +70,7 @@ function wirePhTheme() {
       document.querySelectorAll(".seg[data-seg=ut]").forEach(s => s.append(document.createTextNode("")));
       document.querySelectorAll("[data-stage-tog]").forEach(x => {
         const dis = on === "ut"; x.classList.toggle("st-dis", dis); x.setAttribute("aria-disabled", dis);
+        x.style.display = dis ? "none" : "";   /* r-improve-1120 P4: the stage only works under 墨刊, so under 特典 the row is not shown at all (rt.stage is kept) */
         const sm = x.querySelector("small"); if (sm && App.stageSub) sm.textContent = App.stageSub(en, dis);
         const sw = x.querySelector(".sw"), st = !!R.dataset.stage || (dis && (() => { try { return JSON.parse(localStorage.getItem("rt.stage")) === true; } catch (err) { return false; } })());
         if (sw) sw.classList.toggle("on", st); x.setAttribute("aria-pressed", st);

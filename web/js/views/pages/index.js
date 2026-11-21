@@ -4,7 +4,7 @@
 
 
 import { $, LS } from "../../core/util.js";
-import { PLAT, STAGES, ago, grpLabel, rowLabel, rtTag, srvT, stageLabel, t, when, whenH, whoName } from "../../core/i18n.js";
+import { PLAT, STAGES, ago, dayKey, grpLabel, rowLabel, rtTag, srvT, stageLabel, t, when, whenH, whoName } from "../../core/i18n.js";
 import { ST, UI, byAct, byCreated, grpOf, idleDoing, idleL, items, logsFor, mailAll, onYouCard } from "../../core/store.js";
 import { aduty, agent, agents, aname, atitle, av, hasArt, ringOnce } from "../../core/av.js";
 import { UE_ART, api, toast, utEmpty } from "../../core/ui.js";
@@ -80,7 +80,11 @@ const PAGES = {
     if (UI.page === "reports" && list.some(r => r.id === open)) {   /* t-ri1114-a P1: reading a report reads its 日报 letter */
       const ids = mailAll().filter(m => !m.read && mailRep(m) === open).map(m => m.id); if (ids.length) nrRead(ids);
     }
-    return pageHead("reports", `<div class="ph-bar"><button class="btn-s" data-repreq>${t("report_req")}</button></div>`) +
+    /* r-improve-1119 P3: the report comes by itself at report_time, so no standing 「让管家写日报」 button: before today's report is out the head says
+       when it comes with a quiet 「现在就要一份 ›」; once it is out, nothing. */
+    const today = dayKey(new Date()), outToday = (ST.meta && ST.meta.last_report_date === today) || list.some(r => r.date === today);
+    const bar = outToday ? "" : `<div class="ph-bar rq-next"><span>${t("report_next", { t: (ST.meta && ST.meta.report_time) || "18:00" })}</span><button data-repreq>${t("report_req")} ›</button></div>`;
+    return pageHead("reports", bar) +
       (list.length ? list.map(r => {
         /* t-ri1110-a P5: a body that opens with its own 「# 日报 …」 line said the title twice; that line becomes the row title (keeps the weekday) */
         const m = /^#\s+(日报[^\n]*)\n*/.exec(r.body || ""), head = m ? m[1].trim() : `${r.title} · ${r.date}`, body = m ? r.body.slice(m[0].length) : r.body;
@@ -233,7 +237,7 @@ function wirePages2() {
     if (e.target.closest("[data-board-all]")) { UI.boardAll = true; renderPage(); }
     const df = e.target.closest("[data-donefold]"); if (df) { lsSet("rt.doneOpen." + df.dataset.donefold, !doneOpen(df.dataset.donefold)); renderPage(); }   // t-done-fold
     const lf = e.target.closest("[data-logf]"); if (lf) { UI.logAgent = lf.dataset.logf; renderPage(); }
-    if (e.target.closest("[data-repreq]")) api("report_request").then(() => toast("→ inbox"));
+    if (e.target.closest("[data-repreq]")) api("report_request").then(() => toast(t("report_asked")));
     const rp = e.target.closest("[data-rep]"); if (rp) { UI.openRep = UI.openRep === rp.dataset.rep ? "-" : rp.dataset.rep; renderPage(); }
     const dc = e.target.closest("[data-doc]"); if (dc) { const path = dc.dataset.doc; UI.doc = path; UI.docText = ""; renderPage(); docTop();   /* t-phone-docs: show 加载中 + jump to the text at once */
       fetch("/api/doc?path=" + encodeURIComponent(path)).then(r => r.json()).then(j => { if (UI.doc !== path) return; UI.docText = j.text || j.error; renderPage(); }); }

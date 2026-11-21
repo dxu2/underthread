@@ -4,7 +4,7 @@
 
 import { $ } from "../core/util.js";
 import { agoH, rowLabel, srvT, stageLabel, t, titleEn, whenH, whoName } from "../core/i18n.js";
-import { ST, UI, archIx, archTitle, busy, grpOf, items, mailAll, mailOlder, mailUnread, onYou, onYouCard, snoozed } from "../core/store.js";
+import { ST, UI, archIx, archTitle, busy, grpOf, items, mailAll, mailOlder, mailUnread, unreadM, onYou, onYouCard, snoozed, waitSince } from "../core/store.js";
 import { agent, aname, av } from "../core/av.js";
 import { api, postAct, utEmpty } from "../core/ui.js";
 import { go } from "../core/router.js";
@@ -83,17 +83,22 @@ function mailRep(m) {
   if (!m || m.item || m.agent !== "manager" || m.kind !== "update") return null;
   const r = (ST.reports || []).find(x => `${x.title} · ${x.date}` === m.text); return r ? r.id : null;
 }
+/* r-improve-1119 P5: a row that already shows the role's name drops a title's leading 「<name> · / ：」 and 「常驻 · / ：」 (常驻 has its own tag).
+   Display only: the card, search and the stored title keep it. A name with no separator after it (「<name>改进提案」) is left alone. */
+const reEsc = s => String(s).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+const sansName = (title, name) => { let t = String(title || ""), k = 0; const re = new RegExp(`^\\s*(?:${name ? reEsc(name) + "|" : ""}常驻|Ongoing)\\s*[·•:：]\\s*`);
+  while (k++ < 3) { const m = re.exec(t); if (!m || m[0].length >= t.length) break; t = t.slice(m[0].length); } return t; };
 function mailRow(g) {
   const m = g.last, it = m.item ? ST.items.find(i => i.id === m.item) : null, a = m.agent ? agent(m.agent) : null;
-  const unread = g.ms.some(x => !x.read);
+  const unread = g.ms.some(unreadM);
   return actRow({ attr: `data-mail="${m.id}" data-mailids="${g.ms.map(x => x.id).join(",")}"`, av: a ? av(a, "", m.item) : av("me"), ws: it ? workersOf(it.id) : [], unread,
-    name: a ? aname(a) : whoName("me"), title: it ? it.title : archTitle(m.item), time: agoH(m.t), preview: REV_MAIL.test(m.text || "") && it ? cardLine(it, a) : mailPv(m.text, a),
+    name: a ? aname(a) : whoName("me"), title: sansName(it ? it.title : archTitle(m.item), a && aname(a)), time: agoH(m.t), preview: REV_MAIL.test(m.text || "") && it ? cardLine(it, a) : mailPv(m.text, a),
     chip: it ? rowLabel(it) : (m.kind === "reply" ? t("replies") : t("updates")), n: g.ms.length });
 }
 // ---------- ui1-C: mailbox = drop-down panel under the header (the full page stays reachable via "view all") ----------
 function mailFiltered(n) {
   const f = UI.mailFilter;
-  const L = mailAll().filter(m => f === "all" || (f === "unread" ? !m.read : f === "urgent" ? (m.item && (ST.items.find(i => i.id === m.item) || {}).category === "urgent") : m.kind === f));
+  const L = mailAll().filter(m => f === "all" || (f === "unread" ? unreadM(m) : f === "urgent" ? (m.item && (ST.items.find(i => i.id === m.item) || {}).category === "urgent") : m.kind === f));
   if (L.length < n && f !== "unread") mailOlder();   /* ri1105-P4: a filter that runs short fetches the older read letters once */
   return L.slice(-n).reverse();
 }
@@ -126,12 +131,13 @@ function mbCard(m, ix) {
   let tt = "";
   if (m.item) { const it = ix ? ix.get(m.item) : items().find(i => i.id === m.item); tt = it ? (en ? titleEn(it.title, it) : it.title) : archTitle(m.item) || m.item; }
   else tt = en ? "Direct message" : "私信";
+  if (m.item) tt = sansName(tt, m.agent && aname(agent(m.agent)));   /* r-improve-1119 P5: the row's name is right above */
   return `<div class="mb-card">${MB_TAG}<span>${esc(tt)}</span></div>`;
 }
 function mbRow(g, i, ix) {   /* r-improve-1121 P2: one row of the drop-down; the desk 信箱 page uses the same rows */
   const en = UI.lang === "en", kindName = { reply: t("replies"), update: t("updates") };
   const m = g.body, rv = g.rv, n = g.ms.length;
-  return `<div class="mb-i ${g.ms.some(x => !x.read) ? "unread" : ""}" data-mail="${g.last.id}"${n > 1 ? ` data-mailids="${g.ms.map(x => x.id).join(",")}"` : ""} style="--i:${Math.min(i, 8)}">
+  return `<div class="mb-i ${g.ms.some(unreadM) ? "unread" : ""}" data-mail="${g.last.id}"${n > 1 ? ` data-mailids="${g.ms.map(x => x.id).join(",")}"` : ""} style="--i:${Math.min(i, 8)}">
     ${m.agent ? av(agent(m.agent), "sm") : "<span class=\"av sm\"></span>"}<div class="mb-b"><div class="mb-m"><b>${m.agent ? esc(aname(agent(m.agent))) : ""}</b>${rv ? `<i class="ri14-rv">${en ? "Review" : "待审核"}</i>` : kindName[m.kind] ? `<i>${esc(kindName[m.kind])}</i>` : ""}<span>${whenH(g.last.t)}${n > 1 ? (en ? ` · ${n}` : ` · ${n} 条`) : ""}</span></div>${mbCard(g.last, ix)}<div class="mb-x">${esc(mailPv(m.text, m.agent && agent(m.agent)))}</div></div><span class="u"></span></div>`;
 }
 function renderMailbox(enter) {
@@ -169,7 +175,7 @@ function homeCounts() {   // t-imp-p1: review = 等你拍板 (review items + pla
   const its = items(), wk = wkFrom(), rev = its.filter(i => onYouCard(i) && i.id !== RV.pending);
   const nr = newReplies().length, cards = rev.length + its.filter(i => awaitsUser(i) && !busy(i) && !snoozed(i)).length;   /* r-improve-1121 P3: the phone hero splits the number */
   return { review: cards + nr, cards, nr, doing: its.filter(i => grpOf(i) === "doing").length, todo: its.filter(i => grpOf(i) === "todo").length,
-    week: its.filter(i => i.stage === "done" && i.closed && new Date(i.closed) > wk).length, oldest: rev.length ? Math.min(...rev.map(i => new Date(i.activity || i.updated))) : null };
+    week: its.filter(i => i.stage === "done" && i.closed && new Date(i.closed) > wk).length, oldest: rev.length ? Math.min(...rev.map(i => Date.parse(waitSince(i)))) : null   /* r-improve-1119 P1 */ };
 }
 // ===== t-home-newreplies: 「新回复」 = the server's reply mail (kind "reply", written for every msg / reply an agent posts on a card; log lines and events
 // are not mailed) that is still unread, grouped by card. Read flags live on the server (mail_read), so phone and desktop agree.
@@ -192,7 +198,7 @@ function nrBlock() {
   const zh = UI.lang !== "en", n = g.length, shown = g.slice(0, 4);   // t-review-unread: n = cards, the same unit as the badges
   return `<div class="nr"><div class="nr-h"><b>${zh ? "新回复" : "New replies"}</b><small>${n}</small><span class="sp"></span><button class="nr-all" data-nr-all>${zh ? "全部标为已读" : "Mark all read"}</button></div>` +
     shown.map(({ it, ms }) => { const m = ms[ms.length - 1], a = agent(m.agent);
-      return `<div class="nr-r" role="link" tabindex="0" data-nr="${esc(it.id)}">${av(a)}${ms.length > 1 ? `<span class="nr-n">${ms.length}</span>` : ""}<b>${esc(aname(a))} <i>· ${esc(it.title)}</i></b><time>${agoH(m.t)}</time><p>${esc(nrFirst(m.text, a))}</p><i class="nr-dot"></i></div>`; }).join("") +
+      return `<div class="nr-r" role="link" tabindex="0" data-nr="${esc(it.id)}">${av(a)}${ms.length > 1 ? `<span class="nr-n">${ms.length}</span>` : ""}<b>${esc(aname(a))} <i>· ${esc(sansName(it.title, aname(a)))}</i></b><time>${agoH(m.t)}</time><p>${esc(nrFirst(m.text, a))}</p><i class="nr-dot"></i></div>`; }).join("") +
     (g.length > shown.length ? `<button class="nr-more" data-h="mail">${zh ? `还有 ${g.length - shown.length} 张卡有新回复 · 去信箱` : `${g.length - shown.length} more cards · open mailbox`}</button>` : "") + `</div>`;
 }
 // r-improve-1102 P3: read marks shared through the server. A chat / DM message is mirrored into the mailbox (kind reply, no card); reading the thread
