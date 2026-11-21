@@ -13,7 +13,7 @@ import { autoFold, setChat } from "../chat.js";
 import { openItem, snzLine } from "../drawer.js";
 import { renderHeader, ruCard } from "../header.js";
 import { renderLeft } from "../left.js";
-import { homeCounts, logRows, logText, mailFiltered, mailGroups, mailPv, mailRep, mailRow, newReplies, nrBlock, nrRead, renderMailbox, wkFrom } from "../mail.js";
+import { homeCounts, logRows, logText, mailFiltered, mailGroups, mailPv, mailRep, mailRow, mbGroups, mbRow, newReplies, nrBlock, nrRead, renderMailbox, wkFrom } from "../mail.js";
 import { MOBQ, card, lsSet, pageHead } from "./common.js";
 import { catPage, doneOpen, questsPage } from "./quests.js";
 import { RV, askGroups, askGuard, decHead, decRow, decisions, grpHTML, nowBlock, reviewCard, reviewRow, todayBlock } from "./review.js";
@@ -134,7 +134,8 @@ const PAGES = {
       : pageHead("mail", `<div class="ph-bar"><button class="btn-s" data-mailall>${t("mark_all")}</button></div>`) + `<div class="filters">${segs}</div>`;
     if (mob) return head + (list.length ? `<div class="act-list">${ringOnce(() => mailGroups(list).map(mailRow).join(""))}</div>` : utEmpty(t("empty_mail"), "empty calm"));
     return head +
-      (list.length ? ringOnce(() => list.map(m => `<div class="mail-i ${m.read ? "" : "unread"}" data-mail="${m.id}"><span class="u"></span><span class="tm">${whenH(m.t)}</span>${m.agent ? av(agent(m.agent), "sm") : "<span></span>"}<span class="tx">${esc(mailPv(m.text, m.agent && agent(m.agent)))}</span></div>`).join("")) : utEmpty(t("empty")));
+      /* r-improve-1121 P2: the desk page uses the drop-down's rows (name, kind tag, card name, two-line preview; one card + one person folded) */
+      (list.length ? `<div class="mb-page">${ringOnce(() => { const ix = new Map(items().map(i => [i.id, i])); return mbGroups(list).map((g, i) => mbRow(g, i, ix)).join(""); })}</div>` : utEmpty(t("empty")));
   },
 };
 // ===== t-agent-memory v2: 记忆 / 灵魂 pills on the role card (viewer lives in rolefiles.js; read-only) =====

@@ -492,3 +492,7 @@ html[data-ut] #ticker .nty-knots i.on::after { width: 8px; height: 8px; backgrou
   html[data-ut] #ticker .nty-ball ~ .msg::before { display: none; }   /* the ball replaces the phone ◆ */
 }
 @media (prefers-reduced-motion: reduce) { html[data-ut] #ticker .nty-thr svg, html[data-ut] #ticker .nty-ball, html[data-ut] #ticker .nty-ball + .msg { animation: none; } }
+/* r-improve-1121 P2: the desk 信箱 page rows follow the drop-down's paper rows */
+html[data-ut] .mb-page .mb-i { border-bottom: 1px dashed color-mix(in srgb, var(--dim) 30%, transparent); border-radius: 8px; }
+html[data-ut] .mb-page .mb-i:hover { background: color-mix(in srgb, var(--ink) 5%, transparent); }
+html[data-ut] .mb-page .mb-i.unread { background: color-mix(in srgb, var(--accent) 7%, transparent); }
