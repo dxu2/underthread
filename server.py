@@ -22,7 +22,7 @@ from api import ctx, router, http, loops
 import api.routes  # noqa: F401  (registers every route and action)
 from api.routes import schedules, snooze, state, push, health as _health_mod, secret, hr, actions, media, docs, voice, web
 
-from api.ctx import S, C, MG, ROOT, CONFIG, _comfy
+from api.ctx import S, C, MG, ROOT, CONFIG
 from core import registry as REG
 from core import install_seed
 from api.http import H, QuietServer
@@ -49,7 +49,6 @@ def main():
     if S.EXT:
         print("extensions: " + ", ".join(f"{n}" + (" [legacy]" if (REG.EXTS.get(n) or {}).get("legacy") else "")
                                          + (f" (error: {e['error']})" if e.get("error") else "") for n, e in S.EXT.items()), flush=True)
-    _comfy["configured"] = bool(CONFIG.get("comfy"))
     sync_roster()
     install_seed.run(ROOT)   # t-oss-generic: missing preset role notes and default avatars come back (never overwrites)
     st0 = S.read()   # t-oss-struct E1: the first read after an update runs the state migrations (backup in local/backups/migrate)

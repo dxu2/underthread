@@ -39,25 +39,29 @@ class Resolve(unittest.TestCase):
         os.environ["CODEX_BIN"] = p
 
     def test_none_setting(self):
-        self.assertEqual(self.m.resolve({"image": {"backend": "none"}, "comfy": {"ssh_host": "x"}})["backend"], "none")
+        self.assertEqual(self.m.resolve({"image": {"backend": "none"}})["backend"], "none")
 
     def test_unknown_setting(self):
         r = self.m.resolve({"image": {"backend": "dalle"}})
         self.assertEqual(r["backend"], "none")
         self.assertIn("unknown", r["why"])
 
-    def test_comfy_needs_block(self):
-        self.assertEqual(self.m.resolve({"image": {"backend": "comfy"}})["backend"], "none")
-        self.assertEqual(self.m.resolve({"image": {"backend": "comfy"}, "comfy": {"ssh_host": "x"}})["backend"], "comfy")
+    def test_retired_comfy_reads_as_auto(self):
+        """t-oss-no-comfy: an old config with backend comfy (and a comfy block) gets what auto would give, never 'comfy'."""
+        self.fake_codex("Logged in using ChatGPT")
+        r = self.m.resolve({"image": {"backend": "comfy"}, "comfy": {"ssh_host": "x"}})
+        self.assertEqual((r["backend"], r["setting"]), ("codex", "auto"))
+        self.assertIn("no longer supported", r["why"])
+        self.fake_codex("Not logged in")
+        self.assertEqual(self.m.resolve({"image": {"backend": "comfy"}, "comfy": {"ssh_host": "x"}})["backend"], "none")
 
     def test_auto_prefers_chatgpt_codex(self):
         self.fake_codex("Logged in using ChatGPT")
-        self.assertEqual(self.m.resolve({"image": {"backend": "auto"}, "comfy": {"ssh_host": "x"}})["backend"], "codex")
+        self.assertEqual(self.m.resolve({"image": {"backend": "auto"}})["backend"], "codex")
 
     def test_api_key_login_does_not_count(self):
         self.fake_codex("Logged in using an API key")
-        self.assertEqual(self.m.resolve({"image": {"backend": "auto"}})["backend"], "none")
-        self.assertEqual(self.m.resolve({"image": {"backend": "auto"}, "comfy": {"ssh_host": "x"}})["backend"], "comfy")
+        self.assertEqual(self.m.resolve({"image": {"backend": "auto"}, "comfy": {"ssh_host": "x"}})["backend"], "none")
 
     def test_gen_without_backend_exits_6(self):
         self.fake_codex("Not logged in")

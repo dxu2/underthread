@@ -28,7 +28,7 @@ apply creates:
     .claude/agents/<agent>.md     (through make_agents.py, the way every role is built)
     avatars/<id>.png + avatars/ut/<id>.png
         default: the bundled templates/roles/_default/avatar.png recoloured to the role's tint (ffmpeg)
-        --avatar gen: generate one with tools/image.py (the image backend: codex or ComfyUI; may cost quota)
+        --avatar gen: generate one with tools/image.py (the image backend: codex on the ChatGPT plan; may cost quota)
         --avatar none: no file, the dashboard shows a letter circle
         a template variant's art/<key>/avatar.png or spec files.avatar is used as is when given
     then tools/avatar_sizes.py for the small copies.

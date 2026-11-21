@@ -20,7 +20,7 @@ You review, approve, reject with a reason, or send things out yourself.
 | Scout · Researcher (`scout`) | Research, comparisons, fact-checks, sources |
 | Quill · Writer (`writer`) | Docs, drafts, summaries, messages and emails to send |
 | Lens · Planner (`director`) | Plans, checklists, reviews of the others' drafts |
-| Brush · Designer (`artist`) | Images, diagrams, mockups (optionally through your own ComfyUI) |
+| Brush · Designer (`artist`) | Images, diagrams, mockups (through Codex on your ChatGPT plan) |
 | Signal · Coordinator (`ops`) | Calendar, follow-ups, message drafts, weekly review |
 | Smith · Tooling keeper (`smith`) | Dashboard, scripts, automation, first responder for tooling errors |
 

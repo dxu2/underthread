@@ -24,8 +24,6 @@
     "wait_avatar_min": 0
   },
   "image": {
-    "backend": "auto",
-    "comfy_workflow": "",
-    "comfy_prompt": "6.text"
+    "backend": "auto"
   }
 }

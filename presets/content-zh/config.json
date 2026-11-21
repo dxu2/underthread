@@ -13,11 +13,5 @@
       "name": "小红书",
       "home": "<https://www.xiaohongshu.com/user/profile/...>"
     }
-  },
-  "comfy": {
-    "ssh_host": "<user@your-gpu-box>",
-    "remote_port": 8188,
-    "local_port": 8188,
-    "default_workflow": "tools/workflows/example_api.json"
   }
 }

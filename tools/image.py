@@ -7,15 +7,14 @@
 stdout of `gen`: the absolute path of the new PNG (one line). Everything else goes to stderr.
 
 Backend = config.json → image.backend:
-    auto   (default) codex if it is logged in with ChatGPT, else comfy if config.json has a comfy block, else none
+    auto   (default) codex if it is logged in with ChatGPT, else none
+           (t-oss-no-comfy: the old "comfy" setting is read as auto; ComfyUI support was removed)
     codex  tools/gpt_image.sh: the codex in ChatGPT.app (or on PATH), on the ChatGPT subscription; never an API key
-    comfy  tools/comfy.py run on image.comfy_workflow (default: comfy.default_workflow), prompt into image.comfy_prompt
-           (default "6.text"), random seed. Reference images are not used (a note goes to stderr).
     none   no backend: exit 6. Callers fall back to template art (tools/new_role.py) or tools/work_strip.py --bob.
 
 Exit codes: 0 ok · 2 usage · 3 codex not logged in with ChatGPT · 4 quota / rate limit · 5 no image produced
             6 no image backend configured · 124 timeout · other = the backend's own exit code
-One picture per call, no retries: every call may cost subscription quota or GPU time.
+One picture per call, no retries: every call may cost subscription quota.
 """
 import json
 import os
@@ -26,9 +25,9 @@ import time
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 GPT = os.path.join(ROOT, "tools", "gpt_image.sh")
-COMFY = os.path.join(ROOT, "tools", "comfy.py")
 CODEX_TRIED = ("/Applications/ChatGPT.app/Contents/Resources/codex-cli/bin/codex", "/Applications/ChatGPT.app/Contents/Resources/codex")
-BACKENDS = ("auto", "codex", "comfy", "none")
+BACKENDS = ("auto", "codex", "none")
+RETIRED = ("comfy",)   # t-oss-no-comfy: read as auto, so an older config.json keeps working
 
 
 def config():
@@ -63,9 +62,12 @@ def codex_ready():
 
 
 def resolve(cfg=None):
-    """{"backend": codex|comfy|none, "setting": auto|..., "why": "..."}. Never generates anything."""
+    """{"backend": codex|none, "setting": auto|..., "why": "..."}. Never generates anything."""
     cfg = cfg if cfg is not None else config()
     want = str((cfg.get("image") or {}).get("backend") or "auto")
+    note = ""
+    if want in RETIRED:
+        want, note = "auto", f"image.backend {want!r} is no longer supported, read as auto; "
     if want not in BACKENDS:
         return {"backend": "none", "setting": want, "why": f"unknown image.backend {want!r} (use {', '.join(BACKENDS)})"}
     if want == "none":
@@ -73,15 +75,8 @@ def resolve(cfg=None):
     if want == "codex":
         ok, why = codex_ready()
         return {"backend": "codex" if ok else "none", "setting": want, "why": why}
-    if want == "comfy":
-        return {"backend": "comfy" if cfg.get("comfy") else "none", "setting": want,
-                "why": "config.json has a comfy block" if cfg.get("comfy") else "image.backend is comfy but config.json has no comfy block"}
     ok, why = codex_ready()
-    if ok:
-        return {"backend": "codex", "setting": want, "why": why}
-    if cfg.get("comfy"):
-        return {"backend": "comfy", "setting": want, "why": f"{why}; config.json has a comfy block"}
-    return {"backend": "none", "setting": want, "why": f"{why}; no comfy block in config.json"}
+    return {"backend": "codex" if ok else "none", "setting": want, "why": note + why}
 
 
 def gen_codex(refs, prompt, out, timeout):
@@ -91,24 +86,6 @@ def gen_codex(refs, prompt, out, timeout):
         return r.returncode, None
     lines = r.stdout.strip().splitlines()
     return 0, lines[-1] if lines else None
-
-
-def gen_comfy(cfg, refs, prompt, out, timeout):
-    im, cf = cfg.get("image") or {}, cfg.get("comfy") or {}
-    wf = im.get("comfy_workflow") or cf.get("default_workflow")
-    if not wf:
-        print("error: comfy backend needs image.comfy_workflow (or comfy.default_workflow) in config.json", file=sys.stderr)
-        return 2, None
-    if refs:
-        print("note: the comfy backend does not use reference images; generating from the prompt only", file=sys.stderr)
-    node = im.get("comfy_prompt") or "6.text"
-    r = subprocess.run([sys.executable, COMFY, "run", os.path.join(ROOT, wf) if not os.path.isabs(wf) else wf,
-                        "--set", f"{node}={prompt}", "--random-seed", "--out", out, "--timeout", str(timeout)],
-                       stdout=subprocess.PIPE, text=True, stdin=subprocess.DEVNULL)
-    pics = [l for l in r.stdout.splitlines() if l.lower().endswith((".png", ".jpg", ".jpeg", ".webp"))]
-    if r.returncode:
-        return (124 if "timed out" in r.stdout else r.returncode), None
-    return 0, os.path.abspath(pics[-1]) if pics else None
 
 
 def usage(code=2):
@@ -147,12 +124,12 @@ def main(argv):
     cfg = config()
     b = resolve(cfg)
     if b["backend"] == "none":
-        print(f"error: no image backend ({b['why']}). Set image.backend in config.json, log codex in with ChatGPT, "
-              "or add a comfy block; without one, use template art or tools/work_strip.py --bob.", file=sys.stderr)
+        print(f"error: no image backend ({b['why']}). Log codex in with ChatGPT; "
+              "without it, use template art or tools/work_strip.py --bob.", file=sys.stderr)
         return 6
     os.makedirs(out, exist_ok=True)
     t0 = time.time()
-    rc, path = gen_codex(refs, prompt, out, timeout) if b["backend"] == "codex" else gen_comfy(cfg, refs, prompt, out, timeout)
+    rc, path = gen_codex(refs, prompt, out, timeout)
     if rc:
         return rc
     if not path or not os.path.isfile(path):

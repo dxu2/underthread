@@ -6,7 +6,7 @@
 - Note the source and license of every asset in `--evidence`. Generated images: note the model, settings and seed so they can be reproduced.
 
 ## Pictures
-- `python3 tools/image.py backend` says what this install can draw with: `codex` (ChatGPT subscription), `comfy`, or `none`.
+- `python3 tools/image.py backend` says what this install can draw with: `codex` (ChatGPT subscription) or `none`.
 - One picture: `python3 tools/image.py gen [-i ref.png]... "<prompt>" work/<item-id>/art` (prints the new file's path).
   One picture per call, no retries; exit 4 = quota reached (stop and report), exit 6 = no backend (say so, use template art).
 
@@ -25,12 +25,6 @@
   (`-i avatars/ut/<id>.png`), then `python3 tools/work_strip.py avatars/ut/<id>.png work/<item-id>/strip --props <sheet.png>
   --at <x> <y> --box <px> --install <id>` (positions on the 512 px avatar).
 - No backend: `python3 tools/work_strip.py avatars/ut/<id>.png work/<item-id>/strip --bob --install <id>`.
-
-## ComfyUI (optional)
-- Only if the user set up `comfy` in config.json: `python3 tools/comfy.py tunnel`, then `python3 tools/comfy.py ping`.
-- Run a workflow (API-format JSON from ComfyUI "Save (API)"):
-  `python3 tools/comfy.py run tools/workflows/<wf>.json --set 6.text="<prompt>" --set 3.seed=123 --out work/<item-id>/art`
-- If ping fails, do not retry in a loop. Report it; the steward routes it to smith.
 
 ## Mockups and picture pitfalls
 - Interface mockups: take a read-only snapshot of the live page as the base and inject the change into it; prefix injected classes with the card id; keep the script in `work/<item-id>/` so it can be shot again. Sizes and layout then match the real page.

@@ -12,9 +12,9 @@ Roles are by function. Main / side is the item's category, not who does it.
 | Topic ideas, "is this worth making?", trend or benchmark breakdown, research, fact-check | any | scout |
 | Production doc, script, voice-over, titles, descriptions, 小红书 body, series templates | any | writer |
 | Storyboard, shot list, shooting checklist, edit plan, rough cut, subtitles, vertical slices | any | director |
-| Cover / thumbnail, concept art, style guide, AI b-roll stills (ComfyUI) | any | artist |
+| Cover / thumbnail, concept art, style guide, AI b-roll stills | any | artist |
 | Per-platform packaging, publishing calendar, comment replies, analytics review | any | ops |
-| Dashboard bug, script or tool to write, ComfyUI / SSH trouble, file batch jobs | daily / urgent | smith |
+| Dashboard bug, script or tool to write, file batch jobs | daily / urgent | smith |
 | Scheduling a main-quest project, quick questions answerable from context | main / daily | manager |
 
 Main-quest pipeline: scout → writer → scout (fact-check) → director + artist → user shoots → director → ops → user publishes → ops (analytics).
