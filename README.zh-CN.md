@@ -60,12 +60,10 @@
 
 ```bash
 git clone https://github.com/dxu2/underthread.git && cd underthread
-python3 server.py                                 # 终端 1：看板在 http://127.0.0.1:8765
-python3 make_agents.py                            # 终端 2：给每个队员生成一个子代理
-claude "Start the manager per manager.md"         # 终端 2：叫醒管家
+./start
 ```
 
-然后在看板的聊天框里说一句话就行。只想看看？`python3 server.py --demo` 完全不需要 Claude Code。下面是同样的步骤，慢慢讲，每一步都写了你应该看到什么。
+就这些：`./start` 会起看板、在浏览器里打开、在同一个终端里叫醒管家。在 Mac 上它还会问要不要在「应用程序」里放一个 **Underthread 图标**，以后点一下就行。然后在看板的聊天框里说一句话。只想看看？`./start --demo` 完全不需要 Claude Code。下面是同样的步骤，慢慢讲，每一步都写了你应该看到什么。
 
 ### 需要什么
 
@@ -80,42 +78,37 @@ claude "Start the manager per manager.md"         # 终端 2：叫醒管家
 
 ### 步骤
 
+**1. 下载并启动。**
+
 ```bash
 git clone https://github.com/dxu2/underthread.git && cd underthread
+./start
 ```
 <!-- TODO(launch): 公开前这个地址必须能打开（2026-11-12 还是 404）。 -->
 
-> **只想先看看？** 跑 `python3 server.py --demo`，打开 <http://127.0.0.1:8765>。不用装 Claude Code，就能看到小队在干活：管家开卡，队员亮起来、记进度、交草稿；你在页面上点什么，都会收到一句预设的回复。demo 在单独的 `.demo/` 目录里跑，每次启动重建，不会读写你真实的卡片。按 Ctrl-C 退出。`PORT=8766` 换端口；`--lang zh` 或 `--lang en` 设对话语言（默认跟 `$LANG`）。
+`./start` 按顺序做完准备，每一步打印一行：
+- 检查 Python 3.10+（版本太旧会告诉你装哪个）、git 和 `claude` 命令；
+- 在后台起看板，已经在跑就直接用。第一次运行会把 `config.example.json`、`roster.example.json`、`state.example.json` 复制成 `config.json`、`roster.json`、`state.json`；
+- 给每个队员在 `.claude/agents/` 里生成一个 Claude Code 子代理（`make_agents.py`），`roster.json` 改过也会重新生成；
+- 在浏览器里打开 <http://127.0.0.1:8765>；
+- 问两个问题，各问一次（答案记在 `local/start.json`）：**要不要 Underthread 图标？**（默认要）；macOS 上还会问**要不要开机自动起看板？**（默认不要；答要就跑 `tools/install_service.sh`，会加一个登录项）；
+- 叫醒管家：这个终端从此就是管家的窗口，别关它。已经有管家在跑的话，它会说一声，不会再开第二个。
 
-**1. 启动看板。**
+第一次 Claude Code 会让你登录、确认信任这个文件夹。仓库自带 `.claude/settings.json`，让队员跑自己的辅助命令时不用每次问你，同时把用量喂给看板。保持原样就好；你自己要加的权限放进 `.claude/settings.local.json`（git 会忽略它，Claude Code 两个都读）。
+*你应该看到：* 首页上有几张示例卡。几秒内顶栏的管家状态变成在线，聊天里出现一句问候。
 
-```bash
-python3 server.py
-```
-
-第一次运行会把 `config.example.json`、`roster.example.json`、`state.example.json` 复制成 `config.json`、`roster.json`、`state.json`。
-*你应该看到：* 终端打印 `Underthread → http://127.0.0.1:8765`。打开这个地址，首页上有几张示例卡。顶栏显示管家离线，这是正常的，第 3 步之后就会上线。
-
-**2. 生成队员（必须）。**
-
-```bash
-python3 make_agents.py
-```
-
-它按 roster 给每个队员在 `.claude/agents/` 里写一个 Claude Code 子代理，并把管家的派单表写进 `local/dispatch.md`。**跳过这一步，派单全部失败**，因为管家找不到人。想改名字或角色，先改 `roster.json` 再跑；以后随时可以重跑。
-*你应该看到：* `from roster.json: wrote 4 agents → …/.claude/agents: underthread-hr, underthread-scout, …` 和 `restart the manager session to pick them up`。派单表有变化时，还会多一行 `updated local/dispatch.md`。
-
-**3. 叫醒管家。** 另开一个终端，在同一个目录里：
-
-```bash
-claude "Start the manager per manager.md"
-```
-
-不用复制任何文件：仓库自带 `.claude/settings.json`，让队员跑自己的辅助命令时不用每次问你，同时把用量喂给看板。保持原样就好；你自己要加的权限放进 `.claude/settings.local.json`（git 会忽略它，Claude Code 两个都读）。
-*你应该看到：* 几秒内顶栏的管家状态变成在线，看板聊天里出现一句问候。
-
-**4. 说句话。** 在聊天框里打一句需求，就像给同事发消息。
+**2. 说句话。** 在聊天框里打一句需求，就像给同事发消息。
 *你应该看到：* 出现一张新卡，某个队员的徽章亮起来，开始干活。
+
+**以后**点 **Underthread** 图标就行（Mac 上在「应用程序」里，可以拖进 Dock；Linux 上在应用菜单里）。它会起看板或直接用已经开着的、打开页面；管家没在跑的话，在一个自动收进 Dock 的终端窗口里叫醒它。第一次点时 macOS 会问一次「Underthread 想控制终端」，这是用来把窗口最小化的；选不允许也没关系，窗口就开着。关掉那个窗口管家就下线，再点一次图标就回来。也可以再跑一次 `./start`。
+
+> **关于图标。** 图标是 `./start` 在你自己的 Mac 上用系统自带工具（`osacompile`、`sips`、`iconutil`）现做的，所以打开时不会被 Gatekeeper 拦。别把这个 App 拷到别的 Mac 上用，在那台 Mac 上跑一次 `./start` 就行。挪了文件夹位置的话，点图标会提示你在新位置跑一次 `./start`，它会重新做一个。`./start --app` 随时可以重做。
+
+> **卸载。** `./start --uninstall` 一次把 Underthread 从这台电脑上拿掉：开机自启（如果开过）、正在跑的看板和管家、图标，而且只动属于这个文件夹的那些。它先列出来，问你一次（默认不做）；`./start --uninstall --dry-run` 只列不做。然后分开问两件事，默认都留着：要不要删掉整个文件夹（你的卡片、`local/`、`work/`、`uploads/` 都在里面；删之前先打一个备份 zip 到 `~/UnderthreadBackups/`），要不要删掉 Claude Code 在这个文件夹的会话记录（`~/.claude/projects/…`）。Claude Code 本身、它的设置、别的项目和 Claude 桌面 App 一概不碰。
+
+> **只想先看看？** 跑 `./start --demo`（或者 `python3 server.py --demo`）。不用装 Claude Code，就能看到小队在干活：管家开卡，队员亮起来、记进度、交草稿；你在页面上点什么，都会收到一句预设的回复。demo 在单独的 `.demo/` 目录里跑，每次启动重建，不会读写你真实的卡片。按 Ctrl-C 退出。`PORT=8766` 换端口；`--lang zh` 或 `--lang en` 设对话语言（默认跟 `$LANG`）。
+
+**想在 Claude 桌面 App 里跑管家？** 用 `./start --no-steward`，然后在 App 里打开这个文件夹，说 `Start the manager per manager.md`。**想一步步手动来**（`python3 server.py`、`python3 make_agents.py`、`claude "Start the manager per manager.md"`）？跟以前完全一样，见 [docs/setup-guide.md](docs/setup-guide.md)。
 
 首页的「开工清单」会带你走完这几步，每一步做到了会自己打勾；全部打勾的第二天它自己收起（「编辑小组件」里能加回来）。
 

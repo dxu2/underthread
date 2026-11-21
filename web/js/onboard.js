@@ -264,8 +264,8 @@
   function chatTop() {
     const d = SU(); if (!d || A().UI.chat !== "manager") return "";
     if (mgrOff()) return `<div class="ob-off" data-ob-off><b class="ob-t"><i class="ob-dot" aria-hidden="true"></i>${esc(L(`${mgrName()} 还没上线`, `${mgrName()} is not online yet`))}</b>`
-      + `<p>${esc(L(`${mgrName()} 是一直开着的 Claude Code 会话：读你在这里说的话，开卡，交给队员。你的话会先排队，它一上线就先处理（已排队 ${queued()} 条）。在这个文件夹里另开一个终端，运行：`,
-        `${mgrName()} is a Claude Code session that stays open: it reads what you say here, opens cards and hands them out. What you say waits in a queue and is read first when it comes online (${queued()} queued). Open another terminal in this folder and run:`))}</p>`
+      + `<p>${esc(L(`${mgrName()} 是一直开着的 Claude Code 会话：读你在这里说的话，开卡，交给队员。你的话会先排队，它一上线就先处理（已排队 ${queued()} 条）。点一下 Underthread 图标，或者在这个文件夹的终端里运行：`,
+        `${mgrName()} is a Claude Code session that stays open: it reads what you say here, opens cards and hands them out. What you say waits in a queue and is read first when it comes online (${queued()} queued). Click the Underthread icon, or run this in a terminal in this folder:`))}</p>`
       + `<div class="ob-cmd"><code>${esc(d.cmd)}</code><button type="button" class="ob-copy" data-ob-copy="cmd">${esc(phone() ? L("在电脑上跑", "Run on the computer") : L("复制", "Copy"))}</button></div>`
       + `<small>${esc(L(`文件夹：${d.root}。第一次会让你登录 Claude、确认信任这个文件夹。上线后这里会变成 ▶ 在线。`, `Folder: ${d.root}. The first time, Claude asks you to sign in and to trust this folder. When it is up, this turns into ▶ online.`))}</small></div>`;
     const said = (d.steps.find(x => x.id === "say") || {}).done;

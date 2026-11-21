@@ -60,12 +60,10 @@ Short on someone? Open the Hiring market (29 job templates): Thimble interviews 
 
 ```bash
 git clone https://github.com/dxu2/underthread.git && cd underthread
-python3 server.py                                 # terminal 1: dashboard on http://127.0.0.1:8765
-python3 make_agents.py                            # terminal 2: one subagent per teammate
-claude "Start the manager per manager.md"         # terminal 2: wake up the steward
+./start
 ```
 
-Then type a request into the dashboard's chat. Just looking? `python3 server.py --demo` needs no Claude Code at all. The rest of this section is the same thing, slowly, with what you should see at each step.
+That's it: `./start` starts the dashboard, opens it in your browser and wakes the steward in the same terminal. On a Mac it also offers to put an **Underthread icon** in Applications, so next time you just click it. Then type a request into the dashboard's chat. Just looking? `./start --demo` needs no Claude Code at all. The rest of this section is the same thing, slowly, with what you should see at each step.
 
 ### What you need
 
@@ -80,42 +78,37 @@ Then type a request into the dashboard's chat. Just looking? `python3 server.py 
 
 ### Steps
 
+**1. Get it and start it.**
+
 ```bash
 git clone https://github.com/dxu2/underthread.git && cd underthread
+./start
 ```
 <!-- TODO(launch): this URL must resolve before the README goes public (404 on 2026-11-12). -->
 
-> **Just looking?** Run `python3 server.py --demo` and open <http://127.0.0.1:8765>. You get the dashboard with a crew at work and no Claude Code needed: the steward opens cards, teammates light up, log progress and hand in drafts, and whatever you click gets a short canned reply. The demo runs from its own `.demo/` folder, rebuilt on every start, so your real cards are never read or written. Stop it with Ctrl-C. `PORT=8766` picks another port; `--lang zh` or `--lang en` sets the chat language (default: from `$LANG`).
+`./start` does the setup in order and prints one line per step:
+- checks for Python 3.10+ (and says which version to install if yours is older), git and the `claude` command;
+- starts the dashboard in the background, or reuses it if it is already running. The first run copies `config.example.json`, `roster.example.json` and `state.example.json` to `config.json`, `roster.json` and `state.json`;
+- creates one Claude Code subagent per teammate in `.claude/agents/` (`make_agents.py`), and again whenever `roster.json` is newer;
+- opens <http://127.0.0.1:8765> in your browser;
+- asks two questions, once each (your answers are kept in `local/start.json`): **an Underthread icon?** (default yes) and, on macOS, **start the dashboard when you log in?** (default no; yes runs `tools/install_service.sh`, which adds a login item);
+- wakes the steward: this terminal becomes the steward's window. Leave it open. If a steward is already running, it says so and doesn't start a second one.
 
-**1. Start the dashboard.**
+The first time, Claude Code asks you to sign in and to trust this folder. The repository ships `.claude/settings.json`, which lets the crew run their own helper commands without asking you each time and feeds your usage to the dashboard. Leave it as it is, and put any permissions of your own in `.claude/settings.local.json` (git ignores it, and Claude Code reads both).
+*You should see:* the home page with a few example cards. Within a few seconds the steward's status in the header turns to online and a hello appears in the chat.
 
-```bash
-python3 server.py
-```
-
-The first run copies `config.example.json`, `roster.example.json` and `state.example.json` to `config.json`, `roster.json` and `state.json`.
-*You should see:* `Underthread → http://127.0.0.1:8765` in the terminal. Open that address and the home appears with a few example cards. The header says the steward is offline. That's expected until step 3.
-
-**2. Create the agents (required).**
-
-```bash
-python3 make_agents.py
-```
-
-This writes one Claude Code subagent per teammate into `.claude/agents/` and the steward's dispatch table into `local/dispatch.md`. **Skip it and every dispatch fails**, because the steward has nobody to send work to. Edit `roster.json` first if you want different names or roles; you can re-run it any time.
-*You should see:* `from roster.json: wrote 4 agents → …/.claude/agents: underthread-hr, underthread-scout, …` and `restart the manager session to pick them up`. If the dispatch table changed, there is also a line `updated local/dispatch.md`.
-
-**3. Wake up the steward.** In a second terminal, from the same folder:
-
-```bash
-claude "Start the manager per manager.md"
-```
-
-There's nothing to copy: the repository ships `.claude/settings.json`. It lets the crew run their own helper commands without asking you each time, and it feeds your usage to the dashboard. Leave it as it is, and put any permissions of your own in `.claude/settings.local.json` (git ignores it, and Claude Code reads both).
-*You should see:* within a few seconds the steward's status in the header turns to online, and a hello appears in the dashboard's chat.
-
-**4. Say something.** Type a request into the chat, the way you'd text a colleague.
+**2. Say something.** Type a request into the chat, the way you'd text a colleague.
 *You should see:* a new card appears, and a teammate's patch lights up as they start on it.
+
+**Next time,** click the **Underthread** icon (in Applications on a Mac, drag it to the Dock if you like; in your app menu on Linux). It starts or reuses the dashboard, opens it, and, if the steward isn't running, wakes it in a Terminal window that tucks itself into the Dock. The first click asks once whether Underthread may control Terminal (that is what minimises the window; say no and the window simply stays open). Closing that window takes the steward offline; click the icon again to bring it back. Or just run `./start` again.
+
+> **About the icon.** `./start` makes it on your own Mac with the system's tools (`osacompile`, `sips`, `iconutil`), so macOS opens it without a Gatekeeper warning. Don't copy the app to another Mac: run `./start` there instead. If you move the folder, the icon tells you to run `./start` once in the new place, which makes it again. `./start --app` remakes it any time.
+
+> **Uninstall.** `./start --uninstall` takes Underthread off this computer in one go: the login item (if you added one), the running dashboard and steward, and the icon, only the ones that belong to this folder. It shows the list and asks once (default no); `./start --uninstall --dry-run` only shows the list. Then it asks separately, each defaulting to keep, whether to delete the whole folder (your cards, `local/`, `work/`, `uploads/`; a backup zip goes to `~/UnderthreadBackups/` first) and Claude Code's session logs for this folder (`~/.claude/projects/…`). It never touches Claude Code itself, its settings, other projects or the Claude desktop app.
+
+> **Just looking?** Run `./start --demo` (or `python3 server.py --demo`). You get the dashboard with a crew at work and no Claude Code needed: the steward opens cards, teammates light up, log progress and hand in drafts, and whatever you click gets a short canned reply. The demo runs from its own `.demo/` folder, rebuilt on every start, so your real cards are never read or written. Stop it with Ctrl-C. `PORT=8766` picks another port; `--lang zh` or `--lang en` sets the chat language (default: from `$LANG`).
+
+**Running the steward in the Claude desktop app instead?** Use `./start --no-steward`, then open this folder in the app and say `Start the manager per manager.md`. **Prefer to do every step by hand** (`python3 server.py`, `python3 make_agents.py`, `claude "Start the manager per manager.md"`)? That still works exactly as before; see [docs/setup-guide.md](docs/setup-guide.md).
 
 The **Getting started** checklist on the home page walks you through these steps and ticks each one by itself. It goes away the day after the last tick (Edit widgets brings it back).
 
