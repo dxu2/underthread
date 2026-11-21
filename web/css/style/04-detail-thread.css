@@ -106,3 +106,4 @@
 .team-i .st.sleeping { letter-spacing: 0; font-variant-numeric: tabular-nums; }
 .team-i .nm:has(.st.sleeping) .aq { padding: 0 5px; }
 
+.at-pop { max-height: min(360px, 45vh); overflow-y: auto; overscroll-behavior: contain; }   /* t-mention-hires: every role is listed now (was capped at 8); the list scrolls */

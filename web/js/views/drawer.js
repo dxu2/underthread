@@ -88,7 +88,7 @@ function openItemNow(id, nav) {
   dw.innerHTML = `<div class="dw-top"></div><div class="dw-scroll"></div><nav class="dw-toc" hidden></nav>
     <div class="dw-dock"><div class="dw-askbar" hidden></div><div class="composer"><div class="at-pop" hidden></div><textarea placeholder="${esc(t("composer_ph"))}"></textarea><div class="pending-att"></div>
       <div class="cm-row"><button type="button" class="dw-file att" title="${attTitle()}" aria-label="${UI.lang === "en" ? "Attach" : "添加附件"}">${ATT_IC}</button><input type="file" multiple hidden>
-      <span class="cm-to"></span><span class="dim dw-def">${t("default_owner")}</span><span style="flex:1"></span><span class="dim">${t("send_hint")}</span></div></div>
+      <span class="cm-to"></span><span class="dim dw-def">${t("default_owner")}</span><span style="flex:1"></span><span class="dim">${t("send_hint")}</span><button type="button" class="dw-send" aria-label="${UI.lang === "en" ? "Send" : "发送"}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.5 3.5 3.6 10.4l6.6 2.9 2.9 6.6z"/><path d="m10.2 13.3 4.6-4.6"/></svg></button></div></div>
     <div class="dw-acts"></div></div>`;
   askFoldWire($(".dw-askbar", dw));   // t-m-ask-sheet
   const ta = $(".composer textarea", dw), fi = $("input[type=file]", dw), pop = $(".at-pop", dw);
@@ -104,18 +104,22 @@ function openItemNow(id, nav) {
   // t-detail-bottom (phone only): the field grows with its text (max 120px; works with IME composition, only the height is touched) and
   // .composer.has mirrors "text or attachment present" for CSS (send button lit, composer expanded). Polled like the chat composer, because send/approve clear the value without an input event.
   const fit = () => {
-    const cm = $(".composer", dw); if (!cm) return; if (!PHONE.matches) return deskFit(ta, 200);
+    const cm = $(".composer", dw); if (!cm) return;
+    cm.classList.toggle("has", !!ta.value.trim() || drawerAtt.length > 0 || Object.keys(drawerAtt._up || {}).length > 0 || annList().length > 0);   // t-imp29-p2: notes alone can be sent; t-detail-send: also greys the desk plane
+    if (!PHONE.matches) return deskFit(ta, 200);
     if (ta.value) { ta.style.height = "auto"; ta.style.height = Math.min(120, Math.max(40, ta.scrollHeight)) + "px"; } else ta.style.height = "";
-    cm.classList.toggle("has", !!ta.value.trim() || drawerAtt.length > 0 || Object.keys(drawerAtt._up || {}).length > 0 || annList().length > 0);   // t-imp29-p2: notes alone can be sent
   };
   ta.addEventListener("input", fit); clearInterval(DW.fi); DW.fi = setInterval(fit, 300);
   const add = wireUploads(ta, drawerAtt, showAtt);
   $(".dw-file", dw).onclick = () => fi.click();
+  /* t-detail-send: the desk paper plane, as in the right-hand chat = the same ⌘↵ path below (phone keeps its own .m-send) */
+  $(".dw-send", dw).onclick = () => { ta.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", metaKey: true, ctrlKey: true, bubbles: true })); ta.focus(); };
   fi.onchange = () => { add(Array.from(fi.files)); fi.value = ""; };
   const closePop = () => { pop.hidden = true; DW.pop = []; };
   const drawPop = () => {
     pop.innerHTML = DW.pop.map((a, i) => `<div data-pick-to="${a.id}" class="${i === DW.sel ? "on" : ""}">${av(a, "sm")}${esc(aname(a))} <small>${esc(atitle(a))}${a.id === curItem().owner ? " · " + t("owner_tag") : ""}</small></div>`).join("");
     pop.hidden = !DW.pop.length;
+    const on = $("div.on", pop); if (on) on.scrollIntoView({ block: "nearest" });   // arrow keys can reach rows below the fold
   };
   const pick = id => {
     const a = agent(id), pos = ta.selectionStart, before = ta.value.slice(0, pos).replace(/@[^\s@]*$/, "@" + aname(a) + " ");
@@ -140,7 +144,7 @@ function openItemNow(id, nav) {
     if (!m) return closePop();
     const q = m[2].toLowerCase(), own = curItem().owner;
     DW.pop = agents().filter(a => a.enabled !== false && (!q || [aname(a), a.name, a.name_en, a.id].some(n => n && String(n).toLowerCase().startsWith(q))))
-      .sort((a, b) => (b.id === own) - (a.id === own)).slice(0, 8);
+      .sort((a, b) => (b.id === own) - (a.id === own));   /* t-mention-hires: no cap; a cap of 8 hid every role hired after the first eight (food, buyer, xingzhe). The list scrolls. */
     DW.sel = 0; drawPop();
   });
   ta.addEventListener("blur", () => setTimeout(closePop, 150));
@@ -154,8 +158,10 @@ function openItemNow(id, nav) {
     if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
       e.preventDefault(); const text = annWrap(ta.value.trim()); if (!text && !drawerAtt.length) return;   // t-imp29-p2: notes go out in front
       if (stillUploading(drawerAtt)) return toast(UI.lang === "en" ? "Still uploading…" : "文件还在上传……");
+      if (DW.sending) return;   // t-detail-send: a second ⌘↵ / plane tap while the first comment is in flight does not post it twice
       const to = DW.to || curItem().owner, aid = UI.item;
-      await api("comment", { item: UI.item, text, to, attachments: drawerAtt.slice() });
+      DW.sending = true;
+      try { await api("comment", { item: UI.item, text, to, attachments: drawerAtt.slice() }); } finally { DW.sending = false; }
       annClear(aid); DRAFT.set("item:" + aid, ""); dTag();
       ta.value = ""; drawerAtt.length = 0; showAtt(); DW.to = null; drawTo(); closePop();
       const sc = $(".dw-scroll", dw); sc.scrollTop = sc.scrollHeight; jumpState();
