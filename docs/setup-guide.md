@@ -65,6 +65,7 @@ On first start, `server.py` copies each template to its live name if the live fi
 | Key | Default | What it does |
 |---|---|---|
 | `owner.display_name` | `<your name>` | How the dashboard and the steward refer to you |
+| `owner.location` | (absent) | `{lat, lon, tz}` from 「用我的位置 / Use my location」 (2 decimals, about 1 km), or `{declined: true}`; absent = never asked. Set from the board, not by hand |
 | `port` | `8765` | Dashboard port. The `PORT` environment variable overrides it |
 | `report_time` | `18:00` | When the server asks the steward for the daily report |
 | `routines` | `[]` | **Read once.** On first start any routine listed here is imported into Schedules; after that, edit schedules on the Schedules page or with `S schedule`, not here |

@@ -325,6 +325,25 @@ def _owner_name(a):
     a.inbox = {"kind": "owner_name", "name": n, "text": f"以后叫我 {n} / call me {n}"}
 
 
+@action("owner_location")
+def _owner_location(a):
+    """t-oss-location: 「用我的位置」 under the steward's first message and in Settings. {lat, lon, tz} -> config.json owner.location
+    (2 decimals, about 1 km); {declined: true} -> recorded, never asked again; {clear: true} -> forgotten (Settings), may ask again.
+    The browser does the asking (navigator.geolocation); nothing here calls out to any other service."""
+    b = a.body
+    if b.get("clear"):
+        C.set_location(ROOT, None)
+        a.inbox = {"kind": "owner_location", "clear": True, "text": "（用户在设置里清掉了位置 / location cleared in Settings）"}
+        return
+    if b.get("declined"):
+        C.set_location(ROOT, {"declined": True})
+        a.inbox = {"kind": "owner_location", "declined": True, "text": "（用户选了不用位置 / \"no location\"）"}
+        return
+    loc = C.set_location(ROOT, C.clean_location(b.get("lat"), b.get("lon"), b.get("tz")))
+    a.inbox = {"kind": "owner_location", "lat": loc["lat"], "lon": loc["lon"], "tz": loc.get("tz", ""),
+               "text": f"位置已记下（约 1 km）/ location saved: {loc['lat']}, {loc['lon']}" + (f" ({loc['tz']})" if loc.get("tz") else "")}
+
+
 @action("widget_layout")
 def _widget_layout(a):   # t-widget-drag: the desktop widget home's order / sizes, shared by every browser (meta.widgets)
     """S8: ids may be an extension's widget ([a-z][a-z0-9_-]{0,23}, web/js/ext.js). "seen" = every widget id this board has met, so a new one

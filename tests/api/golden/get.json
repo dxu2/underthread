@@ -627,6 +627,7 @@
     "/static/js/phone/menu.js?v=<h>",
     "/static/js/phone/pull.js?v=<h>",
     "/static/js/phone/hello.js?v=<h>",
+    "/static/js/views/ownerloc.js?v=<h>",
     "/static/js/views/pages/pipe.js?v=<h>",
     "/static/js/views/pages/quests.js?v=<h>",
     "/static/js/views/pages/connections.js?v=<h>",
@@ -730,6 +731,7 @@
     "/static/js/views/header.js": "/static/js/views/header.js?v=<h>",
     "/static/js/views/left.js": "/static/js/views/left.js?v=<h>",
     "/static/js/views/mail.js": "/static/js/views/mail.js?v=<h>",
+    "/static/js/views/ownerloc.js": "/static/js/views/ownerloc.js?v=<h>",
     "/static/js/views/pages/common.js": "/static/js/views/pages/common.js?v=<h>",
     "/static/js/views/pages/connections.js": "/static/js/views/pages/connections.js?v=<h>",
     "/static/js/views/pages/index.js": "/static/js/views/pages/index.js?v=<h>",
@@ -2385,6 +2387,9 @@
      "director": {
       "sheet": 1
      },
+     "hr": {
+      "sheet": 1
+     },
      "manager": {
       "sheet": 1
      },
@@ -2443,6 +2448,7 @@
     ],
     "onboarding": {},
     "owner": "You",
+    "owner_loc": null,
     "platforms_set": false,
     "report_time": "18:00",
     "rev": 56,
@@ -4033,6 +4039,9 @@
      "director": {
       "sheet": 1
      },
+     "hr": {
+      "sheet": 1
+     },
      "manager": {
       "sheet": 1
      },
@@ -4094,6 +4103,7 @@
     ],
     "onboarding": {},
     "owner": "You",
+    "owner_loc": null,
     "platforms_set": false,
     "report_time": "18:00",
     "rev": 121,
@@ -5285,6 +5295,9 @@
      "director": {
       "sheet": 1
      },
+     "hr": {
+      "sheet": 1
+     },
      "manager": {
       "sheet": 1
      },
@@ -5343,6 +5356,7 @@
     ],
     "onboarding": {},
     "owner": "You",
+    "owner_loc": null,
     "platforms_set": false,
     "report_time": "18:00",
     "rev": 56,
