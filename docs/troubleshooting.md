@@ -26,6 +26,8 @@ Start with the log: `tail -n 80 logs/server.log`. Most problems show up there fi
 | The dashboard stops when you close the terminal (Linux) | `tools/install_service.sh` is macOS only | Run `bash tools/keepalive.sh` instead (for example under `nohup`, `tmux` or your own systemd user unit) |
 | The Underthread icon says the folder moved, or does nothing | The app remembers the folder it was made in | Run `./start --app` in the folder you use now; clicks are logged in `logs/start.log` |
 | The steward's Terminal window doesn't minimise | You said no (or didn't answer) when macOS asked whether Underthread may control Terminal | Harmless: the window works the same. To allow it later: System Settings → Privacy & Security → Automation → Underthread → Terminal |
+| You want Underthread gone | | `./start --uninstall` (try `--dry-run` first). It removes the login item, stops the dashboard and steward and deletes the icon of this folder only, then asks (default keep) before deleting the folder or Claude Code's logs for it. Without `./start` (older installs): `bash tools/install_service.sh remove`, stop the `claude` window and the server, delete `~/Applications/Underthread.app`, then the folder |
+| `./start --uninstall` says it needs a terminal | It asks questions, so it won't run from a script or the icon | Run it in a terminal, or `./start --uninstall --dry-run` to just see the list |
 | A finished card disappeared | It was archived after 3 quiet days | Search still finds it. `python3 stateutil.py archive list`; `archive unarchive-all` restores everything |
 | `state.json` looks broken | Hand edits, or a crash mid-write elsewhere | Don't edit it by hand. Stop the server and the steward, keep a copy, and open an issue with the server log |
 

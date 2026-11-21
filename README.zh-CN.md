@@ -102,7 +102,9 @@ git clone https://github.com/dxu2/underthread.git && cd underthread
 
 **以后**点 **Underthread** 图标就行（Mac 上在「应用程序」里，可以拖进 Dock；Linux 上在应用菜单里）。它会起看板或直接用已经开着的、打开页面；管家没在跑的话，在一个自动收进 Dock 的终端窗口里叫醒它。第一次点时 macOS 会问一次「Underthread 想控制终端」，这是用来把窗口最小化的；选不允许也没关系，窗口就开着。关掉那个窗口管家就下线，再点一次图标就回来。也可以再跑一次 `./start`。
 
-> **关于图标。** 图标是 `./start` 在你自己的 Mac 上用系统自带工具（`osacompile`、`sips`、`iconutil`）现做的，所以打开时不会被 Gatekeeper 拦。别把这个 App 拷到别的 Mac 上用，在那台 Mac 上跑一次 `./start` 就行。挪了文件夹位置的话，点图标会提示你在新位置跑一次 `./start`，它会重新做一个。`./start --app` 随时可以重做；删掉 `~/Applications/Underthread.app` 就去掉了。
+> **关于图标。** 图标是 `./start` 在你自己的 Mac 上用系统自带工具（`osacompile`、`sips`、`iconutil`）现做的，所以打开时不会被 Gatekeeper 拦。别把这个 App 拷到别的 Mac 上用，在那台 Mac 上跑一次 `./start` 就行。挪了文件夹位置的话，点图标会提示你在新位置跑一次 `./start`，它会重新做一个。`./start --app` 随时可以重做。
+
+> **卸载。** `./start --uninstall` 一次把 Underthread 从这台电脑上拿掉：开机自启（如果开过）、正在跑的看板和管家、图标，而且只动属于这个文件夹的那些。它先列出来，问你一次（默认不做）；`./start --uninstall --dry-run` 只列不做。然后分开问两件事，默认都留着：要不要删掉整个文件夹（你的卡片、`local/`、`work/`、`uploads/` 都在里面；删之前先打一个备份 zip 到 `~/UnderthreadBackups/`），要不要删掉 Claude Code 在这个文件夹的会话记录（`~/.claude/projects/…`）。Claude Code 本身、它的设置、别的项目和 Claude 桌面 App 一概不碰。
 
 > **只想先看看？** 跑 `./start --demo`（或者 `python3 server.py --demo`）。不用装 Claude Code，就能看到小队在干活：管家开卡，队员亮起来、记进度、交草稿；你在页面上点什么，都会收到一句预设的回复。demo 在单独的 `.demo/` 目录里跑，每次启动重建，不会读写你真实的卡片。按 Ctrl-C 退出。`PORT=8766` 换端口；`--lang zh` 或 `--lang en` 设对话语言（默认跟 `$LANG`）。
 
