@@ -147,7 +147,14 @@ function schLastLine(s, r) {
   else if (s.last) bits.push(`${zh ? "上次" : "Last"} ${esc(/T/.test(s.last) ? when(s.last) : s.last.slice(5))}`);
   else bits.push(zh ? "还没跑过" : "No run yet");
   const tx = s.task && s.task.text && s.task.text !== s.title ? s.task.text : "";
-  if (s.said) bits.push(`${zh ? "你说的" : "You said"}「${esc(s.said)}」`);
+  /* r-improve-1119 P4: several live schedules made from the same words (5 health reminders) quote them once, on the earliest-time row:
+     「这 5 条都来自你 11-16 说的「…」」; the others leave the quote out. One schedule per quote: as before. Finished one-offs group among themselves. */
+  const sib = s.said ? schAll().filter(x => x.said === s.said && schFin(x) === schFin(s)) : [];
+  if (s.said && sib.length > 1) {
+    const first = sib.slice().sort((a, b) => schAt(a).localeCompare(schAt(b)) || String(a.id).localeCompare(String(b.id)))[0];
+    if (first.id === s.id) { const d = sib.map(x => x.created).filter(Boolean).sort()[0]; const md = d ? dayKey(new Date(d)).slice(5) : "";
+      bits.push(zh ? `这 ${sib.length} 条都来自你${md ? ` ${md} ` : ""}说的「${esc(s.said)}」` : `All ${sib.length} come from what you said${md ? ` on ${md}` : ""}: “${esc(s.said)}”`); }
+  } else if (s.said) bits.push(`${zh ? "你说的" : "You said"}「${esc(s.said)}」`);
   else if (tx) bits.push(esc(tx));
   return `<div class="rs-last">${bits.join(" · ")}</div>`;
 }

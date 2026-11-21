@@ -451,13 +451,19 @@ def handoffs(q):
 CHAT_KEEP, MAIL_KEEP = 200, 300
 
 
+def mail_unread(m):
+    """r-improve-1120 P2: a ⏰ reminder letter (kind remind) never counts as unread: it is pushed on time and stays in the mailbox,
+    but it does not bold, add a dot or raise any count. Mirrors web/js/core/store.js unreadM()."""
+    return not m.get("read") and m.get("kind") != "remind"
+
+
 def trim_state(st):
     chat, mail = st.get("chat") or [], st.get("mail") or []
     base = max(0, len(chat) - CHAT_KEEP)
     st["chat"] = chat[base:]
     cut = max(0, len(mail) - MAIL_KEEP)
-    st["mail"] = [m for i, m in enumerate(mail) if i >= cut or not m.get("read")]
-    st["meta"]["mail_unread"] = sum(1 for m in mail if not m.get("read"))
+    st["mail"] = [m for i, m in enumerate(mail) if i >= cut or mail_unread(m)]
+    st["meta"]["mail_unread"] = sum(1 for m in mail if mail_unread(m))
     st["meta"]["trim"] = {"chat": [base, len(chat)], "mail": [len(mail), len(st["mail"])], "logs": len(st.get("logs") or [])}
     st.pop("logs", None)
     return st
@@ -475,7 +481,7 @@ def history(q):
     if k == "mail":
         mail = st.get("mail") or []
         cut = max(0, len(mail) - MAIL_KEEP)
-        return {"k": "mail", "list": [m for m in mail[:cut] if m.get("read")], "total": len(mail)}
+        return {"k": "mail", "list": [m for m in mail[:cut] if not mail_unread(m)], "total": len(mail)}
     if k == "logs":
         logs, ag = st.get("logs") or [], q.get("agent", [""])[0]
         return {"k": "logs", "list": [l for l in logs if not ag or l.get("agent") == ag][-400:], "total": len(logs), "rev": st["meta"].get("rev")}
