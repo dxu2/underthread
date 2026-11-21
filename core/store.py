@@ -120,20 +120,58 @@ def _save(st):
 
 
 def _ask_snapshot(st):
-    """t-ask-autoclose: stage + open ask ids of every card, taken when a mutate starts."""
-    return {i.get("id"): (i.get("stage"), {a.get("id") for a in i.get("asks") or [] if not a.get("answer") and not a.get("closed")})
+    """t-ask-autoclose: stage, open ask ids and draft_at of every card, taken when a mutate starts."""
+    return {i.get("id"): (i.get("stage"), {a.get("id") for a in i.get("asks") or [] if not a.get("answer") and not a.get("closed")}, i.get("draft_at"))
             for i in st.get("items") or []}
 
 
+SHOWN = ("review", "done")
+
+
+def _stale_asks(it, old):
+    """Which of the asks open when the mutate started belong to an earlier round (r-improve-1120 P1 + r-improve-1121 P1).
+    A round starts when the card leaves review / done (it goes back to work) and ends with the next delivery; asks made during
+    the round are that delivery's questions and stay. Rules:
+    - review/done -> another of them (review -> done, done -> review): every ask that was open goes (the old behaviour);
+    - stays in review/done but a new version came in (draft_at moved): every ask that was open goes (1120: the plan's
+      「开工吗？」 hung on the delivered card); asks added in this same mutate are not in the snapshot, so they stay;
+    - work stage -> review/done: only asks made before the card left review last time (it["left_review"]); asks made while it
+      was being worked on stay (1121: `stateutil ask` then `upsert --stage review` is two mutates). A card that left review before
+      left_review was recorded falls back to its previous draft_at; a card that was never delivered has no earlier round."""
+    stage, (ostage, open_ids, odraft) = it.get("stage"), old
+    if stage not in SHOWN:
+        return []
+    if ostage == stage:
+        if it.get("draft_at") == odraft:
+            return []
+        cut, strict = None, False   # a new version: everything that was open
+    elif ostage in SHOWN:
+        cut, strict = None, False
+    else:
+        # left_review: an ask in that same second came after the card went back to work (keep); draft_at: an ask in the delivery's
+        # own second was asked with that delivery (`upsert --ask`), so it belongs to the old round
+        lr = it.get("left_review")
+        cut, strict = (lr, True) if lr else (odraft, False)
+        if not cut:
+            return []
+    early = lambda a: (a.get("t") or "") < cut if strict else (a.get("t") or "") <= cut
+    return [a for a in it.get("asks") or [] if a.get("id") in open_ids and not a.get("answer") and not a.get("closed")
+            and (cut is None or early(a))]
+
+
 def _autoclose_asks(st, before):
-    """t-ask-autoclose: a card that moved into review or done during this mutate withdraws the asks that were already open
-    before the move (same effect as ask-close). Asks added in the same mutate (a delivery that asks a question) stay, answered
-    asks are never touched, and doing / todo / waiting never close anything. One path for stateutil, server.py and the sweeps."""
+    """t-ask-autoclose: a delivery (a card moving into review or done, or a new version while it stays there) withdraws the asks
+    left over from an earlier round (same effect as ask-close); see _stale_asks for what counts as earlier. Answered asks are never
+    touched, and doing / todo / waiting never close anything. Also stamps left_review when a card goes from review / done back to
+    work, the start of the next round. One path for stateutil, server.py and the sweeps."""
     for it in st.get("items") or []:
         old = before.get(it.get("id"))
-        if not old or it.get("stage") not in ("review", "done") or old[0] == it.get("stage"):
+        if not old:
             continue
-        stale = [a for a in it.get("asks") or [] if a.get("id") in old[1] and not a.get("answer") and not a.get("closed")]
+        if old[0] in SHOWN and it.get("stage") not in SHOWN:
+            it["left_review"] = now()
+            continue
+        stale = _stale_asks(it, old)
         if not stale:
             continue
         t = now()
