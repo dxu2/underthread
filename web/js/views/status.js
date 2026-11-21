@@ -50,14 +50,9 @@ function statusRows() {
         + (stale ? (en ? " · code changed on disk, restart to use it (Settings → System)" : " · 服务端代码已更新，重启后生效（设置 → 系统）") : "")
         + (sc ? (ahead ? (en ? ` · data from a newer version (schema ${sc.state}, this code ${sc.code})` : ` · 数据来自较新版本（数据 v${sc.state}，代码 v${sc.code}）`) : ` · ${en ? "data" : "数据"} v${sc.state}`) : "") });
   }
-  // 4. ComfyUI tunnel (already in /api/state)
-  const c = (H && H.comfy) || ST.meta.comfy || {};
-  if (c.configured !== false) rows.push({ k: "comfy", t: "ComfyUI", lv: c.online ? "ok" : c.online === false ? "warn" : "unk",
-    s: (c.online ? (en ? "Tunnel up" : "隧道已连") : c.online === false ? (en ? "Tunnel down · image jobs will wait" : "隧道未连 · 出图会排队") : (en ? "Not probed yet" : "还没探测"))
-      + (c.at ? ` · ${en ? "checked" : "探测于"} ${ageTxt(c.at)}` : "") });
   // 4b. picture backend (t-oss-gen-s3, tools/image.py; needs /api/health)
   if (H && H.image) {
-    const im = H.image, nm = { codex: "codex (ChatGPT)", comfy: "ComfyUI", none: en ? "Not set up" : "未配置" }[im.backend] || im.backend;
+    const im = H.image, nm = { codex: "codex (ChatGPT)", none: en ? "Not set up" : "未配置" }[im.backend] || im.backend;
     rows.push({ k: "image", t: en ? "Images" : "出图", lv: im.backend === "none" ? "warn" : "ok",
       s: nm + (im.backend === "none" ? (en ? " · new hires get template art" : " · 新人用模板头像") : "") + (im.setting && im.setting !== "auto" ? ` · image.backend=${im.setting}` : "") });
   }

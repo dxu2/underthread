@@ -352,7 +352,7 @@
     "color": "#e58fa8",
     "duty": "配图、图表、样稿",
     "duty_en": "Images, diagrams, mockups",
-    "duty_long": "Makes the visual side: images, diagrams, slide layouts and mockups. Can drive a ComfyUI server through tools/comfy.py if you set one up. Writes outputs to work/<item-id>/art/.",
+    "duty_long": "Makes the visual side: images, diagrams, slide layouts and mockups, through tools/image.py (Codex on the ChatGPT plan). Writes outputs to work/<item-id>/art/.",
     "id": "artist",
     "look": {
      "acc": "beret",

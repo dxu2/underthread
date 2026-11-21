@@ -47,7 +47,7 @@ The default crew starts small: five members, and you hire the rest as you need t
 | <img src="avatars/seed/ut/manager.png" width="48" alt=""> | **Steward** | `manager` | Reads every message you send, sorts it into cards, hands them out and writes you a daily report. Rings a tiny bell when there's work. |
 | <img src="avatars/seed/ut/scout.png" width="48" alt=""> | **Scout** | `scout` | Research, comparisons and fact-checks, with a source for every claim. Never goes anywhere without a magnifying glass. |
 | <img src="avatars/seed/ut/hr.png" width="48" alt=""> | **Thimble** | `hr` | Hires the rest of the crew: interviews you about the job you need filled (five things, a few turns), then writes the new teammate's notes for your OK. Also handles transfers. |
-| <img src="avatars/seed/ut/artist.png" width="48" alt=""> | **Brush** | `artist` | Images, diagrams and mockups, through Codex on your ChatGPT plan or your own ComfyUI machine (see [Pictures](#pictures-codex-comfyui-or-none)). Leaves a dab of paint behind. |
+| <img src="avatars/seed/ut/artist.png" width="48" alt=""> | **Brush** | `artist` | Images, diagrams and mockups, through Codex on your ChatGPT plan (see [Pictures](#pictures-codex-or-none)). Leaves a dab of paint behind. |
 | <img src="avatars/seed/ut/smith.png" width="48" alt=""> | **Smith** | `smith` | Keeps the dashboard and the tools running, and makes a backup before touching anything. Knits when nothing is on fire. |
 
 Short on someone? Open the Hiring market (29 job templates): Thimble interviews you about five things, the new teammate starts work, and Brush stitches them a patch of their own. Names, duties, tone and the number of teammates all live in `roster.json`. See [Make it your crew](#make-it-your-crew).
@@ -130,7 +130,7 @@ Plain sentences work. These are the usual kinds of request; the same list sits a
 
 When a card comes back: reject it with a reason ("too long, keep it under 300 words from now on" becomes a rule), tap an option to answer a question, or ask for a tweak in a comment.
 
-Something not working? See [Troubleshooting](docs/troubleshooting.md). The long version of setup, including the phone app, push notifications and ComfyUI, is in [docs/setup-guide.md](docs/setup-guide.md).
+Something not working? See [Troubleshooting](docs/troubleshooting.md). The long version of setup, including the phone app and push notifications, is in [docs/setup-guide.md](docs/setup-guide.md).
 
 **Updating later.** Settings → System → Updates says when a new version is out; click **Update**, and it is tried on a copy of your data first, then the dashboard restarts on the new version with your cards, settings and `local/` layer as they were. **Go back** returns to the version before. Or from a terminal: `python3 tools/update.py check | apply | rollback` (`apply --dry-run` only tries the new version on a copy). Open pages switch to the new version by themselves the next time you come back to them (or show a "Dashboard updated" pill while you are using them), and if you update with `git pull` instead, Settings → System → Updates offers **Restart** once the server's code has changed on disk. This needs the `git clone` install above: a folder downloaded as a zip cannot update itself (clone again and copy `local/` and your `*.json` data files over).
 
@@ -201,18 +201,17 @@ Teammates can also be moved to a new job (**Transfer**) or retired (**Retire**) 
 
 Full guide, with every roster field and a worked example: [docs/custom-crew.md](docs/custom-crew.md).
 
-### Pictures: codex, ComfyUI or none
+### Pictures: codex or none
 
 Brush, avatars for new hires and a few tools draw through `tools/image.py`, which picks a backend from `config.json` → `image.backend`:
 
 | Setting | What it uses |
 |---|---|
-| `auto` (default) | Codex if it is signed in with ChatGPT, else ComfyUI if `config.json` has a `comfy` block, else none |
+| `auto` (default) | Codex if it is signed in with ChatGPT, else none |
 | `codex` | The Codex CLI (or the one inside ChatGPT.app) on your ChatGPT subscription. Never an API key |
-| `comfy` | Your own ComfyUI machine, through `tools/comfy.py` and the workflow in `image.comfy_workflow`. See [setup guide §9](docs/setup-guide.md#9-comfyui-optional) |
 | `none` | No drawing. New hires get their job template's patch instead, and everything else still works |
 
-`python3 tools/image.py backend` tells you which one is active and why. Every picture costs quota or GPU time, so there are no automatic retries.
+`python3 tools/image.py backend` tells you which one is active and why. Every picture costs quota, so there are no automatic retries. ComfyUI support was removed in this version; an old `image.backend: "comfy"` is read as `auto`.
 
 ---
 
@@ -256,7 +255,7 @@ The full loop, the card lifecycle and where memory lives: [docs/architecture.md]
 
 | | |
 |---|---|
-| [docs/setup-guide.md](docs/setup-guide.md) | Full setup: config, roster, restarts, ComfyUI, tools |
+| [docs/setup-guide.md](docs/setup-guide.md) | Full setup: config, roster, restarts, pictures, tools |
 | [docs/layout.md](docs/layout.md) | Folder map: what every file and folder is, which ones are yours |
 | [docs/architecture.md](docs/architecture.md) | How the pieces talk, card lifecycle, memory |
 | [docs/custom-crew.md](docs/custom-crew.md) | Add, change or retire teammates |
@@ -277,7 +276,7 @@ Ideas being explored, not promises:
 - Approvals with a scope: "yes for this card", "yes for this kind of change".
 - Packaging the whole setup as a Claude Code plugin.
 
-Not in this repository: voice calls with the steward (the author's own build has them), and model weights (whisper, ComfyUI models and so on keep their own licences).
+Not in this repository: voice calls with the steward (the author's own build has them), and model weights (whisper and so on keep their own licences).
 
 ---
 

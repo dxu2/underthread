@@ -236,8 +236,8 @@ async function pollOnce(force, wait, ctl) {
   try {
     const back = UI.down; UI.down = false;  // clear the "unreachable" banner as soon as the server answers again
     if (back) { try { document.dispatchEvent(new CustomEvent("rt-reconnect")); } catch (_) { } }   /* t-iter-upgrade: the server came back (a restart, an update); status.js checks the page version at once */
-    UI.fail = 0; UI.lastOk = Date.now(); if (j.same && ST && ST.meta) { ST.meta.comfy = j.meta.comfy; ST.meta.inbox_unacked = j.meta.inbox_unacked; syncPaint(); }   // a full state repaints via renderHeader
-    if (j.same) { ST.meta.comfy = j.meta.comfy; ST.meta.inbox_unacked = j.meta.inbox_unacked; ST.meta.avv = j.meta.avv; avvSeen(j.meta.avv); if (j.meta.hires) ST.meta.hires = j.meta.hires;   /* t-hire-celebration (welcome.js) */ if (back || wait || ++UI.tick % 12 === 0) renderChrome(); return "same"; }   // ri1105-P5: a long-poll "same" is ~25 s apart, so the chrome refreshes on each
+    UI.fail = 0; UI.lastOk = Date.now(); if (j.same && ST && ST.meta) { ST.meta.inbox_unacked = j.meta.inbox_unacked; syncPaint(); }   // a full state repaints via renderHeader
+    if (j.same) { ST.meta.inbox_unacked = j.meta.inbox_unacked; ST.meta.avv = j.meta.avv; avvSeen(j.meta.avv); if (j.meta.hires) ST.meta.hires = j.meta.hires;   /* t-hire-celebration (welcome.js) */ if (back || wait || ++UI.tick % 12 === 0) renderChrome(); return "same"; }   // ri1105-P5: a long-poll "same" is ~25 s apart, so the chrome refreshes on each
     const wasSnap = UI.snap; UI.snap = 0;
     histSet(j); ST = j; REV = j.meta.rev; rehydrate(); archMerge(); try { doneMailRead(); } catch (_) { } render(); bootDone(); avsCheck(); avvSeen(j.meta.avv);   // t-avatar-live-refresh
     if (wasSnap) syncPaint();

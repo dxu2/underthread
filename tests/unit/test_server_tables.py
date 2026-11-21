@@ -26,10 +26,10 @@ BEFORE = """ART_DIRS AVATARS BaseHTTPRequestHandler C CHAT_KEEP CODEX_SESS CONFI
 HR_Q HT_OPS KEEPALIVE_IDLE MAIL_KEEP MANAGER_MEM MAX_UPLOAD MEMO_DEFAULT MEM_BASE MG NR OpenAsks PUSH_DEFAULT PUSH_EN PUSH_SUBS
 QuietServer ROOT ROUTINES_LOG_KEEP S SLIM_LOGS SNOOZE_PRESETS SNOOZE_REPLY_DAYS STAGE_SPARE START TIERS TPL_AV_CACHE TPL_DIR
 ThreadingHTTPServer UPLOADS USAGE VC WEB WP XFER_MAX _AR _ART _CODEX _GUARD_LOG _GZC _GZL _HEX _HOI _HOSTS _PSC _PSL _RID _RV _SV
-_VH _agent_name _ask_brief _busy_msg _codex_files _codex_tail _comfy _ep_short _fsig _guard_asks _gz_type _health _hire_apply
+_VH _agent_name _ask_brief _busy_msg _codex_files _codex_tail _ep_short _fsig _guard_asks _gz_type _health _hire_apply
 _ho_infer _hr_on _ht_lesson _mail_target _mem_dir _mem_files _nr _nr_mod _on_user _owned_schedules _plog _pt _push _retire_restore
 _role _roster_mtime _routine_runs _row_lang _row_update _save_subs _subs _tpl_list _ts _unacked_count _uniq_id _upload_name _vhash
-_work_size act archive_body archive_cached archive_role art_scan art_sig base64 codex_quota comfy_probe_loop digest_payload dt
+_work_size act archive_body archive_cached archive_role art_scan art_sig base64 codex_quota digest_payload dt
 ensure_live_files ext_web guard_log gzip handoffs health hire hire_legacy history host_name host_ok in_quiet index_html interview
 json list_docs load_json local_names log_routine_run main memo_post mimetypes notify os parse_qs pending_count public_item
 public_state public_state_cached push_class push_history push_loop push_payload push_prefs push_status push_text_en push_tick re
@@ -118,7 +118,7 @@ class ServerTables(unittest.TestCase):
         self.assertEqual(self.info["table"]["actions"], ACTIONS)
 
     def test_loops(self):
-        self.assertEqual(self.info["loops"], ["comfy_probe_loop", "report_loop", "roster_watch_loop", "push_loop", "wake_loop",
+        self.assertEqual(self.info["loops"], ["report_loop", "roster_watch_loop", "push_loop", "wake_loop",
                                               "schedule_loop", "snooze_loop", "update_check_loop", "feeds_loop"])
 
     def test_import_rule(self):

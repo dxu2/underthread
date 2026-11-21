@@ -1,34 +1,18 @@
-"""Background threads (t-oss-struct B4): ComfyUI probe, daily report, roster watch, push, wake after a usage reset, schedules,
+"""Background threads (t-oss-struct B4): daily report, roster watch, push, wake after a usage reset, schedules,
 snoozes. server.main() starts them unless NO_LOOPS is set; each one keeps itself alive (an exception prints one line and the
 loop goes on). The logic each loop runs lives with its feature (api/routes/*); this file only holds the timers."""
 import datetime as dt
 import os
-import socket
 import threading
 import time
 
-from api.ctx import S, CONFIG, _comfy, _ts
+from api.ctx import S, CONFIG, _ts
 from api.routes.push import PUSH_SUBS, push_tick
 from api.routes.schedules import schedules_fire
 from api.routes.snooze import snooze_tick
 from api.routes.state import sync_roster
 from api.routes.update import run_check as update_run_check
 from core.feeds import collector as feeds_collector
-
-
-def comfy_probe_loop():
-    c = CONFIG.get("comfy") or {}
-    if not c:
-        return   # no ComfyUI set up: nothing to probe, the UI hides the row
-    port = int(c.get("local_port", 8188))
-    while True:
-        try:
-            with socket.create_connection(("127.0.0.1", port), timeout=1):
-                _comfy["online"] = True
-        except OSError:
-            _comfy["online"] = False
-        _comfy["at"] = S.now()
-        time.sleep(60)
 
 
 def report_loop():
@@ -145,7 +129,7 @@ def roster_watch_loop():
         time.sleep(5)
 
 
-LOOPS = (comfy_probe_loop, report_loop, roster_watch_loop, push_loop, wake_loop, schedule_loop, snooze_loop, update_check_loop, feeds_loop)
+LOOPS = (report_loop, roster_watch_loop, push_loop, wake_loop, schedule_loop, snooze_loop, update_check_loop, feeds_loop)
 
 
 def start(only=None):

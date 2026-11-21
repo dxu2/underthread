@@ -155,18 +155,18 @@
       "name_en": "Brush",
       "title": "AIGC 美术",
       "title_en": "AIGC artist",
-      "duty": "封面、缩略图、概念图、B-roll、ComfyUI",
-      "duty_en": "Covers, concepts, b-roll via ComfyUI",
+      "duty": "封面、缩略图、概念图、B-roll 静帧",
+      "duty_en": "Covers, concepts, b-roll stills",
       "color": "#e58fa8",
       "room": "art",
       "agent_name": "underthread-artist",
       "specialties": [
         "封面 / 缩略图方案：构图、文字位置、三平台尺寸（16:9 / 3:4 / 9:16）",
-        "写 ComfyUI prompt 和参数，跑 workflow，挑图",
+        "写出图 prompt，用 tools/image.py 出候选，挑图",
         "风格指南：配色、字体、视觉一致性",
         "只用可商用的模型和素材，标注来源"
       ],
-      "duty_long": "Generates images on the user's GPU machine through ComfyUI (python3 tools/comfy.py). Writes outputs to work/<item-id>/art/. Plans first when a batch will take more than ~20 generations.",
+      "duty_long": "Generates images through tools/image.py (Codex on the user's ChatGPT plan). Writes outputs to work/<item-id>/art/. Plans first when a batch will take more than ~20 generations.",
       "skills": [],
       "notebooks": [
         "roles/common.md",
@@ -233,7 +233,7 @@
       "name_en": "Smith",
       "title": "工具管家",
       "title_en": "Tooling keeper",
-      "duty": "看板、脚本、ComfyUI 管道、出错先上",
+      "duty": "看板、脚本、工具管道、出错先上",
       "duty_en": "Dashboard, scripts, pipelines",
       "color": "#9aa5b1",
       "room": "tools",
@@ -241,7 +241,7 @@
       "specialties": [
         "维护本看板（server.py / stateutil.py / web/）",
         "写小工具：批量改名、转码、字幕、素材整理",
-        "ComfyUI workflow 和 SSH 隧道排错",
+        "出图后端和本机工具排错",
         "改文件前先出计划，改之前先备份（core 靠 git，其余用 tools/bak.py）"
       ],
       "duty_long": "Keeps the dashboard and team tooling running. Plan first; back up before every edit (git for core files, tools/bak.py for the rest); test on a scratch copy (PORT=8799 NO_LOOPS=1) before touching the live state.",

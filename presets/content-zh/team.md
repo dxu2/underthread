@@ -20,7 +20,7 @@ You review, approve, reject with a reason, or publish yourself.
 | 研究员 Scout | Topic pool, trend and benchmark breakdowns, research, fact-checking |
 | 编剧 Writer | Production doc, scripts, hooks, titles and every piece of copy |
 | 导演 Director | Storyboard, shot list, edit plan, ffmpeg rough cuts and subtitles |
-| 美术 Artist | Covers, concepts, b-roll stills on your GPU machine via ComfyUI |
+| 美术 Artist | Covers, concepts, b-roll stills through Codex on your ChatGPT plan |
 | 运营 Ops | Per-platform packaging, publishing calendar, comment replies, analytics review |
 | 工匠 Smith | Dashboard, scripts and pipelines, first responder for tooling errors |
 

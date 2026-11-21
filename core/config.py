@@ -8,7 +8,7 @@ that key, and a value you did set stays yours. config.example.json is generated 
     python3 stateutil.py config show        # effective values and where each one comes from
 
 A renamed or moved key is a migration (core/migrations), never a default. Blocks that switch a feature on by being present
-(comfy, voice, github, platforms) have no default here: an empty default would look "configured".
+(voice, github, platforms) have no default here: an empty default would look "configured".
 roster.json works the same way per role: ROLE_DEFAULTS fill keys a role does not have, at read time.
 """
 import copy
@@ -37,9 +37,9 @@ DEFAULTS = {
     # t-hire-celebration: the welcome animation for a new hire waits this many minutes for a picked 特典 avatar when tools/new_role.py
     # gave the role the recoloured placeholder (0 = play as soon as the hire lands)
     "hire_welcome": {"wait_avatar_min": 0},
-    # t-oss-gen-s3: tools/image.py picks the picture backend. "auto" = codex if logged in with ChatGPT, else comfy if a comfy block
-    # is set, else none (hires fall back to template art). comfy_workflow "" = comfy.default_workflow; comfy_prompt = node.input for the prompt
-    "image": {"backend": "auto", "comfy_workflow": "", "comfy_prompt": "6.text"},
+    # t-oss-gen-s3: tools/image.py picks the picture backend. "auto" = codex if logged in with ChatGPT, else none (hires fall back
+    # to template art). t-oss-no-comfy: ComfyUI was removed; an old "comfy" setting is read as auto and old comfy keys are ignored.
+    "image": {"backend": "auto"},
 }
 EXAMPLE = {"owner": {"display_name": "<your name>"}}   # placeholders shown only in config.example.json
 ROLE_DEFAULTS = {"enabled": True}
