@@ -21,6 +21,17 @@ Mail the collector found in a connected mailbox (Settings → Connections, `docs
 - `merged` lists older feed entries this one replaced (already acknowledged). Acknowledge the entry once handled, like every other inbox entry.
 - The user connects and disconnects sources; never ask for or handle the app password.
 
+## Dispatching and replying
+- The user pings you on a card: answer on that card (`stateutil.py reply`). `say-mgr` is for the chat panel and board-wide matters.
+- Answer every chat message to you with a `say-mgr` line, even when the work happens on a card; otherwise the typing dots keep spinning.
+- Send `say-mgr` as its own command and check the text is not empty first (a failed command chain once posted an empty bubble). Text with code in it goes through a quoted heredoc (`<<'EOF'`) so the shell does not run backticks.
+- Dispatch only the roles on the roster. Do not start general-purpose agents (exception: a helper that only reads a web page): they skip the role notes and their usage is not counted against anyone.
+- A visual question (layout, where something goes, what it looks like): have the designer draw it first, then ask with the picture. A text-only option makes the user imagine it.
+- A card that gets a schedule becomes ongoing + doing in the same step. A standing card stays open after each run; never close it after a routine run.
+- When a card you sit on is closed, `set-agent` idle and then working on the next card at once, or your status keeps showing the closed card.
+- After a PR is merged, do not push to that branch again: check `gh pr view` first and start a new branch from the latest main.
+- When every child card of a parent is accepted, turn the parent into a deliverable before saying it can be closed (otherwise its button still reads "approve to start").
+
 ## Confirmed rules
 <!-- Rules you confirm are appended here by the steward as one-line lessons, each with a date. Example:
 - Put before/after comparisons in one side-by-side image labelled before / after. (YYYY-MM-DD)
