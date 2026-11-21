@@ -153,9 +153,11 @@ function rcTasks(a, mine) {
   const open = groups.map(([s, g]) => `<div class="rt-g"><b>${grpLabel(s)}</b> · ${g.length}</div>` + g.map(row).join("")).join("");
   const nrows = groups.reduce((n, g) => n + g[1].length + 1, 0);
   const doneBlock = done.length ? `<button class="rt-dn" data-rcdone="${esc(a.id)}" aria-expanded="${!!x.done}">${x.done ? "▾" : "▸"} ${stageLabel("done")} · ${done.length}</button>` + (x.done ? done.slice(0, 3).map(row).join("") : "") : "";
-  const body = open || doneBlock ? open + doneBlock : `<div class="rt-e">${zh ? "没有单子" : "No items"}</div>`;
-  const long = nrows + (x.done ? Math.min(3, done.length) : 0) > 6;
-  return `<div class="rt ${x.all ? "all" : ""}"><div class="rt-b">${body}</div>${long ? `<button class="rt-more" data-rcall="${esc(a.id)}" aria-expanded="${!!x.all}">${x.all ? (zh ? "收起" : "Less") : (zh ? "展开全部" : "Show all")}</button>` : ""}</div>`;
+  /* t-roster-polish: the Done toggle and its rows sit after the clipped open list (and its 展开全部), never inside it. Inside, a card with a
+     short open list plus three done rows overflowed the 168px box without earning 展开全部 (row count ≠ height), so the list was cut off. */
+  const body = open || (doneBlock ? "" : `<div class="rt-e">${zh ? "没有单子" : "No items"}</div>`);
+  const long = nrows > 6;
+  return `<div class="rt ${x.all ? "all" : ""}"><div class="rt-b">${body}</div>${long ? `<button class="rt-more" data-rcall="${esc(a.id)}" aria-expanded="${!!x.all}">${x.all ? (zh ? "收起" : "Less") : (zh ? "展开全部" : "Show all")}</button>` : ""}${doneBlock}</div>`;
 }
 // ===== ui12 (t-common-rules): 「待确认的规则」block under the review queue. Source: ST.lessons status=pending, newest first.
 // agent "common" = team-wide (tag 「全员」). Buttons reuse data-lesson -> api("lesson"). The roster page only shows a count link now (de-dup). =====
