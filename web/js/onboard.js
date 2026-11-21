@@ -291,7 +291,8 @@
   const mine = () => { try { return A().chatList("manager").filter(m => m.who === "me").length; } catch (e) { return 0; } };
   function rowHTML() {
     const G = groups(), chips = QD().chips.map(k => G.find(g => g.k === k)).filter(Boolean);
-    if (mine() >= 20 && !QG.open) return `<button type="button" class="qg-bulb" data-qg-open aria-label="${esc(L("快捷句", "Quick phrases"))}" title="${esc(L("快捷句", "Quick phrases"))}"><span class="nq">${QG_YARN}${esc(L("想说点什么？", "What's on your mind?"))}</span></button>`;
+    if (mine() >= 20 && !QG.open) { const sw = !QG.sw; if (sw) { QG.sw = 1; setTimeout(() => { QG.sw = 2; }, 1500); }   // the thread end sways once, the first time the pill shows this session
+      return `<button type="button" class="qg-bulb${QG.sw === 1 ? " nq-sw" : ""}" data-qg-open aria-label="${esc(L("快捷句", "Quick phrases"))}" title="${esc(L("快捷句", "Quick phrases"))}"><span class="nq">${QG_YARN}${esc(L("想说点什么？", "What's on your mind?"))}</span></button>`; }
     return chips.map(g => `<button type="button" class="qg-c" data-qg="${esc(g.ex[0])}">${esc(g.chip)}</button>`).join("")
       + `<button type="button" class="qg-c qg-all" data-qg-all aria-expanded="${QG.pop}">${esc(L("全部说法 ›", "All phrases ›"))}</button>`;
   }
