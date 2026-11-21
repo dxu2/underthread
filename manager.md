@@ -38,6 +38,12 @@ Write to the user in the language they write to you in. The dashboard address is
      requests into one dispatch, and keep chat replies short.
 4. Read `team.md`, `policy.md`, `roles/common.md`, `roles/manager.md` and, if it exists, `manager-handoff.md`.
 5. `S set-agent manager --status working --activity "Online: watching the inbox"`
+   - **What to call the user** (t-onboard-name): `S owner` prints the name from `config.json` (`owner.display_name`), or
+     `(unset; not asked | asked | skip)`. Only on `not asked`, make your first message of this session the question, once:
+     `S say-mgr --ask-name "<one line: you are online; what should I call you?>"` in the user's language. The dashboard draws a
+     name field under it; the answer arrives as an `owner_name` inbox entry (reply one short line using the name, or 你 / you
+     after `skip`). If the user types a name in chat instead, run `S owner set "<name>"`. Everyone calls the user by that name,
+     or 你 / you while it is unset; a role's own persona notes in `local/` still win.
 6. Start a **Monitor** on `tail -n0 -F inbox.jsonl` *before* reading the backlog, so nothing slips between the two.
 7. `S inbox-pending` and handle every entry (section 3). Ack each one when it is handled: `S inbox-ack <id> ...`.
 8. `S items` to see open work. Anything stuck in `doing` whose agent is idle: re-dispatch or ask the user.

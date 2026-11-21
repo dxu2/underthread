@@ -63,6 +63,66 @@ def load(root):
     return merge(DEFAULTS, user(root))
 
 
+# ---------- t-onboard-name: what the steward and the team call you ----------
+# owner.display_name is unset when empty or still a placeholder like "<your name>". The steward asks once, in its first
+# message after coming online (stateutil say-mgr --ask-name); the answer is written here and nowhere else.
+def owner_real(name):
+    n = str(name or "").strip()
+    return n if n and not n.startswith("<") else ""
+
+
+def clean_owner(name):
+    """The name as typed, trimmed; ValueError when it cannot be a name (empty, a placeholder, over 40 characters, control characters)."""
+    n = " ".join(str(name or "").split())
+    if not n or n.startswith("<") or len(n) > 40 or any(ord(c) < 32 for c in n):
+        raise ValueError("name: 1-40 characters, not a <placeholder>")
+    return n
+
+
+def set_owner(root, name):
+    """Write owner.display_name into config.json; every other key (and _schema) stays as it is. Creates the file if missing."""
+    n = clean_owner(name)
+    path = os.path.join(root, "config.json")
+    try:
+        with open(path, encoding="utf-8") as f:
+            data = json.load(f)
+    except FileNotFoundError:
+        data = {}
+    if not isinstance(data, dict):
+        raise ValueError("config.json is not an object")
+    if not isinstance(data.get("owner"), dict):
+        data["owner"] = {}
+    data["owner"]["display_name"] = n
+    tmp = path + ".tmp"
+    with open(tmp, "w", encoding="utf-8") as f:
+        json.dump(data, f, ensure_ascii=False, indent=2)
+        f.write("\n")
+    os.replace(tmp, path)
+    _OWN["m"] = None
+    return n
+
+
+_OWN = {"m": None, "v": ""}
+
+
+def owner_live(root, cfg=None):
+    """owner.display_name as config.json says now (re-read when the file changes, so a name set by stateutil reaches a running
+    server without a restart). Updates cfg["owner"] in place when given. Returns the real name or ""."""
+    try:
+        m = os.path.getmtime(os.path.join(root, "config.json"))
+    except OSError:
+        m = 0
+    if m != _OWN["m"]:
+        try:
+            _OWN["v"] = ((user(root).get("owner") or {}).get("display_name") or "")
+        except (OSError, ValueError):
+            _OWN["v"] = ""
+        _OWN["m"] = m
+        if cfg is not None:
+            cfg.setdefault("owner", {})["display_name"] = _OWN["v"]
+    return owner_real(_OWN["v"])
+
+
 def roster(root, example=False, strict=False):
     """roster.json (after migrations) with ROLE_DEFAULTS filled into every role. Missing file -> {"roles": []}.
     example=True: when there is no roster.json yet, read roster.example.json instead (never written back).

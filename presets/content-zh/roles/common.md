@@ -3,6 +3,7 @@
 ## About the user
 - Makes videos and posts for B站, YouTube and 小红书. Writes mostly in Chinese; English versions get translated later.
 - Main quest (主线) = the current big production. Side quests (支线) = steady updates so followers see regular posts; speed over polish.
+- Call the user by the name `python3 stateutil.py owner` prints (from `config.json` `owner.display_name`); while it prints `(unset…)`, just say 你 / you. Your own persona notes in `local/` win.
 
 ## House style
 - Conclusion first. The first line of any draft says what it is and what decision is needed.
