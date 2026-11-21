@@ -6,7 +6,7 @@
 // ---------- ticker ----------
 import { $ } from "../core/util.js";
 import { t } from "../core/i18n.js";
-import { ST, UI, items } from "../core/store.js";
+import { ST, UI, items, waitMs } from "../core/store.js";
 import { api } from "../core/ui.js";
 import { openItem } from "./drawer.js";
 import { mgrState } from "./header.js";
@@ -19,7 +19,7 @@ function tickerItems() {
   else if (!m.on && ST.meta.inbox_unacked) out.unshift({ text: t("mgr_offline", { n: ST.meta.inbox_unacked }), level: "urgent" });
   for (const it of items()) {
     if (it.category === "urgent" && it.stage !== "done" && it.owner === "manager") out.unshift({ text: t("no_owner_urgent", { t: it.title }), level: "urgent", item: it.id });
-    if (it.stage === "review" && now - new Date(it.activity) > 864e5) out.push({ text: t("waiting_long", { t: it.title }), item: it.id });
+    if (it.stage === "review" && waitMs(it) > 864e5)   /* r-improve-1119 P1: same clock as the card tag */ out.push({ text: t("waiting_long", { t: it.title }), item: it.id });
   }
   return out;
 }

@@ -9,6 +9,8 @@
   const ms = x => Date.parse(x) || 0;
   const hm = t => { const d = new Date(t); return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`; };
   const en = () => A().UI.lang === "en";
+  /* r-improve-1119 P1: how long a card has waited on the user, from App.waitMs (last 提交审核), rounded down like the card tag */
+  const waitAgo = i => { const m = Math.max(1, Math.floor((A().waitMs ? A().waitMs(i) : Date.now() - ms(i.activity || i.updated)) / 6e4)); if (en()) return m < 60 ? `${m} min` : m < 1440 ? `${Math.floor(m / 60)} h` : `${Math.floor(m / 1440)} d`; return m < 60 ? `${m} 分钟` : m < 1440 ? `${Math.floor(m / 60)} 小时` : `${Math.floor(m / 1440)} 天`; };
   const ago = t => { const m = Math.max(1, Math.round((Date.now() - ms(t)) / 6e4)); if (en()) return m < 60 ? `${m} min` : m < 1440 ? `${Math.round(m / 60)} h` : `${Math.round(m / 1440)} d`; return m < 60 ? `${m} 分钟` : m < 1440 ? `${Math.round(m / 60)} 小时` : `${Math.round(m / 1440)} 天`; };
   const art = a => A().hasArt(a, "jpg") ? `/static/art/${a.id}.jpg` : A().avatarUrl(a);
   const fileUrl = p => "/" + String(p).split("/").map(encodeURIComponent).join("/");
@@ -133,7 +135,7 @@
     review(s, D) {
       const L = D.waiting, { n, foot } = fitM(s, L.length, 5);
       const row = i => { const a = A().agent(i.owner);
-        return `<div class="wg-row" data-item="${esc(i.id)}"><img class="wg-av" src="${A().avatarUrl(a)}" alt=""><div class="t">${A().nrDot ? A().nrDot(i.id) : ""}${window.Onboard ? Onboard.exT(i) : esc(i.title)}<small>${esc(A().aname(a))} · ${en() ? "waiting" : "等了"} ${ago(i.activity || i.updated)}${askN(i) ? (en() ? ` · ${askN(i)} question${askN(i) > 1 ? "s" : ""}` : ` · ${askN(i)} 个问题`) : ""}</small></div>${i.snoozed ? `<span class="wg-tg snz">${en() ? "Snoozed" : "推迟过"}</span>` : ""}<span class="wg-tg${i.kind === "plan" && !isQ(i) ? "" : " hot"}">${kindL(i)}</span></div>`; };
+        return `<div class="wg-row" data-item="${esc(i.id)}"><img class="wg-av" src="${A().avatarUrl(a)}" alt=""><div class="t">${A().nrDot ? A().nrDot(i.id) : ""}${window.Onboard ? Onboard.exT(i) : esc(i.title)}<small>${esc(A().aname(a))} · ${en() ? "waiting" : "等了"} ${waitAgo(i)}${askN(i) ? (en() ? ` · ${askN(i)} question${askN(i) > 1 ? "s" : ""}` : ` · ${askN(i)} 个问题`) : ""}</small></div>${i.snoozed ? `<span class="wg-tg snz">${en() ? "Snoozed" : "推迟过"}</span>` : ""}<span class="wg-tg${i.kind === "plan" && !isQ(i) ? "" : " hot"}">${kindL(i)}</span></div>`; };
       /* t-ri1113-a P3: the same sweep question on 3+ cards is one group row (2 row slots, its buttons answer them all); 逐张看 lists them under it.
          A medium tile has no room for the buttons: the group is one compact row there and a click opens the board. */
       const E = A().askGroups ? A().askGroups(L) : L.map(it => ({ it }));
@@ -147,7 +149,7 @@
         } else { if (slots + 1 > n) break; out.push(row(e.it)); slots++; shown++; }
       }
       return eb("review", L.length, true) + out.join("") +
-        (!foot ? "" : L.length <= shown && window.Onboard && Onboard.exFoot() ? Onboard.exFoot() : `<div class="wg-more">${L.length > shown ? `<span data-go="board">${en() ? `${L.length - shown} more ›` : `还有 ${L.length - shown} 件 ›`}</span>` : `${en() ? "Oldest waiting" : "最久的已经等了"} ${ago(L[L.length - 1].activity || L[L.length - 1].updated)}`}</div>`);
+        (!foot ? "" : L.length <= shown && window.Onboard && Onboard.exFoot() ? Onboard.exFoot() : `<div class="wg-more">${L.length > shown ? `<span data-go="board">${en() ? `${L.length - shown} more ›` : `还有 ${L.length - shown} 件 ›`}</span>` : `${en() ? "Oldest waiting" : "最久的已经等了"} ${waitAgo(L.reduce((a, b) => (A().waitMs ? A().waitMs(b) > A().waitMs(a) : 0) ? b : a))}`}</div>`);
     },
     busy(s, D) {
       const B = D.busy, m = B[0], a = m.a, side = B.slice(1, s === "l" ? 3 : 1), more = B.length - 1 - side.length, multi = B.length > 1;

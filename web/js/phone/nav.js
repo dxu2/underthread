@@ -31,7 +31,7 @@ function badges() {
   const ST = App.ST; if (!ST) return {};
   const review = App.items().filter(i => App.onYouCard ? App.onYouCard(i) : i.stage === "review" && !(App.busy && App.busy(i))).length + (App.newReplies ? App.newReplies().length : 0);   /* t-doing-first; t-review-unread: + cards with unread replies */
   const chat = convRows().reduce((n, x) => n + x.n, 0);   // unread across every conversation
-  const mail = App.mailUnread ? App.mailUnread() : (App.ST.mail || []).filter(m => !m.read).length;   /* ri1105-P4: server count */
+  const mail = App.mailUnread ? App.mailUnread() : (App.ST.mail || []).filter(m => !m.read && m.kind !== "remind").length;   /* ri1105-P4: server count */
   return { home: review, dms: chat, activity: mail };   // ui15: dots, not numbers
 }
 // ---------- tabbar motion (t-tabbar-motion) ----------

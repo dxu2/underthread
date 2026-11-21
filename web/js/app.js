@@ -5,7 +5,7 @@
 // A new top-level name another file needs: add it to that file's export { ... } line and to the importer's import line.
 import { $, DRAFT, LS } from "./core/util.js";
 import { PLAT, ago, agoH, srvT, stageLabel, t, titleEn, tplEn, tplSeed, when, whenH } from "./core/i18n.js";
-import { ARCH, LP, REV, ST, UI, archAll, archIx, busy, byAct, grpOf, histAll, items, lpAbort, lpLoop, mailAll, mailUnread, onYou, onYouCard, poll, qBadge, queueOf, snapBoot, snoozed } from "./core/store.js";
+import { ARCH, LP, REV, ST, UI, archAll, archIx, busy, byAct, grpOf, histAll, items, lpAbort, lpLoop, mailAll, mailUnread, onYou, onYouCard, poll, qBadge, queueOf, snapBoot, snoozed, waitMs } from "./core/store.js";
 import { agent, aname, atitle, av, avatarUrl, avLoad, hasArt, ringOnce, tintOf, wireAv, wsheet } from "./core/av.js";
 import { api, closeModal, modalReject, openModal, toast, utEmpty, wireUi } from "./core/ui.js";
 import { go, pageAlias, route } from "./core/router.js";
@@ -129,7 +129,7 @@ window.App = {
   askGroups: l => askGroups(l), grpHTML: (g, c) => grpHTML(g, c),   /* t-ri1113-a P3 */
   rtShort, rtFull, schToday, contentMode,   /* t-oss-gen-s5: contentMode (palette.js) */   /* t-ri1109-a: routine names, shared with widgets.js; t-ri1110-a P2: schToday */
   utEmpty: (text, cls, h) => utEmpty(text, cls, h),   /* t-thread-motif ④ (widgets.js, palette.js, mobile.js) */
-  rvApprove: id => rvApprove(id, null), rvCanApprove: it => rvCanApprove(it), awaitsUser: it => awaitsUser(it), busy: it => busy(it), onYou: it => onYou(it), onYouCard: it => onYouCard(it), grpOf: it => grpOf(it), newReplies: () => newReplies(), nrDot: id => nrDot(id), decisions: () => decisions(),   // t-imp-p5 (palette)
+  rvApprove: id => rvApprove(id, null), rvCanApprove: it => rvCanApprove(it), awaitsUser: it => awaitsUser(it), busy: it => busy(it), onYou: it => onYou(it), onYouCard: it => onYouCard(it), grpOf: it => grpOf(it), waitMs: it => waitMs(it), newReplies: () => newReplies(), nrDot: id => nrDot(id), decisions: () => decisions(),   // t-imp-p5 (palette)
   /* t-chrome-badge (home.js .hd-tool) */
   toolLine: w => toolLine(w), toolBadge: a => toolBadge(a), toolWhat: a => toolWhat(a), addToolExtra: fn => { if (!TOOL_EXTRA.includes(fn)) TOOL_EXTRA.push(fn); }, ext: window.UTExt,   /* S8: App.ext = web/ext.js */
   wsheet: (a, sz) => wsheet(a, sz),   /* t-chibi-anim (home.js .hd-mini / .dp-uti) */
