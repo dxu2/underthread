@@ -11,7 +11,7 @@ import { agent, aname, av } from "../../core/av.js";
 import { orn } from "../../core/ui.js";
 import { routineOf } from "../drawer.js";
 import { STU, stuName, stuTabs } from "../left.js";
-import { mailPv, nrDot } from "../mail.js";
+import { mailPv, nrDot, sumPv } from "../mail.js";
 import { askRow, awaitsUser, waitTag } from "./review.js";
 import { wkAttr, wkFx, wkTag, workersOf } from "../../app.js";
 function inkEb(right) { const d = new Date(), en = UI.lang === "en";
@@ -33,7 +33,7 @@ function card(it, o) {   /* o.noCat (r-improve-1116 P3): on that category's own 
       ${o && o.noCat ? "" : `<span>${t(it.category)}${it.category === "urgent" ? " ⚑" : ""}</span>`}
       <span>${whenH(it.created)}</span><span class="dim">${UI.lang === "en" ? "act." : "动态"} ${whenH(it.activity)}</span>
       <span>${(it.platforms || []).map(p => `<span class="tag pf">${PLAT[p] || p}</span>`).join(" ")}</span></div>
-    <div class="body"><h3>${nrDot(it.id)}${window.Onboard ? Onboard.exT(it) : esc(it.title)}</h3><p>${esc(mailPv(it.summary || ""))}</p>${wkTag(ws)}${askRow(it)}</div>
+    <div class="body"><h3>${nrDot(it.id)}${window.Onboard ? Onboard.exT(it) : esc(it.title)}</h3><p>${esc(sumPv(it.summary || ""))}</p>${wkTag(ws)}${askRow(it)}</div>
     <div class="owner">${av(a, "sm", it.id)}<span>${esc(aname(a))}</span></div>
     <div class="acts"><button data-arch="${it.id}">${t("archive")}</button>${it.stage !== "done" && !routineOf(it) ? `<button data-quickdone="${it.id}">${t("complete")}</button>` : ""}</div></div>`;
 }

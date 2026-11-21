@@ -16,6 +16,8 @@ function go(p) {
   if (UI.page === "review" && p !== "review") { UI.seen.review = new Date().toISOString(); LS.set("seen", UI.seen); }
   if (STU.includes(p)) LS.set("stuTab", p);
   UI.page = p; LS.set("page", p); closeItem(true); renderLeft(); renderPage(true);
+  /* r-improve-1121 P2: a #page= link that opened the board would win on the next reload; keep it in step with the page shown */
+  if (/(^#|&)page=/.test(location.hash)) { try { const H = new URLSearchParams(location.hash.slice(1)); H.set("page", p); history.replaceState(history.state, "", "#" + H.toString()); } catch (_) { } }
   window.FX && FX.enter($("#pagebody"));
 }
 

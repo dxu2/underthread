@@ -8,14 +8,14 @@ import { ST, UI, byAct, items, onYou, onYouCard, poll, snoozed } from "../../cor
 import { agent, agents, aname, av, avatarUrl } from "../../core/av.js";
 import { api, closeModal, openModal, postAct, toast } from "../../core/ui.js";
 import { DW, jumpState, openItem, renderDrawer } from "../drawer.js";
-import { mailPv, nrDot } from "../mail.js";
+import { mailPv, nrDot, sumPv } from "../mail.js";
 import { actRow } from "./common.js";
 import { renderPage } from "./index.js";
 import { MGR_ON, dcDur, liveItem, mgrOnline, workersOf } from "../../app.js";
 function reviewRow(it, fresh) {
   const a = agent(it.owner), th = (it.thread || []).filter(x => x.kind !== "event").length;
   return actRow({ attr: `data-item="${it.id}"`, av: av(a, "", it.id), ws: workersOf(it.id), unread: fresh, name: aname(a), title: it.title, time: agoH(it.activity || it.updated),
-    preview: mailPv(it.summary || ""), chip: rowLabel(it), n: th, extra: waitTag(it) });
+    preview: sumPv(it.summary || ""), chip: rowLabel(it), n: th, extra: waitTag(it) });
 }
 // ===== P5 (t-aes-p5): phone home 待审 = a review card per item: first image on top, owner + time, title, summary, 看详情 / 批准.
 // 批准 only where the detail page has it (stage review AND kind plan / deliverable); questions and other kinds get 看详情 only.

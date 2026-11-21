@@ -49,6 +49,10 @@ function mailPv(s, a) {   // t-chat-table: phones use it too now (mail rows + �
 const LOG_ZH = [[/^reply on \S+$/, () => "在卡上回复"], [/^upsert \S+ \[(\w+)\] (.*)$/, m => `更新卡片 · ${stageLabel(m[1])} · ${m[2]}`], [/^mail_read$/, () => "读了信"],
   [/^answer \S+$/, () => "回答了问题"], [/^approve \S+$/, () => "批准"], [/^comment \S+$/, () => "评论"], [/^ask \w+: (.*)$/, m => `提问：${m[1]}`], [/^ask-close \w+$/, () => "问题已关闭"],
   [/^lesson$/, () => "规则提议"], [/^chat$/, () => "发消息"], [/^done \S+$/, () => "关单"], [/^dm$/, () => "私信"]];
+/* r-improve-1121 P5: list cards drop the 「用户 11-20 21:49：」 source note the manager puts in front of a summary (it ate half of the two lines).
+   Only that exact shape; detail, search and the stored summary keep it. */
+const SUM_SRC = /^用户\s*\d{1,2}-\d{1,2}(?:\s+\d{1,2}:\d\d)?\s*(?:提|定|批)?(?:（[^）]{0,30}）)?：\s*/;
+function sumPv(s) { s = String(s || ""); const m = SUM_SRC.exec(s); return mailPv(m && s.length > m[0].length ? s.slice(m[0].length) : s); }
 function logText(s) { s = String(s ?? ""); if (UI.lang === "en") return srvT(s); for (const [re, fn] of LOG_ZH) { const m = re.exec(s); if (m) return fn(m); } return s; }
 function logRows(list) {
   if (!UI.logAgent) list = list.filter(l => l.text !== "mail_read");   /* t-ui-fix-r2 audit P2-5: 全部 hides the ~half of rows that were 「我 · mail_read」; the 我 filter still lists them */
@@ -124,19 +128,22 @@ function mbCard(m, ix) {
   else tt = en ? "Direct message" : "私信";
   return `<div class="mb-card">${MB_TAG}<span>${esc(tt)}</span></div>`;
 }
+function mbRow(g, i, ix) {   /* r-improve-1121 P2: one row of the drop-down; the desk 信箱 page uses the same rows */
+  const en = UI.lang === "en", kindName = { reply: t("replies"), update: t("updates") };
+  const m = g.body, rv = g.rv, n = g.ms.length;
+  return `<div class="mb-i ${g.ms.some(x => !x.read) ? "unread" : ""}" data-mail="${g.last.id}"${n > 1 ? ` data-mailids="${g.ms.map(x => x.id).join(",")}"` : ""} style="--i:${Math.min(i, 8)}">
+    ${m.agent ? av(agent(m.agent), "sm") : "<span class=\"av sm\"></span>"}<div class="mb-b"><div class="mb-m"><b>${m.agent ? esc(aname(agent(m.agent))) : ""}</b>${rv ? `<i class="ri14-rv">${en ? "Review" : "待审核"}</i>` : kindName[m.kind] ? `<i>${esc(kindName[m.kind])}</i>` : ""}<span>${whenH(g.last.t)}${n > 1 ? (en ? ` · ${n}` : ` · ${n} 条`) : ""}</span></div>${mbCard(g.last, ix)}<div class="mb-x">${esc(mailPv(m.text, m.agent && agent(m.agent)))}</div></div><span class="u"></span></div>`;
+}
 function renderMailbox(enter) {
   if (!MB.open) return;
   const { box } = mailboxEls(), f = UI.mailFilter;
   const unread = mailUnread();
   const fs = [["all", t("all")], ["unread", t("unread")], ["reply", t("replies")], ["update", t("updates")], ["urgent", t("urgent")]];
-  const kindName = { reply: t("replies"), update: t("updates") };
-  const list = mbGroups(mailFiltered(40)), en = UI.lang === "en", ix = new Map(items().map(i => [i.id, i]));
+  const list = mbGroups(mailFiltered(40)), ix = new Map(items().map(i => [i.id, i]));
   const keep = $(".mb-list", box) ? $(".mb-list", box).scrollTop : 0;
   box.innerHTML = `<div class="mb-h"><div class="mb-t"><b>${t("mail")}</b><span>${UI.lang === "en" ? `${unread} unread` : `${unread} 条未读`}</span></div><button class="btn-s" data-mailall>${t("mark_all")}</button></div>
     <div class="mb-f"><div class="seg" data-seg="mailbox">${fs.map(([k, n]) => `<button class="seg-i ${f === k ? "on" : ""}" data-mailf="${k}">${n}</button>`).join("")}</div></div>
-    <div class="mb-list ${enter ? "mb-enter" : ""}">${list.length ? list.map((g, i) => { const m = g.body, rv = g.rv, n = g.ms.length;
-      return `<div class="mb-i ${g.ms.some(x => !x.read) ? "unread" : ""}" data-mail="${g.last.id}"${n > 1 ? ` data-mailids="${g.ms.map(x => x.id).join(",")}"` : ""} style="--i:${Math.min(i, 8)}">
-      ${m.agent ? av(agent(m.agent), "sm") : "<span class=\"av sm\"></span>"}<div class="mb-b"><div class="mb-m"><b>${m.agent ? esc(aname(agent(m.agent))) : ""}</b>${rv ? `<i class="ri14-rv">${en ? "Review" : "待审核"}</i>` : kindName[m.kind] ? `<i>${esc(kindName[m.kind])}</i>` : ""}<span>${whenH(g.last.t)}${n > 1 ? (en ? ` · ${n}` : ` · ${n} 条`) : ""}</span></div>${mbCard(g.last, ix)}<div class="mb-x">${esc(mailPv(m.text, m.agent && agent(m.agent)))}</div></div><span class="u"></span></div>`; }).join("") : utEmpty(t("empty"))}</div>
+    <div class="mb-list ${enter ? "mb-enter" : ""}">${list.length ? list.map((g, i) => mbRow(g, i, ix)).join("") : utEmpty(t("empty"))}</div>
     <button class="mb-all" data-mbfull>${UI.lang === "en" ? "View all" : "查看全部"} →</button>`;
   $(".mb-list", box).scrollTop = keep;
   if (enter) setTimeout(() => { const l = $(".mb-list", box); l && l.classList.remove("mb-enter"); }, 700);
@@ -160,7 +167,8 @@ function closeMailbox() {
 function wkFrom() { const d = new Date(); d.setHours(0, 0, 0, 0); d.setDate(d.getDate() - 6); return d.getTime(); }
 function homeCounts() {   // t-imp-p1: review = 等你拍板 (review items + plans / questions parked in waiting)
   const its = items(), wk = wkFrom(), rev = its.filter(i => onYouCard(i) && i.id !== RV.pending);
-  return { review: rev.length + its.filter(i => awaitsUser(i) && !busy(i) && !snoozed(i)).length + newReplies().length, doing: its.filter(i => grpOf(i) === "doing").length, todo: its.filter(i => grpOf(i) === "todo").length,
+  const nr = newReplies().length, cards = rev.length + its.filter(i => awaitsUser(i) && !busy(i) && !snoozed(i)).length;   /* r-improve-1121 P3: the phone hero splits the number */
+  return { review: cards + nr, cards, nr, doing: its.filter(i => grpOf(i) === "doing").length, todo: its.filter(i => grpOf(i) === "todo").length,
     week: its.filter(i => i.stage === "done" && i.closed && new Date(i.closed) > wk).length, oldest: rev.length ? Math.min(...rev.map(i => new Date(i.activity || i.updated))) : null };
 }
 // ===== t-home-newreplies: 「新回复」 = the server's reply mail (kind "reply", written for every msg / reply an agent posts on a card; log lines and events
@@ -226,4 +234,4 @@ function wireMail2() {
   });
 }
 
-export { mailGroups, tablePv, mailPv, LOG_ZH, logText, logRows, REV_MAIL, cardLine, mailRep, mailRow, mailFiltered, MB, mailboxEls, mbGroups, mbCard, renderMailbox, openMailbox, closeMailbox, wkFrom, homeCounts, nrMail, nrCard, newReplies, nrDot, nrFirst, nrBlock, chatMail, chatSeenSrv, srvSeen, seenOf, unreadOf, unreadTag, chatMailRead, itemMailRead, doneMailRead, nrRead, wireMail, wireMail2 };
+export { mailGroups, tablePv, mailPv, sumPv, LOG_ZH, logText, logRows, REV_MAIL, cardLine, mailRep, mailRow, mailFiltered, MB, mailboxEls, mbGroups, mbCard, mbRow, renderMailbox, openMailbox, closeMailbox, wkFrom, homeCounts, nrMail, nrCard, newReplies, nrDot, nrFirst, nrBlock, chatMail, chatSeenSrv, srvSeen, seenOf, unreadOf, unreadTag, chatMailRead, itemMailRead, doneMailRead, nrRead, wireMail, wireMail2 };

@@ -201,3 +201,4 @@ mark.an-hl { background: var(--accent-soft); color: inherit; border-radius: 2px;
 .ch-msgs .ch-more { display: block; margin: 8px auto 12px; padding: 6px 14px; border: 1px solid var(--line2); border-radius: 999px; background: none; color: var(--dim); font: inherit; font-size: var(--fs-12); cursor: pointer; }
 .ch-msgs .ch-more:active { opacity: .6; }
 
+.ref-nw { white-space: nowrap; } .ref-nw .idc { max-width: calc(100% - 1.1em); }   /* r-improve-1121 P4: a card chip and the 「）」「，」 right after it wrap together (md.js refs) */
