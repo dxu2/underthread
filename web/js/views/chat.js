@@ -413,7 +413,7 @@ function renderChat() {
     ? `<div class="msg me pend${m.st === "ok" ? " pend-ok" : m.st === "fail" ? " pend-fail" : ""}" data-t="${esc(m.t)}" data-pend="${m.pend}">${rqLine(m)}<div class="mb">${md(m.text)}${attHTML(m.attachments)}</div><div class="mt">${pendSt(m)}</div></div>`
     : m.who === "me"
     ? `<div class="msg me" data-t="${esc(m.t)}"${m.id ? ` data-mid="${esc(m.id)}"` : ""}>${rqLine(m)}<div class="mb">${md(m.text)}${attHTML(m.attachments)}</div><div class="mt">${whenH(m.t)}</div></div>`
-    : `<div class="msg" data-t="${esc(m.t)}"${m.id ? ` data-mid="${esc(m.id)}"` : ""} data-who="${esc(m.who)}"><div class="mh">${mav(m, i)}${esc(aname(agent(m.who)))} <small>${whenH(m.t)}</small></div><div class="mb md">${chipParens(md(m.text))}</div>${attHTML(m.attachments)}
+    : `<div class="msg" data-t="${esc(m.t)}"${m.id ? ` data-mid="${esc(m.id)}"` : ""} data-who="${esc(m.who)}"><div class="mh">${mav(m, i)}${esc(aname(agent(m.who)))} <small>${whenH(m.t)}</small></div><div class="mb md">${chipParens(md(m.text))}${m.ask === "name" ? askName() : ""}</div>${attHTML(m.attachments)}
        ${optsOf(m, i)}</div>`)))
     : UI.chat === "manager" && window.Onboard ? [obTop, Onboard.chatEmpty()]   /* t-onboarding P0 ②: three examples instead of one line */
     : [`<div class="empty">${UI.chat === "manager" ? (UI.lang === "en" ? "Tell the manager what you want done." : "跟管家说你想做什么。") : (UI.lang === "en" ? "DM goes through the manager to this agent." : "私信会由管家转给这个角色。")}</div>`]);
@@ -460,7 +460,35 @@ const aqWait = (iso, en) => { const m = Math.max(1, Math.round((Date.now() - (Da
   return en ? `waiting ${v[0]} ${v[2]}` : `等了 ${v[0]} ${v[1]}`; };
 function aqClose() { const p = $(".aq-pop"); if (p) p.remove(); }
 
+/* t-onboard-name: the steward's first message after coming online asks what to call you (stateutil say-mgr --ask-name). Under that
+   message: a name field, 「就叫这个」 and 「叫我『你』就行」. The answer goes to config.json owner.display_name (action owner_name); once
+   a real name is set, or you chose 你, the row folds to one quiet line. A name already set (not empty, not <your name>) never shows the field. */
+const ownerReal = () => { const n = String((ST.meta && ST.meta.owner) || "").trim(); return n && !n.startsWith("<") ? n : ""; };
+function askName() {
+  const en = UI.lang === "en", n = ownerReal(), sk = ST.meta && ST.meta.owner_ask === "skip";
+  if (n) return `<div class="ask-nm done">✓ ${escN(en ? `I'll call you ${n}` : `以后叫你 ${n}`)}<small>${en ? " · saved in config.json; tell me to change it" : " · 存在 config.json，想改跟我说"}</small></div>`;
+  if (sk) return `<div class="ask-nm done">✓ ${en ? "“You” it is" : "就叫你「你」"}<small>${en ? " · tell me a name any time" : " · 想换随时跟我说"}</small></div>`;
+  return `<form class="ask-nm" data-ask-name><div class="ask-nm-r"><input type="text" name="nm" maxlength="40" autocomplete="nickname" enterkeyhint="done" aria-label="${en ? "Your name or nickname" : "你的名字或昵称"}" placeholder="${en ? "Your name or nickname" : "你的名字或昵称"}">`
+    + `<button type="submit" class="ask-nm-go">${en ? "Use this" : "就叫这个"}</button></div>`
+    + `<div class="ask-nm-r2"><button type="button" class="ask-nm-skip" data-ask-name-skip>${en ? "Just “you” is fine" : "叫我「你」就行"}</button><small>${en ? "Saved to config.json on this computer" : "存进这台电脑的 config.json"}</small></div></form>`;
+}
+async function askNameSend(form, body) {
+  if (form.dataset.busy) return; form.dataset.busy = "1";
+  try {
+    await postAct("owner_name", body);   // locked actions answer {ok, inbox} only; the server trims the name the same way
+    if (body.skip) ST.meta.owner_ask = "skip"; else { ST.meta.owner = body.name.split(/\s+/).filter(Boolean).join(" "); ST.meta.owner_ask = "done"; }
+    document.querySelectorAll("[data-ask-name]").forEach(f => { f.outerHTML = askName(); });   // the desk column and the phone thread each have one
+  } catch (e) { delete form.dataset.busy; toast((UI.lang === "en" ? "Not saved: " : "没存上：") + String(e.message || e), true); }
+}
+const escN = s => String(s == null ? "" : s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+
 function wireChat() {
+  document.addEventListener("submit", e => {   // t-onboard-name
+    const f = e.target.closest && e.target.closest("[data-ask-name]"); if (!f) return;
+    e.preventDefault(); const v = (f.elements.nm.value || "").trim(); if (!v) { f.elements.nm.focus(); return; }
+    askNameSend(f, { name: v });
+  });
+  document.addEventListener("click", e => { const b = e.target.closest && e.target.closest("[data-ask-name-skip]"); if (b) askNameSend(b.closest("[data-ask-name]"), { skip: true }); });
   // t-web-audit 06: under 900px the detail drawer covers the whole middle column
   try { const mn = $("#main"); new ResizeObserver(() => document.body.classList.toggle("main-narrow", mn.clientWidth < 900)).observe(mn); } catch { }
   document.addEventListener("click", e => {   // a click outside the pop-over closes it (dialogs and the viewer opened from it do not)

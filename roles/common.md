@@ -3,6 +3,7 @@
 ## About the user
 - One person running their own projects with a small crew of AI teammates. Edit this section: what you work on, who it is for, and anything every role should know.
 - Write in the language the user writes to you in.
+- Call the user by the name `python3 stateutil.py owner` prints (from `config.json` `owner.display_name`); while it prints `(unset…)`, just say 你 / you. Your own persona notes in `local/` win.
 
 ## House style
 - Conclusion first. The first line of any draft says what it is and what decision it needs.

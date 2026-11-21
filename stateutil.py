@@ -260,7 +260,11 @@ def cmd_handoffs(a):
 
 def cmd_say_mgr(a):
     with mutate() as st:
-        st["chat"].append(_chat_entry("manager", _text_arg(a.text), a.options, a.attach, multi=a.multi))
+        e = _chat_entry("manager", _text_arg(a.text), a.options, a.attach, multi=a.multi)
+        if getattr(a, "ask_name", False):   # t-onboard-name: the dashboard draws a name field under this message
+            e["ask"] = "name"
+            st["meta"]["owner_ask"] = "asked"
+        st["chat"].append(e)
         _cap(st["chat"], "chat")
         push_mail(st, "reply", "管家: " + _text_arg(a.text)[:160], None, "manager")
     print("ok")
@@ -391,7 +395,12 @@ def main():
     s = sub.add_parser("say-mgr", help="manager chat message to the user"); s.add_argument("text")
     s.add_argument("--options", help="quick replies, 'a|b|c'"); s.add_argument("--attach", action="append")
     s.add_argument("--multi", action="store_true", help="the user may pick several options, sent as 'a、b'")
+    s.add_argument("--ask-name", action="store_true", help="t-onboard-name: draw a name field under the message (see `owner`)")
     s.set_defaults(fn=cmd_say_mgr)
+
+    s = sub.add_parser("owner", help="t-onboard-name: what to call the user (config.json owner.display_name)")
+    s.add_argument("op", nargs="?", choices=["show", "set", "skip"], default="show"); s.add_argument("name", nargs="?")
+    s.set_defaults(fn=cmd_owner)
 
     s = sub.add_parser("dm", help="agent DM to the user"); s.add_argument("agent"); s.add_argument("text")
     s.add_argument("--options"); s.add_argument("--attach", action="append")
@@ -624,6 +633,25 @@ def cmd_schema(a):
     print("  config / roster carry _schema only after a step changed them; 0 there is normal")
     for e in info["log"][-10:]:
         print(f"  {e.get('at', '')[:19]}  {e.get('from')} -> {e.get('to')}  {', '.join(e.get('ran') or []) or '(stamp only)'}")
+
+
+def cmd_owner(a):
+    """show: the name, or `(unset; not asked|asked|skip)`. Unset = empty or a placeholder like <your name>; the steward asks once
+    (say-mgr --ask-name) only when it prints `not asked`. set NAME: write it to config.json. skip: keep saying 你 / you."""
+    from core import config as C
+    if a.op == "set":
+        n = C.set_owner(ROOT, a.name)
+        with mutate() as st:
+            st["meta"]["owner_ask"] = "done"
+        print(n)
+        return
+    if a.op == "skip":
+        with mutate() as st:
+            st["meta"]["owner_ask"] = "skip"
+        print("ok")
+        return
+    n = C.owner_real((C.load(ROOT).get("owner") or {}).get("display_name"))
+    print(n or f"(unset; {read()['meta'].get('owner_ask') or 'not asked'})")
 
 
 def cmd_config_show(a):
