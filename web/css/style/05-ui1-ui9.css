@@ -230,3 +230,7 @@ body.lb-open #pal { z-index: 9100; }   /* ⌘K over an open viewer shows on top,
 .grp-h b { font-weight: 600; }
 .plat h3, .mdl h2 { font-weight: 600; }
 
+/* r-improve-1121 P2: the desk 信箱 page = the drop-down's rows, a little roomier */
+.mb-page { max-width: 880px; }
+.mb-page .mb-i { padding: 12px 10px; }
+.mb-page .mb-x { -webkit-line-clamp: 3; }

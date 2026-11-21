@@ -6,11 +6,13 @@
 
   // t-imp29-p5: known card ids become chips. md.ref(id) (set by app.js) returns the chip HTML, or null for an id it does not know (left as text).
   // Only plain text is touched: never inside <a>…</a>, <code>, a tag, a path (work/t-x/…) or a file name (t-x.md); fenced code never reaches inline().
-  const ID_RE = /(^|[^\w\/.#?=-])([a-z][a-z0-9]*(?:-[a-z0-9]+)+)(?![\w\/-]|\.\w)/g;
+  const ID_RE = /(^|[^\w\/.#?=-])([a-z][a-z0-9]*(?:-[a-z0-9]+)+)(?![\w\/-]|\.\w)([）」』》，。、；：！？),.;:!?]*)/g;
+  /* r-improve-1121 P4: closing punctuation right after a chip rides in one no-wrap span with it, so 「）」「，」 never start the next line.
+     Display only: the stored text is untouched. */
   function refs(s) {
     if (!md.ref || !/[a-z]-[a-z0-9]/.test(s)) return s;
     return s.split(/(<a\b[^>]*>[\s\S]*?<\/a>|<code>[\s\S]*?<\/code>|<[^>]+>)/).map((part, i) => i % 2 ? part :
-      part.replace(ID_RE, (m, pre, id) => { const h = md.ref(id); return h ? pre + h : m; })).join("");
+      part.replace(ID_RE, (m, pre, id, pu) => { const h = md.ref(id); return !h ? m : pu ? `${pre}<span class="ref-nw">${h}${pu}</span>` : pre + h; })).join("");
   }
 
   function inline(s) {

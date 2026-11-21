@@ -13,13 +13,13 @@
   // ---------- copy (zh | en, follows App.UI.lang) ----------
   const COPY = {
     zh: { busy: n => `<b>${n}</b> 在忙`, rest: `都在休息 · ${REPORT} 日报`, rev: n => `${n} 等你`, team: "团队",
-      st: ["等你拍板", "进行中", "待办", "近 7 天交付"], wait: n => `${n} 件等你拍板`, oldest: d => `最久 ${d}`,
+      st: ["等你看", "进行中", "待办", "近 7 天交付"], wait: n => `${n} 件等你拍板`, oldest: d => `最久 ${d}`, split: (c, r) => `${c} 拍板 · ${r} 回复`,   /* r-improve-1121 P3: 28 = 13 cards + 15 new replies, so not 「等你拍板」 */
       m: n => `${n} 分钟`, hm: (h, m) => `${h} 时 ${m} 分`, h: n => `${n} 小时`, d: n => `${n} 天`,
       working: "工作中", resting: "休息中", chat: "点一下，和 TA 聊聊", since: (c, d) => `${c} 起 · ${d}`, mgr: "在线 · 看着信箱", online: "在线", ago: d => `${d}前活动`,
       aria: (nm, w, t, act) => `${nm}，${w}${t ? "：" + t : ""}。${act}`, tapOpen: "点按打开单子", tapChat: "点按打开私信", tapExp: "点按展开",
       open: "打开单子", dm: "私信", dmSub: "打开和 TA 的对话", cancel: "取消", done: "委托完成", sep: " · " },
     en: { busy: n => `<b>${n}</b> working`, rest: `All resting · report at ${REPORT}`, rev: n => `${n} on you`, team: "Team",
-      st: ["On you", "Doing", "To do", "7-day shipped"], wait: n => `${n} waiting on you`, oldest: d => `oldest ${d}`,
+      st: ["On you", "Doing", "To do", "7-day shipped"], wait: n => `${n} waiting on you`, oldest: d => `oldest ${d}`, split: (c, r) => `${c} to decide · ${r} ${r === 1 ? "reply" : "replies"}`,
       m: n => `${n} min`, hm: (h, m) => `${h} h ${m} min`, h: n => `${n} h`, d: n => `${n} d`,
       working: "Working", resting: "Resting", chat: "Tap to chat", since: (c, d) => `since ${c} · ${d}`, mgr: "Online · watching the inbox", online: "Online", ago: d => `active ${d} ago`,
       aria: (nm, w, t, act) => `${nm}, ${w.toLowerCase()}${t ? ": " + t : ""}. ${act}`, tapOpen: "Tap to open the item", tapChat: "Tap to open the chat", tapExp: "Tap to expand",
@@ -42,7 +42,7 @@
   const dur = m => m < 60 ? L().m(Math.max(1, m)) : L().hm(Math.floor(m / 60), String(m % 60).padStart(2, "0"));
   const durShort = m => m < 60 ? L().m(Math.max(1, m)) : m < 48 * 60 ? L().h(Math.round(m / 60)) : L().d(Math.round(m / 1440));
   const ordered = ag => ag.slice().sort((a, b) => (a.order ?? 99) - (b.order ?? 99));
-  function oldest(c) { if (!c.oldest) return ""; const m = mins(new Date(c.oldest).toISOString()); return L().oldest(durShort(m)); }
+  function oldest(c) { if (c.nr) return L().split(c.cards || 0, c.nr); if (!c.oldest) return ""; const m = mins(new Date(c.oldest).toISOString()); return L().oldest(durShort(m)); }
   const urgent = c => c.review >= 3 || (c.review > 0 && c.oldest && mins(new Date(c.oldest).toISOString()) > 12 * 60);
   const itemStage = id => { const it = (A().ST.items || []).find(i => i.id === id); return it && it.stage; };
   const sumHTML = (ag, c) => { const w = ag.filter(isW).length; return (w ? L().busy(w) : L().rest) + (c.review ? ` · <span class="hd-rd"><i></i>${L().rev(c.review)}</span>` : ""); };
@@ -171,7 +171,7 @@
     setH($(".hd-sum", root), sumHTML(d.agents, c));
     apply(ob, d, true);
     if (first) as.forEach(a => { S.prev[a.id] = { w: isW(a), item: a.item }; });
-    const old = $(".hd-old", root); if (old) { setT(old, c.review ? oldest(c) : ""); old.classList.toggle("hot", !!c.review && !!c.oldest && mins(new Date(c.oldest).toISOString()) > 12 * 60); }   /* ri1107-P5 */
+    const old = $(".hd-old", root); if (old) { setT(old, c.review ? oldest(c) : ""); old.classList.toggle("hot", !!c.review && !c.nr && !!c.oldest && mins(new Date(c.oldest).toISOString()) > 12 * 60); }   /* ri1107-P5 */
     root.querySelectorAll(".hd-stat").forEach(s => {
       const k = s.dataset.hdF, b = $("b", s), v = String(c[k]);
       s.classList.toggle("on", hf === k); s.classList.toggle("alert", k === "review" && c.review > 0);
@@ -305,7 +305,7 @@
       const el = $(`.a2-r[data-a2="${id}"]`, rows); if (el) a2Mission(el);
       setTimeout(() => { const o = document.getElementById("officebox"); if (o && o.dataset.hv === "a2" && S.last) a2Patch(o, S.last); }, 2350);
     });
-    const old = $(".hd-old", root); if (old) { setT(old, c.review ? oldest(c) : ""); old.classList.toggle("hot", !!c.review && !!c.oldest && mins(new Date(c.oldest).toISOString()) > 12 * 60); }
+    const old = $(".hd-old", root); if (old) { setT(old, c.review ? oldest(c) : ""); old.classList.toggle("hot", !!c.review && !c.nr && !!c.oldest && mins(new Date(c.oldest).toISOString()) > 12 * 60); }
     const hf = A().UI.hf || "review";
     root.querySelectorAll(".hd-stat").forEach(s => { const k = s.dataset.hdF; s.classList.toggle("on", hf === k); s.classList.toggle("alert", k === "review" && c.review > 0); A().roll($("b", s), String(c[k]), "hd." + k); });
   }
