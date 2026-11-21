@@ -29,14 +29,24 @@
   /* ---------- role card row ---------- */
   function acts(a) {
     if (!a || a.id === "me") return "";
-    if (a.enabled === false) return `<div class="ht-acts"><button type="button" class="ht-b" data-ht-rehire="${esc(a.id)}">${L("返聘", "Rehire")}</button></div>`;
+    if (a.enabled === false) return `<div class="ht-acts"><button type="button" class="ht-b" data-ht-rehire="${esc(a.id)}" data-tipk="rh" aria-describedby="ht-tip-rh-${esc(a.id)}">${L("返聘", "Rehire")}</button>${tip("rh", a.id)}</div>`;
     if (a.id === "manager") return "";
     const working = a.status === "working";
-    const xfer = `<button type="button" class="ht-b" data-ht-xfer="${esc(a.id)}"${hrOn() ? "" : ` aria-disabled="true" title="${esc(L("HR 上岗后开放", "Opens once HR is on the team"))}"`}>${L("调岗", "Transfer")}</button>`;
-    const ret = CORE.includes(a.id) ? "" : `<button type="button" class="ht-b warn" data-ht-retire="${esc(a.id)}"${working ? ` aria-disabled="true"` : ""}>${L("退休", "Retire")}</button>`;
+    const xfer = `<button type="button" class="ht-b" data-ht-xfer="${esc(a.id)}" data-tipk="xf" aria-describedby="ht-tip-xf-${esc(a.id)}"${hrOn() ? "" : ` aria-disabled="true" title="${esc(L("HR 上岗后开放", "Opens once HR is on the team"))}"`}>${L("调岗", "Transfer")}</button>`;
+    const ret = CORE.includes(a.id) ? "" : `<button type="button" class="ht-b warn" data-ht-retire="${esc(a.id)}" data-tipk="rt" aria-describedby="ht-tip-rt-${esc(a.id)}"${working ? ` aria-disabled="true"` : ""}>${L("退休", "Retire")}</button>`;
     const why = working && ret ? `<small class="ht-why">${esc(L(`在做「${a.activity || "手上的事"}」，交回后再退`, "Working; retire after it hands back"))}</small>` : "";
-    return `<div class="ht-acts">${xfer}${ret}${why}</div>`;
+    return `<div class="ht-acts">${xfer}${ret}${why}${tip("xf", a.id)}${ret ? tip("rt", a.id) : ""}</div>`;
   }
+  /* t-roster-polish: one line under the row saying what the button does. Shown while its button is hovered or keyboard-focused (CSS :has),
+     or after a long press on a touch screen (.tip-on, see the pointer handlers below; that press does not also fire the button). */
+  const TIP = {
+    xf: ["HR 先问你想改什么（职责、语气、名字、工具、红线），再出一份改前 / 改后给你批；批了才生效。",
+      "HR asks what to change (duties, voice, name, tools, red lines), then shows a before / after for you to approve. Nothing changes until you do."],
+    rt: ["先把手上没做完的单子交给管家或队员，再让 TA 下岗。角色文件、记忆、头像和声音都留着，随时能返聘。",
+      "Hands its open cards to the steward or a teammate, then takes the role off duty. Its files, memory, avatar and voice are kept; rehire any time."],
+    rh: ["让 TA 回到团队，原来的设定和记忆都在；退休时搁置的单子可以一键拿回。", "Brings the role back with its notes and memory; cards parked at retirement can be taken back in one tap."],
+  };
+  const tip = (k, id) => `<small class="ht-tip" data-tip="${k}" id="ht-tip-${k}-${esc(id)}" role="tooltip">${esc(L(...TIP[k]))}</small>`;
 
   /* ---------- 调岗 ---------- */
   async function startXfer(id, b) {
@@ -136,6 +146,24 @@
     else App.toast(L("已返聘", "Rehired") + (j.lessons ? L(` · ${j.lessons} 条规则提议放回审核页`, ` · ${j.lessons} proposal(s) back`) : ""));
     if (ps) setTimeout(() => App.toast(L(`${ps} 条定时还在暂停，去「定时」页恢复`, `${ps} schedule(s) still paused; resume them on 定时`)), n ? 8200 : 2600);
   }
+
+  /* touch: a long press (450 ms) on 调岗 / 退休 / 返聘 shows its line for 4 s instead of pressing the button */
+  const LP = { t: 0, eat: false, hide: 0 };
+  const tipOff = () => document.querySelectorAll(".ht-tip.tip-on").forEach(x => x.classList.remove("tip-on"));
+  document.addEventListener("pointerdown", e => {
+    clearTimeout(LP.t); LP.eat = false;
+    const b = e.target.closest && e.target.closest(".ht-acts [data-tipk]");
+    if (!b) { tipOff(); return; }
+    if (e.pointerType === "mouse") return;
+    LP.t = setTimeout(() => {
+      const t = b.closest(".ht-acts").querySelector(`.ht-tip[data-tip="${b.dataset.tipk}"]`); if (!t) return;
+      tipOff(); t.classList.add("tip-on"); LP.eat = true; t.scrollIntoView({ block: "nearest", behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" });
+      clearTimeout(LP.hide); LP.hide = setTimeout(tipOff, 4000);
+    }, 450);
+  }, true);
+  ["pointerup", "pointercancel", "pointermove"].forEach(ev => document.addEventListener(ev, e => { if (ev !== "pointermove" || Math.abs(e.movementX) + Math.abs(e.movementY) > 6) clearTimeout(LP.t); }, true));
+  document.addEventListener("click", e => { if (LP.eat && e.target.closest && e.target.closest(".ht-acts [data-tipk]")) { LP.eat = false; e.preventDefault(); e.stopImmediatePropagation(); } }, true);
+  document.addEventListener("contextmenu", e => { if (e.target.closest && e.target.closest(".ht-acts [data-tipk]")) e.preventDefault(); });
 
   document.addEventListener("click", async e => {
     const x = e.target.closest("[data-ht-xfer]"); if (x) { e.preventDefault(); return startXfer(x.dataset.htXfer, x); }

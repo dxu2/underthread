@@ -200,6 +200,16 @@ html[lang="en"] .mk-sw button span::after { content: attr(data-t); font-weight: 
 .ht-b.warn:hover { color: var(--urgent); border-color: color-mix(in srgb, var(--urgent) 60%, transparent); background: color-mix(in srgb, var(--urgent) 10%, transparent); }
 .ht-b[aria-disabled="true"], .ht-b:disabled { opacity: .45; cursor: not-allowed; }
 .ht-b[aria-disabled="true"]:hover { color: var(--ink2); border-color: var(--line2); background: transparent; }
+/* t-roster-polish: what 调岗 / 退休 / 返聘 do, one line under the row (a box in the row, not a floating bubble: .rc clips overflow) */
+.ht-b { -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
+.ht-tip { display: none; flex-basis: 100%; scroll-margin-bottom: 110px; margin-top: 2px; padding: 7px 10px; border-radius: 10px; font-size: var(--fs-12); line-height: 1.45; color: var(--ink2);
+  background: color-mix(in srgb, var(--panel, var(--bg)) 88%, var(--accent)); border: 1px dashed color-mix(in srgb, var(--ink) 28%, transparent); }
+.ht-acts:has([data-tipk="xf"]:hover, [data-tipk="xf"]:focus-visible) .ht-tip[data-tip="xf"],
+.ht-acts:has([data-tipk="rt"]:hover, [data-tipk="rt"]:focus-visible) .ht-tip[data-tip="rt"],
+.ht-acts:has([data-tipk="rh"]:hover, [data-tipk="rh"]:focus-visible) .ht-tip[data-tip="rh"], .ht-tip.tip-on { display: block; animation: ht-tip-in .16s ease-out; }
+@media (hover: none) { .ht-acts:has([data-tipk]:hover) .ht-tip:not(.tip-on) { display: none; } }
+@keyframes ht-tip-in { from { opacity: 0; transform: translateY(-3px); } }
+@media (prefers-reduced-motion: reduce) { .ht-tip { animation: none !important; } }
 .ht-why { flex-basis: 100%; font-size: var(--fs-11); color: var(--dim); }
 .mdl.ht-mdl { width: min(580px, 94vw); }
 .ht-sheet { display: grid; gap: 14px; margin-top: 10px; max-height: min(62vh, 560px); overflow: auto; overscroll-behavior: contain; }
