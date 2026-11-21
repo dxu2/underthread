@@ -507,3 +507,11 @@ html[data-ut] #ticker .nty-knots i.on::after { width: 8px; height: 8px; backgrou
   html[data-ut] #ticker .nty-ball ~ .msg::before { display: none; }   /* the ball replaces the phone ◆ */
 }
 @media (prefers-reduced-motion: reduce) { html[data-ut] #ticker .nty-thr svg, html[data-ut] #ticker .nty-ball, html[data-ut] #ticker .nty-ball + .msg { animation: none !important; } }
+
+/* t-home-hover: under Underthread --glass-lite is an opaque paper swatch (#E6D3B5 / #3B271D),
+   so hovered home rows turned into a flat block that hid the leather grain / knit, and the role card's job strip stacked a 12% fill inside a 5% ring.
+   Both now use the mailbox rows' see-through ink wash, so the texture shows through and the strip reads as one rounded shape. */
+@media (hover: hover) {
+  html[data-ut][data-home="widgets"] .wg-row:hover { background: color-mix(in srgb, var(--ink) 6%, transparent); }
+  html[data-ut][data-home="widgets"] .utav .wg-job:hover { background: color-mix(in srgb, var(--ink) 9%, transparent); box-shadow: none; }
+}
