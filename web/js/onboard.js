@@ -5,7 +5,7 @@
    - Steward offline card at the top of the steward chat (desk and phone share #right): what the steward is, the one command, how many of
      your lines are queued; it turns into 「上线了」 until you have said something.
    - 快捷指南 ①②③ (data: web/js/core/quickguide.js): chips above the chat field (only in the steward chat, only while the field is empty;
-     after 20 of your messages they fold into one 💡 button; 设置 → 外观 turns them off), three examples in an empty steward chat, and the
+     after 20 of your messages they fold into one 「想说点什么？」 button; 设置 → 外观 turns them off), three examples in an empty steward chat, and the
      bubble of step 4. A click only fills the field and selects the X; nothing is sent.
    - 点亮 (steps 3 and 4): a ring + bubble that follow their target every frame (the chat and the home are rebuilt by polls), no scrim, so the
      page stays usable; Esc / 知道了 / the step getting ticked closes it. Never opens by itself. */
@@ -284,12 +284,14 @@
     return `<div class="qg-ex"><h5>${esc(L("可以这样说 · 点一下填进输入框", "Try saying · tap to fill the field"))}</h5>${pick3().map(g => exBtn(g, "qg-exb")).join("")}</div>`;
   }
   /* ① the chip row above the field */
+  // t-qg-bulb (user 11-21, pick A): the quick-phrases button is a yarn ball + 「想说点什么？」 pill with a stitched rim (was a bulb emoji)
+  const QG_YARN = '<svg class="nq-yarn" viewBox="0 0 26 20" aria-hidden="true"><circle class="yb" cx="9" cy="10" r="7"/><path class="yw" d="M3.4 7.4q5.6-3.2 11.2 0M2.6 11.6q6.4-3.2 12.8 0M6.2 3.8Q2.8 10 7 16.6M12 3.4q3.6 6.4-.2 13.2"/><path class="yt" d="M15.6 13.2c2.4 1.2 3 4.2 5.6 3.6 2-.5 1.6-3.2.2-3.4"/></svg>';
   const QG = { open: false, pop: false };
   const qgOn = () => LSG("qg", true) !== false;
   const mine = () => { try { return A().chatList("manager").filter(m => m.who === "me").length; } catch (e) { return 0; } };
   function rowHTML() {
     const G = groups(), chips = QD().chips.map(k => G.find(g => g.k === k)).filter(Boolean);
-    if (mine() >= 20 && !QG.open) return `<button type="button" class="qg-bulb" data-qg-open aria-label="${esc(L("快捷句", "Quick phrases"))}" title="${esc(L("快捷句", "Quick phrases"))}">💡</button>`;
+    if (mine() >= 20 && !QG.open) return `<button type="button" class="qg-bulb" data-qg-open aria-label="${esc(L("快捷句", "Quick phrases"))}" title="${esc(L("快捷句", "Quick phrases"))}"><span class="nq">${QG_YARN}${esc(L("想说点什么？", "What's on your mind?"))}</span></button>`;
     return chips.map(g => `<button type="button" class="qg-c" data-qg="${esc(g.ex[0])}">${esc(g.chip)}</button>`).join("")
       + `<button type="button" class="qg-c qg-all" data-qg-all aria-expanded="${QG.pop}">${esc(L("全部说法 ›", "All phrases ›"))}</button>`;
   }
