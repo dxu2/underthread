@@ -86,9 +86,9 @@ function openItemNow(id, nav) {
   itemMailRead(id);   // r-improve-1102 P3: opening a card reads all of its mailbox entries, not only the new replies
   const dw = $("#drawer"); clearTimeout(DW.ct); const wasOpen = !dw.hidden && dw.classList.contains("open"); dw.hidden = false;
   dw.innerHTML = `<div class="dw-top"></div><div class="dw-scroll"></div><nav class="dw-toc" hidden></nav>
-    <div class="dw-dock"><div class="dw-askbar" hidden></div><div class="composer"><div class="at-pop" hidden></div><textarea placeholder="${esc(t("composer_ph"))}"></textarea><div class="pending-att"></div>
+    <div class="dw-dock"><div class="dw-askbar" hidden></div><div class="composer"><div class="at-pop" hidden></div><div class="cm-field"><textarea placeholder="${esc(t("composer_ph"))}"></textarea><button type="button" class="dw-send" aria-label="${UI.lang === "en" ? "Send" : "发送"}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.5 3.5 3.6 10.4l6.6 2.9 2.9 6.6z"/><path d="m10.2 13.3 4.6-4.6"/></svg></button></div><div class="pending-att"></div>
       <div class="cm-row"><button type="button" class="dw-file att" title="${attTitle()}" aria-label="${UI.lang === "en" ? "Attach" : "添加附件"}">${ATT_IC}</button><input type="file" multiple hidden>
-      <span class="cm-to"></span><span class="dim dw-def">${t("default_owner")}</span><span style="flex:1"></span><span class="dim">${t("send_hint")}</span><button type="button" class="dw-send" aria-label="${UI.lang === "en" ? "Send" : "发送"}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.5 3.5 3.6 10.4l6.6 2.9 2.9 6.6z"/><path d="m10.2 13.3 4.6-4.6"/></svg></button></div></div>
+      <span class="cm-to"></span><span class="dim dw-def">${t("default_owner")}</span><span style="flex:1"></span><span class="dim">${t("send_hint")}</span></div></div>
     <div class="dw-acts"></div></div>`;
   askFoldWire($(".dw-askbar", dw));   // t-m-ask-sheet
   const ta = $(".composer textarea", dw), fi = $("input[type=file]", dw), pop = $(".at-pop", dw);
