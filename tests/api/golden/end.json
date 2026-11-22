@@ -132,17 +132,31 @@
   },
   {
    "id": "in-0120-3e43",
+   "kind": "role_look",
+   "role": "writer",
+   "t": "2026-01-20T10:00:00+00:00",
+   "text": "（团队页：writer 显示名 → Golden Quill / Goldie。只改看板显示，id 和设定不变，不用处理）"
+  },
+  {
+   "id": "in-0120-25f9",
+   "kind": "role_look",
+   "role": "writer",
+   "t": "2026-01-20T10:00:00+00:00",
+   "text": "（团队页：writer 显示名 → Quill / Quill。只改看板显示，id 和设定不变，不用处理）"
+  },
+  {
+   "id": "in-0120-6e72",
    "kind": "ping",
    "note": "刷新用量",
    "t": "2026-01-20T10:00:00+00:00"
   },
   {
-   "id": "in-0120-25f9",
+   "id": "in-0120-4174",
    "kind": "report_request",
    "t": "2026-01-20T10:00:00+00:00"
   },
   {
-   "id": "in-0120-6e72",
+   "id": "in-0120-fbe5",
    "item": null,
    "kind": "schedule_pause",
    "schedule": "s-0115-6be5",
@@ -150,7 +164,7 @@
    "title": "Morning digest"
   },
   {
-   "id": "in-0120-4174",
+   "id": "in-0120-c62e",
    "item": null,
    "kind": "schedule_resume",
    "schedule": "s-0115-6be5",
@@ -160,7 +174,7 @@
   {
    "agent": "scout",
    "for": "2026-01-20T10:00:00+00:00",
-   "id": "in-0120-fbe5",
+   "id": "in-0120-bf48",
    "item": null,
    "kind": "schedule_due",
    "late_min": 0,
@@ -172,7 +186,7 @@
    "type": "task"
   },
   {
-   "id": "in-0120-c62e",
+   "id": "in-0120-e129",
    "item": null,
    "kind": "schedule_fire",
    "schedule": "s-0115-6be5",
@@ -180,7 +194,7 @@
    "title": "Morning digest"
   },
   {
-   "id": "in-0120-bf48",
+   "id": "in-0120-7e57",
    "item": null,
    "kind": "schedule_rm",
    "schedule": "s-0115-bde5",
@@ -2125,6 +2139,18 @@
     "agent": "me",
     "item": null,
     "t": "2026-01-20T10:00:00+00:00",
+    "text": "role_look"
+   },
+   {
+    "agent": "me",
+    "item": null,
+    "t": "2026-01-20T10:00:00+00:00",
+    "text": "role_look"
+   },
+   {
+    "agent": "me",
+    "item": null,
+    "t": "2026-01-20T10:00:00+00:00",
     "text": "stamina"
    },
    {
@@ -2434,6 +2460,8 @@
     "in-0120-fbe5",
     "in-0120-c62e",
     "in-0120-bf48",
+    "in-0120-e129",
+    "in-0120-7e57",
     "in-0120-59da"
    ],
    "last_report_date": "2026-01-20",
@@ -2444,15 +2472,27 @@
      "ran": [
       "0001_baseline",
       "0002_routines_log",
-      "0003_onboarding"
+      "0003_onboarding",
+      "0004_tour"
      ],
-     "to": 3
+     "to": 4
     }
    ],
-   "onboarding": {},
-   "rev": 123,
+   "onboarding": {
+    "tour": {
+     "desk": {
+      "at": "2026-01-20T06:38:35+00:00",
+      "how": "upgrade"
+     },
+     "phone": {
+      "at": "2026-01-20T06:38:35+00:00",
+      "how": "upgrade"
+     }
+    }
+   },
+   "rev": 126,
    "routines_log": {},
-   "schema": 3,
+   "schema": 4,
    "stamina": {
     "at": "2026-01-20T10:00:00+00:00",
     "note": "cli",

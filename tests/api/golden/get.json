@@ -6,6 +6,12 @@
   },
   "code": 200
  },
+ "avatar_choices_bad": {
+  "body": {
+   "error": "no role"
+  },
+  "code": 404
+ },
  "avatars_index": {
   "body": {},
   "code": 200
@@ -607,6 +613,7 @@
     "/static/js/vendor/qrcode.js?v=<h>",
     "/static/js/onboard.js?v=<h>",
     "/static/js/toast.js?v=<h>",
+    "/static/js/lookaway.js?v=<h>",
     "/static/js/rolefiles.js?v=<h>",
     "/static/js/viewer.js?v=<h>",
     "/static/js/glass.js?v=<h>",
@@ -648,6 +655,7 @@
     "/static/js/phone/hello.js?v=<h>",
     "/static/js/views/ownerloc.js?v=<h>",
     "/static/js/views/pages/pipe.js?v=<h>",
+    "/static/js/views/rolelook.js?v=<h>",
     "/static/js/views/pages/quests.js?v=<h>",
     "/static/js/views/pages/connections.js?v=<h>",
     "/static/icons/favicon-32.png?v=<h>",
@@ -696,6 +704,7 @@
     "/static/css/glass.css?v=<h>",
     "/static/css/theme-ut.css?v=<h>",
     "/static/css/yarnkit.css?v=<h>",
+    "/static/css/lookaway.css?v=<h>",
     "/static/css/welcome.css?v=<h>",
     "/static/css/texture-knit.css?v=<h>",
     "/static/css/texture-leather.css?v=<h>",
@@ -725,6 +734,7 @@
     "/static/js/fx.js": "/static/js/fx.js?v=<h>",
     "/static/js/glass.js": "/static/js/glass.js?v=<h>",
     "/static/js/home.js": "/static/js/home.js?v=<h>",
+    "/static/js/lookaway.js": "/static/js/lookaway.js?v=<h>",
     "/static/js/lsmigrate.js": "/static/js/lsmigrate.js?v=<h>",
     "/static/js/market.js": "/static/js/market.js?v=<h>",
     "/static/js/md.js": "/static/js/md.js?v=<h>",
@@ -768,6 +778,7 @@
     "/static/js/views/pages/review.js": "/static/js/views/pages/review.js?v=<h>",
     "/static/js/views/pages/schedule.js": "/static/js/views/pages/schedule.js?v=<h>",
     "/static/js/views/pages/settings.js": "/static/js/views/pages/settings.js?v=<h>",
+    "/static/js/views/rolelook.js": "/static/js/views/rolelook.js?v=<h>",
     "/static/js/views/status.js": "/static/js/views/status.js?v=<h>",
     "/static/js/views/ticker.js": "/static/js/views/ticker.js?v=<h>",
     "/static/js/welcome.js": "/static/js/welcome.js?v=<h>",
@@ -4154,7 +4165,7 @@
     "plan_tip": false,
     "platforms_set": false,
     "report_time": "18:00",
-    "rev": 123,
+    "rev": 126,
     "routines": [],
     "routines_log": {},
     "schema": 4,
@@ -4241,7 +4252,7 @@
       0,
       7
      ],
-     "logs": 82,
+     "logs": 84,
      "mail": [
       20,
       20
