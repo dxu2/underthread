@@ -30,8 +30,10 @@ module.exports = {
       c.check(`${name} ${theme}: plain toggle when on (round knob on the right, track filled)`, k0.aria === "true" && k0.on && k0.round === "50%" && k0.x >= 18 && k0.w === 44 && k0.h === 26, k0);
       await p.evaluate(s => { window.__sw = []; document.querySelector(s).addEventListener("click", () => { const i = document.querySelector(s + " .sw i"), t0 = performance.now();
         const tick = () => { window.__sw.push(Math.round(i.getBoundingClientRect().left - i.parentElement.getBoundingClientRect().left)); if (performance.now() - t0 < 400) requestAnimationFrame(tick); }; requestAnimationFrame(tick);
-        /* hold the slide at 50 ms for the mid frame */
-        const a = i.getAnimations()[0]; if (a) { a.pause(); a.currentTime = 50; setTimeout(() => a.play(), 700); } }, { once: true }); }, SW);
+        /* hold the slide at 50 ms for the mid frame. r-improve-1122 P5: wait for the page's own click handler (document, bubbles after this one)
+           to flip the switch, flush style so the transition exists, then pause it and read the knob once: no luck with rAF timing on slow WebKit. */
+        setTimeout(() => { void getComputedStyle(i).transform; const a = i.getAnimations()[0];
+          if (a) { a.pause(); a.currentTime = 50; window.__sw.unshift(Math.round(i.getBoundingClientRect().left - i.parentElement.getBoundingClientRect().left)); setTimeout(() => a.play(), 700); } }, 0); }, { once: true }); }, SW);
       await c.tap(SW); await c.sleep(150);
       const fm = path.join(out, `${c.engine}-${c.view}`, `mid-${name}-${theme}.png`);
       await p.locator(sec).screenshot({ path: fm }); c.note(`shot ${fm} (slide held at 50 ms)`);
