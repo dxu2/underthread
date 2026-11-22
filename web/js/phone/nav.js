@@ -198,7 +198,7 @@ function renderBar() {
 function catChips() {
   const body = $("#pagebody"), p = App.UI.page; if (!body || !QPAGES.includes(p) || $(".m-seg", body)) return;
   setLastQ(p);
-  const seg = document.createElement("div"); seg.className = "m-seg q";
+  const seg = document.createElement("div"); seg.className = "filters mb-row m-seg q";   /* t-phone-filter-row: the 通知 filter row's classes (same pill, margins, height in every skin) */
   seg.innerHTML = `<div class="seg" data-seg="mseg">` + QPAGES.map(c => `<button class="seg-i ${p === c ? "on" : ""}" data-go="${c}">${App.t(c === "quests" ? "all_quests" : c)}</button>`).join("") + `</div>`;
   const sr = document.createElement("button"); sr.type = "button"; sr.className = "q-search";
   sr.innerHTML = `${SEARCH}<span>${App.t("search_ph")}</span>`; sr.addEventListener("click", () => openSearch());
