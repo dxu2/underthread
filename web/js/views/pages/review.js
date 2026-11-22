@@ -162,7 +162,8 @@ function grpCommit(keepalive) {
 function grpUndo() { if (!GRP.pending) return; clearTimeout(GRP.timer); GRP.pending = null; arHide(); if (UI.page === "review") renderPage(); }
 // t-m-accept-btn: the detail dock's main button. Phones show the short label (the tail after it is hidden) and the open-question count as a badge;
 // desktop keeps the full label and the line under it. Before, "Accept & close" + "1 question unanswered" wrapped and pushed out of a 390 px dock.
-const okShort = (it, en = UI.lang === "en") => it && it.kind === "plan" ? (en ? "Approve" : "批准") : it && it.kind === "question" ? (en ? "Answer" : "回答") : (en ? "Accept" : "验收");
+const okShort = (it, en = UI.lang === "en") => it && it.kind === "plan" ? (en ? "Approve & start" : "批准开工") :   /* t-oss-polish-1121 ④: the phone dock says 开工 too (a bare 批准 hid that nothing starts before it) */
+   it && it.kind === "question" ? (en ? "Answer" : "回答") : (en ? "Accept" : "验收");
 const okDockIn = (it, full, short) => { const l = askLeft(it), n = openAsks(it).length, tail = short && full.startsWith(short) ? full.slice(short.length) : "";
   return `<b><span class="ok-s">${esc(tail ? short : full)}</span>${tail ? `<span class="ok-x">${esc(tail)}</span>` : ""}</b>${n ? `<i class="ok-n" aria-hidden="true">${n}</i><small class="ok-ask">${l}</small>` : ""}`; };
 const okAria = (it, full) => { const l = askLeft(it); return ` aria-label="${esc(full + (l ? (UI.lang === "en" ? ", " : "，") + l : ""))}"`; };

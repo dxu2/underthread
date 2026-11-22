@@ -19,7 +19,7 @@ import { MB, closeMailbox, itemMailRead, nrMail, nrRead } from "./mail.js";
 import { MOBQ } from "./pages/common.js";
 import { renderPage } from "./pages/index.js";
 import { askBlock, askFold, askFoldWire, askGuard, askRow, awaitsUser, okAria, okDockIn, okDone, okLabel, okShort, openAsks } from "./pages/review.js";
-import { RMQ, hooks, wkTag, workersOf } from "../app.js";
+import { RMQ, hooks, wkBand, workersOf } from "../app.js";
 const drawerAtt = [];
 const DW = { to: null, pop: [], sel: 0, open: new Set(), n: 0, fresh: false, stampPre: null, askOpen: new Set(), sumOpen: new Set() };   // askOpen / sumOpen: item ids (t-ui-next 1, 4)
 const PHONE = matchMedia("(max-width: 760px)");
@@ -607,7 +607,7 @@ function renderDrawer(first) {
     else if (!ok && UI.item === it.id) { const s = $("#drawer .dw-scroll [data-sk]"); if (s) s.outerHTML = `<div class="sk-fail">${UI.lang === "en" ? "Drafts did not load · close and reopen the card to retry" : "草稿没加载出来 · 关掉再打开这张卡重试"}</div>`; } }); if (!first) return; }   // t-mobile-crash-state: draft + versions arrive a moment later
   const opts = (list, cur) => list.map(([v, n]) => `<option value="${v}" ${v === cur ? "selected" : ""}>${esc(n)}</option>`).join("");
   const ownerOpts = opts(agents().map(a => [a.id, `${aname(a)} · ${atitle(a)}`]), it.owner);
-  $(".dw-top", dw).innerHTML = `<div class="dw-lead"><button class="dw-back" data-close aria-label="${UI.lang === "en" ? "Back" : "返回"}"><svg viewBox="0 0 12 20" width="12" height="20" aria-hidden="true"><path d="M10 2 2 10l8 8" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg><span>${UI.lang === "en" ? "Back" : "返回"}</span></button><span class="tag ${it.stage === "review" || awaitsUser(it) ? it.kind : ""}" title="${esc(it.stage === "review" || awaitsUser(it) ? t(it.kind === "task" ? "deliverable" : it.kind) : stageLabel(it.stage))}"><span class="gl" aria-hidden="true">◆</span>${it.stage === "review" || awaitsUser(it) ? t(it.kind === "task" ? "deliverable" : it.kind) : stageLabel(it.stage)}</span> <button type="button" class="mono dim dw-id" data-copy-id="${esc(it.id)}" title="${UI.lang === "en" ? "Copy card id" : "复制卡号"}"><span>${esc(it.id)}</span><svg viewBox="0 0 16 16" width="11" height="11" aria-hidden="true"><rect x="5" y="5" width="8.5" height="8.5" rx="1.6" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M10.5 3.2V3a1.5 1.5 0 0 0-1.5-1.5H3A1.5 1.5 0 0 0 1.5 3v6A1.5 1.5 0 0 0 3 10.5h.2" fill="none" stroke="currentColor" stroke-width="1.4"/></svg></button>${wkTag(workersOf(it.id), "dw-wk")}</div>
+  $(".dw-top", dw).innerHTML = `<div class="dw-lead"><button class="dw-back" data-close aria-label="${UI.lang === "en" ? "Back" : "返回"}"><svg viewBox="0 0 12 20" width="12" height="20" aria-hidden="true"><path d="M10 2 2 10l8 8" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg><span>${UI.lang === "en" ? "Back" : "返回"}</span></button><span class="tag ${it.stage === "review" || awaitsUser(it) ? it.kind : ""}" title="${esc(it.stage === "review" || awaitsUser(it) ? t(it.kind === "task" ? "deliverable" : it.kind) : stageLabel(it.stage))}"><span class="gl" aria-hidden="true">◆</span>${it.stage === "review" || awaitsUser(it) ? t(it.kind === "task" ? "deliverable" : it.kind) : stageLabel(it.stage)}</span> <button type="button" class="mono dim dw-id" data-copy-id="${esc(it.id)}" title="${UI.lang === "en" ? "Copy card id" : "复制卡号"}"><span>${esc(it.id)}</span><svg viewBox="0 0 16 16" width="11" height="11" aria-hidden="true"><rect x="5" y="5" width="8.5" height="8.5" rx="1.6" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M10.5 3.2V3a1.5 1.5 0 0 0-1.5-1.5H3A1.5 1.5 0 0 0 1.5 3v6A1.5 1.5 0 0 0 3 10.5h.2" fill="none" stroke="currentColor" stroke-width="1.4"/></svg></button></div>
     <div class="r"><select data-f="category">${opts(CATS.map(c => [c, t(c)]), it.category)}</select><button data-close title="close">✕</button></div>`;
   const sc = $(".dw-scroll", dw); const keep = sc.scrollTop;
   let lastDay = "";
@@ -621,13 +621,13 @@ function renderDrawer(first) {
   { // t-ask-bottom: the first unanswered question sits right above the reply box (same chips as the list cards: recommended one marked, a tap answers;
     // with more than one, they come one after another and the bar says how many are left). The full list stays in the card above as before.
     const ab = $(".dw-askbar", dw); if (ab) { const h = it.stage === "done" ? "" : askRow(it, true); if (ab._h !== h) { ab.innerHTML = ab._h = h; ab.hidden = !h; if (h) askFold(ab, it); } } }
-  const wsD = workersOf(it.id);   // t-working-item-highlight: phone shows this row under the glass header (desktop keeps the tag in .dw-top)
+  const wsD = workersOf(it.id);   // t-oss-polish-1121 ②: one 处理中 band above the title on desk and phone (was: tag in .dw-top + phone .dw-wkrow)
   const par = parentOf(it), kids = childrenOf(it), en = UI.lang === "en";
   const parHTML = par ? `<button class="dw-parent" data-dw-nav="${esc(par.id)}"><span class="k">${en ? "Part of" : "属于"}</span><b>${esc(par.title)}</b><span class="st">${esc(rowLabel(par))}</span><svg viewBox="0 0 8 14" width="7" height="12" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1.5 1.5 6.5 7l-5 5.5"/></svg></button>` : "";
   const kidsHTML = kids.length ? `<div class="sec-h">${en ? "Sub-items" : "子单"} · ${kids.length}</div><div class="dw-kids">${kids.map(k => `<button class="dw-kid${k.stage === "done" ? " done" : ""}" data-dw-nav="${esc(k.id)}">${av(agent(k.owner), "sm")}<span class="t">${esc(k.title)}</span><span class="st s-${esc(grpOf(k))}">${esc(rowLabel(k))}</span><svg viewBox="0 0 8 14" width="7" height="12" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1.5 1.5 6.5 7l-5 5.5"/></svg></button>`).join("")}</div>` : "";
   const dwTags = [...(it.platforms || []).map(p => `<span class="tag pf">${PLAT[p] || p}</span>`), ...(it.due ? [`<span class="tag">${t("due")} ${esc(it.due)}</span>`] : []),
     ...(it.tags || []).filter(x => !par || x !== par.id).map(x => `<span class="tag">#${esc(x)}</span>`)].join("");
-  sc.innerHTML = `${wsD.length ? `<div class="dw-wkrow">${wkTag(wsD, "dw-wk2")}</div>` : ""}${parHTML}<div class="dw-title">${window.Onboard ? Onboard.exT(it) : esc(it.title)}</div>${window.Onboard ? Onboard.exNote(it) : ""}${it.summary ? `<div class="dw-sum${DW.sumOpen.has(it.id) ? "" : " uin-clamp"}">${esc(it.summary)}</div><button type="button" class="uin-more" data-uin-sum hidden>${DW.sumOpen.has(it.id) ? (UI.lang === "en" ? "Show less ▴" : "收起 ▴") : (UI.lang === "en" ? "Show all ▾" : "展开全文 ▾")}</button>` : ""}
+  sc.innerHTML = `${wkBand(wsD)}${parHTML}<div class="dw-title">${window.Onboard ? Onboard.exT(it) : esc(it.title)}</div>${window.Onboard ? Onboard.exNote(it) : ""}${it.summary ? `<div class="dw-sum${DW.sumOpen.has(it.id) ? "" : " uin-clamp"}">${esc(it.summary)}</div><button type="button" class="uin-more" data-uin-sum hidden>${DW.sumOpen.has(it.id) ? (UI.lang === "en" ? "Show less ▴" : "收起 ▴") : (UI.lang === "en" ? "Show all ▾" : "展开全文 ▾")}</button>` : ""}
     <div class="dw-meta">${dwPill(t("owner"), `${av(agent(it.owner), "sm", it.id)}<b>${esc(aname(agent(it.owner)))}<i> · ${esc(atitle(agent(it.owner)))}</i></b>`, `<select data-f="owner" aria-label="${t("owner")}">${ownerOpts}</select>`)}
       ${dwPill(t("stage"), `<b>${esc(stageLabel(it.stage))}</b>`, `<select data-f="stage" aria-label="${t("stage")}">${opts(STAGES.map(s => [s, stageLabel(s)]), it.stage)}</select>`)}</div>
     ${dwTags ? `<div class="dw-tags">${dwTags}</div>` : ""}${askBlock(it)}
@@ -675,7 +675,41 @@ function renderDrawer(first) {
   annPaint();   // t-imp29-p2
   if (window.Preview && contentMode()) Preview.decorate($('.cs-card.draftc[data-vkey="cur"]', sc), it);   // t-imp29-p3: 文稿 / 平台预览 on the current draft
   DW.sig = dwSig();   // t-perf E
+  planTip(it);   // t-oss-polish-1121 ④
 }
+/* t-oss-polish-1121 ④: the first time a plan card waits on you, a bubble over 批准开工 says nothing starts before it. Shown while the server says
+   meta.plan_tip (no 批准 / 驳回 / answer from you on any card yet, and not dismissed: meta.onboarding.plan_tip_at), so an install that has
+   already decided something never sees it and a dismissal holds on every device. Lives inside #drawer, so it slides and closes with the page. */
+const PT = { el: null, id: null };
+function planTipOff() {
+  document.querySelectorAll("#drawer .ab.ok.ph-lit").forEach(b => b.classList.remove("ph-lit"));
+  const e = PT.el; PT.el = PT.id = null; if (!e || !e.isConnected) return;
+  e.classList.add("out"); setTimeout(() => e.remove(), 220);
+}
+function planTipPlace(ok) {
+  const dw = $("#drawer"), e = PT.el; if (!e || !dw) return;
+  const d = dw.getBoundingClientRect(), r = ok.getBoundingClientRect(), w = e.offsetWidth;
+  const right = Math.max(12, Math.min(d.right - r.right, d.width - w - 12));
+  e.style.right = right + "px"; e.style.bottom = (d.bottom - r.top + 12) + "px";
+  e.style.setProperty("--ph-x", Math.max(14, Math.min(w - 26, (d.right - right) - (r.left + r.width / 2) - 6)) + "px");
+}
+function planTip(it) {
+  const want = !!(ST.meta && ST.meta.plan_tip && it && it.kind === "plan" && it.stage === "review" && UI.item === it.id);
+  const ok = want && [...document.querySelectorAll('#drawer .dw-acts .ab.ok[data-act="approve"]')].find(b => b.offsetParent);
+  if (!ok) { planTipOff(); return; }
+  ok.classList.add("ph-lit");
+  if (!PT.el || !PT.el.isConnected) {
+    const en = UI.lang === "en", e = document.createElement("div");
+    e.className = "ph-tip"; e.setAttribute("role", "note");
+    e.innerHTML = en ? `<b>This is a plan</b>Nothing starts until you tap “Approve &amp; start”. Want changes? Write them below and tap Reject.<button type="button" data-ph-ok>Got it</button>`
+      : `<b>这是一份方案</b>点「批准开工」后才会开始做；想改就在下面写意见，再点「驳回」。<button type="button" data-ph-ok>知道了</button>`;
+    $("#drawer").appendChild(e); PT.el = e;
+    e.querySelector("[data-ph-ok]").onclick = ev => { ev.stopPropagation(); if (ST.meta) ST.meta.plan_tip = false; planTipOff(); api("onboarding", { op: "tip", k: "plan" }); };
+  }
+  PT.id = it.id; planTipPlace(ok);
+  requestAnimationFrame(() => planTipPlace(ok)); setTimeout(() => PT.el && ok.isConnected && planTipPlace(ok), 300);   /* the page slides in */
+}
+addEventListener("resize", () => { const ok = PT.el && $("#drawer .ab.ok.ph-lit"); if (ok) planTipPlace(ok); });
 // ===== ri1103-P2: 稍后 ▾ = push a card to 今晚 20:00 / 明早 09:00 / 下周一 09:00 / the specialist's next reply / a picked time.
 // The server keeps it (it.snooze), so desktop and phone agree. Desktop: a small menu over the button; phone: a bottom sheet.
 const SNZ_IC = `<svg class="snz-ic" viewBox="0 0 16 16" width="13" height="13" aria-hidden="true"><circle cx="8" cy="8.6" r="5.6" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M8 5.6v3.2l2 1.3M3 2.6 1.6 4M13 2.6 14.4 4" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>`;

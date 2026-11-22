@@ -13,6 +13,27 @@ Versions follow [semantic versioning](https://semver.org) and the `VERSION` file
 
 Work in progress goes under `## Unreleased`; the release renames it to `## [X.Y.Z] - YYYY-MM-DD`. Sections dated before 0.1.0 are from before versioning.
 
+## Unreleased
+
+### Added
+- A card someone is working on shows a 处理中 / Working band above its title (desk and phone): who, for how long, their latest step, with a yarn ball rolling along a stitched thread.
+- The first time a plan card waits on you, a one-time bubble over 批准开工 / Approve & start explains that nothing starts before it. It is gone for good after 知道了 / Got it or your first decision, on every device.
+
+### Changed
+- Every role now gives estimates in agent time (`~N agent min + M review rounds`), never human hours or days: a hard rule in the generated agent files, a line on the plan template, and the steward's notes and policies.
+- The phone's main button on a plan card reads 批准开工 / Approve & start (it said only 批准 / Approve).
+- The checklist step 「拍一次板」 / 「Make one call」 says what each button does.
+- `./start` remakes the teammates' agent files when an update brought a newer `make_agents.py`.
+
+### Fixed
+- A working avatar in the left rail no longer looks stuck: with power saving on, its ring now spins while you use the board, and whenever it stops (20 s idle, or reduced motion) it turns into one full ring instead of a frozen half arc.
+
+### Upgrade notes
+- Migrations: none
+- New config keys: none
+- Extension API: unchanged
+- Manual steps: none
+
 ## [0.2.0] - 2026-11-21
 
 Highlights since 0.1.0:

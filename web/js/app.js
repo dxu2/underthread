@@ -76,6 +76,17 @@ function wkTag(ws, cls = "") {   // [ringed avatars] 「名字 处理中 · 12 �
   const since = ws.map(a => a.since).filter(Boolean).sort()[0], nm = ws.map(a => aname(a)).join(UI.lang === "en" ? ", " : "、");
   return `<span class="wk-tag ${cls}" style="${wkP()}"><span class="wk-avs">${ringOnce(() => ws.map(a => av(a, "sm")).join(""))}</span><span class="wk-tx"><b>${esc(nm)}</b> ${UI.lang === "en" ? "on it" : "处理中"}${since ? ` · <time class="wk-el" data-since="${esc(since)}">${wkDur(since)}</time>` : ""}</span></span>`;
 }
+/* t-oss-polish-1121 ②: the detail page's 处理中 band (desk + phone; replaces the small dw-wk tag and the phone dw-wkrow). Stitched edge, a yarn ball rolls
+   along the bottom thread (transform only). --wb = minus the wall-clock phase of the 9 s roll, so a re-render lands where the old node was. */
+function wkBand(ws) {
+  if (!ws.length) return "";
+  const en = UI.lang === "en", since = ws.map(a => a.since).filter(Boolean).sort()[0], nm = ws.map(a => aname(a)).join(en ? ", " : "、");
+  const act = (ws.find(a => a.activity) || {}).activity;
+  const sub = [since ? `${en ? "for " : "已 "}<time class="wk-el" data-since="${esc(since)}">${wkDur(since)}</time>` : "", act ? `${en ? "Latest: " : "最近："}${esc(act)}` : ""].filter(Boolean).join(" · ");
+  return `<div class="wkb" role="status" style="${wkP()};--wb:${(-(Date.now() % 9000) / 1000).toFixed(3)}s"><span class="wkb-avs">${ringOnce(() => ws.map(a => av(a)).join(""))}</span>`
+    + `<span class="wkb-tx"><b>${esc(nm)} ${en ? "is on it" : "正在做"}</b>${sub ? `<span class="wkb-sub">${sub}</span>` : ""}</span><span class="wkb-st">${en ? "Working" : "处理中"}</span>`
+    + `<i class="wkb-thr" aria-hidden="true"></i><i class="wkb-ball" aria-hidden="true"></i></div>`;
+}
 const wkFx = ws => ws.length ? `<i class="wk-fx" aria-hidden="true"><i class="wk-bg"></i></i>` : "";   /* t-edge-glow-off (11-04): the 2px left rail with the flowing highlight (.wk-bar) is gone; the breathing tint and the 处理中 tag stay */
 const wkAttr = ws => ws.length ? ` style="${wkP()}"` : "";
 function dcDur(iso) {   // 此刻 card format: 「12 分钟」/「1 小时 5 分」 (t-now-elapsed: was computed once per render, so it froze between state revs)
@@ -210,4 +221,4 @@ setInterval(() => { if (ST) { renderLeft(); renderTool(); } document.querySelect
   run(false);
 })();
 
-export { render, workersOf, renderChrome, hooks, typingOn, typingUntil, RMQ, wkTag, liveItem, wkDur, isBusy, NV, roll, mgrOnline, MGR_ON, MGR_WATCH, wkAttr, wkFx, dcDur };
+export { render, workersOf, renderChrome, hooks, typingOn, typingUntil, RMQ, wkTag, wkBand, liveItem, wkDur, isBusy, NV, roll, mgrOnline, MGR_ON, MGR_WATCH, wkAttr, wkFx, dcDur };

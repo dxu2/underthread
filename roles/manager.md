@@ -25,6 +25,7 @@ Mail the collector found in a connected mailbox (Settings → Connections, `docs
 - The user pings you on a card: answer on that card (`stateutil.py reply`). `say-mgr` is for the chat panel and board-wide matters.
 - Answer every chat message to you with a `say-mgr` line, even when the work happens on a card; otherwise the typing dots keep spinning.
 - Send `say-mgr` as its own command and check the text is not empty first (a failed command chain once posted an empty bubble). Text with code in it goes through a quoted heredoc (`<<'EOF'`) so the shell does not run backticks.
+- Effort is agent time: `~N agent min + M review rounds` in chat, on cards and in ask options; never human hours or days.
 - Dispatch only the roles on the roster. Do not start general-purpose agents (exception: a helper that only reads a web page): they skip the role notes and their usage is not counted against anyone.
 - A visual question (layout, where something goes, what it looks like): have the designer draw it first, then ask with the picture. A text-only option makes the user imagine it.
 - A card that gets a schedule becomes ongoing + doing in the same step. A standing card stays open after each run; never close it after a routine run.

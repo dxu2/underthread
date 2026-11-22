@@ -60,6 +60,13 @@ def _decided(i):
     return any((a.get("answer") or {}).get("by") == ME for a in i.get("asks") or [])
 
 
+def plan_tip(st, items):
+    """t-oss-polish-1121 ④: show the one-time 批准开工 bubble? Only until the user has decided something (批准 / 驳回 / an answer, sample cards count)
+    or dismissed it (meta.onboarding.plan_tip_at). Installs that have already approved a card never see it, so no migration is needed."""
+    ob = st["meta"].get("onboarding") if isinstance(st["meta"].get("onboarding"), dict) else {}
+    return not ob.get("plan_tip_at") and not any(_decided(i) for i in items)
+
+
 def _local_day(iso):
     try:
         return dt.datetime.fromisoformat(str(iso)).astimezone().date()
@@ -225,7 +232,8 @@ def _onboarding(a):
     op=hide: retire it now (the − on the tile only removes it from the layout; this is for the phone card's 不再显示);
     op=clear_samples: archive every live q-demo-* sample card (t-onb-polish 清掉示例; they stay findable in the archive);
     op=tick k=chrome|app|look|phone: an optional step is done (meta.onboarding.tick_by[k] = me, or auto for app / look, which only the page sees);
-    op=skip / unskip k=<optional id>: fold one away or bring it back; op=recheck: probe Codex and Tailscale again now."""
+    op=skip / unskip k=<optional id>: fold one away or bring it back; op=recheck: probe Codex and Tailscale again now;
+    op=tip k=plan: the one-time 批准开工 bubble was dismissed (meta.onboarding.plan_tip_at)."""
     op, ob = a.body.get("op"), a.st["meta"].setdefault("onboarding", {})
     if not isinstance(ob, dict):
         ob = a.st["meta"]["onboarding"] = {}
@@ -240,6 +248,11 @@ def _onboarding(a):
     if op in ("skip", "unskip"):
         sk = [x for x in (ob.get("skip") or []) if x in OPTIONAL and x != k]
         ob["skip"] = sk + [k] if op == "skip" else sk
+        return
+    if op == "tip":
+        if k != "plan":
+            raise ValueError("bad tip")
+        ob.setdefault("plan_tip_at", S.now())
         return
     if op == "recheck":
         probe(force=True)
