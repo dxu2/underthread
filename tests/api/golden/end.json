@@ -2432,15 +2432,27 @@
      "ran": [
       "0001_baseline",
       "0002_routines_log",
-      "0003_onboarding"
+      "0003_onboarding",
+      "0004_tour"
      ],
-     "to": 3
+     "to": 4
     }
    ],
-   "onboarding": {},
+   "onboarding": {
+    "tour": {
+     "desk": {
+      "at": "2026-01-20T06:38:35+00:00",
+      "how": "upgrade"
+     },
+     "phone": {
+      "at": "2026-01-20T06:38:35+00:00",
+      "how": "upgrade"
+     }
+    }
+   },
    "rev": 121,
    "routines_log": {},
-   "schema": 3,
+   "schema": 4,
    "stamina": {
     "at": "2026-01-20T10:00:00+00:00",
     "note": "cli",

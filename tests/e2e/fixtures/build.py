@@ -141,6 +141,9 @@ def build(out):
         with open(os.path.join(work, "state.json"), encoding="utf-8") as f:
             st = json.load(f)
         st["meta"]["fixture"] = {"end": _Clock.t.isoformat(), "seed": SEED, "built_by": "tests/e2e/fixtures/build.py"}
+        # t-onboard-tour: the sample board is one already in use (what migration 0004 records on an upgrade), so the welcome + tour
+        # does not cover every journey; tests/e2e/journeys/tour.js resets its own form to see it
+        st["meta"].setdefault("onboarding", {}).setdefault("tour", {}).update({f: {"at": FIXED.isoformat(), "how": "upgrade"} for f in ("desk", "phone")})
         os.makedirs(out, exist_ok=True)
         with open(os.path.join(out, "state.json"), "w", encoding="utf-8") as f:
             json.dump(st, f, ensure_ascii=False, indent=1, sort_keys=True)

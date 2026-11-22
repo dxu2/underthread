@@ -92,6 +92,8 @@ UTExt.widget({
 UTExt.cardKind({ id: "clip", label: ["剪辑", "Clip"] });   // kinds from ext.json "card_kinds" are loaded for you
 UTExt.toolPill((agent, toolKey, stale) => "");            // extra HTML in a working teammate's tool pill
 UTExt.statusRow(en => ({ t: "Clips", s: "3 today", lv: "ok" }));   // one more row in 系统状态 (ok / warn / bad)
+UTExt.tourStep({ id: "clips", after: "team", t: ["剪辑", "Clips"], b: ["……", "…"],   // one more step in the first-run tour
+  desk: () => document.querySelector("#clips"), phone: () => null });   // a step with no target on a form is skipped there
 ```
 
 `D` is the data core widgets draw from (`waiting`, `busy`, `nr`, `shipped`, `days`, `ongoing`, `imgs`); `kit` has `eb` (the

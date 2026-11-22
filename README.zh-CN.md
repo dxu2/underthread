@@ -110,7 +110,7 @@ git clone https://github.com/dxu2/underthread.git && cd underthread
 
 **想在 Claude 桌面 App 里跑管家？** 用 `./start --no-steward`，然后在 App 里打开这个文件夹，说 `Start the manager per manager.md`。**想一步步手动来**（`python3 server.py`、`python3 make_agents.py`、`claude "Start the manager per manager.md"`）？跟以前完全一样，见 [docs/setup-guide.md](docs/setup-guide.md)。
 
-首页的「开工清单」会带你走完这几步，每一步做到了会自己打勾；全部打勾的第二天它自己收起（「编辑小组件」里能加回来）。
+首页的「开工清单」会带你走完这几步，每一步做到了会自己打勾；全部打勾的第二天它自己收起（「编辑小组件」里能加回来）。在这之前，新看板会先放 5 页欢迎页，再带你认三处地方；「设置 → 通用 → 再走一遍」可以重看。
 
 ### 跟管家怎么说
 

@@ -110,7 +110,7 @@ The first time, Claude Code asks you to sign in and to trust this folder. The re
 
 **Running the steward in the Claude desktop app instead?** Use `./start --no-steward`, then open this folder in the app and say `Start the manager per manager.md`. **Prefer to do every step by hand** (`python3 server.py`, `python3 make_agents.py`, `claude "Start the manager per manager.md"`)? That still works exactly as before; see [docs/setup-guide.md](docs/setup-guide.md).
 
-The **Getting started** checklist on the home page walks you through these steps and ticks each one by itself. It goes away the day after the last tick (Edit widgets brings it back).
+The **Getting started** checklist on the home page walks you through these steps and ticks each one by itself. It goes away the day after the last tick (Edit widgets brings it back). Before that, a new board opens with five short welcome pages and a three-step tour of the page; Settings → General → Replay shows them again.
 
 ### What to say to the steward
 

@@ -205,12 +205,12 @@
  },
  "schema": {
   "err": [],
-  "out": "code 3 (0001_baseline, 0002_routines_log, 0003_onboarding)\n  state   3\n  config  0\n  roster  0\n  config / roster carry _schema only after a step changed them; 0 there is normal\n  2026-01-20T06:39:49  0 -> 3  0001_baseline, 0002_routines_log, 0003_onboarding\n",
+  "out": "code 4 (0001_baseline, 0002_routines_log, 0003_onboarding, 0004_tour)\n  state   4\n  config  0\n  roster  0\n  config / roster carry _schema only after a step changed them; 0 there is normal\n  2026-01-20T06:39:49  0 -> 4  0001_baseline, 0002_routines_log, 0003_onboarding, 0004_tour\n",
   "rc": 0
  },
  "schema_json": {
   "err": [],
-  "out": "{\n \"code\": 3,\n \"steps\": [\n  \"0001_baseline\",\n  \"0002_routines_log\",\n  \"0003_onboarding\"\n ],\n \"state\": 3,\n \"config\": 0,\n \"roster\": 0,\n \"ahead\": [],\n \"log\": [\n  {\n   \"at\": \"2026-01-20T06:39:49+00:00\",\n   \"from\": 0,\n   \"ran\": [\n    \"0001_baseline\",\n    \"0002_routines_log\",\n    \"0003_onboarding\"\n   ],\n   \"to\": 3\n  }\n ]\n}\n",
+  "out": "{\n \"code\": 4,\n \"steps\": [\n  \"0001_baseline\",\n  \"0002_routines_log\",\n  \"0003_onboarding\",\n  \"0004_tour\"\n ],\n \"state\": 4,\n \"config\": 0,\n \"roster\": 0,\n \"ahead\": [],\n \"log\": [\n  {\n   \"at\": \"2026-01-20T06:39:49+00:00\",\n   \"from\": 0,\n   \"ran\": [\n    \"0001_baseline\",\n    \"0002_routines_log\",\n    \"0003_onboarding\",\n    \"0004_tour\"\n   ],\n   \"to\": 4\n  }\n ]\n}\n",
   "rc": 0
  },
  "set_agent": {
