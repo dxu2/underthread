@@ -608,7 +608,7 @@ function renderDrawer(first) {
   const opts = (list, cur) => list.map(([v, n]) => `<option value="${v}" ${v === cur ? "selected" : ""}>${esc(n)}</option>`).join("");
   const ownerOpts = opts(agents().map(a => [a.id, `${aname(a)} · ${atitle(a)}`]), it.owner);
   $(".dw-top", dw).innerHTML = `<div class="dw-lead"><button class="dw-back" data-close aria-label="${UI.lang === "en" ? "Back" : "返回"}"><svg viewBox="0 0 12 20" width="12" height="20" aria-hidden="true"><path d="M10 2 2 10l8 8" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg><span>${UI.lang === "en" ? "Back" : "返回"}</span></button><span class="tag ${it.stage === "review" || awaitsUser(it) ? it.kind : ""}" title="${esc(it.stage === "review" || awaitsUser(it) ? t(it.kind === "task" ? "deliverable" : it.kind) : stageLabel(it.stage))}"><span class="gl" aria-hidden="true">◆</span>${it.stage === "review" || awaitsUser(it) ? t(it.kind === "task" ? "deliverable" : it.kind) : stageLabel(it.stage)}</span> <button type="button" class="mono dim dw-id" data-copy-id="${esc(it.id)}" title="${UI.lang === "en" ? "Copy card id" : "复制卡号"}"><span>${esc(it.id)}</span><svg viewBox="0 0 16 16" width="11" height="11" aria-hidden="true"><rect x="5" y="5" width="8.5" height="8.5" rx="1.6" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M10.5 3.2V3a1.5 1.5 0 0 0-1.5-1.5H3A1.5 1.5 0 0 0 1.5 3v6A1.5 1.5 0 0 0 3 10.5h.2" fill="none" stroke="currentColor" stroke-width="1.4"/></svg></button>${wkTag(workersOf(it.id), "dw-wk")}</div>
-    <div class="r"><select data-f="category">${opts(CATS.map(c => [c, t(c)]), it.category)}</select><button data-close title="close">✕</button></div>`;
+    <div class="r"><select data-f="category">${opts(CATS.map(c => [c, t(c)]), it.category)}</select><button class="dw-hide" data-close title="${UI.lang === "en" ? "Hide the panel · the card stays" : "收起面板 · 卡还在，随时从列表点回来"}"><span>${UI.lang === "en" ? "Hide" : "收起"}</span><svg viewBox="0 0 8 12" width="7" height="11" aria-hidden="true"><path d="M1.5 1.5 6 6l-4.5 4.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button></div>`;   // t-detail-close B: words, not ✕, so it never reads as ending the card
   const sc = $(".dw-scroll", dw); const keep = sc.scrollTop;
   let lastDay = "";
   const stream = streamOf(it);
@@ -741,6 +741,25 @@ function snzOpen(html, anchor, done, below) {   /* below: open under the anchor 
   const first = snzItems(pop).find(b => b.matches(".snz-o, [role=menuitem]")) || snzItems(pop)[0];
   if (first) first.focus({ preventScroll: true });
   return pop;
+}
+/* t-detail-close B (user pick 11-21): the ⋯ menu at the left of the detail's bottom row (the old 关单 pill). Same pop as 稍后 (snzOpen:
+   desktop menu over the button, phone bottom sheet, keyboard ↑↓ / Esc). 复制链接 copies a #item= deep link; the red item opens the
+   unchanged reason dialog (core/ui.js modalClose). 改分类 stays where it is (the select at the top). */
+function moreMenu(id, anchor) {
+  const it = items().find(i => i.id === id); if (!it) return;
+  const en = UI.lang === "en";
+  anchor.setAttribute("aria-expanded", "true");
+  const html = `<button type="button" class="snz-o" data-mo="link" role="menuitem"><b>${en ? "Copy link" : "复制链接"}</b><span>#item=${esc(id)}</span></button>
+    <div class="mo-sep" role="separator"></div>
+    <button type="button" class="snz-o mo-end" data-mo="end" role="menuitem"><b>${en ? "Not doing it · end this card…" : "不做了，结束这张卡…"}</b><span>${en ? "Write a reason (optional); it moves to Done and can be reopened" : "写一句原因（可不填），卡进已完成，可重开"}</span></button>`;
+  const pop = snzOpen(html, anchor, () => { if (anchor.isConnected) anchor.setAttribute("aria-expanded", "false"); });
+  pop.classList.add("mo-pop");
+  pop.addEventListener("click", e => {
+    const b = e.target.closest("[data-mo]"); if (!b) return;
+    snzClose(true);
+    if (b.dataset.mo === "end") { if (UI.item === id) modalClose(); return; }
+    copyText(location.origin + location.pathname + "#item=" + id).then(ok => toast(ok ? (en ? "Link copied" : "已复制链接") : (en ? "Copy failed" : "复制失败"), !ok));
+  });
 }
 function snzMenu(id, anchor, done) {
   const it = items().find(i => i.id === id); if (!it) return done && done(false);
@@ -883,6 +902,7 @@ function wireDrawer() {
   document.addEventListener("click", e => { const b = e.target.closest && e.target.closest("[data-snz-list]"); if (b) { e.preventDefault(); snzListMenu(b); } });
   document.addEventListener("keydown", e => { if (e.key === "Escape" && SNZ.el) { e.stopPropagation(); snzClose(false); } }, true);
   $("#drawer").addEventListener("click", e => { const b = e.target.closest("[data-snz-btn]"); if (b) snzMenu(UI.item, b); });
+  $("#drawer").addEventListener("click", e => { const b = e.target.closest("[data-more]"); if (b) moreMenu(UI.item, b); });
   $("#drawer").addEventListener("click", e => {
     const b = e.target.closest("[data-rt]"); if (!b) return;
     const it = curItem(), r = routineOf(it); if (!r) return;
