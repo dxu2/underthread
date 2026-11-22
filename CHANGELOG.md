@@ -59,6 +59,10 @@ Nothing.
 
 ### Changed
 - **Phone: the Quests category row matches the Notifications filter row**: same side margins, height, pill and selected state in every look (it used to run to both screen edges). A category cut by the edge fades as you swipe. Picking a filter in either row now slides the pill in one smooth motion: the row stays in place (no fade-out and back), the list below swaps without a blank frame, and the row only scrolls when the picked filter is cut off.
+- Nothing.
+
+### Changed
+- **Phone tab bar: the selection slides like glass (t-phone-nav-glass)**: the highlight behind the selected tab is now a lens. When you switch tabs it grows about 1.3x and lifts while it slides, goes clearer with a brighter rim, then settles on the new tab with a small overshoot; tapping again mid-slide carries on from where it is, without a jump. Under the Stitch texture the lens is a stitched patch and a dashed thread runs between the two tabs. Each theme keeps its old selection colour. Only transform and opacity animate (no blur on the moving part), the tap switches the page at once, and with reduced motion it fades in place. `tests/e2e/journeys/navglass.js` checks it in every skin.
 
 ### Fixed
 - Nothing.
