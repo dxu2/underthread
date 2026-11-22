@@ -49,6 +49,7 @@ module.exports = {
     c.check("rename sheet open, prefilled", await p.evaluate(n => { const i = document.querySelector("#modal #rk-n"); return !!i && i.value === n; }, name0));
     await c.shot("rename-sheet", "#modal .mdl");
     await p.fill("#modal #rk-n", nm);
+    await p.fill("#modal #rk-ne", nm);   /* both names, so the check holds in either UI language */
     await c.tap("#modal [data-ok]");
     const r1 = await c.until(async () => { const a = (await c.state()).agents[id]; return a && a.name === nm && a; });
     c.check("server: display name set, original kept", r1 && r1.name_orig === name0, r1 && { name: r1.name, orig: r1.name_orig });
