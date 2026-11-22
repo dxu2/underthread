@@ -289,13 +289,13 @@ def health_rows():
 
 def view():
     """/api/ext and the 系统状态 panel: API number, every extension with its state, card kinds, jobs."""
-    from core.ext import EXT
+    from core.ext import EXT, ext_on, is_builtin
     exts = []
     for name, e in sorted(EXTS.items()):
         x = EXT.get(name) or {}
         exts.append({"name": name, "api": e["api"], "requires": e["requires"], "legacy": e["legacy"], "skipped": e["skipped"],
                      "error": e["error"] or x.get("error"), "server": bool(x.get("server")), "stateutil": bool(x.get("stateutil")),
-                     "web": bool(e["web"] and not e["skipped"])})
+                     "web": bool(e["web"] and not e["skipped"]), "builtin": is_builtin(e["dir"]), "on": ext_on(name)})
     if legacy_web():
         exts.append({"name": "_legacy", "api": None, "requires": None, "legacy": True, "skipped": None, "error": None,
                      "server": False, "stateutil": False, "web": True})
@@ -325,8 +325,9 @@ def web_blocks():
     lw = legacy_web()
     if lw:
         out.append(("_legacy", lw))
+    from core.ext import ext_on
     for name, e in sorted(EXTS.items()):
-        if e["skipped"] or e["legacy"]:
+        if e["skipped"] or e["legacy"] or not ext_on(name):   # t-oss-live: a built-in extension switched off adds no files to the page
             continue
         try:
             man = read_manifest(e["dir"]) or {}
@@ -348,7 +349,7 @@ def web_blocks():
 
 
 def web_dir(name):
-    """local/ext/<name>/web for /static/ext/<name>/..., only for a loaded (not skipped) extension."""
+    """<ext dir>/web for /static/ext/<name>/..., only for a loaded (not skipped) extension (built-in ext/<name> or local/ext/<name>)."""
     e = EXTS.get(name)
     if not e or e["skipped"]:
         return None
@@ -370,7 +371,8 @@ def notice_skipped(S):
             it = S.find_item(st, iid, restore=False)
             if it and it.get("ext_reason") == why:
                 continue
-            text = (f"扩展 local/ext/{n} 没有加载：{why}。看板照常运行，只是这个扩展加的功能暂时没有。"
+            where = os.path.relpath(EXTS[n]["dir"], ROOT)
+            text = (f"扩展 {where} 没有加载：{why}。看板照常运行，只是这个扩展加的功能暂时没有。"
                     f"改好 ext.json（api 写 {API}）或更新扩展后重启看板即可；不用了就删掉这个文件夹。")
             it = S.upsert_item(st, {"id": iid, "title": f"扩展 {n} 没加载", "summary": text, "category": "urgent", "stage": "todo",
                                     "kind": "task", "owner": "manager"}, who="manager")

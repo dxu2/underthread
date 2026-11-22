@@ -13,6 +13,23 @@ Versions follow [semantic versioning](https://semver.org) and the `VERSION` file
 
 Work in progress goes under `## Unreleased`; the release renames it to `## [X.Y.Z] - YYYY-MM-DD`. Sections dated before 0.1.0 are from before versioning.
 
+## Unreleased
+
+### Added
+- **看画面 / Watch, built in (t-oss-live)**: while a teammate drives Chrome, its tool pill on the desktop and its row on the phone home show 看画面 / Watch, which opens the last screenshot it took and follows new ones (one poll a second, 304 until a frame changes; it pauses when the page is hidden or after 10 minutes, tap to go on; it closes by itself when the teammate lets go of the browser). Nothing to do for the agent: `tools/live_hook.py`, wired in `.claude/settings.json`, saves the last image of each Claude in Chrome step, sets the Chrome tool flag if the agent forgot, asks for a screenshot only while someone is watching and the view is stale, and clears the flag it set when the session or subagent stops. `stateutil.py live-frame <agent> <image>` pushes one by hand. Screenshots stay in `.live/` on this computer (one per agent, 15 minutes at most): never in `state.json`, a card or a log, never uploaded. Settings → Connections → Watch turns it off (`config.json` `extensions.live`), which deletes the saved frames and makes the hook do nothing. It is the first built-in extension: `ext/<name>/` ships with the repository, loads before `local/ext/`, and a `local/ext/<name>` with the same name replaces it. See [docs/extensions.md](docs/extensions.md#built-in-extensions). 需要手动做的事：无
+
+### Changed
+- `./start` says so when `.claude/settings.local.json` still wires `live_hook.py` itself (it would run twice); it never edits that file.
+
+### Fixed
+- The phone home's 看画面 link was hidden in the open-source build (`oss.css`); it shows again while the switch is on.
+
+### Upgrade notes
+- Migrations: none
+- New config keys: `extensions.live` = `true`
+- Extension API: unchanged (API 1). New: built-in extensions in `ext/<name>/` load before `local/ext/<name>/`, and a local folder with the same name replaces the built-in one; `GET /api/ext` rows gain `builtin` and `on`.
+- Manual steps: none
+
 ## [0.2.0] - 2026-11-21
 
 Highlights since 0.1.0:

@@ -25,7 +25,7 @@ def _work_size():
         _health["work"], _health["work_t"], _health["work_busy"] = total, time.time(), False
 
 
-CODE_DIRS = ("core", "api", os.path.join("local", "ext"))
+CODE_DIRS = ("core", "api", "ext", os.path.join("local", "ext"))
 CODE_FILES = ("server.py", "stateutil.py")
 
 

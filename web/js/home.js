@@ -285,7 +285,7 @@
       const av = $(".a2-av", el), nav = a2Av(a, true); if (av.outerHTML !== nav) av.outerHTML = nav;
       setT($(".a2-t", el), it ? it.title : (a.activity || L().working));
       setT($(".a2-k", el), [sn ? L2().since(clock(sn), dur(mins(sn))) : (a.activity && it ? a.activity : ""), qn ? L2().q(qn) : ""].filter(Boolean).join(" · "));
-      const lk = $(".a2-lk", el), lv = a.tool === "chrome"; if (lk.hidden === lv) lk.hidden = !lv;
+      const lk = $(".a2-lk", el), lv = a.tool === "chrome" && !!(A().liveOn && A().liveOn()); if (lk.hidden === lv) lk.hidden = !lv;
       setA(el, "data-hd-open", it ? it.id : null); setA(el, "data-chat", it ? null : a.id);
       setA(el, "aria-label", L().aria(A().aname(a), L().working, it && it.title, it ? L().tapOpen : L().tapChat));
     });

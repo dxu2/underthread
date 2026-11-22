@@ -1,0 +1,18 @@
+{
+  "name": "live",
+  "api": 1,
+  "_note": "看画面 / Watch: the last screenshot an agent took in Chrome, shown on the dashboard. Built in since t-oss-live; switch it off in Settings -> Connections (config.json extensions.live). No \"requires\": it ships with the core it runs on.",
+  "web": {
+    "css": [
+      {
+        "href": "live.css",
+        "after": "style.css"
+      }
+    ],
+    "js": [
+      {
+        "src": "live.js"
+      }
+    ]
+  }
+}
