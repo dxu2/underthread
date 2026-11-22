@@ -73,6 +73,9 @@ html[data-home="widgets"] .wg-setup .wg-eb .ob-go { margin-left: 10px; padding: 
 html[data-home="widgets"] .wg-setup .ob-st > b { -webkit-line-clamp: 1; display: block; white-space: nowrap; text-overflow: ellipsis; font-size: var(--fs-11); }
 html[data-home="widgets"] .wg-setup .ob-hint { padding-top: 4px; }
 html[data-home="widgets"] .wg-setup .ob-hint > span { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; }
+/* t-section-titles gives every non-hero tile 28px of top padding for the sewn-on label; the setup tile is a fixed 172px row and its optional column
+   then runs 2px past the bottom (手机 clipped). The label hangs 13px into the card, so 24px still clears it. */
+@media (min-width: 761px) { html[data-ut][data-home="widgets"] #wg .wg-setup:not(.hero) { padding-top: 24px; } }
 
 /* phone card: under the stat row, above usage */
 .ob-card { margin: 0 0 14px; padding: 14px 14px 12px; border-radius: 22px; background: var(--panel, var(--bg2)); box-shadow: 0 0 0 .5px var(--line2) inset; overflow: visible; }
