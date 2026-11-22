@@ -41,6 +41,7 @@ Nothing.
 
 ### Fixed
 - **Quick phrases stay inside the folded chat column (t-rail-overflow)**: with the chat column folded to its avatar strip, the 「想说点什么？ / What's on your mind?」 pill stuck out past the strip. Folded, it is now the yarn ball alone, centred; a click unfolds the column and opens the phrases. The chip row (shown before your 20th message) is hidden while the column is folded. Phones are unchanged.
+- **The mailbox keeps its width (t-mail-width)**: a letter with a long link, an unbroken word or a long card title stretched the 信箱 / Mail drop-down and the desk Mail page sideways, so the list could be dragged left and right. Rows now shrink to the panel, long words break, names and card titles end in …, and the list never scrolls sideways.
 
 ### Upgrade notes
 - Migrations: none
