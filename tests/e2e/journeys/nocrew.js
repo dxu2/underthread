@@ -13,7 +13,7 @@ module.exports = {
       const rail = await p.evaluate(() => [...document.querySelectorAll("#nav [data-go]")].map(e => e.dataset.go));
       c.check("desk rail has no 团队 row, 招聘市场 still there", !rail.includes("crew") && rail.includes("market"), rail);
       const w = await p.evaluate(() => { const t = document.querySelector(".wg-team"); return t ? { svg: !!t.querySelector("svg"), txt: t.textContent.replace(/\s+/g, " ").slice(0, 80) } : null; });
-      c.check("团队交接 widget still draws", !!w && w.svg, w);
+      c.check("团队交接 widget left the home (t-section-titles)", !w, w);
       c.check("no element links to the 团队 page", await crewDom() === 0);
       await c.shot("home");
       if (w) { await p.click(".wg-team svg", { force: true }).catch(() => {}); await c.sleep(1000);

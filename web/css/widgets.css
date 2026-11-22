@@ -370,3 +370,52 @@ html[data-home="widgets"] .wg-review .ri13-t b { -webkit-line-clamp: 1; }
 html[data-home="widgets"] .wg-review .ri13-acts { margin: 6px 0 0; gap: 5px; }
 html[data-home="widgets"] .wg-review .wg-row.ri13-m { margin-left: 4px; box-shadow: inset 2px 0 0 var(--line3); border-radius: 0 12px 12px 0; }
 html[data-home="widgets"] .wg-review .ri13-c .ri13-n { margin-right: 2px; }
+
+/* t-section-titles (11-21, desk only): every home section wears a sewn-on label (S2) that sits on the top edge, with a one-line subtitle under it;
+   under leather the label takes the section's own dye (L1). 等你拍板 is first and full width (widgets.js pins it); 最近 is a full-width row of 5 tiles.
+   The phone keeps the old in-card title. Default (non-Underthread) skins keep the plain eyebrow; only the wide rows and tiles apply there. */
+html[data-home="widgets"] .sct-sub { display: none; }
+html[data-home="widgets"] .wg-review.sz-w.sct-tall { grid-row: span 2; }
+html[data-home="widgets"] .sct-rows { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); column-gap: 26px; align-content: start; }
+html[data-home="widgets"] .sct-rows > :not(.wg-row) { grid-column: 1 / -1; }   /* an ask group (several cards, one question) keeps the full width */
+html[data-home="widgets"] .sct-tiles { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 10px; margin-top: 6px; flex: 1; align-content: start; }
+html[data-home="widgets"] .sct-tile { min-width: 0; display: grid; gap: 6px; align-content: space-between; padding: 10px 12px; border-radius: 14px; cursor: pointer; font-size: var(--fs-13);
+  background: color-mix(in srgb, var(--ink) 5%, transparent); }
+html[data-home="widgets"] .sct-tile:hover { background: color-mix(in srgb, var(--ink) 10%, transparent); }
+html[data-home="widgets"] .sct-tile b { font-weight: 500; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; color: var(--ink); overflow-wrap: anywhere; }
+html[data-home="widgets"] .sct-meta { display: flex; align-items: center; gap: 6px; min-width: 0; color: var(--dim); font-size: var(--fs-12); }
+html[data-home="widgets"] .sct-meta span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+html[data-home="widgets"] .sct-meta .wg-av { width: 18px; height: 18px; border-radius: 50%; flex: none; }
+html[data-home="widgets"] .sct-pin { margin-left: 8px; font-size: var(--fs-12); color: var(--dim); }
+@media (max-width: 1100px) { html[data-home="widgets"] .sct-tiles { grid-template-columns: repeat(3, minmax(0, 1fr)); } html[data-home="widgets"] .sct-tile:nth-child(n+4) { display: none; } }
+@media (min-width: 761px) {
+  html[data-ut][data-home="widgets"] #wg .wg-grid { row-gap: 34px; padding-top: 16px; }
+  html[data-ut][data-home="widgets"] #wg .wg:not(.hero) { overflow: visible; padding-top: 28px; }
+  html[data-ut][data-home="widgets"] #wg .wg-busy.utav { padding-top: 18px; }
+  html[data-ut][data-home="widgets"] #wg .wg-busy.utav .wg-top { position: static; }   /* the label hangs on the card edge, not on the (indented) title box */
+  html[data-ut][data-home="widgets"] #wg .wg:not(.hero) .wg-eb { position: absolute; top: -13px; left: 18px; z-index: 3; margin: 0; display: flex; align-items: baseline; gap: 7px;
+    padding: 4px 13px 5px; border-radius: 5px 5px 7px 7px; transform: rotate(-1.2deg); white-space: nowrap;
+    background: color-mix(in srgb, var(--ink) 14%, var(--panel)); color: var(--dim);
+    box-shadow: 0 2px 0 rgba(0,0,0,.18), 0 5px 10px rgba(0,0,0,.12); outline: 1px dashed color-mix(in srgb, var(--ink) 42%, transparent); outline-offset: -4px; }
+  html[data-ut][data-home="widgets"] #wg .wg:not(.hero):nth-child(2n) .wg-eb { transform: rotate(.9deg); }
+  html[data-ut][data-home="widgets"] #wg .wg:not(.hero) .wg-eb b { font-size: var(--fs-14); font-weight: 600; color: var(--ink); }
+  html[data-ut][data-home="widgets"] #wg .wg:not(.hero) .wg-eb .n { margin-left: 0; font-size: var(--fs-12); }
+  html[data-ut][data-home="widgets"] #wg .wg:not(.hero) .wg-eb .n, html[data-ut][data-home="widgets"] #wg .wg:not(.hero) .wg-eb .n * { background: none; box-shadow: none; outline: none; border: 0; padding: 0; min-width: 0; color: inherit; }
+  html[data-ut][data-home="widgets"] #wg .wg:not(.hero) .wg-eb .wg-dot { display: none; }
+  /* user 11-21 23:41 「这个数字显示不太对吧」: the leather number badge (42px tab with its own stitched box) does not fit inside a label; there the count is plain figures */
+  html[data-ut][data-home="widgets"] #wg .wg:not(.hero) .wg-eb:has(.wnb-num) { min-height: 0; }
+  html[data-ut][data-home="widgets"] #wg .wg:not(.hero) .wg-eb .n.wnb { display: inline-flex; align-items: baseline; gap: 3px; }
+  html[data-ut][data-home="widgets"] #wg .wg:not(.hero) .wg-eb .wnb-num { display: inline; min-width: 0; height: auto; padding: 0; border-radius: 0; font-size: var(--fs-15, 15px); font-weight: 600; line-height: inherit; letter-spacing: 0; color: inherit; text-shadow: none; background: none; box-shadow: none; font-variant-numeric: tabular-nums; }
+  html[data-ut][data-home="widgets"] #wg .wg:not(.hero) .wg-eb .wnb-num::before { content: none; }
+  html[data-ut][data-home="widgets"] #wg .wg:not(.hero) .wg-eb .wnb-unit { font-size: var(--fs-12); font-weight: 400; opacity: .85; }
+  html[data-ut][data-home="widgets"] #wg .wg:not(.hero) .wg-eb > span:not(.n) { color: inherit; }   /* 用量's 今天 / token words take the label's ink */
+  html[data-ut][data-home="widgets"] #wg .wg:not(.hero) .sct-sub { display: block; margin: 8px 0 6px; font-size: var(--fs-12); color: var(--dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  html[data-ut][data-home="widgets"] #wg .wg-review .wg-eb { transform: rotate(-1.6deg); padding: 5px 16px 6px; background: var(--accent); color: var(--accent-ink); outline-color: color-mix(in srgb, var(--accent-ink) 45%, transparent); }
+  html[data-ut][data-home="widgets"] #wg .wg-review .wg-eb b { font-size: var(--fs-16); color: var(--accent-ink); }
+  html[data-ut][data-home="widgets"] #wg.edit .wg-eb { padding-left: 13px; }
+  /* L1: under leather the label is the section's own dye, darkened, stitched in the same colour */
+  html[data-ut][data-texture^="leather"][data-home="widgets"] #wg .wg:not(.hero) .wg-eb { background: color-mix(in srgb, var(--dye, var(--panel)) 78%, #120a06); color: color-mix(in srgb, #F6E6CC 75%, transparent);
+    outline: 1.5px dashed color-mix(in srgb, var(--dye, #caa) 45%, #fff); box-shadow: 0 2px 0 rgba(0,0,0,.3), 0 5px 10px rgba(0,0,0,.2); }
+  html[data-ut][data-texture^="leather"][data-home="widgets"] #wg .wg:not(.hero) .wg-eb b { color: #F6E6CC; }
+  html[data-ut][data-texture^="leather"][data-home="widgets"] #wg .wg-review .wg-eb { background: color-mix(in srgb, var(--dye, var(--accent)) 92%, #000); }
+}

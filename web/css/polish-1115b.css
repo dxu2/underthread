@@ -26,6 +26,8 @@
      and the name row in by about the frame's inset so the button has ~11px of air on both sides; folded and frameless textures are unchanged. */
   html:is([data-texture^="leather"], [data-texture^="knit"]) body:not(.chat-folded) #right .ch-fold { left: 21px; top: 22px; }
   html:is([data-texture^="leather"], [data-texture^="knit"]) body:not(.chat-folded) #right .ch-head { padding-top: 22px; padding-left: 60px; }
+  /* t-section-titles (user 11-21 「这个左面感觉有点空啊」): the 60px clears the fold button in the name row only; the avatar row under it starts flush with that button */
+  html:is([data-texture^="leather"], [data-texture^="knit"]) body:not(.chat-folded) #right .ch-head .crs-wrap { margin-left: -46px; }
 
   /* 6 + 7. the send plane and the ⌘↵ hint sit inside the field: one reserved line at the bottom of the textarea, hint left of the plane */
   #right .ch-comp { position: relative; align-items: flex-end; padding-bottom: 14px; }
