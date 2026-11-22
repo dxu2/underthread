@@ -3,7 +3,10 @@
  *     No card: avatar + type float straight on a 48 px backdrop blur that blooms out of the avatar like ink in water and draws back into it.
  *     Rare on purpose: at most one every 20 min (rt.lka.fsAt, shared by tabs), never 22:30-08:30, never while you type, never in a hidden tab,
  *     never under prefers-reduced-motion. Anything that may not go full screen goes to the pill instead.
- *   Pill: every other notice toast.js finds (reply, ask, reminder, review when full screen is not allowed). One capsule at top centre drops in
+ *   Split (user 11-22, ask dde091 A): the pill = what waits on you (review hand-ins, rule proposals, questions, reminders, day's end);
+ *     on a computer, replies and DMs go to the top-right cards (toast.js WebToast.show) and never to the pill. Phone: everything in the pill.
+ *     route() is the one place that decides; each notice reaches exactly one surface.
+ *   Pill: every notice that waits on you (ask, reminder, review when full screen is not allowed; replies too on the phone). One capsule at top centre drops in
  *     from above the screen edge with a 12 px overshoot (cubic-bezier(.22,1.6,.36,1), 600 ms); a second notice bumps it and grows the
  *     「还有 N 条」 chip (no stacked edges); the 5 s stitched countdown restarts on each merge and pauses while hovered or hidden.
  *     Click = open; chip = next notice; swipe up = dismiss. Reduced motion = 150 ms fades only.
@@ -79,7 +82,7 @@
   }
   function fsEnd(fast) {
     const f = S.fs; if (!f) return; S.fs = null; clearTimeout(f.t);
-    const done = () => { f.el.remove(); if (S.wait.length) { const w = S.wait.splice(0); pillAdd(w); } };
+    const done = () => { f.el.remove(); if (S.wait.length) { const w = S.wait.splice(0); route(w); } };
     if (fast && !RM.matches) { f.el.classList.add("lka-quit"); setTimeout(done, 320); } else done();
   }
   addEventListener("keydown", e => { if (S.fs && (e.key === "Escape" || e.key === " ")) { e.preventDefault(); fsEnd(true); } }, true);
@@ -185,8 +188,17 @@
     const list = fresh.map(n => ({ ...n, sub: n.it ? (n.cls === "decide" ? n.it.title : (line ? line(n) : n.text) + " · " + n.it.title) : (line ? line(n) : n.text) }));
     const rev = list.filter(n => n.cls === "decide" && n.it && !/^新规则提议/.test(n.text || ""));
     if (rev.length && !fsBlock()) { fsPlay("review", rev); const rest = list.filter(n => !rev.includes(n)); if (rest.length) S.wait.push(...rest); return true; }
-    pillAdd(list);
+    route(list);
     return true;
+  }
+  /* one surface per notice: on a computer replies / DMs -> top-right cards, the rest -> pill; phone (no cards there) -> pill.
+     While the full screen plays everything waits (S.wait) and comes through here when it ends. */
+  const toCard = n => n.cls === "reply" && !PHONE.matches && !!(window.WebToast && WebToast.show);
+  function route(list) {
+    if (S.fs) { S.wait.push(...list); return; }
+    const cards = list.filter(toCard), pill = list.filter(n => !toCard(n));
+    if (pill.length) pillAdd(pill);
+    cards.slice(-3).forEach(n => WebToast.show(n));
   }
   /* end of day: the daily report lands (meta.last_report_date turns to today while the page is open) */
   function eodCheck() {
@@ -200,8 +212,8 @@
   App.on(k => { if (k === "all") eodCheck(); });
 
   /* ---------- 设置 row ---------- */
-  const SUB = { on: ["交稿和收工时全屏一下（20 分钟内最多一次，22:30–8:30 不全屏），其余用顶部小胶囊", "Full screen when cards are handed in and at day's end (at most once per 20 min, never 22:30–8:30); a small pill at the top for the rest"],
-    pill: ["只用顶部小胶囊，不全屏", "Only the small pill at the top, never full screen"], off: ["关：电脑用右上角的小卡片，手机不弹", "Off: small cards at the top right on a computer, nothing on the phone"] };
+  const SUB = { on: ["交稿和收工时全屏一下（20 分钟内最多一次，22:30–8:30 不全屏），其余等你处理的用顶部小胶囊；电脑上回复和私信走右上角小卡片", "Full screen when cards are handed in and at day's end (at most once per 20 min, never 22:30–8:30); a small pill at the top for the rest of what waits on you. On a computer, replies and DMs use the top-right cards"],
+    pill: ["等你处理的只用顶部小胶囊，不全屏；电脑上回复和私信走右上角小卡片", "What waits on you uses only the small pill at the top, never full screen. On a computer, replies and DMs use the top-right cards"], off: ["关：电脑用右上角的小卡片，手机不弹", "Off: small cards at the top right on a computer, nothing on the phone"] };
   const OPTS = [["on", "全屏 + 胶囊", "Full + pill"], ["pill", "只用胶囊", "Pill only"], ["off", "关", "Off"]];
   function settingsRow(E) {
     const m = mode();
@@ -227,5 +239,5 @@
   });
   addEventListener("storage", e => { if (e.key === "rt.lka") setPaint(); });
 
-  window.LookAway = { take, fsPlay, fsEnd, pillAdd, pillOut, settingsRow, preview, mode, fsBlock, eodCheck, _S: S };
+  window.LookAway = { take, route, fsPlay, fsEnd, pillAdd, pillOut, settingsRow, preview, mode, fsBlock, eodCheck, _S: S };
 })();

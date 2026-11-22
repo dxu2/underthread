@@ -51,12 +51,24 @@ module.exports = {
     c.check("pill drops in and overshoots ~12 px past its rest", ys.length > 5 && ys[0] < rest - 30 && maxY - rest >= 7 && maxY - rest <= 16, { first: Math.round(ys[0]), max: Math.round(maxY), rest });
     c.check("pill at top centre, review kind", P && /lka-c-decide/.test(P.cls) && Math.abs(P.cx - (await p.evaluate(() => innerWidth)) / 2) < 3 && P.y < 70, P);
 
-    /* 3 · merge */
+    /* 3 · merge. Split A (11-22): on a computer replies / DMs go to the top-right cards, never the pill; the phone keeps them in the pill. */
     su("reply", items[2], "smith", "lookaway test reply");
     su("dm", "smith", "lookaway test DM");
-    await p.waitForFunction(() => { const m = document.querySelector("#lka-pw .lka-more"); return m && !m.hidden && /2/.test(m.textContent); }, null, { timeout: 9000 }).catch(() => {});
-    P = await pillInfo(p);
-    c.check("reply + DM merge into the chip 还有 2 条, no stacked edges", P && /还有 2 条/.test(P.more) && (await p.evaluate(() => document.querySelectorAll("#lka-pw .lka-pill").length)) === 1, P);
+    if (desk) {
+      await p.waitForFunction(() => document.querySelectorAll("#wtoasts .wt").length >= 2, null, { timeout: 9000 }).catch(() => {});
+      const sp = await p.evaluate(() => ({ wt: [...document.querySelectorAll("#wtoasts .wt")].map(e => e.className), q: LookAway._S.q.map(n => n.cls) }));
+      c.check("desk: reply + DM become top-right cards, not pill entries", sp.wt.length === 2 && sp.wt.every(x => /wt-reply/.test(x)) && !sp.q.includes("reply"), sp);
+      await p.evaluate(() => document.querySelectorAll("#wtoasts .wt").forEach(e => e.remove()));
+      su("ask", items[2], "smith", "lookaway test ask", "--options", "a|b");
+      su("ask", items[0], "smith", "lookaway test ask 2", "--options", "a|b");
+      await p.waitForFunction(() => { const m = document.querySelector("#lka-pw .lka-more"); return m && !m.hidden && /2/.test(m.textContent); }, null, { timeout: 9000 }).catch(() => {});
+      P = await pillInfo(p);
+      c.check("desk: two questions merge into the chip 还有 2 条, no top-right card for them", P && /还有 2 条/.test(P.more) && (await p.evaluate(() => document.querySelectorAll("#lka-pw .lka-pill").length + document.querySelectorAll("#wtoasts .wt").length)) === 1, P);
+    } else {
+      await p.waitForFunction(() => { const m = document.querySelector("#lka-pw .lka-more"); return m && !m.hidden && /2/.test(m.textContent); }, null, { timeout: 9000 }).catch(() => {});
+      P = await pillInfo(p);
+      c.check("reply + DM merge into the chip 还有 2 条, no stacked edges", P && /还有 2 条/.test(P.more) && (await p.evaluate(() => document.querySelectorAll("#lka-pw .lka-pill").length)) === 1, P);
+    }
     await raw("pill-merged");
     await (desk ? p.click("#lka-pw .lka-more") : p.tap("#lka-pw .lka-more")); await c.sleep(400);
     const P2 = await pillInfo(p);
@@ -71,7 +83,7 @@ module.exports = {
     }
 
     /* 4 · click opens the card */
-    su("reply", items[3], "smith", "lookaway test open");
+    if (desk) su("ask", items[3], "smith", "lookaway test open", "--options", "a|b"); else su("reply", items[3], "smith", "lookaway test open");
     await waitPill(p); await c.sleep(700);
     await (desk ? p.click("#lka-pw .lka-tx") : p.tap("#lka-pw .lka-tx")); await c.sleep(1200);
     c.check("click opens that card", await p.evaluate(() => App.UI.item) === items[3]);
