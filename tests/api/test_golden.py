@@ -165,7 +165,7 @@ class Golden(unittest.TestCase):
                      ("push_key", "/api/push/key"), ("push_latest", "/api/push/latest"), ("push_status", "/api/push/status"),
                      ("push_history", "/api/push/history"), ("index", "/"), ("sw", "/sw.js"), ("manifest", "/manifest.webmanifest"),
                      ("avatars_index", "/avatars/_s/index.json"), ("static_missing", "/static/nope.js"), ("static_escape", "/static/..%2fstate.json"),
-                     ("voice_off", "/api/voice/health"), ("not_found", "/nope"),
+                     ("voice_off", "/api/voice/health"), ("not_found", "/nope"), ("avatar_choices_bad", "/api/avatar-choices?id=nope"),
                      ("ext", "/api/ext"), ("static_ext_missing", "/static/ext/nope/x.js")):
             cls.get(k, p)
 
@@ -219,6 +219,11 @@ class Golden(unittest.TestCase):
         a("studio_mode_auto", {"kind": "studio_mode", "mode": "auto"})
         a("widget_layout_seen_bad", {"kind": "widget_layout", "layout": [["team", "m"]], "seen": ["Bad id"]})
         a("widget_layout_reset_keeps_seen", {"kind": "widget_layout", "reset": True})
+        a("role_look", {"kind": "role_look", "id": "writer", "name": "Golden Quill", "name_en": "Goldie"})   # t-roster-rail
+        a("role_look_reset", {"kind": "role_look", "id": "writer", "name": "", "name_en": ""})
+        a("role_look_bad_avatar", {"kind": "role_look", "id": "writer", "avatar": "../state.json"})
+        a("role_look_bad_name", {"kind": "role_look", "id": "writer", "name": "<b>x</b>"})
+        a("role_look_unknown", {"kind": "role_look", "id": "nope", "name": "x"})
         a("stamina", {"kind": "stamina", "pct": 42, "note": "golden"})
         a("ping", {"kind": "ping", "note": "刷新用量"})
         a("report_request", {"kind": "report_request"})

@@ -30,7 +30,7 @@
       .then(r => { if (r.status === 404) throw new Error("old"); if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); })
       .then(j => { T.list = Array.isArray(j.list) ? j.list : []; T.err = ""; })
       .catch(e => { T.err = e && e.message === "old" ? "old" : String((e && e.message) || e); })
-      .finally(() => { T.busy = false; T.at = Date.now(); T.ready = true; const p = A().UI.page; if (p === "crew" || p === "review") A().refreshPage(); });
+      .finally(() => { T.busy = false; T.at = Date.now(); T.ready = true; const p = A().UI.page; if (p === "review") A().refreshPage(); });
   }
   const order = (a, b) => (a.order ?? 99) - (b.order ?? 99);
   const isW = a => a.id !== "manager" && a.status === "working";   // graph layout only (the manager keeps its own spot)
@@ -277,7 +277,6 @@
     e.preventDefault(); stop(); seek(t);
   });
 
-  if (A() && A().on) A().on(k => { if (k === "page") try { const p = A().UI.page; if (p === "crew" || p === "review") sync(); if (p !== "crew" && T.playing) stop(); } catch (_) { } });
+  if (A() && A().on) A().on(k => { if (k === "page") try { const p = A().UI.page; if (p === "review") sync(); if (T.playing) stop(); } catch (_) { } });
   window.Team = { widget, page, sync, _t: T, model };
-  if (A() && A().UI && A().UI.page === "crew" && A().ST) A().refreshPage();   /* app.js rendered before this file parsed */
 })();

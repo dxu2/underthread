@@ -48,7 +48,7 @@
     }
     const nRev = App.items().filter(i => i.stage === "review").length, nDec = App.decisions().length;
     add("go:review", zh ? `回首页 · 等你拍板 ${nRev + nDec}` : `Home · waiting on you ${nRev + nDec}`, zh ? "首页" : "Home page", "home shouye 首页 sy review shenhe 审核 拍板 sh", () => fire("data-go", "review"));
-    for (const p of ["quests", "main", "side", "daily", "urgent", "ongoing", "market", "studio", "pipe", "board", "channels", "assets", "logs", "reports", "docs", "roles"]) {   /* t-ui-fix-r2 B06: + 团队, 招聘市场 */   /* t-nav-shoot: 制作 + its four sub pages */
+    for (const p of ["quests", "main", "side", "daily", "urgent", "ongoing", "market", "studio", "pipe", "board", "channels", "assets", "logs", "reports", "docs", "crew"]) {   /* t-roster-rail: 团队 (the roster) replaces 角色 */   /* t-ui-fix-r2 B06: + 团队, 招聘市场 */   /* t-nav-shoot: 制作 + its four sub pages */
       if (p === "quests" && !phone()) continue;
       if ((p === "pipe" || p === "channels") && App.contentMode && !App.contentMode()) continue;   /* t-oss-gen-s5: content mode only */
       add("go:" + p, (zh ? "跳到「" : "Go to “") + App.t(p) + (zh ? "」" : "”"), zh ? "页面" : "Page", p + " go 跳 页", () => fire("data-go", p));

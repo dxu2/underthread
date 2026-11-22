@@ -205,3 +205,23 @@ body.chat-folded .ch-grip { cursor: default; }
 .att-chip { isolation: isolate; }
 .atts video { max-width: min(320px, 100%); max-height: 240px; display: block; border: 1px solid var(--line2); background: #000; }
 
+/* t-roster-rail: the 团队 / Team page (the roster moved out of 设置 · 角色), its lead line, the 改名 / 换头像 buttons and sheets (web/js/views/rolelook.js) */
+.rl-lead { margin: 0 0 16px; color: var(--dim); font-size: var(--fs-14); }
+.rc-bt { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+.side-h .rk-all { margin-left: auto; font-size: var(--fs-12); color: var(--accent); white-space: nowrap; transition: color .2s, transform .25s var(--ease); }
+.side-h .rk-all:hover { color: var(--ink); transform: translateX(2px); }
+.side-h .rk-all:active { transform: translateX(2px) scale(.96); }
+.rk-mdl .rk-lead, .rk-mdl .rk-hint { color: var(--dim); font-size: var(--fs-13); line-height: 1.55; margin: 0 0 12px; }
+.rk-mdl .rk-hint { margin: 14px 0 0; }
+.rk-mdl input { width: 100%; margin-bottom: 10px; }
+.rk-mdl .foot .rk-reset { margin-right: auto; }
+.rk-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(104px, 1fr)); gap: 12px; }
+.rk-t { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 12px 6px 10px; border: 1.5px solid var(--line); border-radius: 16px; background: transparent; color: var(--ink2);
+  transition: border-color .2s, background-color .2s, transform .25s var(--ease); }
+.rk-t:hover { border-color: var(--line3); transform: translateY(-2px); }
+.rk-t:active { transform: scale(.97); }
+.rk-t.on { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 10%, transparent); color: var(--ink); }
+.rk-im { width: 72px; height: 72px; border-radius: 50%; background: var(--bg2, #0000) center / cover no-repeat; box-shadow: 0 0 0 1px var(--line); transition: box-shadow .2s; }
+.rk-t.on .rk-im { box-shadow: 0 0 0 2px var(--accent); }
+.rk-t small { font-size: var(--fs-12); text-align: center; line-height: 1.3; overflow-wrap: anywhere; }
+@media (prefers-reduced-motion: reduce) { .rk-t, .side-h .rk-all { transition: border-color .2s, background-color .2s, color .2s; transform: none !important; } }

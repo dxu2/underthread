@@ -11,6 +11,7 @@ import uuid
 from api.ctx import S, C, MG, ROOT, WEB, AVATARS, CONFIG
 from api.router import route
 from api.routes.schedules import routines_view
+from core import rolelook as RL
 
 _roster_mtime = None
 
@@ -39,6 +40,7 @@ def sync_roster():
                     a.pop(k, None)
             a["order"] = r.get("order", i)
             a["enabled"] = r.get("enabled", True)
+            RL.apply(a, r, ROOT)   # t-roster-rail: your display name / avatar pick (团队 page) over the roster's own
             if r["id"] == "manager" and not a.get("last_seen"):
                 a["status"] = "offline"
         # roles removed from the roster: drop them, hand their open items to the manager

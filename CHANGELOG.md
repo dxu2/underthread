@@ -13,6 +13,23 @@ Versions follow [semantic versioning](https://semver.org) and the `VERSION` file
 
 Work in progress goes under `## Unreleased`; the release renames it to `## [X.Y.Z] - YYYY-MM-DD`. Sections dated before 0.1.0 are from before versioning.
 
+## Unreleased
+
+### Added
+- **团队 / Team page is back in the left rail (t-roster-rail)**: the big roster cards moved from Settings → 角色 to their own 团队 / Team page (desktop rail, right before 招聘市场; phone 更多; the TEAM header in the rail gets a 名册 › link; Settings → 角色 keeps a row that jumps there; old `#page=roles` / `team` links and a stored page land on it). Each card can now **改名 / Rename** (the name the board shows, Chinese and English; the role's id, agent file and notes keep the original, and lines signed with the original name still find it; empty or 恢复原名 goes back) and **换头像 / Avatar** (pick one of the role's own pictures: the stitched patch in `avatars/ut/`, your `avatars/<id>.*` picture, or anything you put in `avatars/choices/<id>/`; 默认 follows the colour scheme again). Both are saved in `roster.json` on the role's entry (`display_name`, `display_name_en`, `avatar_pick`), which updates never replace; a picked picture gets small WebP copies in `avatars/_pick/` when `cwebp` is installed. New action `role_look` and `GET /api/avatar-choices?id=`. 需要手动做的事：无
+
+### Changed
+- Settings → 角色 / Roles no longer shows the roster cards; it has one row that opens the 团队 / Team page. The phone chat list's team tab opens 团队 too.
+
+### Fixed
+- none
+
+### Upgrade notes
+- Migrations: none (the new `roster.json` keys `display_name`, `display_name_en` and `avatar_pick` are only written when you rename a role or pick an avatar; a board without them looks exactly as before)
+- New config keys: none
+- Extension api: unchanged (1)
+- Manual steps: none
+
 ## [0.2.0] - 2026-11-21
 
 Highlights since 0.1.0:

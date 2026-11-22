@@ -45,7 +45,7 @@ def rname(rid, fallback):
     """A role's display name from roster.json (so messages say your HR's name, not a fixed one); fallback when it is not on the team."""
     for r in C.roster(ROOT).get("roles", []):
         if r.get("id") == rid and r.get("enabled", True) is not False:
-            return r.get("name") or fallback
+            return r.get("display_name") or r.get("name") or fallback   # t-roster-rail: the name you gave it on the 团队 page
     return fallback
 
 

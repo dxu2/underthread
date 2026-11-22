@@ -6,6 +6,12 @@
   },
   "code": 200
  },
+ "avatar_choices_bad": {
+  "body": {
+   "error": "no role"
+  },
+  "code": 404
+ },
  "avatars_index": {
   "body": {},
   "code": 200
@@ -624,6 +630,7 @@
     "/static/js/phone/hello.js?v=<h>",
     "/static/js/views/ownerloc.js?v=<h>",
     "/static/js/views/pages/pipe.js?v=<h>",
+    "/static/js/views/rolelook.js?v=<h>",
     "/static/js/views/pages/quests.js?v=<h>",
     "/static/js/views/pages/connections.js?v=<h>",
     "/static/icons/favicon-32.png?v=<h>",
@@ -736,6 +743,7 @@
     "/static/js/views/pages/review.js": "/static/js/views/pages/review.js?v=<h>",
     "/static/js/views/pages/schedule.js": "/static/js/views/pages/schedule.js?v=<h>",
     "/static/js/views/pages/settings.js": "/static/js/views/pages/settings.js?v=<h>",
+    "/static/js/views/rolelook.js": "/static/js/views/rolelook.js?v=<h>",
     "/static/js/views/status.js": "/static/js/views/status.js?v=<h>",
     "/static/js/views/ticker.js": "/static/js/views/ticker.js?v=<h>",
     "/static/js/welcome.js": "/static/js/welcome.js?v=<h>",
@@ -4090,7 +4098,7 @@
     "owner_loc": null,
     "platforms_set": false,
     "report_time": "18:00",
-    "rev": 121,
+    "rev": 124,
     "routines": [],
     "routines_log": {},
     "schema": 3,
@@ -4177,7 +4185,7 @@
       0,
       7
      ],
-     "logs": 80,
+     "logs": 82,
      "mail": [
       20,
       20
