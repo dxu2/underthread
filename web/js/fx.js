@@ -101,9 +101,12 @@
     const key = (App.UI.page || "") + "|" + (document.body.dataset.mtab || ""), now = performance.now();
     if (key === rowsKey && now - rowsAt < 400) return;
     rowsKey = key; rowsAt = now;
-    const rm = rmMQ.matches, rise = tokN("--m-rise", 10), dur = rm ? 120 : tokN("--m-base", 280), step = rm ? 0 : tokN("--m-stagger", 30), ease = rm ? "linear" : tokS("--m-ease-emph", "cubic-bezier(.2,.8,.2,1)");
-    const spring = tokS("--m-spring", ease), vh = innerHeight;
-    const from = rm ? { opacity: 0 } : { opacity: 0, transform: `translateY(${rise}px)` }, to = rm ? { opacity: 1 } : { opacity: 1, transform: "none" };
+    /* t-phone-filter-row v2: a category pick in the 委托 row (pagebody[data-soft], phone/nav.js) swaps the list in place: a short soft
+       cross-fade (from .3, 4 px, 14 ms apart) instead of the page entrance from nothing, so the list never blinks out */
+    const soft = body.dataset.soft === "1";
+    const rm = rmMQ.matches, rise = soft ? 4 : tokN("--m-rise", 10), dur = rm ? 120 : soft ? 220 : tokN("--m-base", 280), step = rm ? 0 : soft ? 14 : tokN("--m-stagger", 30), ease = rm ? "linear" : tokS("--m-ease-emph", "cubic-bezier(.2,.8,.2,1)");
+    const spring = tokS("--m-spring", ease), vh = innerHeight, o0 = soft ? .3 : 0;
+    const from = rm ? { opacity: o0 } : { opacity: o0, transform: `translateY(${rise}px)` }, to = rm ? { opacity: 1 } : { opacity: 1, transform: "none" };
     const base = 0;
     let n = 0;
     for (const r of body.querySelectorAll(".act-row, .card")) {

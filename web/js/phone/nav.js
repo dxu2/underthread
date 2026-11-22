@@ -195,18 +195,43 @@ function renderBar() {
 
 // ---------- per-render additions ----------
 // t-vis-b2 (方案 A): home has no category bar any more (its stats row is its only filter). The 委托 tab = search field + 「全部 / 主线 / 支线 / 日常委托 / 紧急活动 / 常驻活动」 + the list grouped by stage.
+/* t-phone-filter-row v2 (user 11-22 「一下一下」): picking a category re-renders #pagebody, which used to throw the row away and build a new one
+   that then faded in with the page (.enter .filters) - the pill vanished for a few frames and popped up at the new place. The row and the search
+   field are now kept (QROW) and put back after each render, with the track's scroll position, so the ui4 pill (app.js) slides on the same node;
+   .keep skips the entrance. A language change still rebuilds them. */
+const QROW = { seg: null, sr: null, lang: "" };
+/* a pick in the row: the page render that follows swaps the list softly (fx.js rows(), mobile/09 [data-soft]); cleared after the entrance */
+document.addEventListener("click", e => {
+  if (!e.target.closest || !e.target.closest(".m-seg.q [data-go]")) return;
+  const b = $("#pagebody"); if (!b) return; b.dataset.soft = "1"; clearTimeout(b._softT); b._softT = setTimeout(() => { delete b.dataset.soft; }, 800);
+}, true);
 function catChips() {
   const body = $("#pagebody"), p = App.UI.page; if (!body || !QPAGES.includes(p) || $(".m-seg", body)) return;
   setLastQ(p);
-  const seg = document.createElement("div"); seg.className = "filters mb-row m-seg q";   /* t-phone-filter-row: the 通知 filter row's classes (same pill, margins, height in every skin) */
-  seg.innerHTML = `<div class="seg" data-seg="mseg">` + QPAGES.map(c => `<button class="seg-i ${p === c ? "on" : ""}" data-go="${c}">${App.t(c === "quests" ? "all_quests" : c)}</button>`).join("") + `</div>`;
-  const sr = document.createElement("button"); sr.type = "button"; sr.className = "q-search";
-  sr.innerHTML = `${SEARCH}<span>${App.t("search_ph")}</span>`; sr.addEventListener("click", () => openSearch());
+  let seg = QROW.lang === App.UI.lang ? QROW.seg : null, sr = seg ? QROW.sr : null;
+  const keep = !!seg, tr0 = seg && $(".seg", seg), sl = tr0 ? tr0._sl || 0 : 0;   /* _sl: a detached node reads scrollLeft 0 */
+  if (!seg) {
+    seg = document.createElement("div"); seg.className = "filters mb-row m-seg q";   /* t-phone-filter-row: the 通知 filter row's classes (same pill, margins, height in every skin) */
+    seg.innerHTML = `<div class="seg" data-seg="mseg">` + QPAGES.map(c => `<button class="seg-i" data-go="${c}">${App.t(c === "quests" ? "all_quests" : c)}</button>`).join("") + `</div>`;
+    sr = document.createElement("button"); sr.type = "button"; sr.className = "q-search";
+    sr.innerHTML = `${SEARCH}<span>${App.t("search_ph")}</span>`; sr.addEventListener("click", () => openSearch());
+    Object.assign(QROW, { seg, sr, lang: App.UI.lang });
+  }
+  seg.classList.toggle("keep", keep); sr.classList.toggle("keep", keep);
+  seg.querySelectorAll(".seg-i").forEach(b => { const o = b.dataset.go === p; if (b.classList.contains("on") !== o) b.classList.toggle("on", o); });
   const ph = $(".ph", body); ph ? ph.after(sr) : body.prepend(sr); sr.after(seg);
-  const tr = $(".seg", seg), on = $(".seg-i.on", seg); if (on && on.offsetLeft + on.offsetWidth > tr.clientWidth) tr.scrollLeft = on.offsetLeft - 16;   // keep the picked category in view (t-ri1111-a: the track scrolls, not the wrapper)
-  /* t-ri1111-a P5: edge fades say there is more to swipe; .fl / .fr drop off at each end */
-  const edge = () => { const m = tr.scrollWidth - tr.clientWidth; tr.classList.toggle("fl", tr.scrollLeft > 2); tr.classList.toggle("fr", tr.scrollLeft < m - 2); };
-  tr.addEventListener("scroll", edge, { passive: true }); requestAnimationFrame(edge);
+  const tr = $(".seg", seg), on = $(".seg-i.on", seg);
+  if (keep) {   // a node put back keeps its place, then eases the picked button into view (ui4's own scroll stopped when the render detached it)
+    tr.scrollLeft = sl;
+    if (window.__segInView) window.__segInView(tr, on, true);   /* app.js ui4: only as far as needed, smooth */
+  }
+  else if (on && on.offsetLeft + on.offsetWidth > tr.clientWidth) tr.scrollLeft = on.offsetLeft - 16;   // keep the picked category in view (t-ri1111-a: the track scrolls, not the wrapper)
+  if (!tr._edge) {
+    /* t-ri1111-a P5: edge fades say there is more to swipe; .fl / .fr drop off at each end */
+    const edge = () => { const m = tr.scrollWidth - tr.clientWidth; tr._sl = tr.scrollLeft; tr.classList.toggle("fl", tr.scrollLeft > 2); tr.classList.toggle("fr", tr.scrollLeft < m - 2); };
+    tr._edge = edge; tr.addEventListener("scroll", edge, { passive: true });
+  }
+  requestAnimationFrame(tr._edge);
 }
 function strip() {
   const r = $("#right"), msgs = r && $(".ch-msgs", r); if (!msgs) return;

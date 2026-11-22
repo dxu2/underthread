@@ -24,6 +24,20 @@ module.exports = {
     const row = sel => p.evaluate(sel => { const r = document.querySelector(sel), s = r && r.querySelector(".seg"), i = s && s.querySelector(".seg-i"); if (!s) return null;
       const R = r.getBoundingClientRect(), S = s.getBoundingClientRect(), cr = getComputedStyle(r), cs = getComputedStyle(s), ci = getComputedStyle(i);
       return { x: Math.round(S.x), w: Math.round(R.width), h: Math.round(S.height), mt: cr.marginTop, mb: cr.marginBottom, pad: cs.padding, radius: cs.borderRadius, bg: cs.backgroundColor, ring: cs.boxShadow, ipad: ci.paddingLeft, ih: Math.round(i.getBoundingClientRect().height) }; }, sel);
+    /* t-phone-filter-row v2 (user 11-22 「一下一下」): a pick slides the pill (ui4 .seg-ind, one spring) on every animation frame: the pill never
+       vanishes, never jumps, the row never fades out; the 委托 row is the same node after the page re-render (nav.js QROW keeps it) */
+    const slide = async (sel, i) => {
+      await p.evaluate(sel => { window.__fr = []; const t0 = performance.now(), r0 = document.querySelector(sel);
+        const f = ts => { const r = document.querySelector(sel), ind = r && r.querySelector(".seg-ind"), ir = ind && ind.getBoundingClientRect();
+          window.__fr.push({ t: ts - t0, same: r === r0, x: ir ? ir.x : null, w: ir ? ir.width : 0, io: ind ? +getComputedStyle(ind).opacity : 0, ro: r ? +getComputedStyle(r).opacity : 0 });
+          if (performance.now() - t0 < 900) requestAnimationFrame(f); };
+        requestAnimationFrame(f); }, sel);
+      const bt = (await p.$$(`${sel} .seg-i`))[i]; await bt.tap(); await c.sleep(1100);
+      return p.evaluate(sel => { const F = window.__fr, on = document.querySelector(sel + " .seg-i.on"), ind = document.querySelector(sel + " .seg-ind");
+        const a = on.getBoundingClientRect(), b = ind.getBoundingClientRect(); let vel = 0, back = 0, gone = 0, fade = 1, moved = 0, jt = null;
+        for (let k = 1; k < F.length; k++) { if (F[k].x == null || F[k].w < 4 || F[k].io < .99) gone++; else if (F[k - 1].x != null) { const d = F[k].x - F[k - 1].x, v = Math.abs(d) / Math.max(16.7, F[k].t - F[k - 1].t); if (v > vel) { vel = v; jt = [Math.round(F[k - 1].t), Math.round(F[k].t), Math.round(F[k - 1].x), Math.round(F[k].x)]; } if (Math.abs(d) > .5) moved++; back = Math.max(back, -Math.sign(F.at(-1).x - F[0].x) * d); } fade = Math.min(fade, F[k].ro); }
+        return { jt, xs: F.map(f => f.x == null ? -1 : Math.round(f.x)).join(" "), frames: F.length, same: F.every(x => x.same), gone, vel: +vel.toFixed(2), back: Math.round(back), moved, fade, end: Math.round(Math.abs(a.x - b.x)) + Math.round(Math.abs(a.width - b.width)) }; }, sel);
+    };
     for (const [th, ut, tx] of SK) {
       const tag = `${th}-${ut || "plain"}-${tx}`;
       await set(th, ut, tx, "en"); await p.reload({ waitUntil: "load" }); await ready();
@@ -34,6 +48,17 @@ module.exports = {
       const diff = m && q ? KEYS.filter(k => k !== "w" && m[k] !== q[k]) : ["missing"];
       c.check(`${tag}: 委托 row = 通知 row (margins, height, pill, ring, padding)`, !diff.length && q.x === 16, { diff, m, q });
       if (tag === "white-ut-leather1") await c.shot("quests-leather", "#pagebody");
+      for (const [nm, sel, tab] of [["委托", ".m-seg.q", "quests"], ["通知", ".filters.mb-row:not(.m-seg)", "activity"]]) {
+        if (tab === "activity") { await c.tap("#tabbar button[data-k=activity]"); await c.sleep(900); }
+        for (const i of [3, 1]) {
+          const r = await slide(sel, i);
+          /* speed, not distance per frame: a render frame can be long (WebKit ~90 ms), the pill keeps its pace through it (transform-only, compositor);
+             the spring's peak is ~1.4 px/ms over a 4-button pick; no step backwards beyond the spring's small overshoot */
+          c.check(`${tag} ${nm} -> ${i}: pill slides every frame, never vanishes, row never fades, row kept`,
+            r.gone === 0 && r.vel <= 2.2 && r.back <= 4 && r.moved >= 6 && r.fade >= .99 && r.end <= 2 && r.same, r);
+        }
+        if (tab === "activity") { await c.tap("#tabbar button[data-k=quests]"); await c.sleep(900); }
+      }
     }
     /* built once: a poll does not rebuild it or replay the entrance */
     await p.evaluate(() => { window.__row = document.querySelector(".m-seg.q"); window.__an = 0; document.addEventListener("animationstart", e => { if (e.target.closest && e.target.closest(".m-seg.q") && e.animationName !== "qf-edge") window.__an++; }, true); });
@@ -43,6 +68,7 @@ module.exports = {
     /* edge fade (en labels overflow 358 px) */
     const ops = () => p.evaluate(() => [...document.querySelectorAll(".m-seg.q .seg-i")].map(b => +(+getComputedStyle(b).opacity).toFixed(2)));
     const vt = await p.evaluate(() => CSS.supports("animation-timeline: view()"));
+    await p.evaluate(() => { document.querySelector(".m-seg.q .seg").scrollLeft = 0; }); await c.sleep(400);   /* the picks above may leave it scrolled */
     const o1 = await ops();
     await p.evaluate(() => { document.querySelector(".m-seg.q .seg").scrollLeft = 9999; }); await c.sleep(400);
     const o2 = await ops();

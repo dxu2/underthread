@@ -242,4 +242,9 @@ body.vp-fix #sc-undo { bottom: auto; top: calc(var(--app-h) - var(--tb-h) - 64px
   @keyframes qf-edge { entry 0% { opacity: .15; } entry 100% { opacity: 1; } exit 0% { opacity: 1; } exit 100% { opacity: .15; } }
 }
 @media (prefers-reduced-motion: reduce) { .m-seg.q .seg-i { animation: none; } }
+/* t-phone-filter-row v2 (user 11-22 「一下一下」): the row and the search field are kept across category picks (nav.js QROW, .keep): no entrance
+   replay, the ui4 pill slides on the same node. The list underneath swaps softly ([data-soft], fx.js rows()): headings from .3, no blank frame. */
+.enter .filters.keep, .enter .q-search.keep { animation: none; }
+#pagebody.enter[data-soft="1"] :is(.grp-h, .ph-bar) { animation: m-soft 220ms var(--m-ease-emph) both; animation-delay: 0ms; }
+@keyframes m-soft { from { opacity: .3; transform: translateY(4px); } }
 

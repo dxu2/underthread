@@ -176,32 +176,103 @@ document.addEventListener("visibilitychange", () => { if (!document.hidden) { po
 setInterval(() => { if (ST) { renderLeft(); renderTool(); } document.querySelectorAll(".m-typing[data-until]").forEach(b => { if (b.dataset.until && Date.now() > +b.dataset.until) b.remove(); }); }, 60000);   // t-typing-fix: stale typing dots go even without a poll change
 
 /* ===== ui4: segmented switch (.seg) — sliding indicator for filters. Pure presentation: finds .seg containers after any render,
-   measures the .on item and slides an <i.seg-ind> from where the previous render left it. No filtering logic touched. ===== */
+   measures the .on item and slides an <i.seg-ind> from where the previous render left it. No filtering logic touched.
+   t-phone-filter-row v2 (user 11-22 「点击的时候一下一下的」): the slide is continuous now.
+   - The pages rebuild their filter row on every pick (renderPage -> innerHTML), so the indicator node is new each time. Each key remembers its
+     last slide (from / to / start / duration) and a new node starts from where the old one IS at this moment (spring evaluated in JS), so a
+     rebuild, a second tap mid-flight or a poll never makes it jump.
+   - It runs in the MutationObserver callback (a microtask, before paint): no frame shows the new row without its indicator.
+   - A tap on a filter row (.filters .seg) moves the pill at once, before the page renders the new list (that render can take a few frames).
+   - Motion: the same damped spring as the phone tab bar (--m-spring family, nav.js TBM.spring), WAAPI on transform + width. */
 (() => {
-  const POS = {}, reduce = matchMedia("(prefers-reduced-motion: reduce)");
+  const POS = {}, SL = {}, reduce = matchMedia("(prefers-reduced-motion: reduce)");
+  const Z = .72, W = 7.2, WD = W * Math.sqrt(1 - Z * Z);
+  const spr = t => t >= 1 ? 1 : t <= 0 ? 0 : 1 - Math.exp(-Z * W * t) * (Math.cos(WD * t) + Z * W / WD * Math.sin(WD * t));
+  let LIN = "cubic-bezier(.2,.8,.2,1)";
+  try { const pts = []; for (let i = 0; i <= 30; i++) pts.push((i === 30 ? 1 : spr(i / 30)).toFixed(4)); const l = `linear(${pts.join(",")})`; if (CSS.supports("transition-timing-function", l)) LIN = l; } catch (_) { }
+  /* where a key's indicator is at time now: [x, w] */
+  const at = (P, now) => { const k = P.dur ? spr((now - P.t0) / P.dur) : 1; return [P.fx + (P.x - P.fx) * k, P.fw + (P.w - P.fw) * k]; };
+  /* scroll a track only as far as needed to show the picked button clear of the edge fades (was: always centre it). Centring scrolled the
+     track under the moving pill, so the pill seemed to step back before sliding on. Shared with phone/nav.js (window.__segInView). */
+  function inView(tr, on, smooth) {
+    if (!on || tr.scrollWidth <= tr.clientWidth + 1) return;
+    const M = 28, cur = tr.scrollLeft, cw = tr.clientWidth, a = on.offsetLeft, b = a + on.offsetWidth;
+    let t = a - M < cur ? a - M : b + M > cur + cw ? b + M - cw : cur;
+    t = Math.max(0, Math.min(tr.scrollWidth - cw, t));
+    if (Math.abs(t - cur) > 1) tr.scrollTo({ left: t, behavior: smooth && !reduce.matches ? "smooth" : "auto" });
+  }
+  window.__segInView = inView;
   function sync(seg, force) {
     const on = seg.querySelector(".seg-i.on"), key = seg.dataset.seg || "";
     let ind = seg.querySelector(".seg-ind");
     if (RO && !seg._ro) { seg._ro = 1; RO.observe(seg); }   /* t-m-ut-white: see RO below */
-    if (!ind) { ind = document.createElement("i"); ind.className = "seg-ind"; ind.setAttribute("aria-hidden", "true"); seg.prepend(ind); }
+    if (!ind) { ind = document.createElement("i"); ind.className = "seg-ind"; ind.setAttribute("aria-hidden", "true"); ind.style.transition = "opacity .2s"; seg.prepend(ind); }
     if (!on || !on.offsetWidth) { ind.style.opacity = 0; return false; }
-    const x = on.offsetLeft, w = on.offsetWidth, prev = POS[key];
-    const set = (px, pw) => { ind.style.width = pw + "px"; ind.style.transform = `translateX(${px}px)`; };
+    const x = on.offsetLeft, w = on.offsetWidth, prev = POS[key], now = performance.now();
+    const place = (px, pw) => { ind.style.width = pw + "px"; ind.style.transform = `translateX(${px}px)`; };
     ind.style.opacity = 1;
-    if (prev && !force && !reduce.matches && (prev.x !== x || prev.w !== w)) {
-      ind.style.transition = "none"; set(prev.x, prev.w); void ind.offsetWidth; ind.style.transition = ""; set(x, w);
-    } else { ind.style.transition = "none"; set(x, w); void ind.offsetWidth; ind.style.transition = ""; }
-    POS[key] = { x, w };
+    if (ind._a) { ind._a.cancel(); ind._a = null; }
+    if (ind._w) { ind._w.cancel(); ind._w = null; }
+    const [cx, cw] = prev ? at(prev, now) : [x, w];
+    place(x, w);
+    const moving = prev && !force && !reduce.matches && (Math.abs(cx - x) > .5 || Math.abs(cw - w) > .5);
+    if (moving && ind.animate) {
+      /* keep the remaining time of a slide already under way to the same place (a rebuild mid-flight), else a fresh one */
+      const same = Math.abs(prev.x - x) < .5 && Math.abs(prev.w - w) < .5 && now - prev.t0 < prev.dur;
+      const P = same ? prev : { fx: cx, fw: cw, x, w, t0: now, dur: Math.round(380 + Math.min(160, Math.abs(x - cx) * .45)) };
+      const el = now - P.t0;
+      /* two animations: transform alone runs on the compositor (a long render frame does not stall it); width rides on the main thread */
+      const o = { duration: P.dur, delay: -el, easing: LIN };
+      ind._a = ind.animate([{ transform: `translateX(${P.fx}px)` }, { transform: `translateX(${P.x}px)` }], o);
+      ind._w = Math.abs(P.fw - P.w) > .5 ? ind.animate([{ width: P.fw + "px" }, { width: P.w + "px" }], o) : null;
+      ind._a.onfinish = () => { ind._a = null; ind._w = null; };
+      /* the picked label turns light as the pill arrives under it, not before (a rebuilt row draws it light at once) */
+      const off = [...seg.querySelectorAll(":scope > .seg-i")].find(x => x !== on && !x.getAnimations().some(a => typeof CSSTransition === "function" && a instanceof CSSTransition));   /* not the one just let go (its colour is mid-transition) */
+      if (off && on.animate) { if (on._ca) on._ca.cancel(); const c0 = getComputedStyle(off).color, c1 = getComputedStyle(on).color; if (c0 !== c1) on._ca = on.animate([{ color: c0 }, { offset: .35, color: c0 }, { color: c1 }], { duration: Math.max(160, (P.dur - el) * .6), easing: "ease-out" }); }
+      POS[key] = P;
+    } else POS[key] = { fx: x, fw: w, x, w, t0: now, dur: 0 };
     // keep the selected item in view when the track scrolls (phone / narrow dropdown)
     if (seg.scrollWidth > seg.clientWidth + 1) {
-      const target = Math.max(0, x + w / 2 - seg.clientWidth / 2);
-      seg.scrollTo({ left: target, behavior: prev && !reduce.matches ? "smooth" : "auto" });
+      /* a rebuilt track starts at scrollLeft 0: put it back where the old one was (mid smooth-scroll too), then glide on */
+      if (!seg._sl) { seg._sl = 1; if (SL[key] != null && prev) seg.scrollLeft = SL[key]; seg.addEventListener("scroll", () => { SL[key] = seg.scrollLeft; }, { passive: true }); }
+      inView(seg, on, !!prev);
     }
     return true;
   }
+  /* t-phone-filter-row v2: a page that rebuilds its filter row (renderPage -> innerHTML, e.g. the 通知 row on every pick) gets its old row back
+     when the new one has the same buttons: the pill keeps its running slide (no restart after the long render frame), the track keeps its scroll.
+     Runs in the observer microtask, before paint. Clicks are delegated on document, so the kept node behaves the same. */
+  const ROWS = {};
+  const bk = b => b.outerHTML.replace(/\s+style="[^"]*"/, "").replace(/\bseg-i(\s+on)?\s*"/, 'seg-i"');   /* a button minus its pick state */
+  const sig = r => r.className.replace(/\s*\b(keep|enter)\b/g, "") + "|" + [...r.querySelectorAll("button")].map(bk).join("");
+  function keepRows(muts) {
+    for (const m of muts) for (const n of m.addedNodes) {
+      if (n.nodeType !== 1) continue;
+      const rows = n.matches && n.matches(".filters") ? [n] : n.querySelectorAll ? n.querySelectorAll(".filters") : [];
+      for (const r of rows) {
+        const s = r.querySelector(":scope > .seg[data-seg]"); if (!s || !r.isConnected) continue;
+        const key = s.dataset.seg, old = ROWS[key], g = sig(r);
+        if (old && old !== r && !old.isConnected && old._sig === g) {
+          const os = old.querySelector(":scope > .seg"), want = s.querySelector(".seg-i.on"), wk = want && bk(want);
+          os.querySelectorAll(":scope > .seg-i").forEach(b => b.classList.toggle("on", !!wk && bk(b) === wk));
+          r.replaceWith(old);
+          if (SL[key] != null) { os.scrollLeft = SL[key]; inView(os, os.querySelector(".seg-i.on"), true); }
+          continue;
+        }
+        r._sig = g; ROWS[key] = r;
+      }
+    }
+  }
   let q = 0;
-  function run(force) { cancelAnimationFrame(q); q = requestAnimationFrame(() => document.querySelectorAll(".seg").forEach(s => { if (force || !s._ui4 || s._ui4 !== s.querySelector(".seg-i.on")) { if (sync(s, force)) s._ui4 = s.querySelector(".seg-i.on"); } })); }
-  new MutationObserver(() => run(false)).observe(document.body, { childList: true, subtree: true });
+  const pass = force => document.querySelectorAll(".seg").forEach(s => { if (force || !s._ui4 || s._ui4 !== s.querySelector(".seg-i.on")) { if (sync(s, force)) s._ui4 = s.querySelector(".seg-i.on"); } });
+  function run(force) { cancelAnimationFrame(q); q = requestAnimationFrame(() => pass(force)); }
+  new MutationObserver(muts => { keepRows(muts); cancelAnimationFrame(q); pass(false); }).observe(document.body, { childList: true, subtree: true });   /* microtask: before the next paint */
+  /* a tap on a filter row: the pill leaves at once (the list render that follows rebuilds the row; the new node carries on from here) */
+  document.addEventListener("click", e => {
+    const b = e.target.closest && e.target.closest(".filters .seg > .seg-i"); if (!b || b.classList.contains("on") || b.disabled) return;
+    const s = b.parentElement; s.querySelectorAll(":scope > .seg-i.on").forEach(x => x.classList.remove("on")); b.classList.add("on");
+    if (sync(s, false)) s._ui4 = b;
+  }, true);
   /* t-m-ut-white: a .seg re-rendered while its tab is hidden (offsetWidth 0) left the indicator at opacity 0, and showing the tab is not a DOM mutation,
      so the selected item stayed light text on a light track. Watch each track's size: hidden -> shown fires and re-syncs it. */
   const RO = typeof ResizeObserver === "function" ? new ResizeObserver(() => run(false)) : null;

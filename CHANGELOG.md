@@ -19,7 +19,7 @@ Work in progress goes under `## Unreleased`; the release renames it to `## [X.Y.
 - Nothing.
 
 ### Changed
-- **Phone: the Quests category row matches the Notifications filter row**: same side margins, height, pill and selected state in every look (it used to run to both screen edges). A category cut by the edge fades as you swipe.
+- **Phone: the Quests category row matches the Notifications filter row**: same side margins, height, pill and selected state in every look (it used to run to both screen edges). A category cut by the edge fades as you swipe. Picking a filter in either row now slides the pill in one smooth motion: the row stays in place (no fade-out and back), the list below swaps without a blank frame, and the row only scrolls when the picked filter is cut off.
 
 ### Fixed
 - Nothing.
