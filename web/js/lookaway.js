@@ -186,6 +186,7 @@
   function take(fresh, line) {
     if (mode() === "off" || !fresh.length) return false;
     const list = fresh.map(n => ({ ...n, sub: n.it ? (n.cls === "decide" ? n.it.title : (line ? line(n) : n.text) + " · " + n.it.title) : (line ? line(n) : n.text) }));
+    if (window.Tour && Tour.isOpen()) { S.held = (S.held || []).concat(list); return true; }   // t-onboard-tour: no cue over the tour; release() turns them into the pill
     const rev = list.filter(n => n.cls === "decide" && n.it && !/^新规则提议/.test(n.text || ""));
     if (rev.length && !fsBlock()) { fsPlay("review", rev); const rest = list.filter(n => !rev.includes(n)); if (rest.length) S.wait.push(...rest); return true; }
     route(list);
@@ -239,5 +240,7 @@
   });
   addEventListener("storage", e => { if (e.key === "rt.lka") setPaint(); });
 
-  window.LookAway = { take, route, fsPlay, fsEnd, pillAdd, pillOut, settingsRow, preview, mode, fsBlock, eodCheck, _S: S };
+  /* t-onboard-tour: the tour closed; what arrived meanwhile comes in as the quiet top pill (never the full-screen arrival) */
+  function release() { const h = S.held || []; S.held = []; if (h.length && mode() !== "off") route(h); }
+  window.LookAway = { release, take, route, fsPlay, fsEnd, pillAdd, pillOut, settingsRow, preview, mode, fsBlock, eodCheck, _S: S };
 })();
