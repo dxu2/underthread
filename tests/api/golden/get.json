@@ -149,7 +149,21 @@
      ]
     }
    ],
-   "extensions": [],
+   "extensions": [
+    {
+     "api": 1,
+     "builtin": true,
+     "error": null,
+     "legacy": false,
+     "name": "live",
+     "on": true,
+     "requires": null,
+     "server": true,
+     "skipped": null,
+     "stateutil": true,
+     "web": true
+    }
+   ],
    "health": [],
    "jobs": [],
    "legacy_until": "0.3.0",
@@ -186,7 +200,14 @@
    },
    "ext": {
     "api": 1,
-    "extensions": [],
+    "extensions": [
+     {
+      "error": null,
+      "legacy": false,
+      "name": "live",
+      "skipped": null
+     }
+    ],
     "health": []
    },
    "feeds": {
@@ -654,6 +675,7 @@
     "/static/css/style/17-avatar-row-market-hr.css?v=<h>",
     "/static/css/style/18-fixes-1108-1112.css?v=<h>",
     "/static/css/style/19-connections.css?v=<h>",
+    "/static/ext/live/live.css?v=<h>",
     "/static/css/mobile/00-layout.css?v=<h>",
     "/static/css/mobile/01-polish-tabbar.css?v=<h>",
     "/static/css/mobile/02-chat.css?v=<h>",
@@ -678,9 +700,11 @@
     "/static/css/oss.css?v=<h>",
     "/static/brand/wordmark-on-dark@2x.png?v=<h>",
     "/static/brand/wordmark-on-light@2x.png?v=<h>",
-    "/static/main.js?v=<h>"
+    "/static/main.js?v=<h>",
+    "/static/ext/live/live.js?v=<h>"
    ],
    "import_map": {
+    "/static/ext/live/live.js": "/static/ext/live/live.js?v=<h>",
     "/static/js/app.js": "/static/js/app.js?v=<h>",
     "/static/js/core/av.js": "/static/js/core/av.js?v=<h>",
     "/static/js/core/i18n.js": "/static/js/core/i18n.js?v=<h>",
@@ -2401,6 +2425,9 @@
     "avatars": {},
     "avv": "<volatile>",
     "codex": null,
+    "exts": {
+     "live": true
+    },
     "fixture": {
      "built_by": "tests/e2e/fixtures/build.py",
      "end": "2026-01-20T09:59:00+00:00",
@@ -4053,6 +4080,9 @@
      "writer": "2026-01-20T09:00:00+00:00"
     },
     "codex": null,
+    "exts": {
+     "live": true
+    },
     "fixture": {
      "built_by": "tests/e2e/fixtures/build.py",
      "end": "2026-01-20T09:59:00+00:00",
@@ -4090,7 +4120,7 @@
     "owner_loc": null,
     "platforms_set": false,
     "report_time": "18:00",
-    "rev": 121,
+    "rev": 123,
     "routines": [],
     "routines_log": {},
     "schema": 3,
@@ -4177,7 +4207,7 @@
       0,
       7
      ],
-     "logs": 80,
+     "logs": 82,
      "mail": [
       20,
       20
@@ -5293,6 +5323,9 @@
     "avatars": {},
     "avv": "<volatile>",
     "codex": null,
+    "exts": {
+     "live": true
+    },
     "fixture": {
      "built_by": "tests/e2e/fixtures/build.py",
      "end": "2026-01-20T09:59:00+00:00",

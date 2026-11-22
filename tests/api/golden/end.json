@@ -2113,6 +2113,18 @@
     "agent": "me",
     "item": null,
     "t": "2026-01-20T10:00:00+00:00",
+    "text": "ext_set"
+   },
+   {
+    "agent": "me",
+    "item": null,
+    "t": "2026-01-20T10:00:00+00:00",
+    "text": "ext_set"
+   },
+   {
+    "agent": "me",
+    "item": null,
+    "t": "2026-01-20T10:00:00+00:00",
     "text": "stamina"
    },
    {
@@ -2438,7 +2450,7 @@
     }
    ],
    "onboarding": {},
-   "rev": 121,
+   "rev": 123,
    "routines_log": {},
    "schema": 3,
    "stamina": {
