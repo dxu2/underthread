@@ -94,7 +94,7 @@
   function pillHTML(n) {
     const a = ag(n.agent), more = S.q.length - 1;
     return `<img class="lka-pav" src="${esc(av(a))}" alt=""><span class="lka-tx"><b>${esc(nm(a) || n.agent || "")}<em> · ${esc(L2(TAG[n.cls]))}</em></b><small>${esc(n.sub || "")}</small></span>`
-      + `<button type="button" class="lka-more" data-lka-more${more > 0 ? "" : " hidden"}>${en() ? `${more} more` : `还有 ${more} 条`}</button>`
+      + `<button type="button" class="lka-more" data-lka-more aria-label="${en() ? `${more} more` : `还有 ${more} 条`}"${more > 0 ? "" : " hidden"}><span class="lka-mf">${en() ? `${more} more` : `还有 ${more} 条`}</span><span class="lka-mb" aria-hidden="true">+${more}</span></button>`
       + `<span class="lka-go" aria-hidden="true">${esc(L2(BTN[n.cls]))}</span><i class="lka-pcd" aria-hidden="true"><i></i></i>`;
   }
   function pillBox() {

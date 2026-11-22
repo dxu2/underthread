@@ -87,6 +87,19 @@ html[data-texture^="leather"] #lka-pw .lka-pill::after { content: ""; inset: 3.5
 #lka-pw .lka-more:hover { background: color-mix(in srgb, var(--accent, #D6BF9E) 22%, transparent); }
 #lka-pw .lka-more:active { transform: scale(.94); }
 #lka-pw .lka-more[hidden] { display: none; }
+#lka-pw .lka-mb { display: none; }
+/* r-improve-1122 P1: on a phone the 「还有 N 条 / N more」 chip becomes a +N badge on the avatar's corner, so the title gets its 60-70 px back
+   ("Roccia · Handed in for review" was cut to "Handed in f…"). Tapping it still steps to the next arrival; ::before widens the hit area to 40 px. */
+@media (max-width: 760px) {
+  #lka-pw .lka-more { position: absolute; left: 32px; top: 5px; z-index: 2; min-width: 20px; height: 20px; padding: 0 5px; border-radius: 10px;
+    font: 700 11px/20px var(--lka-font); text-align: center; color: var(--accent-ink, #1F110D); background: var(--accent, #D6BF9E);
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--panel2, #3A2F29) 96%, transparent), 0 2px 6px rgba(var(--lka-sh),.35); }
+  html[data-theme="white"] #lka-pw .lka-more { box-shadow: 0 0 0 2px var(--panel, #FFF9EF), 0 2px 6px rgba(var(--lka-sh),.18); }
+  #lka-pw .lka-more::before { content: ""; position: absolute; inset: -10px -10px -10px -10px; }
+  #lka-pw .lka-more:hover { background: var(--accent, #D6BF9E); }
+  #lka-pw .lka-mf { display: none; }
+  #lka-pw .lka-mb { display: inline; }
+}
 #lka-pw .lka-go { flex: none; height: 38px; padding: 0 18px; border-radius: 19px; border: 1px solid color-mix(in srgb, var(--ink, #F1E4CF) 26%, transparent); display: flex; align-items: center;
   font-size: 14px; font-weight: 600; color: var(--ink, #F1E4CF); background: color-mix(in srgb, var(--ink, #F1E4CF) 4%, transparent); transition: background .18s ease, border-color .18s ease; }
 #lka-pw .lka-pill:hover .lka-go { background: color-mix(in srgb, var(--ink, #F1E4CF) 10%, transparent); border-color: color-mix(in srgb, var(--ink, #F1E4CF) 40%, transparent); }
