@@ -1,8 +1,9 @@
 /* t-section-titles: the desk widget home. Every section wears a sewn-on label on its top edge with a one-line subtitle (Underthread skins; under
  * leather the label takes the section's dye), 等你拍板 is first and full width whatever the saved layout says, 团队交接 is gone (its busy count is in
  * the 此刻在忙 label), 最近 is a full-width row of up to 5 cards at the bottom, and the chat column's avatar row starts flush with the fold button.
- * Upgrade: a saved layout that still holds team (and review at L, and no recent in seen) loses team, shows review first at full width and gets
- * recent once at the end; removing recent sticks. Fresh install (恢复默认) = the default order. The board's own layout is put back at the end.
+ * Upgrade: a saved layout that still holds team (and review at L) loses team and shows review first at full width. 最近 is opt-in (user 11-21 23:50):
+ * not in the default, never auto-inserted, taken out once from a layout that got it earlier, and added back from 添加小组件 it sticks.
+ * Fresh install (恢复默认) = the default order. The board's own layout is put back at the end.
  *   node tests/e2e/drive.js run tests/e2e/journeys/sectiontitles.js --out work/<item>/verify/<run> --engines chromium,webkit
  *   ST_TEXTURE=knit1|leather1 (default knit1)
  */
@@ -38,14 +39,11 @@ module.exports = {
       await boot(c, tex);
       const a = await look(p), nums = await p.evaluate(() => [...document.querySelectorAll("#wg .wg-eb .wnb-num")].map(n => { const e = n.closest(".wg-eb").getBoundingClientRect(), r = n.getBoundingClientRect(); return { k: n.closest(".wg").dataset.wg, inside: r.top >= e.top - 1 && r.bottom <= e.bottom + 1, box: getComputedStyle(n, "::before").content }; }));
       c.check("default: 等你拍板 first and full width, two columns of rows", a.order[0] === "review" && a.review.w >= a.review.grid - 2 && a.review.cols === 2, a);
-      c.check("default: no 团队交接, 最近 last and full width with up to 5 tiles", !a.team && !a.order.includes("team") && a.order[a.order.length - 1] === "recent" && a.recent.w >= a.review.grid - 2 && a.recent.tiles > 0 && a.recent.tiles <= 5, a);
+      c.check("default: no 团队交接, no 最近", !a.team && !a.order.includes("team") && !a.order.includes("recent"), a.order);
       c.check("此刻在忙 label carries the busy count", !a.busy || /\d+\s*人在忙/.test(a.busy), a.busy);
       c.check("every section label sits on its top edge, inside the card, subtitle under it", a.lab.length && a.lab.every(x => x.above && x.inside && x.sub && x.subClear || x.k === "setup"), a.lab.filter(x => !(x.above && x.inside && x.sub && x.subClear)));
       c.check("label counts are plain figures inside the label (no stitched number box)", nums.every(x => x.inside && (x.box === "none" || x.box === "normal")), nums);
-      if (/leather/.test(tex)) c.check("leather: 最近 has its own dye", !!a.dye, a.dye);
       await c.shot(`home-top-${tex}`);
-      await p.evaluate(() => document.querySelector("#wg .wg-recent").scrollIntoView({ block: "end" })); await c.sleep(400);
-      await c.shot(`home-bottom-${tex}`);
       const g = await p.evaluate(() => { const r = e => e && Math.round(e.getBoundingClientRect().left); return { fold: r(document.querySelector("#right .ch-fold")), first: r(document.querySelector("#right .ch-roster > button")) }; });
       c.check("avatar row starts flush with the fold button (no empty gutter)", g.first != null && Math.abs(g.first - g.fold) <= 8, g);
       await c.shot("chat-head", "#right .ch-head");
@@ -57,7 +55,7 @@ module.exports = {
       await boot(c, tex); await c.sleep(1500);
       const b = await look(p), sv = await p.evaluate(() => App.ST.meta.widgets);
       c.check("upgrade: no team tile, no empty slot, review first and full width", !b.team && b.order[0] === "review" && b.review.w >= b.review.grid - 2 && b.order.every(k => k === "recent" || old.some(x => x[0] === k)), b.order);   /* empty sections fold into the calm line, so the count depends on the board */
-      c.check("upgrade: 最近 arrives once, at the end, and is saved with seen", b.order[b.order.length - 1] === "recent" && sv.layout.some(x => x[0] === "recent") && sv.seen.includes("recent"), { order: b.order, sv });
+      c.check("upgrade: 最近 is not inserted", !b.order.includes("recent") && !sv.layout.some(x => x[0] === "recent"), { order: b.order, sv });
       await c.shot("upgrade-top");
       /* removing 最近 sticks */
       await c.tap('[data-wg-edit]'); await c.sleep(600);
@@ -72,11 +70,20 @@ module.exports = {
       await c.tap('#wg .wg-review [data-wg-size="review:l"]'); await c.sleep(900);
       const l = await look(p);
       c.check("size L: back to full width", l.order[0] === "review" && l.review.w >= l.review.grid - 2, l.review);
-      await c.tap('#wg .wg-recent [data-wg-hide="recent"]'); await c.sleep(800);
-      await p.keyboard.press("Escape"); await c.sleep(300);
+      /* 最近 is offered in 添加小组件; added back it sticks over a reload */
+      c.check("添加小组件 offers 最近", await p.evaluate(() => !!document.querySelector('[data-wg-add="recent"]')));
+      await c.tap('[data-wg-add="recent"]'); await c.sleep(900);
+      await c.tap('[data-wg-edit]'); await c.sleep(300);
       await boot(c, tex); await c.sleep(1200);
       const d = await look(p);
-      c.check("removed 最近 stays removed after a reload", !d.order.includes("recent"), d.order);
+      c.check("added 最近 stays after a reload: last, full width, up to 5 tiles", d.order[d.order.length - 1] === "recent" && d.recent && d.recent.tiles > 0 && d.recent.tiles <= 5, d.order);
+      await p.evaluate(() => document.querySelector("#wg .wg-recent").scrollIntoView({ block: "end" })); await c.sleep(400);
+      await c.shot(`recent-added-${tex}`);
+      /* a board that got 最近 from the first build (seen without the recent-off mark) loses it once */
+      c.check("layout from the first build stored", await act(p, { kind: "widget_layout", layout: [["review", "l"], ["busy", "l"], ["recent", "w"]], seen: seenOld.concat("recent") }) === 200);
+      await boot(c, tex); await c.sleep(1500);
+      const e = await look(p), se = await p.evaluate(() => App.ST.meta.widgets);
+      c.check("first-build layout: 最近 taken out once, mark saved", !e.order.includes("recent") && !se.layout.some(x => x[0] === "recent") && se.seen.includes("recent-off"), { order: e.order, se });
     } finally {
       if (orig && orig.layout) await act(p, { kind: "widget_layout", layout: orig.layout, seen: orig.seen });
       else await act(p, { kind: "widget_layout", reset: true, seen: orig && orig.seen });

@@ -25,12 +25,16 @@
   /* the default layout: the core nine in this order, then any extension widget at its own size; 恢复默认 shows this */
   /* t-section-titles (user 11-21): 等你拍板 first and full width (pinned there, see html()), 团队交接 gone from the home (its busy count lives in the
      此刻在忙 label now), 最近 = the five cards that moved last, at the bottom */
-  const DEF_CORE = [["setup", "w"], ["review", "l"], ["usage", "l"], ["busy", "l"], ["replies", "l"], ["today", "m"], ["week", "m"], ["ongoing", "m"], ["media", "m"], ["recent", "w"]];
+  const DEF_CORE = [["setup", "w"], ["review", "l"], ["usage", "l"], ["busy", "l"], ["replies", "l"], ["today", "m"], ["week", "m"], ["ongoing", "m"], ["media", "m"]];
   const defL = () => [...DEF_CORE.filter(x => REG()(x[0])), ...(window.UTExt ? UTExt.widgets().filter(w => !w.core) : []).map(w => [w.id, w.size])];
   const DEF = { map: f => defL().map(f) };   // DEF.map(x => x.slice()) as before
+  /* t-section-titles (user 11-21 23:50 「recent 这个 panel 有点冗余」): 最近 stays in 添加小组件 but is off by default; a board that already got it
+     once loses it once. "recent-off" in meta.widgets.seen (rt.recentOff for a browser-only layout) marks that this was done, so adding it back sticks. */
+  const OPTIN = new Set(["recent"]), RC_OFF = "recent-off";
   const KEY = "rt.widgets";
   const loadLocal = () => { try { let v = JSON.parse(localStorage.getItem(KEY) || "null"); if (Array.isArray(v) && v.length && v.every(x => Array.isArray(x) && typeof x[0] === "string")) {
-      v = v.filter(x => SIZES[x[0]]);   // S8: an id whose widget is not registered (an extension that is gone) drops out
+      v = v.filter(x => SIZES[x[0]]);
+      if (!localStorage.getItem("rt.recentOff")) { localStorage.setItem("rt.recentOff", "1"); if (v.some(x => x[0] === "recent")) { v = v.filter(x => x[0] !== "recent"); localStorage.setItem(KEY, JSON.stringify(v)); } }   // S8: an id whose widget is not registered (an extension that is gone) drops out
       // t-home-usage / t-rb-build: a browser-only layout from before 用量 / 团队交接 existed gets them once (the server path uses meta.widgets.seen)
       if (!v.some(x => x[0] === "usage") && !localStorage.getItem("rt.wgUsage")) { v.unshift(["usage", "l"]); localStorage.setItem("rt.wgUsage", "1"); localStorage.setItem(KEY, JSON.stringify(v)); }
       if (v.length) return v; } } catch { } return DEF.map(x => x.slice()); };
@@ -41,7 +45,7 @@
   let PEND = null;
   const known = v => Array.isArray(v) ? v.map(x => Array.isArray(x) && x[0] === "review" && x[1] === "w" ? ["review", "l"] : x).filter(x => Array.isArray(x) && SIZES[x[0]] && SIZES[x[0]].includes(x[1])) : null;
   const srv = () => { const m = A() && A().ST && A().ST.meta; return m ? m.widgets : undefined; };   // undefined = no state yet, null = never saved
-  const seenNow = () => { const w = srv(); return [...new Set([...(w && Array.isArray(w.seen) ? w.seen : []), ...allIds()])].sort(); };
+  const seenNow = () => { const w = srv(); return [...new Set([...(w && Array.isArray(w.seen) ? w.seen : []), ...allIds(), RC_OFF])].sort(); };
   const push = L => send(L ? { kind: "widget_layout", layout: L, seen: seenNow() } : { kind: "widget_layout", reset: true, seen: seenNow() }, L);
   const send = (body, L) => { PEND = { L: L ? JSON.stringify(L) : null, t: Date.now() };
     fetch("/api/action", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) })
@@ -53,7 +57,10 @@
       if (w && got === PEND.L || now - PEND.t > 15000) PEND = null;
       else return PEND.L ? JSON.parse(PEND.L) : DEF.map(x => x.slice());
     }
-    if (w && typeof w === "object") { const v = known(w.layout); let L = v && v.length ? v : DEF.map(x => x.slice()); L = meet(w, L, !!(v && v.length)); saveLocal(L); return L; }
+    if (w && typeof w === "object") { let v = known(w.layout);
+      if (v && !(Array.isArray(w.seen) && w.seen.includes(RC_OFF)) && !rcOff.sent) { rcOff.sent = 1; const had = v.some(x => x[0] === "recent"); v = v.filter(x => x[0] !== "recent");   // once: 最近 out again
+        if (v.length) { send({ kind: "widget_layout", layout: v, seen: seenNow() }, v); saveLocal(v); return v; } }
+      let L = v && v.length ? v : DEF.map(x => x.slice()); L = meet(w, L, !!(v && v.length)); saveLocal(L); return L; }
     const L = loadLocal();
     if (w === null || (A() && A().ST && A().ST.meta && !("widgets" in A().ST.meta))) {   // first load against a server that has no layout yet: upload this browser's once
       let had = null; try { had = localStorage.getItem(KEY); } catch { }
@@ -64,7 +71,7 @@
   /* S8 (the server path; replaces rt.wgUsage / rt.wgTeam there): meta.widgets.seen lists every widget id this board has met. No list yet = everything
      registered now counts as met (the upgrade inserts nothing). A registered id not on it is new: it goes into a saved layout once
      (first: true = at the front, else at the end) and joins seen; removing it later sticks. A default layout (null) shows it anyway. */
-  let MET = "";
+  let MET = ""; const rcOff = {};
   /* S9: the page scripts are modules and extension scripts are deferred after them, so readyState is already "interactive" here while
      extensions are still to come: DOMContentLoaded is the first moment every script has run */
   let BOOTED = document.readyState === "complete";
@@ -72,9 +79,9 @@
   function meet(w, L, saved) {
     const ids = allIds();
     if (!ids.length || !BOOTED) return L;   // extension scripts (after this file) have not registered yet
-    const seen = Array.isArray(w.seen) ? w.seen : null, fresh = seen ? ids.filter(k => !seen.includes(k)) : [];
+    const seen = Array.isArray(w.seen) ? w.seen : null, fresh = seen ? ids.filter(k => !seen.includes(k) && !OPTIN.has(k)) : [];   // an opt-in widget is only offered in 添加小组件
     if (seen && !fresh.length) return L;
-    const all = [...new Set([...(seen || []), ...ids])].sort(), key = all.join(",");
+    const all = [...new Set([...(seen || []), ...ids, RC_OFF])].sort(), key = all.join(",");
     if (MET === key) return L;   // sent once already; PEND keeps it on screen until the poll brings it back
     MET = key;
     if (saved && fresh.length) {
