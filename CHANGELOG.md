@@ -66,6 +66,15 @@ Nothing.
 
 ### Fixed
 - Nothing.
+- Nothing.
+
+### Changed
+- **Phone: Assets and the hiring market use the same filter row as Quests and Notifications (r-improve-1122 P2)**: one track, the same height and sliding pill in every look, instead of their own chips. The desktop keeps its chips.
+
+### Fixed
+- **The 推荐 / Recommended tag on an answer option no longer splits over two lines (r-improve-1122 P3).**
+- **Knit: the top-right reply and message cards get a stitched edge and a rounder corner (r-improve-1122 P4)**, like the cards around them. Leather and the other looks are unchanged.
+- **e2e: the settings toggle's mid-slide check reads one held frame (r-improve-1122 P5)** instead of hoping a frame lands mid-slide, which failed now and then on slow WebKit.
 
 ### Upgrade notes
 - Migrations: none

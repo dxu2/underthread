@@ -12,6 +12,7 @@
   const $ = (s, r = document) => r.querySelector(s);
   const esc = s => String(s ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
   const en = () => !!(window.App && App.UI && App.UI.lang === "en");
+  const PHQ = matchMedia("(max-width: 760px)");
   const L = (zh, e) => en() ? e : zh;
   const CATS = ["研究", "工程", "创作", "运营", "生活"];
   const CAT_EN = { 研究: "Research", 工程: "Engineering", 创作: "Writing", 运营: "Operations", 生活: "Life" };
@@ -133,8 +134,11 @@
   function chips() {
     const ts = MK.data.templates, n = c => ts.filter(t => t.cat === c).length;
     const cats = CATS.filter(c => n(c)).concat([...new Set(ts.map(t => t.cat).filter(c => c && !CATS.includes(c)))]);
-    const b = (k, label, cnt) => `<button type="button" role="tab" aria-selected="${MK.cat === k}" class="${MK.cat === k ? "on" : ""}" data-mk-cat="${esc(k)}">${esc(label)} <b>${cnt}</b></button>`;
-    return `<div class="mk-chips" role="tablist">${b("all", L("全部", "All"), ts.length)}${cats.map(c => b(c, catL(c), n(c))).join("")}</div>`;
+    /* r-improve-1122 P2: on a phone the chips are the 通知 / 委托 filter row (div.filters.mb-row.m-seg.q > .seg); the desk keeps .mk-chips */
+    const ph = PHQ.matches, bc = on => (ph ? "seg-i" : "") + (on ? " on" : "");
+    const b = (k, label, cnt) => `<button type="button" role="tab" aria-selected="${MK.cat === k}" class="${bc(MK.cat === k)}" data-mk-cat="${esc(k)}">${esc(label)} <b>${cnt}</b></button>`;
+    const inner = `${b("all", L("全部", "All"), ts.length)}${cats.map(c => b(c, catL(c), n(c))).join("")}`;
+    return ph ? `<div class="filters mb-row m-seg q ri22-row"><div class="seg" data-seg="mkcat" role="tablist">${inner}</div></div>` : `<div class="mk-chips" role="tablist">${inner}</div>`;
   }
   const visible = () => { const ts = MK.data.templates.slice().sort((a, b) => (CATS.indexOf(a.cat) + 1 || 99) - (CATS.indexOf(b.cat) + 1 || 99)); return MK.cat === "all" ? ts : ts.filter(t => t.cat === MK.cat); };
   const gridHTML = () => visible().map(card).join("") || `<div class="mk-empty">${L("这一类还没有模板", "No templates in this category")}</div>`;
@@ -143,7 +147,7 @@
     const body = $("#pagebody"), cur = body && $(".mk-page", body);
     load();
     const sub = MK.data ? L(`${MK.data.templates.length} 个工种 · 每个 3 种性格 · 雇了马上出现在团队里`, `${MK.data.templates.length} jobs · 3 personalities each · a hire joins the team right away`) : "";
-    const iv0 = openIv(), key = [App.UI.lang, MK.err, MK.data ? JSON.stringify(MK.data) : "-", JSON.stringify(MK.pre || []), hrAgent() ? hrName() : "", iv0 ? iv0.id : ""].join("|");   /* t-hr-build: HR on / an interview running redraws the buttons */
+    const iv0 = openIv(), key = [App.UI.lang, PHQ.matches, MK.err, MK.data ? JSON.stringify(MK.data) : "-", JSON.stringify(MK.pre || []), hrAgent() ? hrName() : "", iv0 ? iv0.id : ""].join("|");   /* t-hr-build: HR on / an interview running redraws the buttons */
     if (cur && cur.dataset.k === key) return null;   /* nothing changed: keep switches, filter and scroll */
     const inner = MK.err ? `<div class="mk-err" role="alert">${esc(MK.err)}</div>`
       : !MK.data ? `<div class="mk-load">${L("正在读模板…", "Loading templates…")}</div>`

@@ -273,3 +273,8 @@ html[data-theme="dark"] #tabbar .tb-sel .ngl-r::after { background: linear-gradi
 html[data-texture^="knit"] #tabbar .tb-sel .ngl-r { opacity: 1; inset: 3px; background: none; box-shadow: none; border: 1.4px dashed color-mix(in srgb, var(--accent) 45%, transparent); }
 html[data-texture^="knit"] #tabbar .tb-sel .ngl-r::after { content: none; }
 html:not([data-texture^="knit"]) #tabbar .ngl-thr { display: none; }
+/* r-improve-1122 P2: 素材 (two rows) and 招聘市场 use the 委托 / 通知 filter row on a phone (library.js libChips, market.js chips): the count after
+   each label is quieter and follows the label's ink. */
+.ri22-row .seg-i :is(small, b) { font: inherit; font-weight: 500; margin-left: 3px; opacity: .6; font-variant-numeric: tabular-nums; color: inherit; }
+.ri22-row .seg-i.on :is(small, b) { opacity: .75; }
+.ri22-row + .ri22-row { margin-top: -4px; }
