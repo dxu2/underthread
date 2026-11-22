@@ -42,6 +42,14 @@ Nothing.
 ### Fixed
 - **Quick phrases stay inside the folded chat column (t-rail-overflow)**: with the chat column folded to its avatar strip, the 「想说点什么？ / What's on your mind?」 pill stuck out past the strip. Folded, it is now the yarn ball alone, centred; a click unfolds the column and opens the phrases. The chip row (shown before your 20th message) is hidden while the column is folded. Phones are unchanged.
 - **The mailbox keeps its width (t-mail-width)**: a letter with a long link, an unbroken word or a long card title stretched the 信箱 / Mail drop-down and the desk Mail page sideways, so the list could be dragged left and right. Rows now shrink to the panel, long words break, names and card titles end in …, and the list never scrolls sideways.
+- **Yarn kittens on the Working now card**: on the home 「此刻在忙 / Working now」 card (the phone team card rows and the desk widget's patch under Underthread) a small knit kitten plays by the avatar of whoever is working on a card right now. It wakes and fades in when the work starts and plays along while it works; on the phone a row that finishes its card keeps the kitten for the completion plate, where it curls up. A poll never restarts it. Your own layer can give a role a level-2 script (moving eyes) under `local/web/art/yarn/<id>.json` + `<id>/`.
+- **A kitten on the Notice line** (Underthread look): it naps by default, nudges the ball when a new notice arrives (the new notice jumps to the front), and now and then tugs the thread. 22:30-08:00 it only naps. Transform and opacity only.
+
+### Changed
+- Nothing.
+
+### Fixed
+- Nothing.
 
 ### Upgrade notes
 - Migrations: none
@@ -71,6 +79,7 @@ Nothing.
 - Migrations: none (the new `roster.json` keys `display_name`, `display_name_en` and `avatar_pick` are only written when you rename a role or pick an avatar; a board without them looks exactly as before)
 - New config keys: none
 - Extension api: unchanged (1)
+- Extension API: `local/web/art/yarn/<id>.json` (+ `<id>/` folder) adds a level-2 kitten for a role; listed in `meta.art[id].yarn`
 - Manual steps: none
 
 ## [0.2.0] - 2026-11-21

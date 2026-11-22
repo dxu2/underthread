@@ -94,7 +94,7 @@ function av(a, cls = "", forItem) {
   let w = a.status === "working" && !(forItem && a.item && a.item !== forItem);
   if (w && RING1) { if (RING1.has(a.id)) w = false; else RING1.add(a.id); }
   const tb = toolBadge(a), ws = w ? wsheet(a, 160) : "";
-  return `<span class="av ${cls} ${w ? "working" : ""}${ws ? " wsheet" : ""}" style="background-image:url('${avatarUrl(a)}')${w ? `;--wp:${(-(Date.now() % 4000) / 1000).toFixed(3)}s` : ""}${ws}" title="${esc(aname(a))}"${w ? ` data-working="1"` : ""}>${w && !tb ? `<i class="aw" title="${t("working")}"></i>` : ""}${tb}</span>`;
+  return `<span class="av ${cls} ${w ? "working" : ""}${ws ? " wsheet" : ""}" style="background-image:url('${avatarUrl(a)}')${w ? `;--wp:${(-(Date.now() % 16000) / 1000).toFixed(3)}s` : ""}${ws}" title="${esc(aname(a))}"${w ? ` data-working="1"` : ""}>${w && !tb ? `<i class="aw" title="${t("working")}"></i>` : ""}${tb}</span>`;
 }
 
 /* t-avatar-live-refresh: (re)read both manifests. At load (wireAv), when the server's avatar version meta.avv moves (avvSeen) and on pull to refresh

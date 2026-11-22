@@ -178,7 +178,8 @@ function convList() {
       <span class="cl-p">${dr ? `<span class="cl-dr">${en() ? "[Draft]" : "[草稿]"}</span> ${esc(dr.t.replace(/\s+/g, " ").trim())}` : x.last ? esc(preview(x.last)) : `<em>${esc(App.atitle(x.a))}</em>`}</span></span></button>`;
   }).join("") || `<div class="empty">${App.t("empty")}</div>`;
   const box = $(".cl-rows", el);
-  if (box._html !== html) { box.innerHTML = html; box._html = html; }
+  const hk = App.phaseFree ? App.phaseFree(html) : html;   /* t-yarn-anim: wall-clock phases (--wp) are not a change */
+  if (box._html !== hk) { box.innerHTML = html; box._html = hk; }
   const a = App.agent(App.UI.chat), others = all.filter(x => x.a.id !== App.UI.chat).reduce((n, x) => n + x.n, 0);
   $(".cl-back .n", r).textContent = others ? (others > 99 ? "99+" : others) : "";
   $(".cl-back .who", r).innerHTML = `${App.av(a, "sm")}<span class="wt"><span class="nm">${esc(App.aname(a))}${App.qBadge ? App.qBadge(a.id) : ""}</span><span class="ti">${esc(App.atitle(a))}${a.status === "working" ? ` · <i class="st">${App.t("working")}<span class="m-dots"><i></i><i></i><i></i></span></i>` : ""}</span></span>`;
