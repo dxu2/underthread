@@ -833,13 +833,13 @@
  },
  "ping": {
   "body": {
-   "inbox": "in-0120-3e43",
+   "inbox": "in-0120-6e72",
    "ok": true
   },
   "code": 200,
   "inbox": [
    {
-    "id": "in-0120-3e43",
+    "id": "in-0120-6e72",
     "kind": "ping",
     "note": "刷新用量",
     "t": "2026-01-20T10:00:00+00:00"
@@ -1108,6 +1108,50 @@
  },
  "report_request": {
   "body": {
+   "inbox": "in-0120-4174",
+   "ok": true
+  },
+  "code": 200,
+  "inbox": [
+   {
+    "id": "in-0120-4174",
+    "kind": "report_request",
+    "t": "2026-01-20T10:00:00+00:00"
+   }
+  ]
+ },
+ "role_look": {
+  "body": {
+   "inbox": "in-0120-3e43",
+   "ok": true
+  },
+  "code": 200,
+  "inbox": [
+   {
+    "id": "in-0120-3e43",
+    "kind": "role_look",
+    "role": "writer",
+    "t": "2026-01-20T10:00:00+00:00",
+    "text": "（团队页：writer 显示名 → Golden Quill / Goldie。只改看板显示，id 和设定不变，不用处理）"
+   }
+  ]
+ },
+ "role_look_bad_avatar": {
+  "body": {
+   "error": "avatar: not one of this role's pictures"
+  },
+  "code": 400,
+  "inbox": []
+ },
+ "role_look_bad_name": {
+  "body": {
+   "error": "name: at most 24 characters, no < > or control characters"
+  },
+  "code": 400,
+  "inbox": []
+ },
+ "role_look_reset": {
+  "body": {
    "inbox": "in-0120-25f9",
    "ok": true
   },
@@ -1115,10 +1159,19 @@
   "inbox": [
    {
     "id": "in-0120-25f9",
-    "kind": "report_request",
-    "t": "2026-01-20T10:00:00+00:00"
+    "kind": "role_look",
+    "role": "writer",
+    "t": "2026-01-20T10:00:00+00:00",
+    "text": "（团队页：writer 显示名 → Quill / Quill。只改看板显示，id 和设定不变，不用处理）"
    }
   ]
+ },
+ "role_look_unknown": {
+  "body": {
+   "error": "no role nope"
+  },
+  "code": 400,
+  "inbox": []
  },
  "routine_pause_not_standing": {
   "body": {
@@ -1191,7 +1244,7 @@
  },
  "schedule_fire": {
   "body": {
-   "inbox": "in-0120-c62e",
+   "inbox": "in-0120-e129",
    "ok": true
   },
   "code": 200,
@@ -1199,7 +1252,7 @@
    {
     "agent": "scout",
     "for": "2026-01-20T10:00:00+00:00",
-    "id": "in-0120-fbe5",
+    "id": "in-0120-bf48",
     "item": null,
     "kind": "schedule_due",
     "late_min": 0,
@@ -1211,7 +1264,7 @@
     "type": "task"
    },
    {
-    "id": "in-0120-c62e",
+    "id": "in-0120-e129",
     "item": null,
     "kind": "schedule_fire",
     "schedule": "s-0115-6be5",
@@ -1222,13 +1275,13 @@
  },
  "schedule_pause": {
   "body": {
-   "inbox": "in-0120-6e72",
+   "inbox": "in-0120-fbe5",
    "ok": true
   },
   "code": 200,
   "inbox": [
    {
-    "id": "in-0120-6e72",
+    "id": "in-0120-fbe5",
     "item": null,
     "kind": "schedule_pause",
     "schedule": "s-0115-6be5",
@@ -1239,13 +1292,13 @@
  },
  "schedule_resume": {
   "body": {
-   "inbox": "in-0120-4174",
+   "inbox": "in-0120-c62e",
    "ok": true
   },
   "code": 200,
   "inbox": [
    {
-    "id": "in-0120-4174",
+    "id": "in-0120-c62e",
     "item": null,
     "kind": "schedule_resume",
     "schedule": "s-0115-6be5",
@@ -1256,13 +1309,13 @@
  },
  "schedule_rm": {
   "body": {
-   "inbox": "in-0120-bf48",
+   "inbox": "in-0120-7e57",
    "ok": true
   },
   "code": 200,
   "inbox": [
    {
-    "id": "in-0120-bf48",
+    "id": "in-0120-7e57",
     "item": null,
     "kind": "schedule_rm",
     "schedule": "s-0115-bde5",

@@ -65,6 +65,6 @@ def norm_who(w):
         return w
     k = w.strip().lower()
     for aid, ag in ags.items():
-        if any(n and str(n).strip().lower() == k for n in (ag.get("name_en"), ag.get("name"))):
+        if any(n and str(n).strip().lower() == k for n in (ag.get("name_en"), ag.get("name"), ag.get("name_orig"), ag.get("name_en_orig"))):   # t-roster-rail: renamed roles answer to both
             return aid
     return w

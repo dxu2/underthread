@@ -44,7 +44,7 @@ Other commands:
 
 ## Transfer and retire from the dashboard
 
-Settings → Roster lists every teammate. **Transfer** changes a teammate's job with a before/after view and a 10-minute undo. **Retire** turns a teammate off. The steward (`manager`), `hr` and `smith` can't be retired.
+The **Team** page (left rail; 更多 / More on a phone) lists every teammate. **Rename** changes the name the board shows (the id and notes keep the original) and **Avatar** picks one of the role's own pictures (`avatars/ut/<id>.png`, `avatars/<id>.*`, or anything in `avatars/choices/<id>/`); both are saved in `roster.json`. **Transfer** changes a teammate's job with a before/after view and a 10-minute undo. **Retire** turns a teammate off. The steward (`manager`), `hr` and `smith` can't be retired.
 
 ## Roster fields
 

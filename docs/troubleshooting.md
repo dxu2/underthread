@@ -56,7 +56,7 @@ Untested. macOS and Linux are.
 Same thing. The id in code, commands and `manager.md` is `manager`; the docs call it the steward.
 
 **Can I have more or fewer teammates?**
-Yes. Hire from the Hiring market, retire from Settings → Roster, or edit `roster.json` and run `make_agents.py`. See [custom-crew.md](custom-crew.md).
+Yes. Hire from the Hiring market, retire from the Team page, or edit `roster.json` and run `make_agents.py`. See [custom-crew.md](custom-crew.md).
 
 **Can two teammates of the same role run at once?**
 The steward keeps one standing instance per role and queues extra work for it. It runs at most three teammates at once and keeps one slot free for urgent work.

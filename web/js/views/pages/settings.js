@@ -23,7 +23,7 @@ import { stConnections, wireConnections } from "./connections.js";
 import { locHTML } from "../ownerloc.js";
 const themeMode = () => LS.get("themeMode", "manual") === "auto" ? "auto" : "manual";
 const RMQ_S = matchMedia("(prefers-reduced-motion: reduce)");
-const ST_L = { general: ["通用", "General"], connections: ["连接", "Connections"], roles: ["角色", "Roster"], docs: ["文档", "Docs"], logs: ["日志", "Log"], system: ["系统", "System"] };
+const ST_L = { general: ["通用", "General"], connections: ["连接", "Connections"], docs: ["文档", "Docs"], logs: ["日志", "Log"], system: ["系统", "System"] };
 function setTab(k, dir) {
   if (!SET_TABS.includes(k)) return;
   const was = UI.setTab; UI.setTab = k; LS.set("setTab", k);

@@ -52,7 +52,7 @@ const BARS = {
   tabs: [{ k: "review", i: "review", zh: "首页", en: "Home", to: ["page", "review"] }, { k: "quests", i: "quests", zh: "委托", en: "Quests", to: ["page", "main"] },
     { k: "chat", i: "chat", zh: "管家", en: "Steward", to: ["chat"] }, { k: "menu", i: "menu", zh: "菜单", en: "Menu", to: ["menu"] }],
   chat: [{ k: "chat", i: "chat", zh: "对话", en: "Chat", to: ["chat"] }, { k: "review", i: "review", zh: "首页", en: "Home", to: ["page", "review"] },
-    { k: "team", i: "team", zh: "团队", en: "Team", to: ["page", "roles"] }, { k: "menu", i: "menu", zh: "菜单", en: "Menu", to: ["menu"] }],
+    { k: "team", i: "team", zh: "团队", en: "Team", to: ["page", "crew"] }, { k: "menu", i: "menu", zh: "菜单", en: "Menu", to: ["menu"] }],
   deck: [{ k: "menu", i: "menu", zh: "菜单", en: "Menu", to: ["menu"] }, { k: "review", i: "deck", zh: "卡组", en: "Deck", to: ["page", "review"] },
     { k: "chat", i: "chat", zh: "管家", en: "Steward", to: ["chat"] }],
 };

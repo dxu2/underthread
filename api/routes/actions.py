@@ -412,3 +412,33 @@ def _ping(a):
 @action("report_request")
 def _report_request(a):
     a.inbox = {"kind": "report_request"}
+
+
+@action("role_look")
+def _role_look(a):
+    """t-roster-rail: 改名 / 换头像 on the 团队 page. {id, name?, name_en?, avatar?}: name / name_en = the display name ("" = back to the
+    original), avatar = one of GET /api/avatar-choices ("" = default). Written to roster.json (core/rolelook.py); state.agents is updated
+    here too, so the long poll that wakes on this change already carries it. The steward gets a note (nothing to do)."""
+    from core import rolelook as RL
+    b, rid = a.body, str(a.body.get("id") or "")
+    ag = (a.st.get("agents") or {}).get(rid)
+    if not ag:
+        raise ValueError(f"no role {rid}")
+    role = RL.set_look(ROOT, rid, name=b.get("name"), name_en=b.get("name_en"), avatar=b.get("avatar"))
+    RL.apply(ag, C.merge(C.ROLE_DEFAULTS, role), ROOT)
+    bits = []
+    if b.get("name") is not None or b.get("name_en") is not None:
+        bits.append(f"显示名 → {ag.get('name')}" + (f" / {ag.get('name_en')}" if ag.get("name_en") else ""))
+    if b.get("avatar") is not None:
+        bits.append("头像 → " + (b["avatar"] or "默认"))
+    a.inbox = {"kind": "role_look", "role": rid, "text": f"（团队页：{rid} {'；'.join(bits)}。只改看板显示，id 和设定不变，不用处理）"}
+
+
+@route("GET", "/api/avatar-choices")
+def _avatar_choices(h, u, q):   # t-roster-rail: the 换头像 sheet's pictures for one role
+    from core import rolelook as RL
+    rid = q.get("id", [""])[0]
+    roles = {r.get("id"): r for r in C.roster(ROOT).get("roles", []) if isinstance(r, dict)}
+    if rid not in roles:
+        return h._send(404, {"error": "no role"})
+    return h._send(200, {"ok": True, "id": rid, "cur": roles[rid].get("avatar_pick") or "", "choices": RL.choices(ROOT, rid)})

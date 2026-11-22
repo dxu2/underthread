@@ -44,6 +44,18 @@ Work in progress goes under `## Unreleased`; the release renames it to `## [X.Y.
 - Migrations: none
 - New config keys: `extensions.live` = `true`
 - Extension API: unchanged (API 1). New: built-in extensions in `ext/<name>/` load before `local/ext/<name>/`, and a local folder with the same name replaces the built-in one; `GET /api/ext` rows gain `builtin` and `on`.
+- **团队 / Team page is back in the left rail (t-roster-rail)**: the big roster cards moved from Settings → 角色 to their own 团队 / Team page (desktop rail, right before 招聘市场; phone 更多; the TEAM header in the rail gets a 名册 › link; Settings no longer has a 角色 / Roster tab at all, and a browser that last had it open lands on 通用 / General; old `#page=roles` / `team` links and a stored page land on it). Each card can now **改名 / Rename** (the name the board shows, Chinese and English; the role's id, agent file and notes keep the original, and lines signed with the original name still find it; empty or 恢复原名 goes back) and **换头像 / Avatar** (pick one of the role's own pictures: the stitched patch in `avatars/ut/`, your `avatars/<id>.*` picture, or anything you put in `avatars/choices/<id>/`; 默认 follows the colour scheme again). Both are saved in `roster.json` on the role's entry (`display_name`, `display_name_en`, `avatar_pick`), which updates never replace; a picked picture gets small WebP copies in `avatars/_pick/` when `cwebp` is installed. New action `role_look` and `GET /api/avatar-choices?id=`. 需要手动做的事：无
+
+### Changed
+- Settings no longer has the 角色 / Roster tab; the roster lives only on the 团队 / Team page. README, docs/custom-crew.md and docs/troubleshooting.md point there. The phone chat list's team tab opens 团队 too.
+
+### Fixed
+- none
+
+### Upgrade notes
+- Migrations: none (the new `roster.json` keys `display_name`, `display_name_en` and `avatar_pick` are only written when you rename a role or pick an avatar; a board without them looks exactly as before)
+- New config keys: none
+- Extension api: unchanged (1)
 - Manual steps: none
 
 ## [0.2.0] - 2026-11-21

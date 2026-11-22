@@ -9,7 +9,7 @@ import { render } from "../app.js";
 const agents = () => Object.values(ST.agents || {}).sort((a, b) => (a.order ?? 99) - (b.order ?? 99));
 // q-1030-2214: a thread/log "who" that is not a roster id but a role's own name (e.g. its name_en, "steward" for manager) resolves to that role,
 // so the row gets its real avatar and name instead of the pixel fallback.
-const agentAlias = id => { const k = String(id || "").trim().toLowerCase(); return k ? Object.values(ST.agents || {}).find(a => [a.name_en, a.name].some(n => n && String(n).trim().toLowerCase() === k)) : null; };
+const agentAlias = id => { const k = String(id || "").trim().toLowerCase(); return k ? Object.values(ST.agents || {}).find(a => [a.name_en, a.name, a.name_orig, a.name_en_orig].some(n => n && String(n).trim().toLowerCase() === k)) : null; };
 const agent = id => (ST.agents || {})[id] || agentAlias(id) || { id, name: id, color: "#888" };
 const aname = a => (UI.lang === "en" ? a.name_en : a.name) || a.name || a.id;
 const atitle = a => (UI.lang === "en" ? a.title_en : a.title) || a.title || "";
@@ -60,6 +60,9 @@ function avatarSvg(a) {
   return AVSVG[k] || (AVSVG[k] = "data:image/svg+xml," + encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" fill="${c}"/><text x="32" y="34" text-anchor="middle" dominant-baseline="central" font-family="-apple-system,PingFang SC,Hiragino Sans GB,sans-serif" font-size="30" font-weight="600" fill="#fff">${esc(ch)}</text></svg>`));
 }
 function avatarUrl(a, big) {
+  /* t-roster-rail: a picture you picked on the 团队 page (agents[id].avpick, core/rolelook.py) wins in every palette; s = small copies exist */
+  const pk = a && a.avpick;
+  if (pk && pk.src) return pk.s ? `/avatars/_pick/${encodeURIComponent(a.id)}-${big ? 512 : 160}.webp?${encodeURIComponent(pk.v)}` : `/avatars/${pk.src.split("/").map(encodeURIComponent).join("/")}?${encodeURIComponent(pk.v)}`;
   if (document.documentElement.dataset.ut && AVU.m && !AVU.bad.has(a.id)) { const u = AVU.m[a.id]; if (u && u.etag) return `/avatars/ut/_s/${encodeURIComponent(a.id)}-${big ? 512 : 160}.webp?${encodeURIComponent(u.etag.replace(/"/g, ""))}`; }
   const f = ST.meta.avatars && ST.meta.avatars[a.id];
   if (!f) return avatarSvg(a);
@@ -78,7 +81,7 @@ function ringOnce(fn, set) { const prev = RING1; RING1 = set || new Set(); try {
 const hasArt = (a, k) => !!(a && ST && ST.meta && ST.meta.art && (ST.meta.art[a.id] || {})[k]);
 const tintOf = a => [a && a.tint, a && a.color].find(c => /^#[0-9a-f]{3,8}$/i.test(c || "")) || "var(--accent)";
 /* t-avatar-live-refresh: the sheet URL carries meta.avv, so a sheet replaced together with a tools/avatar_sizes.py run is fetched again */
-function wsheet(a, sz) { return a && document.documentElement.dataset.ut && hasArt(a, "sheet") && !AVU.bad.has(a.id) ? `;--wsheet:url('/avatars/ut/_s/${encodeURIComponent(a.id)}-work-${sz || 160}.webp?v=${encodeURIComponent(ST.meta.avv || 1)}')` : ""; }
+function wsheet(a, sz) { return a && document.documentElement.dataset.ut && hasArt(a, "sheet") && !AVU.bad.has(a.id) && !(a.avpick && a.avpick.src !== `ut/${a.id}.png`) ? `;--wsheet:url('/avatars/ut/_s/${encodeURIComponent(a.id)}-work-${sz || 160}.webp?v=${encodeURIComponent(ST.meta.avv || 1)}')` : ""; }
 function av(a, cls = "", forItem) {
   if (a === "me" || a.id === "me") {   // R4-17: avatars/me.* if the user added one, else their initial (same rule as the phone chat, mobile.js meAv)
     const m = (ST.meta || {}), o = m.owner;
