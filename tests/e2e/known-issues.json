@@ -3,7 +3,7 @@
   "issues": [
     {
       "pattern": "^Fetch API cannot load http: ?/+127\\.0\\.0\\.1:\\d+/api/\\S+ due to access control checks\\.$",
-      "why": "WebKit (Playwright) reports a same-origin fetch that a reload or goto aborts (the long poll, push status) as a page error; Chromium stays quiet. Journeys that reload mid-run (detailclose.js) hit it. Not an app bug (t-detail-close End round)."
+      "why": "WebKit (Playwright) reports a same-origin fetch that a reload or goto aborts (the long poll, push status) as a page error; Chromium stays quiet. Journeys that reload mid-run (lookaway.js, detailclose.js) hit it. Not an app bug."
     }
   ]
 }
