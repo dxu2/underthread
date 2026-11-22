@@ -35,33 +35,52 @@ function badges() {
   return { home: review, dms: chat, activity: mail };   // ui15: dots, not numbers
 }
 // ---------- tabbar motion (t-tabbar-motion) ----------
-// One sliding selection block (.tb-sel: translateX + a mid-move squash, WAAPI), press scale, icon pop, dot pop/fade, page-in.
+// One sliding selection lens (.tb-sel, see t-phone-nav-glass below), press scale, icon pop, dot pop/fade, page-in.
 // Buttons are built once and patched in place (the old code rewrote innerHTML on every tab change, which killed every transition).
 const TBM = { dur: 330, spring: null, rm: window.matchMedia("(prefers-reduced-motion: reduce)") };
 const TBM_EASE = "cubic-bezier(.2,.8,.2,1)";
 const tbmAnim = (el, kf, o) => { try { return el.animate(kf, o); } catch (e) { return null; } };
+/* t-phone-nav-glass (user 11-22, ask b0ba19: motion B everywhere, look per skin): the selection is a lens. While it slides it grows ~1.3x and
+   lifts 4px, its fill goes clearer and its rim brighter (glass), then it settles with a soft overshoot. Under the knit texture the same motion
+   carries a stitched patch and a dashed thread run between the two tabs. Transform / opacity only (WAAPI), no backdrop-filter on the moving
+   element; a retarget starts from the lens's current matrix, so double taps never jump. Navigation itself is never delayed. */
+const NGL_E = "cubic-bezier(.3,.7,.2,1)";
+const nglKnit = () => /^knit/.test(document.documentElement.dataset.texture || "");
 function tbmSel(row, idx, animate) {
   const ind = row.querySelector(".tb-sel"); if (!ind) return;
   const btn = idx >= 0 ? row.querySelectorAll("button")[idx] : null;
-  if (!btn) { if (ind._anim) ind._anim.cancel(); ind._anim = null; ind.style.opacity = 0; ind._x = null; return; }
+  const stop = () => { if (ind._anim) ind._anim.cancel(); ind._anim = null; (ind._sub || []).forEach(a => a && a.cancel()); ind._sub = []; };
+  if (!btn) { stop(); ind.style.opacity = 0; ind._x = null; return; }
   const x = btn.offsetLeft, w = btn.offsetWidth;
   if (!w) return;   // bar not laid out (hidden): the ResizeObserver snaps it later
   if (ind._w !== w) { ind.style.width = w + "px"; ind._w = w; }
   const fresh = ind._x == null;
-  let from = x;   // where the block is RIGHT NOW (mid-flight if the user tapped again), so a retarget never jumps
-  if (!fresh) { try { from = new DOMMatrix(getComputedStyle(ind).transform).m41; } catch (e) {} }
-  if (ind._anim) { ind._anim.cancel(); ind._anim = null; }
+  let from = x, m0 = null;   // where the lens is RIGHT NOW (mid-flight if the user tapped again), so a retarget never jumps
+  if (!fresh) { try { const t = getComputedStyle(ind).transform; m0 = t && t !== "none" ? t : null; from = new DOMMatrix(t).m41; } catch (e) {} }
+  const f = ind.querySelector(".ngl-f"), r = ind.querySelector(".ngl-r");
+  const fo = f ? +getComputedStyle(f).opacity : 1, ro = r ? +getComputedStyle(r).opacity : 1;
+  stop();
   ind.style.opacity = 1; ind.style.transform = `translateX(${x}px)`; ind._x = x;
   if (!animate || (!fresh && Math.abs(from - x) < .5)) return;
   if (fresh || TBM.rm.matches) { ind._anim = tbmAnim(ind, [{ opacity: fresh ? 0 : .35 }, { opacity: 1 }], { duration: fresh ? 160 : 140, easing: "ease-out" }); return; }
-  const k = Math.min(.14, .05 + Math.abs(x - from) / w * .025);   // stretch grows a little with distance, capped at 14%
+  const d = x - from, dur = Math.round(540 + Math.min(160, Math.abs(d) * .4));
   ind.style.willChange = "transform";
   const a = tbmAnim(ind, [
-    { transform: `translateX(${from}px) scale(1,1)` },
-    { offset: .42, transform: `translateX(${(from + x) / 2}px) scale(${1 + k},${1 - k * .45})` },
-    { transform: `translateX(${x}px) scale(1,1)` }], { duration: TBM.dur, easing: TBM.spring || TBM_EASE });
+    { transform: m0 || `translateX(${from}px)`, easing: NGL_E },
+    { offset: .16, transform: `translateX(${from + d * .06}px) translateY(-4px) scale(1.3,1.3)`, easing: NGL_E },
+    { offset: .62, transform: `translateX(${x - d * .04}px) translateY(-4px) scale(1.38,1.2)`, easing: NGL_E },
+    { offset: .84, transform: `translateX(${x}px) translateY(.5px) scale(.96,1.03)`, easing: "ease-in-out" },
+    { transform: `translateX(${x}px) scale(1,1)` }], { duration: dur });
   ind._anim = a;
   if (!a) { ind.style.willChange = ""; return; }
+  if (nglKnit()) {   // the patch stays opaque; a thread runs from the old tab to the new one, then fades
+    const th = row.querySelector(".ngl-thr");
+    if (th) { th.style.left = (Math.min(from, x) + w / 2) + "px"; th.style.width = Math.abs(d) + "px"; th.style.transformOrigin = d > 0 ? "0 50%" : "100% 50%";
+      ind._sub.push(tbmAnim(th, [{ transform: "scaleX(0)", opacity: .9 }, { offset: .55, transform: "scaleX(1)", opacity: .9 }, { transform: "scaleX(1)", opacity: 0 }], { duration: dur + 160, easing: NGL_E })); }
+  } else {   // glass: clearer fill, brighter rim while moving
+    if (f) ind._sub.push(tbmAnim(f, [{ opacity: fo }, { offset: .2, opacity: .3 }, { offset: .7, opacity: .3 }, { opacity: 1 }], { duration: dur, easing: "ease-in-out" }));
+    if (r) ind._sub.push(tbmAnim(r, [{ opacity: ro }, { offset: .2, opacity: 1 }, { offset: .75, opacity: 1 }, { opacity: .55 }], { duration: dur, easing: "ease-in-out" }));
+  }
   const clear = () => { if (ind._anim === a) { ind._anim = null; ind.style.willChange = ""; } };
   a.onfinish = clear; a.oncancel = () => { if (ind._anim === a || !ind._anim) ind.style.willChange = ""; };
 }
@@ -156,7 +175,7 @@ function renderBar() {
   let bar = $("#tabbar");
   if (!bar) {
     bar = document.createElement("nav"); bar.id = "tabbar"; document.body.appendChild(bar);
-    bar.innerHTML = `<i class="tb-orn"></i><span class="tb-ind"><b></b></span><div class="tb-row"><i class="tb-sel" aria-hidden="true"></i></div>`;
+    bar.innerHTML = `<i class="tb-orn"></i><span class="tb-ind"><b></b></span><div class="tb-row"><i class="ngl-thr" aria-hidden="true"></i><i class="tb-sel" aria-hidden="true"><i class="ngl-f"></i><i class="ngl-r"></i></i></div>`;
     bar.addEventListener("click", e => {
       const b = e.target.closest("button"); if (!b) return;
       const it = BAR5.find(x => x.k === b.dataset.k); if (!it) return;

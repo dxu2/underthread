@@ -13,6 +13,23 @@ Versions follow [semantic versioning](https://semver.org) and the `VERSION` file
 
 Work in progress goes under `## Unreleased`; the release renames it to `## [X.Y.Z] - YYYY-MM-DD`. Sections dated before 0.1.0 are from before versioning.
 
+## Unreleased
+
+### Added
+- Nothing.
+
+### Changed
+- **Phone tab bar: the selection slides like glass (t-phone-nav-glass)**: the highlight behind the selected tab is now a lens. When you switch tabs it grows about 1.3x and lifts while it slides, goes clearer with a brighter rim, then settles on the new tab with a small overshoot; tapping again mid-slide carries on from where it is, without a jump. Under the Stitch texture the lens is a stitched patch and a dashed thread runs between the two tabs. Each theme keeps its old selection colour. Only transform and opacity animate (no blur on the moving part), the tap switches the page at once, and with reduced motion it fades in place. `tests/e2e/journeys/navglass.js` checks it in every skin.
+
+### Fixed
+- Nothing.
+
+### Upgrade notes
+- Migrations: none
+- New config keys: none
+- Extension API: unchanged
+- Manual steps: none
+
 ## [0.2.0] - 2026-11-21
 
 Highlights since 0.1.0:
