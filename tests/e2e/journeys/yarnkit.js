@@ -5,16 +5,28 @@
  * kitten plays the done beat there. Reduced motion: the static rest kitten. (2) The Notice line kitten: B naps by default, A nudges the ball
  * when a new notice arrives, C tugs the thread now and then (forced here with the window.__nykNext hook), night = B only. Transform / opacity only.
  *   node tests/e2e/drive.js run tests/e2e/journeys/yarnkit.js --out work/<item>/verify/<run> --engines chromium,webkit
- * Makes its own card per run (fx-yk-<run>-<engine><view>) and drives a role that is idle at the start (a level-2 role if there is one). */
+ * Makes its own card per run (fx-yk-<run>-<engine><view>) and drives a role that is idle at the start (a level-2 role if there is one).
+ * t-yarn-sleep: the kitten is an easter egg: only after 5 minutes of work (since), one 1-in-3 draw per stretch (id + since), asleep at night
+ * (22:30-08:00), a tap stretches / rolls it and opens nothing, 设置 › 外观 › 小猫彩蛋 turns it off. The test hook window.__yk = { now, draw, since }
+ * (kept across reloads here through sessionStorage) forces the clock, the draw and since; sections 1-6 run with "won, 6 minutes in, 14:00". */
 const RUN = Date.now().toString(36);
 const OK = new Set(["transform", "opacity", "offset", "easing", "composite", "computedOffset"]);
+/* yarnkit.js lot(): FNV-1a of id|since, one in three wins */
+const lot = (id, sn) => { let h = 2166136261; const x = id + "|" + sn; for (let i = 0; i < x.length; i++) { h ^= x.charCodeAt(i); h = Math.imul(h, 16777619); } return (h >>> 0) % 3 === 0; };
+const at = (h, m) => { const d = new Date(); d.setHours(h, m, 0, 0); return +d; };
+const DAY = at(14, 0), NIGHT = at(23, 40);
 module.exports = {
   views: ["desk", "phone"],
   hash: () => "",
   async run(c) {
     const p = c.p, errs = [], tag = `${RUN}-${c.engine.slice(0, 2)}${c.view[0]}`, phone = c.view === "phone";
     p.on("pageerror", e => { const m = String(e).split("\n")[0]; if (!/due to access control checks/.test(m)) errs.push(m); });   /* WebKit reports the long poll a reload aborts as a page error */
-    await p.evaluate(() => { const s = (k, v) => localStorage.setItem("rt." + k, JSON.stringify(v)); s("lang", "zh"); s("ut", "ut"); s("texture", "leather1"); s("chatFold", false); localStorage.removeItem("rt.yk"); });
+    await p.addInitScript(() => { try { const v = sessionStorage.getItem("__ykT"); if (v) window.__yk = JSON.parse(v); } catch (_) { } });
+    /* the test hook; redraw = draw the home now instead of waiting for yarnkit's 15 s check */
+    const hook = async (o, redraw = true) => { await p.evaluate(([o, r]) => { sessionStorage.setItem("__ykT", JSON.stringify(o)); window.__yk = o; if (r) App.refreshPage(); }, [o, redraw]); await c.sleep(redraw ? 500 : 0); };
+    const WON = { now: DAY, since: new Date(DAY - 6 * 60000).toISOString(), draw: true };
+    await p.evaluate(o => sessionStorage.setItem("__ykT", JSON.stringify(o)), WON);
+    await p.evaluate(() => { const s = (k, v) => localStorage.setItem("rt." + k, JSON.stringify(v)); s("lang", "zh"); s("ut", "ut"); s("texture", "leather1"); s("chatFold", false); localStorage.removeItem("rt.yk"); localStorage.removeItem("rt.ykOn"); });
     await p.reload({ waitUntil: "load" });
     await p.waitForFunction(() => window.App && App.ST && App.ST.meta && !document.getElementById("ut-splash"), null, { timeout: 20000 });
     const st0 = await c.state(), ag = Object.values(st0.agents || {}), art = (st0.meta || {}).art || {};
@@ -22,7 +34,7 @@ module.exports = {
     const role = (idle.find(a => (art[a.id] || {}).yarn) || idle[0]).id, l2 = !!(art[role] || {}).yarn;
     c.note(`role ${role}${l2 ? " (level 2)" : " (generic kitten)"}`);
     const home = phone ? ".hd-a2" : ".wg-busy";
-    const goHome = async () => { if (phone) { await c.tap("#tabbar button[data-k=home]"); await c.sleep(700); } else await p.evaluate(() => { location.hash = ""; }); };
+    const goHome = async () => { if (phone) { await c.tap("#tabbar button[data-k=home]"); await c.sleep(700); } else await p.evaluate(() => { location.hash = ""; if (App.UI.page !== "review") App.go("review"); }); };
     await goHome();
     const box = `${home} .yk[data-yk="${role}"]`;
     const probe = () => p.evaluate(sel => {
@@ -30,7 +42,8 @@ module.exports = {
       return y ? { cls: y.className, key: y.dataset.ykk, fx: !!fx, ey: !!y.querySelector(".yk-ey"), fxAnim: fx ? getComputedStyle(fx).animationName : null, fxImg: fx ? getComputedStyle(fx).backgroundImage : "", bx: fx ? getComputedStyle(fx).backgroundPositionX : null } : null;
     }, box);
     /* every class the role's wrapper shows, so a 1.6 s beat between two checks is not missed */
-    await p.evaluate(sel => { window.__ykSeen = []; const rec = () => { const y = document.querySelector(sel); const k = y ? y.className : "none"; if (window.__ykSeen[window.__ykSeen.length - 1] !== k) window.__ykSeen.push(k); }; new MutationObserver(rec).observe(document.body, { subtree: true, childList: true, attributes: true, attributeFilter: ["class"] }); rec(); }, box);
+    const recSeen = () => p.evaluate(sel => { window.__ykSeen = []; const rec = () => { const y = document.querySelector(sel); const k = y ? y.className : "none"; if (window.__ykSeen[window.__ykSeen.length - 1] !== k) window.__ykSeen.push(k); }; new MutationObserver(rec).observe(document.body, { subtree: true, childList: true, attributes: true, attributeFilter: ["class"] }); rec(); }, box);
+    await recSeen();
     const seen = () => p.evaluate(() => window.__ykSeen.slice());
     /* nowhere but the home card: no wrapper in the TEAM rail / chat list */
     const where = () => p.evaluate(h => [...document.querySelectorAll(".yk")].filter(y => !y.closest(h)).map(y => (y.parentElement.closest("[id]") || {}).id || y.parentElement.className), home);
@@ -104,6 +117,121 @@ module.exports = {
     await p.emulateMedia({ reducedMotion: "no-preference" });
     c.su("set-agent", role, "--status", "idle");
     c.su("upsert-item", "--id", card, "--who", role, "--stage", "done");
+
+    /* 8. t-yarn-sleep: the easter-egg rules on a fresh work stretch */
+    const card2 = `fx-yks-${tag}`, ui = () => p.evaluate(() => ({ chat: App.UI.chat, item: App.UI.item, page: App.UI.page, hash: location.hash }));
+    c.su("upsert-item", "--id", card2, "--title", `毛线猫睡觉 ${tag}`, "--who", role, "--owner", role, "--category", "side", "--kind", "deliverable", "--stage", "doing");
+    await hook({ now: DAY, since: new Date(DAY - 2 * 60000).toISOString(), draw: true });
+    c.su("set-agent", role, "--status", "working", "--item", card2, "--activity", "yarn sleep test");
+    await c.until(() => p.evaluate(sel => !!document.querySelector(sel), box), 10000);
+    await c.sleep(2600);
+    const g0 = await probe();
+    c.check("8a. under 5 minutes of work: no kitten yet", g0 && /yk-off/.test(g0.cls) && !g0.fx, g0);
+    await recSeen();
+    await hook({ now: DAY, since: new Date(DAY - 5 * 60000 - 1000).toISOString(), draw: true }, false);   /* no redraw: yarnkit's own 15 s check must notice */
+    const g1 = await c.until(() => probe().then(x => x && /yk-run/.test(x.cls) && x), 25000);
+    c.check("8a. the 5-minute mark passes without a poll: the kitten wakes with the start beat", !!g1 && (await seen()).some(x => /yk-start yk-beat/.test(x)), await seen());
+    /* the draw: one in three, from id + since, the same after a reload */
+    let win = null, lose = null;
+    for (let k = 6; k < 200 && !(win && lose); k++) { const sn = new Date(DAY - k * 60000).toISOString(); if (lot(role, sn)) win = win || sn; else lose = lose || sn; }
+    let w = 0; for (let k = 0; k < 3000; k++) if (lot(role, new Date(DAY - k * 61000).toISOString())) w++;
+    c.check("8b. the draw wins about one stretch in three", w > 850 && w < 1150, { w, of: 3000 });
+    await hook({ now: DAY, since: lose });
+    const l1 = await c.until(() => probe().then(x => x && /yk-off/.test(x.cls) && !x.fx && x), 6000) || await probe();   /* it was awake: the done beat and the fade first */
+    c.check("8b. a stretch that lost the draw: no kitten", l1 && /yk-off/.test(l1.cls) && !l1.fx, l1);
+    await p.reload({ waitUntil: "load" });
+    await p.waitForFunction(() => window.App && App.ST && App.ST.meta && !document.getElementById("ut-splash"), null, { timeout: 20000 });
+    await goHome(); await c.sleep(1200);
+    const l2r = await probe();
+    c.check("8b. still no kitten after a reload (no re-roll)", l2r && /yk-off/.test(l2r.cls) && !l2r.fx, l2r);
+    await hook({ now: DAY, since: win });
+    const wn = await c.until(() => probe().then(x => x && /yk-run|yk-start/.test(x.cls) && x), 5000);
+    c.check("8b. a stretch that won the draw: the kitten", !!wn, await probe());
+    /* night */
+    const nap = () => p.evaluate(sel => { const y = document.querySelector(sel), n = y && y.querySelector(".yk-fx svg.yk-nap"), bd = n && n.querySelector(".bd"), z = n && n.querySelector(".z"), ey = y && y.querySelector(".yk-ey");
+      return y ? { cls: y.className, nap: !!n, bd: bd ? getComputedStyle(bd).animationName : null, z: z ? getComputedStyle(z).animationName : null, ey: ey ? getComputedStyle(ey).backgroundPositionX : null, hit: !!y.querySelector(".yk-hit"), title: y.getAttribute("title") || (y.querySelector(".yk-hit") || {}).title || "" } : null; }, box);
+    await hook({ now: NIGHT, since: new Date(NIGHT - 6 * 60000).toISOString(), draw: true });
+    const n1 = await c.until(() => nap().then(x => x && x.nap && x), 5000);
+    c.check("8c. night (23:40): the kitten sleeps curled up (pose A), breathing, z's drifting", n1 && /yk-sleep/.test(n1.cls) && n1.bd === "yk-breathe" && n1.z === "yk-z", n1);
+    c.check(l2 ? "8c. level-2 role asleep: the closed-eyes pose" : "8c. generic role asleep: no eye layer", n1 && (l2 ? n1.ey === "100%" : n1.ey === null), n1);
+    c.check("8c. no hint anywhere: no title on the kitten", n1 && !n1.title, n1);
+    await c.shot("sleep", home);
+    await hook({ now: at(3, 0), since: new Date(at(3, 0) - 6 * 60000).toISOString(), draw: true });
+    const n3 = await nap();
+    c.check("8c. 03:00 is still night", n3 && n3.nap, n3);
+    await hook({ now: at(8, 30), since: new Date(at(8, 30) - 6 * 60000).toISOString(), draw: true });
+    const n8 = await c.until(() => probe().then(x => x && /yk-run/.test(x.cls) && x), 5000);
+    c.check("8c. 08:30 is day: awake again (no beat replayed)", !!n8 && !/yk-beat/.test(n8.cls), await probe());
+    /* a tap: night = roll-over, day = stretch; never the chat or the card; once per 10 s */
+    const tapK = async () => { const u0 = await ui(); const h = await p.$(`${box} .yk-hit`); if (!h) return { none: true };
+      if (phone) await h.tap({ force: true }); else await h.click({ force: true });
+      await c.sleep(250);
+      const an = await p.evaluate(sel => document.getAnimations().filter(a => !a.animationName && a.effect && a.effect.target && a.effect.target.closest && a.effect.target.closest(sel)).map(a => (a.effect.target.getAttribute("class") || "")), box);
+      await c.sleep(900); const u1 = await ui(); return { an, same: JSON.stringify(u0) === JSON.stringify(u1), u0, u1 }; };
+    await hook({ now: DAY, since: new Date(DAY - 6 * 60000).toISOString(), draw: true });
+    await c.until(() => probe().then(x => x && /yk-run/.test(x.cls)), 5000);
+    const td1 = await tapK();
+    c.check("8d. day tap: the kitten stretches (WAAPI on the kitten layer)", td1.an && td1.an.includes("yk-fx"), td1);
+    c.check("8d. day tap opens nothing", td1.same, td1);
+    const td2 = await tapK();
+    c.check("8d. a second tap within 10 s: no second move", td2.an && !td2.an.length && td2.same, td2);
+    await c.sleep(9000);   /* one move per kitten per 10 s */
+    await hook({ now: NIGHT, since: new Date(NIGHT - 6 * 60000).toISOString(), draw: true });
+    await c.until(() => nap().then(x => x && x.nap), 5000);
+    const tn1 = await tapK();
+    c.check("8e. night tap: the kitten rolls over (WAAPI on the sleeping kitten)", tn1.an && tn1.an.includes("yk-roll"), tn1);
+    c.check("8e. night tap opens nothing (chat, card, page unchanged)", tn1.same, tn1);
+    await c.shot("night-tap", home);
+    /* reduced motion at night: static, a tap does nothing */
+    await hook({ now: NIGHT, since: new Date(NIGHT - 6 * 60000).toISOString(), draw: true });
+    await p.emulateMedia({ reducedMotion: "reduce" }); await c.sleep(300);
+    const nr = await nap();
+    c.check("8f. reduced motion at night: the sleeping kitten is still", nr && nr.nap && nr.bd === "none" && nr.z === "none", nr);
+    await p.emulateMedia({ reducedMotion: "no-preference" });
+    /* 设置 › 外观 › 小猫彩蛋: per device, default on, off = no kitten */
+    const row = () => p.evaluate(() => { const r = document.querySelector("[data-yk-tog]"); return r ? { on: r.getAttribute("aria-pressed"), sw: r.querySelector(".sw").classList.contains("on"), b: r.querySelector("b").textContent, small: !!r.querySelector("small"), ls: localStorage.getItem("rt.ykOn") } : null; });
+    const openSet = () => phone ? c.go("settings") : p.evaluate(() => App.go("settings"));
+    await openSet(); await c.sleep(900);
+    const r0 = await row();
+    c.check("8g. 设置: a 小猫彩蛋 switch, on by default, no caption", r0 && r0.on === "true" && r0.sw && r0.b === "小猫彩蛋" && !r0.small, r0);
+    await c.tap("[data-yk-tog]"); await c.sleep(400);
+    const r1 = await row();
+    c.check("8g. switched off in place (kept on this device)", r1 && r1.on === "false" && !r1.sw && r1.ls === "0", r1);
+    await goHome(); if (!phone) await c.sleep(600);
+    await p.evaluate(() => App.refreshPage()); await c.sleep(600);
+    const o1 = await probe();
+    c.check("8g. off: no kitten on the home card", o1 && /yk-off/.test(o1.cls) && !o1.fx, o1);
+    await p.evaluate(() => { localStorage.setItem("rt.lang", JSON.stringify("en")); }); await p.reload({ waitUntil: "load" });
+    await p.waitForFunction(() => window.App && App.ST && App.ST.meta && !document.getElementById("ut-splash"), null, { timeout: 20000 });
+    await openSet(); await c.sleep(900);
+    const r2 = await row();
+    c.check("8g. English label, still off after a reload", r2 && r2.b === "Yarn kitten" && r2.on === "false", r2);
+    await c.tap("[data-yk-tog]"); await c.sleep(400);
+    await p.evaluate(() => { localStorage.setItem("rt.lang", JSON.stringify("zh")); }); await p.reload({ waitUntil: "load" });
+    await p.waitForFunction(() => window.App && App.ST && App.ST.meta && !document.getElementById("ut-splash"), null, { timeout: 20000 });
+    await goHome(); await c.sleep(1200);
+    const o2 = await probe();
+    c.check("8g. back on: the kitten again", o2 && /yk-run|yk-sleep/.test(o2.cls) && o2.fx, o2);
+    /* every skin: the kitten draws (phone everywhere; desk under 特典, the only place its patch exists), day and night */
+    const skins = [["white", "ut", "leather1"], ["dark", "ut", "leather1"], ["white", "ut", "knit1"], ["dark", "ut", "knit1"], ["white", "ut", "off"], ["dark", "ut", "off"], ["white", "ink", "off"], ["dark", "ink", "off"], ["white", "ink", "off", true], ["dark", "ink", "off", true]];
+    const bad = [];
+    for (const [th, ut, tx, stg] of skins) {
+      await p.evaluate(([th, ut, tx, stg]) => { const s = (k, v) => localStorage.setItem("rt." + k, JSON.stringify(v)); s("theme", th); s("themeMode", "manual"); s("ut", ut); s("texture", tx); s("stage", !!stg); }, [th, ut, tx, stg]);
+      await p.reload({ waitUntil: "load" });
+      await p.waitForFunction(() => window.App && App.ST && App.ST.meta && !document.getElementById("ut-splash"), null, { timeout: 20000 });
+      await goHome(); await c.sleep(900);
+      const drawn = phone || ut === "ut";
+      for (const [nm, t] of [["day", DAY], ["night", NIGHT]]) {
+        await hook({ now: t, since: new Date(t - 6 * 60000).toISOString(), draw: true });
+        const x = await nap(), ok = drawn ? x && (nm === "night" ? x.nap : /yk-run|yk-start/.test(x.cls)) : !x;
+        if (!ok) bad.push({ th, ut, tx, stg, nm, x });
+        if (drawn) await c.shot(`skin-${th}-${ut}-${tx}${stg ? "-stage" : ""}-${nm}`, home);
+      }
+    }
+    c.check("8h. every skin (white / dark × 特典 leather / knit / plain, 墨刊, 墨刊 + 舞台): day kitten and sleeping kitten draw", !bad.length, bad);
+    await p.evaluate(() => { const s = (k, v) => localStorage.setItem("rt." + k, JSON.stringify(v)); s("ut", "ut"); s("texture", "leather1"); localStorage.removeItem("rt.theme"); localStorage.removeItem("rt.themeMode"); });
+    c.su("set-agent", role, "--status", "idle");
+    c.su("upsert-item", "--id", card2, "--who", role, "--stage", "done");
 
     /* 7. the Notice line kitten (clock fixed to the afternoon: 22:30-08:00 is night, B only) */
     const day = new Date(); day.setHours(14, 0, 0, 0);

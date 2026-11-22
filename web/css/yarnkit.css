@@ -16,6 +16,21 @@
 .yk-out > .yk-fx { animation: yk-fade .4s ease-in var(--wp, 0s) 1 both; }
 .yk-off:not(.yk-out) > .yk-fx, .yk-off > .yk-ey { display: none; }
 @keyframes yk-x { from { background-position-x: 0%; } to { background-position-x: 100%; } }
+/* t-yarn-sleep: night = pose A asleep (inline svg.yk-nap in .yk-fx): the body breathes, two z's drift up half a breath apart (--yk-bp = wall-clock
+   phase, so a re-render does not restart them); it fades in (yk-in) instead of the start beat. A level-2 role shows the closed-eyes pose. */
+.yk-sleep > .yk-fx { background: none; animation: none; }
+.yk-in > .yk-fx { animation: yk-fade .6s ease-out var(--wp, 0s) 1 reverse both; }
+.yk > .yk-fx > .yk-nap { position: absolute; left: 0; top: 0; width: 100%; height: 100%; overflow: visible; }
+.yk-nap .bd, .yk-nap .yk-roll { transform-box: fill-box; transform-origin: 50% 100%; }
+.yk-nap .bd { animation: yk-breathe 4s ease-in-out var(--yk-bp, 0s) infinite; }
+.yk-nap .z { font: 700 6px/1 -apple-system, "PingFang SC", sans-serif; opacity: 0; animation: yk-z 4s linear var(--yk-bp, 0s) infinite; }
+.yk-nap .z2 { font-size: 4.6px; animation-delay: calc(var(--yk-bp, 0s) - 2s); }
+.yk-sleep > .yk-ey { background-image: var(--yk-pose); background-size: 600% 100%; background-position: 100% 0; animation: none; }
+/* the tap target over the kitten (bottom-right of the avatar); yarnkit.js eats the tap so the chat / card does not open */
+.yk > .yk-fx { transform-origin: 72% 82%; }   /* the day kitten's seat: the stretch (yarnkit.js poke) pivots there */
+.yk > .yk-hit { position: absolute; left: 64%; top: 64%; width: 62%; height: 60%; z-index: 3; display: block; pointer-events: auto; -webkit-tap-highlight-color: transparent; }
+@keyframes yk-breathe { 0%, 100% { transform: scaleY(1); } 50% { transform: scaleY(1.05); } }
+@keyframes yk-z { 0% { opacity: 0; transform: translate(0, 0); } 15%, 75% { opacity: 1; } 100% { opacity: 0; transform: translate(3px, -6px); } }
 @keyframes yk-fade { from { opacity: 1; } to { opacity: 0; } }
 /* level-2 roles (only while awake): eyeless art under the eye layer (the work strip keeps its own steps). Hosts: the phone A2 row (.a2-av.hd-mini)
    and the desk busy widget patch (.wg-utp, .ws = its work strip) */
@@ -34,6 +49,9 @@ html[data-home="widgets"] .wg-utav > .yk:hover { transform: rotate(0deg) scale(1
   .yk > .yk-ey, .yk > .yk-fx { animation: none !important; background-position: 0 0 !important; }
   .yk > .yk-fx { background-image: var(--yk-fx0) !important; background-size: 100% 100% !important; }
   .yk > .yk-ey { background-image: var(--yk-pose) !important; background-size: 600% 100% !important; }
+  .yk-sleep > .yk-ey { background-position: 100% 0 !important; }
+  .yk-nap .bd, .yk-nap .z { animation: none !important; }
+  .yk-nap .z { opacity: .8; }
 }
 
 /* ---------- the Notice line kitten (特典 only): B naps (default), A nudges the ball for a new notice, C tugs the thread now and then ---------- */
