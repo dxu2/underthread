@@ -159,7 +159,9 @@
          data-noidle (fx.js): power saving pauses every loop after 20 s without input or when the window loses focus, which froze this patch while the user
          was just looking at it (11-11 00:18). This one patch keeps moving; everything else still pauses. */
       const ut = !!document.documentElement.dataset.ut, ws = ut && A().wsheet ? A().wsheet(a, 320) : "";
-      return (ut ? `<div class="wg-utav" data-noidle><i class="wg-utp${ws ? " ws" : ""}" data-chat="${esc(a.id)}" title="${esc(A().aname(a))}" style="background-image:url('${A().avatarUrl(a, 1)}')${ws}${ws ? `;--wg-fd:-${Date.now() % 16000}ms` : ""}"></i></div>`   /* v4: same phase as App.av (--wp = Date.now() % 16000, t-yarn-anim), so this patch and the Team column show the same frame */
+      const utp = `<i class="wg-utp${ws ? " ws" : ""}" data-chat="${esc(a.id)}" title="${esc(A().aname(a))}" style="background-image:url('${A().avatarUrl(a, 1)}')${ws}${ws ? `;--wg-fd:-${Date.now() % 16000}ms` : ""}"></i>`;
+      /* t-yarn-anim (user 11-22 10:21): the yarn kitten plays by the working role's patch (core/yarnkit.js; norm() below keys it by data-ykk) */
+      return (ut ? `<div class="wg-utav" data-noidle>${A().yk ? A().yk(a, utp, true) : utp}</div>`   /* v4: same phase as App.av (--wp = Date.now() % 16000, t-yarn-anim), so this patch and the Team column show the same frame */
         : `<div class="wg-bg" style="background-image:url('${art(a)}')"></div><div class="wg-sh"></div>`) + `
         <div class="wg-top">${eb("busy", B.length)}</div>
         <div class="wg-in"><h3 data-chat="${esc(a.id)}">${esc(A().aname(a))}<small>${esc(A().atitle(a) || "")}</small>${A().qBadge ? A().qBadge(a.id) : ""}</h3>
@@ -203,6 +205,7 @@
   // so every compare strips them. Same data: keep the DOM. Changed data (C): replace only the tiles / header / tail / tray whose HTML changed,
   // the rest keep their nodes (thumbs, hover highlight, running animations). mvPage is told via MV.dirty so new rows / moved tiles still animate.
   const norm = h => h.replace(/--wg-fd:-\d+ms|animation-delay:-\d+ms| tl-(?:in|out)/g, "")   /* t-chrome-badge: the badge motion state is not a change */
+    .replace(/<span class="yk [^"]*"([^>]*?) data-ykk="([^"]*)"[^>]*>/g, '<span ykk="$2">')   /* t-yarn-anim: a kitten beat / its phase is not a change, only data-ykk */
     .replace(/(<time class="rel"[^>]*>)[^<]*/g, "$1")
     .replace(/--now:[\d.]+%/g, "").replace(/(<span class="(?:wk-el|d-tk)"[^>]*>)[^<]*/g, "$1");   /* t-home-usage: 「X 分钟前」 ticks on its own (app.js 20 s interval). t-home-dense: elapsed time, the now marker and 「N 小时后」 tick on their own */
   let last = "", PREV = null;
@@ -238,6 +241,7 @@
   }
   function html(body, tail) {
     const L = load(), D = data(), calm = [], tiles = [];
+    if (A().ykSync) A().ykSync();   /* t-yarn-anim: roles that stopped since the last draw (no beat is drawn for them, their next start still gets one) */
     const count = { review: D.waiting.length, replies: D.nr.length, today: D.shipped.length };
     L.forEach(([k, s0], i) => {
       if (isGone(k)) return;

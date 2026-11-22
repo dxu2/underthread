@@ -16,7 +16,7 @@ Work in progress goes under `## Unreleased`; the release renames it to `## [X.Y.
 ## Unreleased
 
 ### Added
-- **Yarn kittens on the team avatars**: in the Team rail (desk) and the chat list (phone) a small knit kitten sits by a teammate's avatar only while that teammate is working on a card. It wakes and fades in when the work starts, plays along while it works, and curls up and fades out when the work stops; idle avatars stay plain. Your own layer can give a role a level-2 script (moving eyes) under `local/web/art/yarn/<id>.json` + `<id>/`.
+- **Yarn kittens on the Working now card**: on the home 「此刻在忙 / Working now」 card (the phone team card rows and the desk widget's patch under Underthread) a small knit kitten plays by the avatar of whoever is working on a card right now. It wakes and fades in when the work starts and plays along while it works; on the phone a row that finishes its card keeps the kitten for the completion plate, where it curls up. A poll never restarts it. Your own layer can give a role a level-2 script (moving eyes) under `local/web/art/yarn/<id>.json` + `<id>/`.
 - **A kitten on the Notice line** (Underthread look): it naps by default, nudges the ball when a new notice arrives (the new notice jumps to the front), and now and then tugs the thread. 22:30-08:00 it only naps. Transform and opacity only.
 
 ### Changed

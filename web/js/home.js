@@ -208,7 +208,7 @@
   // a2restore (t-m-a2-restore): data-lp = long-press opens the D1 quick sheet; .a2-glow wraps the avatar so the dispatch halo never overrides the chibi sheet animation;
   // .a2-tg = the 「Chrome」 tag (agents[id].tool); .a2-fx hosts the 委托完成 streak / plate (same markup as the D1 mission()).
   function a2Row(a) {
-    return `<div class="a2-r" role="button" tabindex="0" data-a2="${a.id}" data-lp="${a.id}" style="--tint:var(--tint-ph, var(--accent));--tint-hex:${A().tintOf(a)}"><span class="a2-glow">${a2Av(a, true)}</span><div class="a2-b"><div class="a2-n"><span class="a2-nm">${esc(A().aname(a))}</span><span class="a2-tg" hidden></span></div><div class="a2-t"></div>
+    return `<div class="a2-r" role="button" tabindex="0" data-a2="${a.id}" data-lp="${a.id}" style="--tint:var(--tint-ph, var(--accent));--tint-hex:${A().tintOf(a)}"><span class="a2-glow"></span><div class="a2-b"><div class="a2-n"><span class="a2-nm">${esc(A().aname(a))}</span><span class="a2-tg" hidden></span></div><div class="a2-t"></div>
       <div class="a2-m"><span class="a2-k"></span><button type="button" class="a2-lk" data-live="${a.id}" hidden>${L2().live} <span aria-hidden="true">›</span></button></div></div><div class="a2-fx" aria-hidden="true"></div></div>`;
   }
   const toolTag = k => k === "chrome" ? "Chrome" : k === "computer" ? (lang() === "en" ? "Computer" : "电脑") : String(k);
@@ -259,6 +259,7 @@
     });
     Object.keys(S2.mc).forEach(id => { if (now - S2.mc[id].t >= 2300 || w.some(a => a.id === id)) delete S2.mc[id]; });
     const show = as.filter(a => isW(a) || S2.mc[a.id]), idle = as.filter(a => !isW(a) && !S2.mc[a.id]);
+    if (A().ykSync) A().ykSync();   /* t-yarn-anim: also the roles this card does not draw, so their next start still gets the start beat */
     // rows: reconciled per member (a new worker is inserted, a finished one removed), so the other rows' chibi sheets never restart; no DOM writes when nothing changed
     const rows = $(".a2-rows", root), want = show.map(a => a.id), have = {};
     [...rows.children].forEach(el => { if (want.includes(el.dataset.a2)) have[el.dataset.a2] = el; else el.remove(); });
@@ -275,14 +276,17 @@
     show.forEach(a => {
       const el = $(`.a2-r[data-a2="${a.id}"]`, rows); if (!el) return;
       const tg = $(".a2-tg", el), tk = isW(a) ? a.tool || "" : ""; setT(tg, tk ? toolTag(tk) : ""); if (tg.hidden === !!tk) tg.hidden = !tk;
+      /* t-yarn-anim (user 11-22 10:21): the yarn kitten by the working avatar (core/yarnkit.js; in place: the chibi sheet node is kept, a beat is
+         never restarted by a poll). A finishing row (委托完成 plate) gets the done beat: the kitten curls up and fades with the row. */
+      const gl = $(".a2-glow", el), nav = a2Av(a, true);
+      if (A().ykInto) A().ykInto(gl, a, nav, !S2.mc[a.id]); else if (!gl.firstElementChild || gl.firstElementChild.outerHTML !== nav) gl.innerHTML = nav;
       if (S2.mc[a.id]) {   // finishing: the row stays (static) until the plate has played, then the next patch removes it
         const di = (A().ST.items || []).find(i => i.id === S2.mc[a.id].item); if (di) setT($(".a2-t", el), di.title || di.id);
         setA(el, "data-hd-open", S2.mc[a.id].item); setA(el, "data-chat", null); const lk = $(".a2-lk", el); if (!lk.hidden) lk.hidden = true;
         return;
       }
       const it = itemFor(a), sn = a.since, qn = A().queueOf ? A().queueOf(a.id).length : 0;
-      // the chibi sheet var depends on data-ut, which can flip without a rebuild: rewrite the avatar only when its markup would change
-      const av = $(".a2-av", el), nav = a2Av(a, true); if (av.outerHTML !== nav) av.outerHTML = nav;
+      // the chibi sheet var depends on data-ut, which can flip without a rebuild: ykInto above rewrites the avatar only when its markup would change
       setT($(".a2-t", el), it ? it.title : (a.activity || L().working));
       setT($(".a2-k", el), [sn ? L2().since(clock(sn), dur(mins(sn))) : (a.activity && it ? a.activity : ""), qn ? L2().q(qn) : ""].filter(Boolean).join(" · "));
       const lk = $(".a2-lk", el), lv = a.tool === "chrome"; if (lk.hidden === lv) lk.hidden = !lv;

@@ -7,7 +7,7 @@ import { $, DRAFT, LS } from "./core/util.js";
 import { PLAT, ago, agoH, srvT, stageLabel, t, titleEn, tplEn, tplSeed, when, whenH } from "./core/i18n.js";
 import { ARCH, LP, REV, ST, UI, archAll, archIx, busy, byAct, grpOf, histAll, items, lpAbort, lpLoop, mailAll, mailUnread, onYou, onYouCard, poll, qBadge, queueOf, snapBoot, snoozed, waitMs } from "./core/store.js";
 import { agent, aname, atitle, av, avatarUrl, avLoad, hasArt, ringOnce, tintOf, wireAv, wsheet } from "./core/av.js";
-import { wireYk, yk } from "./core/yarnkit.js";
+import { wireYk, yk, ykInto, ykSync } from "./core/yarnkit.js";
 import { api, closeModal, modalReject, openModal, toast, utEmpty, wireUi } from "./core/ui.js";
 import { go, pageAlias, route } from "./core/router.js";
 import { attachPick, vmSync, wireAttach } from "./views/attach.js";
@@ -135,7 +135,7 @@ window.App = {
   /* t-chrome-badge (home.js .hd-tool) */
   toolLine: w => toolLine(w), toolBadge: a => toolBadge(a), toolWhat: a => toolWhat(a), addToolExtra: fn => { if (!TOOL_EXTRA.includes(fn)) TOOL_EXTRA.push(fn); }, ext: window.UTExt,   /* S8: App.ext = web/ext.js */
   wsheet: (a, sz) => wsheet(a, sz),   /* t-chibi-anim (home.js .hd-mini / .dp-uti) */
-  yk: (a, h, b) => yk(a, h, b),   /* t-yarn-anim (phone chat list kittens) */
+  yk: (a, h, b) => yk(a, h, b), ykInto: (el, a, h, b) => ykInto(el, a, h, b), ykSync: () => ykSync(),   /* t-yarn-anim: the home 「此刻在忙」 card (widgets.js busy patch, home.js A2 rows) */
   hasArt: (a, k) => hasArt(a, k), tintOf: a => tintOf(a),   /* t-hr-registry (home.js, widgets.js) */
   UI, get ST() { return ST; }, roll, modalStatus: () => modalStatus(), ghOpen: () => ghOpen(), ghLabel: () => ghLabel(), statusSummary: () => statusSummary(statusRows()), loadHealth: a => loadHealth(a), refreshPage: () => renderPage(), phaseFree, avatarUrl, t, items, agent, aname, atitle, av, when, whenH, agoH, ago, byAct, PLAT, stageLabel,
   refresh: async () => { await poll(true); if (!UI.down) await avLoad(true); return !UI.down; },   // t-m2-c ④ pull-to-refresh: a forced full fetch; false = the server did not answer; t-avatar-live-refresh: then reread the avatar manifests
