@@ -44,6 +44,7 @@ Nothing.
 - **The mailbox keeps its width (t-mail-width)**: a letter with a long link, an unbroken word or a long card title stretched the 信箱 / Mail drop-down and the desk Mail page sideways, so the list could be dragged left and right. Rows now shrink to the panel, long words break, names and card titles end in …, and the list never scrolls sideways.
 - **Yarn kittens on the Working now card**: on the home 「此刻在忙 / Working now」 card (the phone team card rows and the desk widget's patch under Underthread) a small knit kitten plays by the avatar of whoever is working on a card right now. It wakes and fades in when the work starts and plays along while it works; on the phone a row that finishes its card keeps the kitten for the completion plate, where it curls up. A poll never restarts it. Your own layer can give a role a level-2 script (moving eyes) under `local/web/art/yarn/<id>.json` + `<id>/`.
 - **A kitten on the Notice line** (Underthread look): it naps by default, nudges the ball when a new notice arrives (the new notice jumps to the front), and now and then tugs the thread. 22:30-08:00 it only naps. Transform and opacity only.
+- **A clock on the home date line**: the current time (H:MM, your browser's 12 / 24-hour habit, tabular figures, no seconds) sits right after the date above 「今天.」 / Today, on desk and phone. It turns on the minute (a changed digit rolls up once; still under reduced motion) and sleeps while the tab is hidden.
 
 ### Changed
 - Nothing.
