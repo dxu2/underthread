@@ -595,6 +595,7 @@
     "/static/js/core/i18n.js?v=<h>",
     "/static/js/core/store.js?v=<h>",
     "/static/js/core/av.js?v=<h>",
+    "/static/js/core/yarnkit.js?v=<h>",
     "/static/js/core/ui.js?v=<h>",
     "/static/js/core/router.js?v=<h>",
     "/static/js/views/attach.js?v=<h>",
@@ -670,6 +671,7 @@
     "/static/css/skin-ink.css?v=<h>",
     "/static/css/glass.css?v=<h>",
     "/static/css/theme-ut.css?v=<h>",
+    "/static/css/yarnkit.css?v=<h>",
     "/static/css/welcome.css?v=<h>",
     "/static/css/texture-knit.css?v=<h>",
     "/static/css/texture-leather.css?v=<h>",
@@ -689,6 +691,7 @@
     "/static/js/core/store.js": "/static/js/core/store.js?v=<h>",
     "/static/js/core/ui.js": "/static/js/core/ui.js?v=<h>",
     "/static/js/core/util.js": "/static/js/core/util.js?v=<h>",
+    "/static/js/core/yarnkit.js": "/static/js/core/yarnkit.js?v=<h>",
     "/static/js/diff.js": "/static/js/diff.js?v=<h>",
     "/static/js/ext.js": "/static/js/ext.js?v=<h>",
     "/static/js/fx.js": "/static/js/fx.js?v=<h>",
@@ -2382,6 +2385,9 @@
      "director": {
       "sheet": 1
      },
+     "hr": {
+      "sheet": 1
+     },
      "manager": {
       "sheet": 1
      },
@@ -4031,6 +4037,9 @@
      "director": {
       "sheet": 1
      },
+     "hr": {
+      "sheet": 1
+     },
      "manager": {
       "sheet": 1
      },
@@ -5272,6 +5281,9 @@
       "sheet": 1
      },
      "director": {
+      "sheet": 1
+     },
+     "hr": {
       "sheet": 1
      },
      "manager": {

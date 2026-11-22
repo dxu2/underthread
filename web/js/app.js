@@ -7,6 +7,7 @@ import { $, DRAFT, LS } from "./core/util.js";
 import { PLAT, ago, agoH, srvT, stageLabel, t, titleEn, tplEn, tplSeed, when, whenH } from "./core/i18n.js";
 import { ARCH, LP, REV, ST, UI, archAll, archIx, busy, byAct, grpOf, histAll, items, lpAbort, lpLoop, mailAll, mailUnread, onYou, onYouCard, poll, qBadge, queueOf, snapBoot, snoozed, waitMs } from "./core/store.js";
 import { agent, aname, atitle, av, avatarUrl, avLoad, hasArt, ringOnce, tintOf, wireAv, wsheet } from "./core/av.js";
+import { wireYk, yk } from "./core/yarnkit.js";
 import { api, closeModal, modalReject, openModal, toast, utEmpty, wireUi } from "./core/ui.js";
 import { go, pageAlias, route } from "./core/router.js";
 import { attachPick, vmSync, wireAttach } from "./views/attach.js";
@@ -25,6 +26,7 @@ import { TEXTURES, setTab, stageSub, themeMode, wireSettings } from "./views/pag
 import { ghLabel, ghOpen, loadHealth, modalStatus, statusRows, statusSummary, verCheck, wireStatus } from "./views/status.js";
 import { renderTicker, wireTicker } from "./views/ticker.js";
 wireAv();
+wireYk();   /* t-yarn-anim: a kitten beat that ends between re-renders hands over in place */
 // ===== t-m2-a ②: number roll. Runs only when the value really changes: the last value shown is kept in memory per key (NV), not read back from the DOM,
 // so a poll or a rebuilt node with the same value does nothing. Each changed digit gets a one-glyph window: the old one slides out, the new one slides in
 // (up when the number grows, down when it shrinks), transform + opacity only, WAAPI ~420 ms; the spans are replaced by plain text when it ends.
@@ -64,7 +66,7 @@ const typingUntil = last => lastT(last) ? lastT(last) + TYPING_MAX : "";
 const MGR_ON = () => UI.lang === "en" ? "Online · watching the inbox" : "在线 · 看着信箱";
 const MGR_WATCH = () => UI.lang === "en" ? "Watching the inbox" : "看着信箱";   /* t-hdr-trim ②1: the desktop rail already says 在线 after the name */
 const workersOf = id => id ? Object.values(ST.agents || {}).filter(a => a.status === "working" && a.item === id && liveItem(a)).sort((a, b) => (a.order ?? 99) - (b.order ?? 99)) : [];
-const wkP = () => `--wp:${(-(Date.now() % 4000) / 1000).toFixed(3)}s`;
+const wkP = () => `--wp:${(-(Date.now() % 16000) / 1000).toFixed(3)}s`;
 function wkDur(iso) {
   const m = Math.max(0, Math.floor((Date.now() - new Date(iso)) / 6e4)), en = UI.lang === "en";
   if (m < 60) return en ? `${Math.max(1, m)}m` : `${Math.max(1, m)} 分钟`;
@@ -133,6 +135,7 @@ window.App = {
   /* t-chrome-badge (home.js .hd-tool) */
   toolLine: w => toolLine(w), toolBadge: a => toolBadge(a), toolWhat: a => toolWhat(a), addToolExtra: fn => { if (!TOOL_EXTRA.includes(fn)) TOOL_EXTRA.push(fn); }, ext: window.UTExt,   /* S8: App.ext = web/ext.js */
   wsheet: (a, sz) => wsheet(a, sz),   /* t-chibi-anim (home.js .hd-mini / .dp-uti) */
+  yk: (a, h, b) => yk(a, h, b),   /* t-yarn-anim (phone chat list kittens) */
   hasArt: (a, k) => hasArt(a, k), tintOf: a => tintOf(a),   /* t-hr-registry (home.js, widgets.js) */
   UI, get ST() { return ST; }, roll, modalStatus: () => modalStatus(), ghOpen: () => ghOpen(), ghLabel: () => ghLabel(), statusSummary: () => statusSummary(statusRows()), loadHealth: a => loadHealth(a), refreshPage: () => renderPage(), phaseFree, avatarUrl, t, items, agent, aname, atitle, av, when, whenH, agoH, ago, byAct, PLAT, stageLabel,
   refresh: async () => { await poll(true); if (!UI.down) await avLoad(true); return !UI.down; },   // t-m2-c ④ pull-to-refresh: a forced full fetch; false = the server did not answer; t-avatar-live-refresh: then reread the avatar manifests

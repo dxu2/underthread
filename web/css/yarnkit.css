@@ -1,0 +1,77 @@
+/* t-yarn-anim: knit kittens. Prefixes: yk- (level-2 avatar layers, web/js/core/yarnkit.js) and nyk- (the kitten on the Notice line, views/ticker.js).
+   Sprites step background-position on small boxes (same as the 特典 work strip); the Notice kitten animates transform and opacity only.
+   prefers-reduced-motion: static poses, nothing moves. */
+
+/* ---------- level 2: avatar + eyes + kitten ---------- */
+.yk { position: relative; display: inline-block; vertical-align: middle; line-height: 0; flex: none; }
+.yk > .av { display: block; margin: 0; }   /* it was a grid / flex item before the wrapper; keep it a box */
+.yk > .yk-ey, .yk > .yk-fx { position: absolute; left: 0; top: 0; display: block; pointer-events: none; background-repeat: no-repeat; background-position: 0 0; z-index: 2; }
+.yk > .yk-ey { width: 100%; height: 100%; background-image: var(--yk-ey); background-size: calc(var(--yk-n) * 100%) 100%; }
+.yk > .yk-fx { width: 130%; height: 130%; background-image: var(--yk-fx); background-size: calc(var(--yk-n) * 100%) 100%; }
+.yk-run > .yk-ey, .yk-run > .yk-fx { animation: yk-x var(--yk-d) steps(var(--yk-n), jump-none) var(--wp, 0s) infinite; }
+.yk-beat > .yk-ey, .yk-beat > .yk-fx { animation: yk-x var(--yk-d) steps(var(--yk-n), jump-none) var(--wp, 0s) 1 both; }
+.yk-review:not(.yk-beat) > .yk-ey, .yk-review:not(.yk-beat) > .yk-fx { background-position: 100% 0; }   /* waiting on you: the last frame (kitten holds it up) */
+@keyframes yk-x { from { background-position-x: 0%; } to { background-position-x: 100%; } }
+/* level-2 roles: eyeless art under the eye layer (the work strip keeps its own steps; review shows the strip's first frame) */
+html[data-ut] .yk.yk-l2 > .av { background-image: var(--yk-idle) !important; }
+html[data-ut] .yk.yk-l2 > .av.working.wsheet { background-image: var(--yk-work) !important; }
+html[data-ut] .yk.yk-l2.yk-review > .av { background-image: var(--yk-work) !important; background-size: 400% 100%; background-position: 0 0; }
+/* the name moves right while the kitten sits by the avatar: 32 px rail +5 px, 48 px phone list +7 px */
+#team .team-i > .yk + div { margin-left: 5px; }
+.cl-av > .yk { display: block; }
+.cl-row .cl-av:has(> .yk) + .cl-m { padding-left: 7px; }
+@media (prefers-reduced-motion: reduce) {
+  .yk > .yk-ey, .yk > .yk-fx { animation: none !important; background-position: 0 0 !important; }
+  .yk > .yk-fx { background-image: var(--yk-fx0) !important; background-size: 100% 100% !important; }
+  .yk > .yk-ey { background-image: var(--yk-pose) !important; background-size: 600% 100% !important; }
+}
+
+/* ---------- the Notice line kitten (特典 only): B naps (default), A nudges the ball for a new notice, C tugs the thread now and then ---------- */
+html[data-ut] #ticker .nyk { flex: none; width: 22px; height: 19px; margin: 0 2px 0 -8px; position: relative; z-index: 1; overflow: visible; }   /* sits between the thread and the ball, never over the text */
+html[data-ut] #ticker .nyk svg { position: absolute; left: 0; top: 0; width: 22px; height: 19px; overflow: visible; }
+html[data-ut] #ticker .nyk .h { fill: var(--bg); stroke: var(--bg); stroke-width: 3.2; stroke-linejoin: round; }
+html[data-ut] #ticker .nyk .c { fill: var(--ink); stroke: var(--ink); stroke-width: .6; stroke-linejoin: round; }
+html[data-ut] #ticker .nyk .th { fill: none; stroke: var(--bg); stroke-width: 3.6; stroke-linecap: round; }
+html[data-ut] #ticker .nyk .tc { fill: none; stroke: var(--ink); stroke-width: 1.7; stroke-dasharray: 1.5 1.1; }
+html[data-ut] #ticker .nyk .e { fill: var(--bg); }
+html[data-ut] #ticker .nyk .el { fill: none; stroke: var(--bg); stroke-width: .6; stroke-linecap: round; }
+html[data-ut] #ticker .nyk .z { fill: var(--dim); font: 600 7px/1 -apple-system, sans-serif; opacity: 0; }
+html[data-ut] #ticker .nyk g { transform-box: fill-box; }
+/* poses: svg.nyk-sit (after A or C) or svg.nyk-nap (B, night, reduced motion) */
+/* B nap: breathing, an ear flick and one eye peeking at the switch, a z drifting up, the ball wobbles once */
+html[data-ut] #ticker .nyk-nap .bd { transform-origin: 50% 100%; animation: nyk-breathe 4s ease-in-out infinite; }
+html[data-ut] #ticker.nyk-b .nyk-nap .er { transform-origin: 30% 90%; animation: nyk-ear .45s ease-out .05s 1 both; }
+html[data-ut] #ticker.nyk-b .nyk-nap .pk { animation: nyk-peek 1.5s ease-in-out .25s 1 both; }
+html[data-ut] #ticker.nyk-b .nyk-nap .sl { animation: nyk-unpeek 1.5s ease-in-out .25s 1 both; }
+html[data-ut] #ticker.nyk-b .nyk-nap .z { animation: nyk-z 2.2s ease-out .4s 1 both; }
+html[data-ut] #ticker.nyk-b .nty-ball { animation: nyk-wobble .5s ease-out 1 both; }
+/* A nudge: crouch, push, the ball rolls forward and back, a thread runs out under the new text and fades, then a glance up */
+html[data-ut] #ticker.nyk-a .nyk-sit .bd { transform-origin: 50% 100%; animation: nyk-push 1.1s cubic-bezier(.3,.7,.3,1) 1 both; }
+html[data-ut] #ticker.nyk-a .nyk-sit .ey { animation: nyk-look 1.6s ease-in-out 1.1s 1 both; }
+html[data-ut] #ticker.nyk-a .nty-ball { animation: nyk-roll 1.2s cubic-bezier(.2,.7,.2,1) .35s 1 both; }
+html[data-ut] #ticker.nyk-a .msg { animation: nty-in .5s .45s ease-out both; }
+html[data-ut] #ticker .nyk-run { position: relative; top: 10px; flex: none; width: 0; height: 1px; margin-left: -12px; pointer-events: none; }   /* zero-width anchor right after the text */
+html[data-ut] #ticker .nyk-run::before { content: ""; position: absolute; right: 0; top: 0; width: var(--mw, 0px); height: 1px; background: var(--nty-y, var(--accent)); opacity: 0; transform-origin: 0 50%; }
+html[data-ut] #ticker.nyk-a .nyk-run::before { animation: nyk-unroll 1.8s ease-out .4s 1 both; }
+/* C tug: lean back on the thread, a wave runs along it (the path slides one wave), the ball turns once, then a look at the dots */
+html[data-ut] #ticker.nyk-c .nyk-sit .bd { transform-origin: 50% 100%; animation: nyk-tug .9s ease-in-out 1 both; }
+html[data-ut] #ticker.nyk-c .nyk-sit .ey { animation: nyk-look 1.6s ease-in-out 1.1s 1 both; }
+html[data-ut] #ticker.nyk-c .nty-thr path { animation: nyk-wave .8s ease-in-out .2s 1; }   /* one wave period: the jump back at the end is invisible */
+html[data-ut] #ticker.nyk-c .nty-ball { animation: nyk-spin .7s cubic-bezier(.3,.7,.3,1) .75s 1 both; }
+@keyframes nyk-breathe { 0%, 100% { transform: scale(1.04, .86); } 50% { transform: scale(1.04, .9); } }
+@keyframes nyk-ear { 0%, 100% { transform: rotate(0); } 35% { transform: rotate(-18deg); } 70% { transform: rotate(-6deg); } }
+@keyframes nyk-peek { 0%, 100% { opacity: 0; } 20%, 75% { opacity: 1; } }
+@keyframes nyk-unpeek { 0%, 100% { opacity: 1; } 20%, 75% { opacity: 0; } }
+@keyframes nyk-z { 0% { opacity: 0; transform: translate(0, 0) scale(.8); } 30% { opacity: .7; } 100% { opacity: 0; transform: translate(3px, -7px) scale(1.1); } }
+@keyframes nyk-wobble { 0%, 100% { transform: rotate(0); } 30% { transform: rotate(8deg); } 65% { transform: rotate(-4deg); } }
+@keyframes nyk-push { 0% { transform: none; } 30% { transform: translateX(-1.6px) scale(1.06, .9); } 45% { transform: translateX(2.6px) rotate(12deg); } 70% { transform: translateX(1px) rotate(4deg); } 100% { transform: none; } }
+@keyframes nyk-look { 0%, 100% { transform: none; } 20%, 75% { transform: translate(.7px, -.8px); } }
+@keyframes nyk-roll { 0% { transform: none; } 30% { transform: translateX(4px) rotate(200deg); } 60% { transform: translateX(4px) rotate(260deg); } 100% { transform: translateX(0) rotate(170deg); } }
+@keyframes nyk-unroll { 0% { opacity: .6; transform: scaleX(0); } 45% { opacity: .6; transform: scaleX(1); } 100% { opacity: 0; transform: scaleX(1); } }
+@keyframes nyk-tug { 0%, 100% { transform: none; } 30%, 50% { transform: translateX(-1.6px) rotate(-10deg) scale(1, .96); } }
+@keyframes nyk-wave { from { transform: translateX(-16px); } to { transform: translateX(0); } }
+@keyframes nyk-spin { from { transform: rotate(-360deg); } to { transform: rotate(0); } }
+@media (prefers-reduced-motion: reduce) {
+  html[data-ut] #ticker .nyk *, html[data-ut] #ticker[class*="nyk-"] .nty-ball, html[data-ut] #ticker[class*="nyk-"] .msg, html[data-ut] #ticker .nyk-run::before, html[data-ut] #ticker[class*="nyk-"] .nty-thr path { animation: none !important; }
+  html[data-ut] #ticker .nyk-nap .pk, html[data-ut] #ticker .nyk-run::before { opacity: 0; }
+}

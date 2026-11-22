@@ -13,6 +13,24 @@ Versions follow [semantic versioning](https://semver.org) and the `VERSION` file
 
 Work in progress goes under `## Unreleased`; the release renames it to `## [X.Y.Z] - YYYY-MM-DD`. Sections dated before 0.1.0 are from before versioning.
 
+## Unreleased
+
+### Added
+- **Yarn kittens on the team avatars**: in the Team rail (desk) and the chat list (phone) a small knit kitten sits by each teammate's avatar. It naps while the role is idle, plays along while it works, holds something up while its last card waits on your review, and plays one short beat when that changes. Your own layer can give a role a level-2 script (moving eyes) under `local/web/art/yarn/<id>.json` + `<id>/`.
+- **A kitten on the Notice line** (Underthread look): it naps by default, nudges the ball when a new notice arrives (the new notice jumps to the front), and now and then tugs the thread. 22:30-08:00 it only naps. Transform and opacity only.
+
+### Changed
+- Nothing.
+
+### Fixed
+- Nothing.
+
+### Upgrade notes
+- Migrations: none
+- New config keys: none
+- Extension API: `local/web/art/yarn/<id>.json` (+ `<id>/` folder) adds a level-2 kitten for a role; listed in `meta.art[id].yarn`
+- Manual steps: none
+
 ## [0.2.0] - 2026-11-21
 
 Highlights since 0.1.0:

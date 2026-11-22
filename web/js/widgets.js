@@ -159,7 +159,7 @@
          data-noidle (fx.js): power saving pauses every loop after 20 s without input or when the window loses focus, which froze this patch while the user
          was just looking at it (11-11 00:18). This one patch keeps moving; everything else still pauses. */
       const ut = !!document.documentElement.dataset.ut, ws = ut && A().wsheet ? A().wsheet(a, 320) : "";
-      return (ut ? `<div class="wg-utav" data-noidle><i class="wg-utp${ws ? " ws" : ""}" data-chat="${esc(a.id)}" title="${esc(A().aname(a))}" style="background-image:url('${A().avatarUrl(a, 1)}')${ws}${ws ? `;--wg-fd:-${Date.now() % 4000}ms` : ""}"></i></div>`   /* v4: same phase as App.av (--wp = Date.now() % 4000), so this patch and the Team column show the same frame */
+      return (ut ? `<div class="wg-utav" data-noidle><i class="wg-utp${ws ? " ws" : ""}" data-chat="${esc(a.id)}" title="${esc(A().aname(a))}" style="background-image:url('${A().avatarUrl(a, 1)}')${ws}${ws ? `;--wg-fd:-${Date.now() % 16000}ms` : ""}"></i></div>`   /* v4: same phase as App.av (--wp = Date.now() % 16000, t-yarn-anim), so this patch and the Team column show the same frame */
         : `<div class="wg-bg" style="background-image:url('${art(a)}')"></div><div class="wg-sh"></div>`) + `
         <div class="wg-top">${eb("busy", B.length)}</div>
         <div class="wg-in"><h3 data-chat="${esc(a.id)}">${esc(A().aname(a))}<small>${esc(A().atitle(a) || "")}</small>${A().qBadge ? A().qBadge(a.id) : ""}</h3>

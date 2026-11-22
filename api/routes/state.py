@@ -135,7 +135,10 @@ def archive_body(gz):
 # ---- t-hr-registry: which art files each role has (web/art/<id>.jpg, panels/, cut/, avatars/ut/_s/<id>-work-160.webp). The web reads meta.art
 # instead of hard-coded id lists, so a new role's art shows up without a code edit. Cached on the four directories' signatures.
 ART_DIRS = (("jpg", os.path.join(WEB, "art"), ".jpg"), ("panel", os.path.join(WEB, "art", "panels"), ".webp"),
-            ("cut", os.path.join(WEB, "art", "cut"), ".webp"), ("sheet", os.path.join(AVATARS, "ut", "_s"), "-work-160.webp"))
+            ("cut", os.path.join(WEB, "art", "cut"), ".webp"), ("sheet", os.path.join(AVATARS, "ut", "_s"), "-work-160.webp"),
+            # t-yarn-anim: a role with a level-2 yarn kitten script has art/yarn/<id>.json next to an <id>/ folder (eyes, kitten, eyeless art).
+            # Core ships none (every role gets the generic kitten); your own layer adds them under local/web/art/yarn/. Value = mtime (cache key).
+            ("yarn", os.path.join(WEB, "art", "yarn"), ".json"), ("yarn", os.path.join(S.LOCAL, "web", "art", "yarn"), ".json"))
 _ART = {"sig": None, "map": {}}
 # Spare stage seats for roles whose roster entry has no "seat" key (an explicit "seat": null keeps a role off the stage).
 STAGE_SPARE = [[.22, .62], [.60, .22], [.74, .34], [.10, .70], [.46, .76], [.84, .26]]
@@ -245,6 +248,12 @@ def art_scan():
             continue
         for f in names:
             if f.endswith(ext) and not f.startswith("."):
+                if k == "yarn":
+                    try:
+                        m.setdefault(f[:-len(ext)], {})[k] = int(os.path.getmtime(os.path.join(d, f)))
+                    except OSError:
+                        pass
+                    continue
                 m.setdefault(f[:-len(ext)], {})[k] = 1
     _ART.update(sig=sig, map=m)
     return m
