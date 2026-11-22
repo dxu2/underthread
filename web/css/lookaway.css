@@ -1,7 +1,9 @@
 /* t-lookaway-fx: full-screen "D3 · ink" arrival (#lka-fs) and the top pill (#lka-pw). web/js/lookaway.js. Dark on every theme, like LookAway.
    Timeline of the full screen (3.0 s): ink blooms 0-1.3 s, type in .4-1.0 s, countdown 1.0-2.2 s, type out 2.2-2.6 s, ink draws back 2.35-3.0 s. */
 @property --lka-r { syntax: "<length>"; inherits: false; initial-value: 0px; }
-#lka-fs { position: fixed; inset: 0; z-index: 9800; cursor: pointer; outline: none; color: #F6EBDA; font-family: "PingFang SC", -apple-system, sans-serif;
+/* t-lookaway-fx font B (user 11-22): rounded Latin (SF Pro Rounded via ui-rounded on Safari/iPhone, the shipped Nunito elsewhere), Chinese stays PingFang SC, heavier */
+#lka-fs, #lka-pw { --lka-font: ui-rounded, "SF Pro Rounded", Nunito, "PingFang SC", -apple-system, sans-serif; }
+#lka-fs { position: fixed; inset: 0; z-index: 9800; cursor: pointer; outline: none; color: #F6EBDA; font-family: var(--lka-font);
   --lka-ts: 0 1px 2px rgba(10,5,3,.55), 0 4px 24px rgba(10,5,3,.55); }
 #lka-fs .lka-blur { position: absolute; inset: 0; --lka-r: 40px;
   -webkit-backdrop-filter: blur(48px) saturate(.7); backdrop-filter: blur(48px) saturate(.7);
@@ -18,8 +20,8 @@ html[data-ut] #lka-pw .lka-pill { -webkit-backdrop-filter: blur(26px) saturate(1
 #lka-fs .lka-avs img { width: 92px; height: 92px; border-radius: 50%; object-fit: cover; background: #2B1A13;
   box-shadow: 0 0 0 1.5px rgba(246,235,218,.35), 0 14px 40px rgba(5,2,1,.6), 0 4px 12px rgba(5,2,1,.4); }
 #lka-fs .lka-avs.lka-many img + img { margin-left: -22px; }
-#lka-fs .lka-cap { font: 700 11px/1 Nunito, "PingFang SC", sans-serif; letter-spacing: .22em; text-transform: uppercase; color: #D6BF9E; text-shadow: var(--lka-ts); }
-#lka-fs .lka-title { margin-top: 14px; font-family: "Songti SC", "STSong", "Noto Serif SC", serif; font-size: 52px; line-height: 1.15; font-weight: 700; letter-spacing: .05em; text-shadow: var(--lka-ts);
+#lka-fs .lka-cap { font: 700 11px/1 var(--lka-font); letter-spacing: .16em; text-transform: uppercase; color: #D6BF9E; text-shadow: var(--lka-ts); }
+#lka-fs .lka-title { margin-top: 14px; font-family: var(--lka-font); font-size: 52px; line-height: 1.15; font-weight: 600; letter-spacing: .02em; text-shadow: var(--lka-ts);
   max-width: min(1100px, 92vw); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 #lka-fs .lka-line { margin-top: 16px; font-size: 17px; font-weight: 500; letter-spacing: .03em; color: rgba(241,228,207,.82); text-shadow: var(--lka-ts);
   max-width: min(760px, 88vw); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -59,14 +61,14 @@ html[data-ut] #lka-pw .lka-pill { -webkit-backdrop-filter: blur(26px) saturate(1
   background: linear-gradient(180deg, rgba(58,47,41,.92), rgba(36,28,24,.94));
   -webkit-backdrop-filter: blur(26px) saturate(1.2); backdrop-filter: blur(26px) saturate(1.2);
   box-shadow: 0 18px 44px rgba(4,2,1,.5), 0 4px 12px rgba(4,2,1,.35), inset 0 1px 0 rgba(255,246,232,.14), inset 0 0 0 1px rgba(255,246,232,.08);
-  font-family: "PingFang SC", -apple-system, sans-serif; }
+  font-family: var(--lka-font); }
 #lka-pw .lka-pill:focus-visible { outline: 2px solid #D6BF9E; outline-offset: 3px; }
 #lka-pw .lka-pav { width: 44px; height: 44px; border-radius: 50%; flex: none; object-fit: cover; background: #2B1A13; box-shadow: 0 0 0 1.5px rgba(246,235,218,.28), 0 4px 10px rgba(4,2,1,.4); }
 #lka-pw .lka-tx { display: flex; flex-direction: column; gap: 3px; min-width: 0; flex: 1 1 auto; padding-right: 6px; }
 #lka-pw .lka-tx b { font-size: 16px; font-weight: 600; letter-spacing: .01em; overflow: hidden; text-overflow: ellipsis; }
 #lka-pw .lka-tx b em { font-style: normal; font-weight: 500; color: rgba(241,228,207,.7); }
-#lka-pw .lka-tx small { font-size: 13.5px; color: rgba(241,228,207,.55); overflow: hidden; text-overflow: ellipsis; }
-#lka-pw .lka-more { flex: none; font: 600 12px/1 Nunito, "PingFang SC", sans-serif; color: #D6BF9E; padding: 7px 10px; border-radius: 12px; border: 0; cursor: pointer;
+#lka-pw .lka-tx small { font-size: 13.5px; font-weight: 500; color: rgba(241,228,207,.55); overflow: hidden; text-overflow: ellipsis; }
+#lka-pw .lka-more { flex: none; font: 600 12px/1 var(--lka-font); color: #D6BF9E; padding: 7px 10px; border-radius: 12px; border: 0; cursor: pointer;
   background: rgba(214,191,158,.12); transition: background .18s ease, transform .18s ease; }
 #lka-pw .lka-more:hover { background: rgba(214,191,158,.22); }
 #lka-pw .lka-more:active { transform: scale(.94); }
