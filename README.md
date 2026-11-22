@@ -195,7 +195,7 @@ Underthread itself doesn't care what kind of work you do. The steward, cards, re
 
 5. **Content creators.** The Pipeline and Channels pages (a production line and per-platform previews for B站 / YouTube / 小红书) are off on a fresh install. They switch on by themselves with the `content-zh` preset or when `config.json` lists platforms, or by hand in Settings → Pipeline & Channels.
 
-Teammates can also be moved to a new job (**Transfer**) or retired (**Retire**) from Settings → Roster.
+The **Team** page in the left rail is the roster: move a teammate to a new job (**Transfer**), retire them (**Retire**), rename them or pick their avatar.
 
 <p align="center"><img src="docs/img/market.png" alt="The hiring market: job cards with three personalities each, Interview and Hire buttons" width="720"></p>
 

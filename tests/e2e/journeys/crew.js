@@ -1,6 +1,6 @@
-/* t-roster-rail: 团队 / Team is a left-rail page again, and it is the roster (moved out of 设置 · 角色, which keeps a row that jumps here).
+/* t-roster-rail: 团队 / Team is a left-rail page again, and it is the roster (moved out of 设置, which has no 角色 tab any more).
  * Each card can 改名 (display name only) and 换头像 (one of the role's own pictures). Replaces nocrew.js (t-drop-team-tab).
- * Checks: rail / 更多 row, TEAM 名册 › link, 设置 · 角色 jump row, old #page=roles / team / crew links and a stored rt.page, rename + reset
+ * Checks: rail / 更多 row, TEAM 名册 › link, no 角色 tab in 设置 (also for a stored setTab = roles), old #page=roles / team / crew links and a stored rt.page, rename + reset
  * (server roster.json + state, card and rail text), avatar pick + default (server avpick, rail avatar URL), the 团队交接 widget still draws.
  *   node tests/e2e/drive.js run tests/e2e/journeys/crew.js --out work/<item>/verify/<run> --views desk,phone --engines chromium,webkit
  */
@@ -93,12 +93,12 @@ module.exports = {
       await c.go("review"); await c.sleep(600);
       await c.tap("#team .rk-all"); await c.sleep(800);
       c.check("TEAM 名册 › opens 团队", await p.evaluate(() => App.UI.page) === "crew");
+      await p.evaluate(() => localStorage.setItem("rt.setTab", JSON.stringify("roles")));   /* what an old board remembers */
+      await p.reload({ waitUntil: "load" }); await ready(c);
       await c.tap('#nav [data-go="settings"]'); await c.sleep(800);
-      await c.tap('[data-settab="roles"]'); await c.sleep(700);
-      c.check("设置 · 角色 shows the jump row only", await p.evaluate(() => !!document.querySelector('.st-pane [data-go="crew"]') && !document.querySelector(".st-pane .roster")));
-      await c.shot("settings-roles");
-      await c.tap('.st-pane [data-go="crew"]'); await c.sleep(800);
-      c.check("jump row opens 团队", await p.evaluate(() => App.UI.page) === "crew");
+      const st = await p.evaluate(() => ({ tabs: [...document.querySelectorAll("[data-settab]")].map(b => b.dataset.settab), on: (document.querySelector("[data-settab].on") || {}).dataset?.settab, pane: (document.querySelector(".st-pane") || {}).textContent?.trim().length || 0, roster: !!document.querySelector(".st-pane .roster, .st-pane [data-go=\"crew\"]") }));
+      c.check("设置 has no 角色 tab, an old setTab = roles opens 通用 with content", !st.tabs.includes("roles") && st.on === "general" && st.pane > 20 && !st.roster, st);
+      await c.shot("settings");
     }
     if (c.view !== "desk") return;   /* a phone always opens on its home tab (phone/search.js), so old #page= links are a desk matter */
     for (const h of ["roles", "team", "crew"]) {

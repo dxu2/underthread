@@ -25,7 +25,7 @@ const PAGES = {
   market() { return window.Market ? Market.page(pageHead("market")) : pageHead("market"); },
   /* t-hm-build: web/market.js (null = keep its DOM) */
   /* t-roster-rail (11-21, option A): 团队 / Team in the left rail is the roster that used to be 设置 · 角色, cards as they were, plus
-     改名 (display name) and 换头像 (one of the role's own pictures), web/js/views/rolelook.js. 设置 · 角色 keeps a row that jumps here.
+     改名 (display name) and 换头像 (one of the role's own pictures), web/js/views/rolelook.js. 设置 no longer has a 角色 tab (user, 11-21 22:03).
      (The old t-rb-build 团队 page in web/team.js has had no rail row since t-drop-team-tab; its home widget stays.) */
   crew() { return rosterPage(); },
   ongoing() { return Array.isArray(ST.schedules) ? schedPage() : ongoingPage(); },   /* t-ri1104-p3; t-schedule-ui: 定时 page when the server sends state.schedules */
@@ -113,10 +113,6 @@ const PAGES = {
     return pageHead("docs") + `<div class="docs${UI.doc ? " has-doc" : ""}"><div class="dl">${Object.entries(groups).map(([g, ds]) => `<div class="g">${esc(g)}</div>` +
       ds.map(d => `<button class="${(UI.doc || UI.docLast) === d.path ? "on" : ""}" data-doc="${esc(d.path)}" title="${esc(d.path)}">${esc(d.path.split("/").pop())}</button>`).join("")).join("")}</div>
       <div class="md">${back}${UI.doc ? (UI.docText ? md(UI.docText) : `<div class="empty">${en ? "Loading…" : "加载中…"}</div>`) : `<div class="empty">${t("docs_pick")}</div>`}</div></div>`;
-  },
-  roles() {   /* t-roster-rail: 设置 · 角色 = one row to the 团队 page */
-    const en = UI.lang === "en", n = agents().length;
-    return `<section class="st-sec rl-jump"><h4>${en ? "Roster" : "角色"}</h4><button type="button" class="st-row" data-go="crew"><span class="st-tx"><b>${en ? "Team roster" : "团队名册"}</b><small>${en ? `Moved to Team in the left rail: all ${n} roles, their status and cards, rename, avatar, transfer and retire.` : `已移到左栏「团队」：${n} 位队员的状态、手上的单子、改名、换头像、调岗、退休都在那里。`}</small></span><em class="st-go" aria-hidden="true">›</em></button></section>`;
   },
   mail() {
     const f = UI.mailFilter, mob = MOBQ.matches;
