@@ -13,6 +13,23 @@ Versions follow [semantic versioning](https://semver.org) and the `VERSION` file
 
 Work in progress goes under `## Unreleased`; the release renames it to `## [X.Y.Z] - YYYY-MM-DD`. Sections dated before 0.1.0 are from before versioning.
 
+## Unreleased
+
+### Added
+Nothing.
+
+### Changed
+Nothing.
+
+### Fixed
+- **Quick phrases stay inside the folded chat column (t-rail-overflow)**: with the chat column folded to its avatar strip, the 「想说点什么？ / What's on your mind?」 pill stuck out past the strip. Folded, it is now the yarn ball alone, centred; a click unfolds the column and opens the phrases. The chip row (shown before your 20th message) is hidden while the column is folded. Phones are unchanged.
+
+### Upgrade notes
+- Migrations: none
+- New config keys: none
+- Extension API: unchanged
+- Manual steps: none
+
 ## [0.2.0] - 2026-11-21
 
 Highlights since 0.1.0:

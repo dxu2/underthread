@@ -419,7 +419,7 @@
     if (t.dataset.qg != null) return fill(t.dataset.qg);
     if (t.dataset.qgAll != null) { QG.pop = !QG.pop; row($("#right")); return; }
     if (t.dataset.qgClose != null) { QG.pop = false; row($("#right")); return; }
-    if (t.dataset.qgOpen != null) { QG.open = true; row($("#right")); return; }
+    if (t.dataset.qgOpen != null) { QG.open = true; unfold(); row($("#right")); return; }   // t-rail-overflow: the folded rail shows only the ball; a tap opens the column too
     if (t.dataset.obCopy) return copyCmd(t);
     if (t.dataset.obUnlight != null) return unlight();
     if (t.dataset.obAll != null) { PH.all = !PH.all; A().refreshPage(); return; }
