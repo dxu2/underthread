@@ -10,13 +10,17 @@
 .yk > .yk-fx { width: 130%; height: 130%; background-image: var(--yk-fx); background-size: calc(var(--yk-n) * 100%) 100%; }
 .yk-run > .yk-ey, .yk-run > .yk-fx { animation: yk-x var(--yk-d) steps(var(--yk-n), jump-none) var(--wp, 0s) infinite; }
 .yk-beat > .yk-ey, .yk-beat > .yk-fx { animation: yk-x var(--yk-d) steps(var(--yk-n), jump-none) var(--wp, 0s) 1 both; }
-.yk-review:not(.yk-beat) > .yk-ey, .yk-review:not(.yk-beat) > .yk-fx { background-position: 100% 0; }   /* waiting on you: the last frame (kitten holds it up) */
+/* user 11-22: the kitten shows only while the role works on a card. It fades in with the start beat and, after the done beat, the sleeping
+   kitten fades out (yk-out, opacity only); yk-off draws no layers at all */
+.yk-start.yk-beat > .yk-fx { animation: yk-x var(--yk-d) steps(var(--yk-n), jump-none) var(--wp, 0s) 1 both, yk-fade .3s ease-out var(--wp, 0s) 1 reverse both; }
+.yk-out > .yk-fx { animation: yk-fade .4s ease-in var(--wp, 0s) 1 both; }
+.yk-off:not(.yk-out) > .yk-fx, .yk-off > .yk-ey { display: none; }
 @keyframes yk-x { from { background-position-x: 0%; } to { background-position-x: 100%; } }
-/* level-2 roles: eyeless art under the eye layer (the work strip keeps its own steps; review shows the strip's first frame) */
+@keyframes yk-fade { from { opacity: 1; } to { opacity: 0; } }
+/* level-2 roles (only while awake): eyeless art under the eye layer (the work strip keeps its own steps) */
 html[data-ut] .yk.yk-l2 > .av { background-image: var(--yk-idle) !important; }
 html[data-ut] .yk.yk-l2 > .av.working.wsheet { background-image: var(--yk-work) !important; }
-html[data-ut] .yk.yk-l2.yk-review > .av { background-image: var(--yk-work) !important; background-size: 400% 100%; background-position: 0 0; }
-/* the name moves right while the kitten sits by the avatar: 32 px rail +5 px, 48 px phone list +7 px */
+/* room for the kitten by the avatar: 32 px rail +5 px, 48 px phone list +7 px (kept when no kitten shows, so a row never shifts) */
 #team .team-i > .yk + div { margin-left: 5px; }
 .cl-av > .yk { display: block; }
 .cl-row .cl-av:has(> .yk) + .cl-m { padding-left: 7px; }

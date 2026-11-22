@@ -1,6 +1,6 @@
-/* t-yarn-anim: knit kittens. (1) Every teammate in the TEAM rail (desk) / chat list (phone) carries a kitten layer; a role with a level-2
- * script (meta.art[id].yarn, your local/ layer) also gets the moving eye layer. A state change plays one beat: idle -> working = start (then
- * the loop on the 16 s phase), working -> idle with its card in review = review (held on its last frame), card done = done (then asleep).
+/* t-yarn-anim: knit kittens. (1) In the TEAM rail (desk) / chat list (phone) a kitten shows only on a teammate working on a card right now
+ * (user 11-22); a role with a level-2 script (meta.art[id].yarn, your local/ layer) also gets the moving eye layer while it works. Idle ->
+ * working = the start beat (fades in), then the loop on the 16 s phase; working -> idle = the done beat, the sleeping kitten fades out, gone.
  * Reduced motion: the static rest kitten, nothing moves. (2) The Notice line kitten: B naps by default, A nudges the ball when a new notice
  * arrives, C tugs the thread now and then (forced here with the window.__nykNext hook), night = B only. Transform / opacity only.
  *   node tests/e2e/drive.js run tests/e2e/journeys/yarnkit.js --out work/<item>/verify/<run> --engines chromium,webkit
@@ -26,17 +26,19 @@ module.exports = {
     const box = `${scope} .yk[data-yk="${role}"]`;
     const probe = () => p.evaluate(sel => {
       const y = document.querySelector(sel), fx = y && y.querySelector(".yk-fx");
-      return y ? { cls: y.className, ey: !!y.querySelector(".yk-ey"), fxAnim: fx ? getComputedStyle(fx).animationName : null, fxImg: fx ? getComputedStyle(fx).backgroundImage : "", fx0: y.style.getPropertyValue("--yk-fx0"), bx: fx ? getComputedStyle(fx).backgroundPositionX : null } : null;
+      return y ? { cls: y.className, fx: !!fx, ey: !!y.querySelector(".yk-ey"), fxAnim: fx ? getComputedStyle(fx).animationName : null, fxImg: fx ? getComputedStyle(fx).backgroundImage : "", fx0: y.style.getPropertyValue("--yk-fx0"), bx: fx ? getComputedStyle(fx).backgroundPositionX : null } : null;
     }, box);
     /* every class the role's wrapper shows, so a 1.6 s beat between two checks is not missed */
     await p.evaluate(sel => { window.__ykSeen = []; const rec = () => { const y = document.querySelector(sel); if (y && window.__ykSeen[window.__ykSeen.length - 1] !== y.className) window.__ykSeen.push(y.className); }; new MutationObserver(rec).observe(document.body, { subtree: true, childList: true, attributes: true, attributeFilter: ["class"] }); rec(); }, box);
     const seen = () => p.evaluate(() => window.__ykSeen.slice());
 
-    const all = await p.evaluate(s => { const rows = [...document.querySelectorAll(s === "#team" ? "#team .team-i" : ".cl-rows .cl-row")]; return { rows: rows.length, yk: rows.filter(r => r.querySelector(".yk > .av + * , .yk > .yk-fx")).length }; }, scope);
-    c.check("every teammate row carries a kitten layer", all.rows > 0 && all.rows === all.yk, all);
+    const all = await p.evaluate(s => { const rows = [...document.querySelectorAll(s === "#team" ? "#team .team-i" : ".cl-rows .cl-row")];
+      const fx = rows.filter(r => r.querySelector(".yk > .yk-fx")).map(r => r.querySelector(".yk").dataset.yk);
+      const ag = (App.ST && App.ST.agents) || {}, live = fx.filter(id => ag[id] && ag[id].status === "working" && ag[id].item);
+      return { rows: rows.length, wrapped: rows.filter(r => r.querySelector(".yk")).length, fx, live }; }, scope);
+    c.check("every row keeps the wrapper (no shift), a kitten only on roles working on a card", all.rows > 0 && all.rows === all.wrapped && all.fx.length === all.live.length, all);
     const a0 = await probe();
-    c.check("idle role: asleep (yk-rest), no beat on first draw", a0 && /yk-rest/.test(a0.cls) && !/yk-beat/.test(a0.cls), a0);
-    c.check(l2 ? "level-2 role: eye layer on top of the eyeless art" : "generic role: kitten only, no eye layer", a0 && a0.ey === l2, a0);
+    c.check("idle role: no kitten, no eye layer", a0 && /yk-off/.test(a0.cls) && !a0.fx && !a0.ey, a0);
     await c.shot("rest", scope);
 
     /* 1. idle -> working: start beat, then the loop (changes in the first 4 s after a load are taken as the boot snapshot catching up) */
@@ -50,23 +52,23 @@ module.exports = {
     c.check("working: the start beat played, then the loop runs", (await seen()).some(x => /yk-start yk-beat/.test(x)) && !!run, await seen());
     const b1 = (await probe()).bx; await c.sleep(450); const b2 = (await probe()).bx;
     c.check("the loop sprite steps (background-position moves)", run && run.fxAnim === "yk-x" && b1 !== b2, { b1, b2 });
+    c.check(l2 ? "level-2 role: eye layer while it works" : "generic role: kitten only, no eye layer", run && run.ey === l2, run);
     await c.shot("run", scope);
 
-    /* 2. working -> idle with the card in review: review beat, held on its last frame (also after a re-render) */
+    /* 2. working -> idle (card in review): the done beat, the sleeping kitten fades out, then no layers (no review pose any more) */
     c.su("upsert-item", "--id", card, "--who", role, "--kind", "deliverable", "--stage", "review", "--draft", "yarn test draft", "--label", "v1");
     c.su("set-agent", role, "--status", "idle");
-    const rv = await c.until(() => probe().then(x => x && /yk-review/.test(x.cls) && x), 10000);
-    c.check("card in review: the review beat plays and holds", !!rv, rv);
-    await c.sleep(3200);
-    const rv2 = await probe();
-    c.check("still holding the review pose after two polls", rv2 && /yk-review/.test(rv2.cls), rv2);
-    await c.shot("review", scope);
-
-    /* 3. card done: done beat, then asleep */
-    c.su("upsert-item", "--id", card, "--who", role, "--stage", "done");
     await c.until(() => seen().then(s => s.some(x => /yk-done/.test(x))), 10000);
-    const rest = await c.until(() => probe().then(x => x && /yk-rest/.test(x.cls) && x), 8000);
-    c.check("card done: the done beat played, then asleep", (await seen()).some(x => /yk-done yk-beat/.test(x)) && !!rest, await seen());
+    await c.shot("done-beat", scope);
+    const gone = await c.until(() => probe().then(x => x && /yk-off/.test(x.cls) && !/yk-out/.test(x.cls) && !x.fx && x), 9000);
+    const sq = await seen();
+    c.check("stops: done beat, then the fade (yk-out), then no kitten", sq.some(x => /yk-done yk-beat/.test(x)) && sq.some(x => /yk-out/.test(x)) && !!gone, sq);
+    c.check("no eye layer once it stopped", gone && !gone.ey, gone);
+    await c.sleep(3200);
+    const g2 = await probe();
+    c.check("still no kitten after two polls (card waits in review)", g2 && /yk-off/.test(g2.cls) && !g2.fx, g2);
+    await c.shot("off", scope);
+    c.su("upsert-item", "--id", card, "--who", role, "--stage", "done");
 
     /* 4. a reload draws the target state without replaying a beat */
     c.su("set-agent", role, "--status", "working", "--item", card);
