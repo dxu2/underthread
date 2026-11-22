@@ -13,7 +13,15 @@ Versions follow [semantic versioning](https://semver.org) and the `VERSION` file
 
 Work in progress goes under `## Unreleased`; the release renames it to `## [X.Y.Z] - YYYY-MM-DD`. Sections dated before 0.1.0 are from before versioning.
 
-## Unreleased
+## [0.2.0] - 2026-11-21
+
+Highlights since 0.1.0:
+- **Easier start**: one `./start` sets everything up, a clickable Underthread icon opens the board, and `./start --uninstall` removes it again.
+- **A friendlier first day**: a getting-started checklist, quick phrases above the steward's chat, the steward asks what to call you, and an optional 「Use my location」.
+- **Updates in one click**: Settings → System → Updates checks for new versions, updates and rolls back; existing boards adapt by themselves.
+- **More team**: HR is in the default crew, five more roles can be hired from the market, and a mail feed (Gmail) arrives under Settings → Connections.
+- **Underthread look by default**, with a themed mailbox, a yarn notice line, a send button on the card detail and many smaller fixes.
+- **ComfyUI removed**: pictures come from Codex on your ChatGPT plan, or none.
 
 ### Added
 - **Use my location (t-oss-location)**: a 「用我的位置 / Use my location」 button under the steward's first message (next to the name field) and in Settings → General → You. The browser asks; the board keeps only latitude / longitude to 2 decimals (about 1 km) and the time zone, in `config.json` `owner.location`. No address lookup and no other service. "Not now" or a denied prompt is remembered and never asked again; Settings can clear it.
@@ -52,7 +60,6 @@ Work in progress goes under `## Unreleased`; the release renames it to `## [X.Y.
 - **Mailbox follows the theme (t-mailbox-theme)**: under Underthread the mailbox drop-down is a sheet of the board's own paper (page colour + the active knit or leather grain, a stitched line inside the edge, an envelope-flap V, dashed thread between rows) instead of a flat white or black panel. Every row now names its card under the sender (letters without a card say Direct message), so the same reply sent on three cards no longer reads as three identical rows. Other skins keep the plain panel and only gain the card line.
 - **Yarn notice line (t-notice-yarn)**: under Underthread the notice strip under the header draws a thread in from the left and a yarn ball in the theme's brown (gold at night) rolls along it to the message the first time a notice shows; later switches keep the thread still and the ball rolls once in place. The pager dots are knots on a thread. Reduced motion shows the end state; other skins keep the plain line.
 - **Send button on the card detail (t-detail-send)**: the desktop detail composer gets the same paper-plane button as the right-hand chat; grey and inert while there is nothing to send, ⌘/Ctrl+Enter unchanged, and a comment already on its way is never posted twice.
-- **Yarn notice line (t-notice-yarn)**: under Underthread the notice strip under the header draws a thread in from the left and a yarn ball in the theme's brown (gold at night) rolls along it to the message; the pager dots are knots on a thread. Reduced motion shows the end state; other skins keep the plain line.
 - **Full mailbox page uses the drop-down rows**: on the desktop, View all now lists the same rows as the drop-down (name, kind tag, card name, a short preview; one card from one person folds into one row) instead of a timestamp and the full text. A #page= link no longer drags you back to the old page on reload.
 - **Phone home: 等你看 / On you**: the first number counts cards waiting on you plus new replies, so its label no longer says 等你拍板; the line under it splits the two (「13 拍板 · 15 回复」), or shows the oldest wait when there are no new replies.
 - **Card chips keep their punctuation**: a 」, ）or ， right after a card chip wraps with it instead of starting the next line.
