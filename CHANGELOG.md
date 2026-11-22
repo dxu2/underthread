@@ -34,6 +34,13 @@ Nothing.
 
 ### Fixed
 Nothing.
+Nothing.
+
+### Changed
+Nothing.
+
+### Fixed
+- **Quick phrases stay inside the folded chat column (t-rail-overflow)**: with the chat column folded to its avatar strip, the 「想说点什么？ / What's on your mind?」 pill stuck out past the strip. Folded, it is now the yarn ball alone, centred; a click unfolds the column and opens the phrases. The chip row (shown before your 20th message) is hidden while the column is folded. Phones are unchanged.
 
 ### Upgrade notes
 - Migrations: none
