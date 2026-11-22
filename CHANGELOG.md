@@ -13,6 +13,23 @@ Versions follow [semantic versioning](https://semver.org) and the `VERSION` file
 
 Work in progress goes under `## Unreleased`; the release renames it to `## [X.Y.Z] - YYYY-MM-DD`. Sections dated before 0.1.0 are from before versioning.
 
+## Unreleased
+
+### Added
+- **Arrival effects**: when a card is handed in for your review, the board blurs behind the teammate's avatar like ink spreading in water. The title and card name float on the blur for 3 seconds, then it draws back in. The daily report gets the same moment once a day. Full screen stays rare: at most once every 20 minutes, never 22:30–08:30, never while you type, and never in a background tab or with reduced motion. Every other notice drops in as one pill at the top centre, on desk and phone. Replies, questions, DMs and reminders merge into its 「还有 N 条」 / "N more" chip. Click to open, use the chip for the next notice, or swipe up to dismiss. It hides after 5 seconds, and hovering pauses it. Settings → General → Notifications → 提醒动效 / Arrival effects: Full + pill (default), Pill only, or Off. Off brings back the old top-right cards. There is also a Preview button.
+
+### Changed
+- Nothing.
+
+### Fixed
+- Nothing.
+
+### Upgrade notes
+- Migrations: none
+- New config keys: none
+- Extension API: unchanged
+- Manual steps: none
+
 ## [0.2.0] - 2026-11-21
 
 Highlights since 0.1.0:

@@ -53,7 +53,7 @@ function stGeneral() {
     + (P.on && App.pushPrefs ? `<div class="st-sub">${App.pushPrefs()}</div>` : "")
     + (P.on ? stRow(en ? "Send a test" : "发一条测试通知", "", `<em class="st-go">›</em>`, `data-set="pushtest"`) : "") : "";
   const mic = stRow(en ? "Microphone test" : "麦克风测试", en ? "Check before voice calls" : "语音通话前的真机检查", `<em class="st-go">›</em>`, `data-set="mictest"`);
-  return stSec(en ? "Appearance" : "外观", look) + stSec(en ? "You" : "你", locHTML("set")) + stSec(en ? "Studio" : "制作", studioRow(en)) + stSec(en ? "Notifications" : "通知", push + mic);
+  return stSec(en ? "Appearance" : "外观", look) + stSec(en ? "You" : "你", locHTML("set")) + stSec(en ? "Studio" : "制作", studioRow(en)) + stSec(en ? "Notifications" : "通知", push + (window.LookAway ? LookAway.settingsRow(en) : "") + mic);   /* t-lookaway-fx: 提醒动效 */
 }
 /* t-oss-gen-s5: 制作线和频道 = content mode (views/left.js contentMode). One key, meta.studio, shared by every browser; unset = auto. */
 const studioNow = () => { const m = ST && ST.meta && ST.meta.studio; return m === "on" || m === "off" ? m : "auto"; };
