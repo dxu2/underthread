@@ -1,8 +1,9 @@
 """看画面 / Watch, server side (built-in extension, t-oss-live).
 
 GET /api/live/<agent>.jpg -> the last screenshot that agent pushed (.live/<agent>.jpg, written by tools/live_hook.py or
-`stateutil live-frame`). Served only while the agent has a --tool flag: 204 = no flag (the viewer shows "ended"), 404 = no frame
-yet, a frame older than LIVE_TTL, or the extension is switched off (X-Live-Err says which). ETag = mtime, so the viewer's poll
+`stateutil live-frame`). Served only while the agent has a --tool flag and the extension is on: 204 = no flag or switched off (the viewer shows
+"ended"), 202 = no frame yet or one older than LIVE_TTL (the viewer keeps waiting); X-Live-Err says which. No 4xx for these
+normal states, so a waiting viewer leaves no red lines in the browser console. ETag = mtime, so the viewer's poll
 gets 304 until a new frame lands. Frames never go into state.json or a log, and nothing here talks to another host.
 """
 import os
@@ -36,7 +37,7 @@ def register(R):
     def live_frame(agent, inm=None):
         """-> (code, jpeg bytes or None, etag, error text)"""
         if not ext_on("live"):
-            return 404, None, "", "off"
+            return 204, None, "", "off"
         a = (S.read().get("agents") or {}).get(agent) or {}
         if not a.get("tool"):
             return 204, None, "", "no tool"
@@ -45,9 +46,9 @@ def register(R):
         try:
             mt = os.path.getmtime(p)
         except OSError:
-            return 404, None, "", "no frame yet"
+            return 202, None, "", "no frame yet"
         if time.time() - mt > LIVE_TTL:
-            return 404, None, "", "frame too old"
+            return 202, None, "", "frame too old"
         tag = '"%d"' % int(mt * 1000)
         if inm and inm == tag:
             return 304, None, tag, ""

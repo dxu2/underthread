@@ -2,7 +2,7 @@
    「看画面」 on a Chrome tool pill (App.addToolExtra) and on the phone home's team rows (home.js .a2-lk, data-live) opens #live, which shows
    the last screenshot that agent took (tools/live_hook.py pushes it; `stateutil live-frame` by hand). Polls /api/live/<agent>.jpg every
    LIVE_GAP with ?have=<etag>, so it is a 304 until a new frame lands; the next poll goes out only after the last answer. 204 = the tool
-   flag cleared -> "ended" and the viewer closes itself; 404 = no frame yet (or switched off). Stops when the page is hidden and after
+   flag cleared or switched off -> "ended" and the viewer closes itself; 202 = no frame yet (404 from an older server). Stops when the page is hidden and after
    LIVE_IDLE without a tap (tap the frame to go on). The click is taken in the capture phase so the pill's own open does not also fire.
    Switch: state meta.exts.live (config.json extensions.live, Settings -> Connections). Off = no button, no entry, no polling. */
 (() => {
@@ -34,8 +34,8 @@
     try {
       const r = await fetch(`/api/live/${encodeURIComponent(id)}.jpg?have=${encodeURIComponent(LV.tag)}`, { cache: "no-store" });   /* ?have= not If-None-Match: WebKit drops the header under no-store */
       if (!LV.on || LV.id !== id) return;
-      if (r.status === 204) { liveStop(lvEn() ? "Ended: the browser is free" : "已结束：专员不用浏览器了"); setTimeout(() => { if (LV.id === id && !LV.on) liveClose(); }, 2500); return; }
-      if (r.status === 404) { if (!LV.ft) liveMsg(lvEn() ? "Waiting for the first screenshot…" : "等专员截第一张图…"); }
+      if (r.status === 204) { liveStop(lvEn() ? "Ended: the browser is free" : "已结束：队员不用浏览器了"); setTimeout(() => { if (LV.id === id && !LV.on) liveClose(); }, 2500); return; }
+      if (r.status === 202 || r.status === 404) { if (!LV.ft) liveMsg(lvEn() ? "Waiting for the first screenshot…" : "等队员截第一张图…"); }
       else if (r.status === 200) {
         const u = URL.createObjectURL(await r.blob()), img = $("#live .lv-img");
         if (img) { img.src = u; img.classList.add("on"); }
