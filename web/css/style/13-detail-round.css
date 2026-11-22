@@ -279,3 +279,6 @@ html:not([data-theme="dark"]) .tag.deliverable::selection, html:not([data-theme=
 #drawer .composer:not(.has) .cm-field > .dw-send { background: color-mix(in srgb, var(--ink) 12%, transparent); color: var(--dim); box-shadow: none; pointer-events: none; }
 @media (max-width: 760px) { #drawer .cm-field { display: contents; } #drawer .cm-field > .dw-send { display: none; } #drawer .cm-field > textarea { padding-right: 16px; } }
 @media (prefers-reduced-motion: reduce) { #drawer .cm-field > .dw-send svg { transition: none; } }
+/* t-native-dialogs: UI.confirm (core/ui.js): title + one line + Cancel / Confirm in the usual #modal frame (bottom sheet on phone) */
+#modal .ncf h2 { margin-bottom: 6px; }
+#modal .ncf-p { margin: 0 0 4px; font-size: var(--fs-14); line-height: 1.5; color: var(--ink2, var(--dim)); overflow-wrap: anywhere; }

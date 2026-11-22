@@ -13,6 +13,23 @@ Versions follow [semantic versioning](https://semver.org) and the `VERSION` file
 
 Work in progress goes under `## Unreleased`; the release renames it to `## [X.Y.Z] - YYYY-MM-DD`. Sections dated before 0.1.0 are from before versioning.
 
+## Unreleased
+
+### Added
+- Nothing.
+
+### Changed
+- **The board's own confirm dialog replaces the browser's**: pausing an ongoing card, disconnecting a connection, deleting the stored GitHub token, update / go back / restart and moving a card on the production line now ask in a themed dialog (a bottom sheet on phone) with a title, one line, Cancel and Confirm; destructive ones use the warning colour. Esc cancels, Enter confirms, Tab stays inside. Extensions can use `await UI.confirm({ title, text, ok, danger })`.
+
+### Fixed
+- Nothing.
+
+### Upgrade notes
+- Migrations: none
+- New config keys: none
+- Extension API: `UI.confirm({ title, text, ok, cancel, danger })` returns a promise of true / false
+- Manual steps: none
+
 ## [0.2.0] - 2026-11-21
 
 Highlights since 0.1.0:

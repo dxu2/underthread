@@ -126,14 +126,14 @@ function stUpdate(en) {
     rows += `<div class="upd-last ${r.ok ? "ok" : "bad"}">${r.ok ? "✓" : "!"} ${H(r.ended.slice(5, 16).replace("T", " "))} · ${H(r.message)}</div>`;
   return stSec(T("更新", "Updates"), rows);
 }
-function updClick(e) {
+async function updClick(e) {
   const n = e.target.closest("[data-upd-notes]");
   if (n) { UPD.notes = !UPD.notes; renderPage(); return; }
   const b = e.target.closest("[data-upd]"); if (!b || b.getAttribute("aria-disabled") === "true") return;
   const op = b.dataset.upd, en = UI.lang === "en", d = UPD.d || {};
-  if (op === "apply" && !confirm(en ? `Update to v${(d.check || {}).latest}? The dashboard restarts once (a few seconds).` : `更新到 v${(d.check || {}).latest}？看板会重启一次（几秒钟）。`)) return;
-  if (op === "rollback" && !confirm(en ? `Go back to v${(d.rollback || {}).version}? The dashboard restarts once.` : `退回到 v${(d.rollback || {}).version}？看板会重启一次。`)) return;
-  if (op === "restart" && !confirm(en ? "Restart the dashboard now? It is back in a few seconds." : "现在重启看板？几秒钟就回来。")) return;
+  if (op === "apply" && !(await UI.confirm(en ? { title: `Update to v${(d.check || {}).latest}?`, text: "The dashboard restarts once (a few seconds).", ok: "Update" } : { title: `更新到 v${(d.check || {}).latest}？`, text: "看板会重启一次（几秒钟）。", ok: "更新" }))) return;
+  if (op === "rollback" && !(await UI.confirm(en ? { title: `Go back to v${(d.rollback || {}).version}?`, text: "The dashboard restarts once.", ok: "Go back" } : { title: `退回到 v${(d.rollback || {}).version}？`, text: "看板会重启一次。", ok: "退回" }))) return;
+  if (op === "restart" && !(await UI.confirm(en ? { title: "Restart the dashboard now?", text: "It is back in a few seconds.", ok: "Restart" } : { title: "现在重启看板？", text: "几秒钟就回来。", ok: "重启" }))) return;
   b.setAttribute("aria-disabled", "true");
   fetch("/api/update", { method: "POST", headers: { "Content-Type": "application/json", "X-Underthread": "1" }, body: JSON.stringify({ op }) })
     .then(r => r.json().then(j => ({ ok: r.ok, j })))
@@ -280,12 +280,12 @@ function wireSettings() {
   document.addEventListener("dragstart", e => { const d = e.target.closest("[data-pdrag]"); if (d) e.dataTransfer.setData("text/pipe", d.dataset.pdrag); });
   document.addEventListener("dragover", e => { const c = e.target.closest("[data-pdrop]"); if (c && e.dataTransfer.types.includes("text/pipe")) { e.preventDefault(); c.classList.add("over"); } });
   document.addEventListener("dragleave", e => { const c = e.target.closest("[data-pdrop]"); if (c && !c.contains(e.relatedTarget)) c.classList.remove("over"); });
-  document.addEventListener("drop", e => {
+  document.addEventListener("drop", async e => {
     const c = e.target.closest("[data-pdrop]"); if (!c) return; const id = e.dataTransfer.getData("text/pipe"); c.classList.remove("over"); if (!id) return;
     e.preventDefault();
     const it = items().find(i => i.id === id), p = PIPE.find(x => x.k === c.dataset.pdrop); if (!it || !p) return;
     const cur = pipeOf(it); if (cur.k === p.k && !cur.guess) return;
-    if (!confirm(UI.lang === "en" ? `Ask the manager to move "${it.title}" to ${p.en}?` : `请管家把「${it.title}」挪到「${p.zh}」？\n（发给管家确认，看板不直接改）`)) return;
+    if (!(await UI.confirm(UI.lang === "en" ? { title: `Move "${it.title}" to ${p.en}?`, text: "This asks the manager; the board does not change it directly.", ok: "Ask the manager" } : { title: `请管家把「${it.title}」挪到「${p.zh}」？`, text: "发给管家确认，看板不直接改。", ok: "发给管家" }))) return;
     const tags = (it.tags || []).filter(g => !/^pipe[:：]/i.test(g)).concat("pipe:" + p.k);
     api("chat", { text: `【制作线】请把「${it.title}」（${it.id}）的制作阶段改到「${p.zh}」。\n设成：python3 stateutil.py upsert-item --id ${it.id} --who manager ${tags.map(g => `--tag "${g}"`).join(" ")}\n（--tag 会整组替换 tags，上面已带上原有标签）` })
       .then(() => toast(UI.lang === "en" ? "Sent to the manager" : "已发给管家，确认后会挪过去"));
