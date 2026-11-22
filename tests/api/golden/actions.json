@@ -689,6 +689,29 @@
    "versions": []
   }
  },
+ "ext_set_bad": {
+  "body": {
+   "error": "name must be live and on true or false"
+  },
+  "code": 400,
+  "inbox": []
+ },
+ "ext_set_off": {
+  "body": {
+   "inbox": null,
+   "ok": true
+  },
+  "code": 200,
+  "inbox": []
+ },
+ "ext_set_on": {
+  "body": {
+   "inbox": null,
+   "ok": true
+  },
+  "code": 200,
+  "inbox": []
+ },
  "lesson": {
   "body": {
    "inbox": "L-0115-8967",

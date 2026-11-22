@@ -386,6 +386,17 @@ def _studio_mode(a):   # t-oss-gen-s5: 设置 → 制作线和频道: "auto" (sh
         a.st["meta"]["studio"] = m
 
 
+@action("ext_set")
+def _ext_set(a):   # t-oss-live: 设置 → 连接 → 看画面: switch a built-in extension on or off (config.json extensions.<name>)
+    name, on = a.body.get("name"), a.body.get("on")
+    if name not in ("live",) or not isinstance(on, bool):
+        raise ValueError("name must be live and on true or false")
+    C.set_ext(ROOT, name, on)
+    if not on and hasattr(S, "live_drop"):   # off = the frames on disk go too
+        for aid in a.st.get("agents") or {}:
+            S.live_drop(aid)
+
+
 @action("stamina")
 def _stamina(a):
     a.st["meta"]["stamina"] = {"pct": int(a.body["pct"]), "note": a.body.get("note", "手动"), "at": S.now()}

@@ -389,6 +389,8 @@ def public_state(slim=False):
     if not SU.retired(st["meta"].get("onboarding") or {}):
         st["meta"]["setup"] = SU.view(st, a["items"])
     st["meta"]["plan_tip"] = SU.plan_tip(st, list(st.get("items") or []) + list(a["items"] or []))   # t-oss-polish-1121 ④: the one-time 批准开工 bubble
+    from core.ext import EXT, ext_on   # t-oss-live: built-in extensions the page may show (Settings -> Connections switches them)
+    st["meta"]["exts"] = {"live": bool((EXT.get("live") or {}).get("server")) and ext_on("live")}
     st["meta"]["media_v"] = 1   # t-voice-memo: this server transcribes (the page hides 转写/重试 on older servers)
     trim_state(st)
     ho = st.pop("handoffs", None) or []   # t-rb-build: the log is fetched from /api/handoffs; a poll carries only where it ends

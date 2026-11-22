@@ -3,8 +3,8 @@
 // header X-Underthread) and never comes back: every answer is status only. The dialog lives in #modal, so a poll that redraws the
 // settings page never wipes a half-typed password; the rows are drawn from FC.st, and switches flip in place before the answer.
 import { $ } from "../../core/util.js";
-import { UI } from "../../core/store.js";
-import { closeModal, openModal, toast } from "../../core/ui.js";
+import { ST, UI } from "../../core/store.js";
+import { api, closeModal, openModal, toast } from "../../core/ui.js";
 import { renderPage } from "./index.js";
 
 const FC = { st: null, t: 0, old: false, loading: null, busy: {}, msg: {}, m: { busy: false, msg: "", lv: "", file: false } };
@@ -66,7 +66,38 @@ function rowHTML(s) {
     <div class="fc-sub"><span class="fc-l">${L("多久拉一次", "Check every")}</span>${seg}
       <div class="fc-acts"><button type="button" class="gt-b" data-fc="poll" data-src="${s.id}"${busy ? " disabled" : ""}>${busy === "poll" ? L("拉取中…", "Fetching…") : L("立即拉取", "Fetch now")}</button><button type="button" class="gt-b" data-fc="open" data-src="${s.id}"${busy ? " disabled" : ""}>${L("换密码", "New password")}</button><button type="button" class="gt-b dn" data-fc="disconnect" data-src="${s.id}"${busy ? " disabled" : ""}>${L("断开", "Disconnect")}</button></div>${msg}</div></div>`;
 }
+// t-oss-live: 看画面 / Watch (built-in ext/live). meta.exts.live is the switch the server reports (config.json extensions.live);
+// the row flips in place, then POSTs ext_set. Switching on loads ext/live's files into this page if it was drawn without them.
+const liveNow = () => !!(ST && ST.meta && ST.meta.exts && ST.meta.exts.live);
+const liveHas = () => !!(ST && ST.meta && ST.meta.exts && "live" in ST.meta.exts);
+function liveSub(on) {
+  return on ? L("Agent 用 Chrome 时，工具胶囊和手机首页上会出现「看画面」，能看到它最近截的一张图。截图只存在这台电脑的 .live/ 里，不进卡片和日志，也不会上传。",
+    "While an agent uses Chrome, a Watch button on its tool pill and on the phone home shows the last screenshot it took. Screenshots stay in .live/ on this computer: never on cards or in logs, never uploaded.")
+    : L("关着：不显示「看画面」，钩子不存截图，已有的截图也删掉了。", "Off: no Watch button, the hook saves no screenshots, and the ones saved were deleted.");
+}
+function liveSec() {
+  if (!liveHas()) return "";
+  const on = liveNow();
+  return `<section class="st-sec fc-live"><h4>${L("浏览器", "Browser")}</h4><button type="button" class="st-row" data-live-tog aria-pressed="${on}"><span class="st-tx"><b>${L("看画面", "Watch")}</b><small>${liveSub(on)}</small></span><span class="sw ${on ? "on" : ""}" aria-hidden="true"><i></i></span></button></section>`;
+}
+function liveLoad() {
+  if (window.App && App.liveOn) return;
+  if (!document.querySelector('link[href*="ext/live/live.css"]')) document.head.insertAdjacentHTML("beforeend", '<link rel="stylesheet" href="/static/ext/live/live.css">');
+  const sc = document.createElement("script"); sc.src = "/static/ext/live/live.js"; sc.onload = () => { if (window.App && App.refreshPage) App.refreshPage(); }; document.head.appendChild(sc);
+}
+function liveTog(b) {
+  const on = !liveNow();
+  ST.meta.exts = Object.assign({}, ST.meta.exts, { live: on });
+  b.setAttribute("aria-pressed", String(on));
+  const sw = b.querySelector(".sw"); if (sw) sw.classList.toggle("on", on);
+  const sm = b.querySelector(".st-tx small"); if (sm) { sm.classList.remove("st-swap"); void sm.offsetWidth; sm.textContent = liveSub(on); sm.classList.add("st-swap"); }
+  if (on) liveLoad(); else if (window.App && App.liveOff) App.liveOff();
+  api("ext_set", { name: "live", on });
+}
 function stConnections() {
+  return fcSections() + liveSec();
+}
+function fcSections() {
   const en = UI.lang === "en";
   if ((!FC.st && !FC.old) || Date.now() - FC.t > 20000) { if (!FC.loading) fcLoad().then(() => { if (UI.page === "settings" && UI.setTab === "connections") renderPage(); }); }
   const intro = `<p class="fc-intro">${L("连上以后，看板每隔几分钟看一眼有没有新消息，把「谁发的、标题、一两句摘要」合成一条交给管家。只读：不会标已读、不会删、不会回。默认关闭。",
@@ -165,6 +196,7 @@ async function rowDo(k, b) {
   paint();
 }
 function wireConnections() {
+  document.addEventListener("click", e => { const b = e.target.closest("#pagebody [data-live-tog]"); if (b) { e.preventDefault(); liveTog(b); } });   // t-oss-live
   document.addEventListener("click", e => { const b = e.target.closest("#pagebody [data-fc]"); if (b && !b.disabled) { e.preventDefault(); rowDo(b.dataset.fc, b); } });
   // the status line ages ("3 min ago") and the server polls on its own: refresh while the tab is open
   setInterval(() => { if (UI.page === "settings" && UI.setTab === "connections" && document.visibilityState === "visible" && !Object.keys(FC.busy).length) fcLoad(true).then(paint); }, 30000);

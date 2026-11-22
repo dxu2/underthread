@@ -9,5 +9,4 @@
 /* t-settings-tab: the 设置 page rows for the stage background and the voice-call mic test (neither ships here) */
 .st-row[data-stage-tog], .st-row[data-set="mictest"] { display: none !important; }
 
-/* t-m-a2-restore: the 看画面 link on the phone team rows opens the live viewer, which does not ship here */
-.a2-lk { display: none !important; }
+/* t-oss-live: the 看画面 link on the phone team rows is back (ext/live ships the viewer; home.js shows it only while the switch is on) */
