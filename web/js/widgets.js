@@ -215,7 +215,7 @@
     },
   };
   const sizeBtns = (k, s) => `<span class="wg-sz">${SIZES[k].map(z => `<button type="button" data-wg-size="${k}:${z}" class="${z === s ? "on" : ""}">${z.toUpperCase()}</button>`).join("")}</span>`;
-  const editBar = (k, s, i, n) => k === "review" ? `<i class="wg-eband" aria-hidden="true"></i><button type="button" class="wg-x" data-wg-hide="${k}" title="${en() ? "Remove" : "移除"}" aria-label="${en() ? "Remove widget" : "移除这个小组件"}">−</button>${sizeBtns(k, s)}<span class="sct-pin">${en() ? "Always first · L = full width" : "固定在最上面 · L 占满一行"}</span>` : `<i class="wg-eband" aria-hidden="true"></i><button type="button" class="wg-x" data-wg-hide="${k}" title="${en() ? "Remove" : "移除"}" aria-label="${en() ? "Remove widget" : "移除这个小组件"}">−</button>${sizeBtns(k, s)}<span class="wg-mv">${i > 0 ? `<button type="button" data-wg-move="${k}:-1">←</button>` : ""}${i < n - 1 ? `<button type="button" data-wg-move="${k}:1">→</button>` : ""}</span>`;
+  const editBar = (k, s, i, n) => k === "review" ? `<i class="wg-eband" aria-hidden="true"></i><button type="button" class="wg-x" data-wg-hide="${k}" title="${en() ? "Remove" : "移除"}" aria-label="${en() ? "Remove widget" : "移除这个小组件"}">−</button>${sizeBtns(k, s)}<span class="sct-pin">${en() ? "Always first · M = half, L = full width" : "固定在最上面 · M 半行 · L 占满一行"}</span>` : `<i class="wg-eband" aria-hidden="true"></i><button type="button" class="wg-x" data-wg-hide="${k}" title="${en() ? "Remove" : "移除"}" aria-label="${en() ? "Remove widget" : "移除这个小组件"}">−</button>${sizeBtns(k, s)}<span class="wg-mv">${i > 0 ? `<button type="button" data-wg-move="${k}:-1">←</button>` : ""}${i < n - 1 ? `<button type="button" data-wg-move="${k}:1">→</button>` : ""}</span>`;
 
   // t-home-flicker (11-03): the HTML carries wall-clock phases (--wg-fd) so a rebuilt node does not restart the sweep; they are not data,
   // so every compare strips them. Same data: keep the DOM. Changed data (C): replace only the tiles / header / tail / tray whose HTML changed,
@@ -259,11 +259,12 @@
     const count = { review: D.waiting.length, replies: D.nr.length, today: D.shipped.length };
     L.forEach(([k, s0], i) => {
       if (isGone(k)) return;
-      const s = k === "review" ? (s0 === "m" ? "m" : "w") : !EDIT && s0 === "l" && count[k] != null && count[k] <= 2 ? "m" : s0;   // a big widget with one or two rows drops to M so the grid stays tight; 等你拍板 is always full width (t-section-titles)
+      /* t-wy-size (user 11-22): 等你拍板 M = half of L (half the width, a normal tall tile with full rows), L = the full row */
+      const s = k === "review" ? (s0 === "m" ? "l" : "w") : !EDIT && s0 === "l" && count[k] != null && count[k] <= 2 ? "m" : s0;   // a big widget with one or two rows drops to M so the grid stays tight; 等你拍板 is always full width (t-section-titles)
       if (!EDIT && isEmpty(k, D)) { calm.push(calmText(k)); return; }
       const inner = EDIT && isEmpty(k, D) ? eb(k) + `<div class="wg-calm-in">${calmText(k)}</div>` : tileHTML(k, s, D);
       const multi = k === "busy" && D.busy.length > 1 ? " multi" : "";
-      tiles[k === "review" ? "unshift" : "push"]([k, `<section class="wg wg-${k} sz-${s}${k === "review" && D.waiting.length > 4 ? " sct-tall" : ""}${k === "busy" && !isEmpty(k, D) ? (document.documentElement.dataset.ut ? " utav" : " hero") + multi : ""}" data-wg="${k}"${k === "review" ? " data-pin" : ""}>${inner}${EDIT ? editBar(k, s0, i, L.length) : ""}</section>`]);
+      tiles[k === "review" ? "unshift" : "push"]([k, `<section class="wg wg-${k} sz-${s}${k === "review" && s === "l" ? " wy-half" : ""}${k === "review" && s === "w" && D.waiting.length > 4 ? " sct-tall" : ""}${k === "busy" && !isEmpty(k, D) ? (document.documentElement.dataset.ut ? " utav" : " hero") + multi : ""}" data-wg="${k}"${k === "review" ? " data-pin" : ""}>${inner}${EDIT ? editBar(k, s0, i, L.length) : ""}</section>`]);
     });
     const hidden = allIds().filter(k => !L.some(x => x[0] === k) || isGone(k));
     const P = { edit: EDIT, tiles,
@@ -335,7 +336,7 @@
   function over() {   // the tile under the pointer (layout boxes, so a sliding tile does not flicker the target)
     const d = DR.d, op = d.el.offsetParent; if (!op) return null;
     const r = op.getBoundingClientRect(), px = d.x - r.left - op.clientLeft + op.scrollLeft, py = d.y - r.top - op.clientTop + op.scrollTop;
-    return [...d.grid.children].find(t => { if (t === d.el || !t.dataset.wg) return false; const b = lay(t); return px >= b.left && px < b.left + b.width && py >= b.top && py < b.top + b.height; }) || null;
+    return [...d.grid.children].find(t => { if (t === d.el || !t.dataset.wg || t.hasAttribute("data-pin")) return false; const b = lay(t); return px >= b.left && px < b.left + b.width && py >= b.top && py < b.top + b.height; }) || null;
   }
   function reorder(tgt) {
     const d = DR.d, kids = [...d.grid.children], i = kids.indexOf(d.el), j = kids.indexOf(tgt); if (i < 0 || j < 0) return;
@@ -359,22 +360,32 @@
     if (JSON.stringify(nu) !== JSON.stringify(L)) save(nu);
     redraw();   // the ← → buttons follow the new order; patch() keeps the tile nodes
   }
+  /* the pinned tile tugs a few px toward the pointer and springs back (held by its pin); entering 编辑 by a hold = a small press-in */
+  function pinBounce(k, dx, dy) {
+    const el = tileOf(k); if (!el || RMQ.matches) return;
+    const h = Math.hypot(dx, dy) || 1, mx = dx ? dx / h * 7 : 0, my = dy ? dy / h * 7 : 0;
+    el.animate(dx || dy ? [{ translate: "0px 0px" }, { translate: `${mx}px ${my}px`, offset: .3 }, { translate: `${-mx * .35}px ${-my * .35}px`, offset: .62 }, { translate: "0px 0px" }]
+      : [{ scale: "1" }, { scale: ".985", offset: .35 }, { scale: "1" }], { duration: 420, easing: "cubic-bezier(.3,.7,.3,1)" });
+  }
   const cancelPress = () => { if (DR.p) { clearTimeout(DR.p.tm); DR.p = null; } };
   document.addEventListener("pointerdown", e => {
     if (e.button || !e.isPrimary || DR.d || document.documentElement.dataset.home !== "widgets" || (A() && A().UI.page !== "review")) return;
-    const t = e.target.closest && e.target.closest("#wg .wg-grid > .wg[data-wg]:not([data-pin])");   /* t-section-titles: 等你拍板 is pinned first */
+    const t = e.target.closest && e.target.closest("#wg .wg-grid > .wg[data-wg]");
+    /* t-wy-size: 等你拍板 is pinned first (t-section-titles). A hold on it still enters 编辑 (resize / remove); dragging it only bounces back */
+    const pin = !!(t && t.hasAttribute("data-pin"));
     if (!t || e.target.closest("[data-wg-hide],[data-wg-size],[data-wg-move],input,textarea,select,video,audio")) return;
     cancelPress();
-    DR.p = { k: t.dataset.wg, x: e.clientX, y: e.clientY, edit: EDIT, tm: EDIT ? 0 : setTimeout(() => {   // not editing: a hold enters 编辑 and picks the tile up
+    DR.p = { k: t.dataset.wg, pin, x: e.clientX, y: e.clientY, edit: EDIT, tm: EDIT ? 0 : setTimeout(() => {   // not editing: a hold enters 编辑 and picks the tile up
       const p = DR.p; if (!p) return; DR.p = null; DR.eat = Date.now();
-      EDIT = true; redraw(); lift(p.k, p.lx ?? p.x, p.ly ?? p.y); }, HOLD) };
+      EDIT = true; redraw(); if (p.pin) pinBounce(p.k, 0, 0); else lift(p.k, p.lx ?? p.x, p.ly ?? p.y); }, HOLD) };
   }, true);
   window.addEventListener("pointermove", e => {
     if (DR.d) { if (!e.isPrimary) return; e.preventDefault(); DR.d.x = e.clientX; DR.d.y = e.clientY; follow();
       retarget(false); return; }
     const p = DR.p; if (!p) return; p.lx = e.clientX; p.ly = e.clientY;
     const m = Math.hypot(e.clientX - p.x, e.clientY - p.y);
-    if (p.edit && m > 4) { DR.p = null; lift(p.k, p.x, p.y); DR.d && (DR.d.x = e.clientX, DR.d.y = e.clientY, follow()); }
+    if (p.edit && m > 4 && p.pin) { DR.p = null; DR.eat = Date.now(); pinBounce(p.k, e.clientX - p.x, e.clientY - p.y); }
+    else if (p.edit && m > 4) { DR.p = null; lift(p.k, p.x, p.y); DR.d && (DR.d.x = e.clientX, DR.d.y = e.clientY, follow()); }
     else if (!p.edit && m > 8) cancelPress();   // moved before the hold: a normal click / selection, not a drag
   }, { passive: false });
   const end = () => { cancelPress(); if (DR.d) drop(); };

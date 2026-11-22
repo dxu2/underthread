@@ -419,3 +419,8 @@ html[data-home="widgets"] .sct-pin { margin-left: 8px; font-size: var(--fs-12); 
   html[data-ut][data-texture^="leather"][data-home="widgets"] #wg .wg:not(.hero) .wg-eb b { color: #F6E6CC; }
   html[data-ut][data-texture^="leather"][data-home="widgets"] #wg .wg-review:not(.hero) .wg-eb { background: color-mix(in srgb, var(--dye, var(--accent)) 92%, #000); }
 }
+
+/* t-wy-size (user 11-22): 等你拍板 at M = half of L: half the row (4 cols: 2, 6: 3, 8: 4), a normal two-row-tall tile with full rows. Phone (2 cols) keeps the full width. */
+html[data-home="widgets"] .wg-review.wy-half { grid-column: span 2; }
+@container (min-width: 940px) { html[data-home="widgets"] .wg-review.wy-half { grid-column: span 3; } }
+@container (min-width: 1400px) { html[data-home="widgets"] .wg-review.wy-half { grid-column: span 4; } }

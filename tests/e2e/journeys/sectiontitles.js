@@ -62,10 +62,10 @@ module.exports = {
       const ed = await p.evaluate(() => { const r = document.querySelector("#wg .wg-review"); return { edit: !!document.querySelector("#wg.edit"), size: r ? [...r.querySelectorAll("[data-wg-size]")].map(b => b.textContent).join("") : "", move: r ? r.querySelectorAll("[data-wg-move]").length : -1, pin: !!(r && r.querySelector(".sct-pin")) }; });
       c.check("edit mode: 等你拍板 offers M / L, no move buttons, says it is pinned", ed.edit && ed.size === "ML" && ed.move === 0 && ed.pin, ed);
       await c.shot("edit");
-      /* M = compact half-width tile, still first; L = full width (user 11-21 23:41) */
+      /* M = half of L (a normal tall tile, half the row, t-wy-size 11-22), still first; L = full width (user 11-21 23:41) */
       await c.tap('#wg .wg-review [data-wg-size="review:m"]'); await c.sleep(900);
       const m = await look(p), sm = await p.evaluate(() => App.ST.meta.widgets.layout.find(x => x[0] === "review"));
-      c.check("size M: 等你拍板 is a half-width tile, still first", m.order[0] === "review" && m.lab[0].sz === "sz-m" && m.review.w < m.review.grid * 0.6 && m.review.cols === 0, { w: m.review, sz: m.lab[0].sz });
+      c.check("size M: 等你拍板 is a half-width tile, still first", m.order[0] === "review" && m.lab[0].sz === "sz-l" && m.review.w < m.review.grid * 0.6 && m.review.cols === 0, { w: m.review, sz: m.lab[0].sz });
       await c.shot("edit-review-m");
       await c.tap('#wg .wg-review [data-wg-size="review:l"]'); await c.sleep(900);
       const l = await look(p);
