@@ -388,6 +388,7 @@ def public_state(slim=False):
     from api.routes import setup as SU   # t-onboarding P0: the 开工清单, only while it is not retired (the page draws nothing without it)
     if not SU.retired(st["meta"].get("onboarding") or {}):
         st["meta"]["setup"] = SU.view(st, a["items"])
+    st["meta"]["plan_tip"] = SU.plan_tip(st, list(st.get("items") or []) + list(a["items"] or []))   # t-oss-polish-1121 ④: the one-time 批准开工 bubble
     st["meta"]["media_v"] = 1   # t-voice-memo: this server transcribes (the page hides 转写/重试 on older servers)
     trim_state(st)
     ho = st.pop("handoffs", None) or []   # t-rb-build: the log is fetched from /api/handoffs; a poll carries only where it ends

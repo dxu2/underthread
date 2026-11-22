@@ -1,0 +1,53 @@
+/* t-oss-polish-1121 (2026-11-21): ② the detail page's 处理中 band, ③ the working ring when it is not moving, ④ the one-time 批准开工 hint.
+   Colours come from theme tokens only (--ok = the rail's 执行中 green, --ink / --bg / --dim); every skin gets the same look, knit reads best. */
+
+/* ---------- ② 处理中 band (app.js wkBand, above .dw-title on desk and phone) ---------- */
+.wkb { --wkb: var(--ok, #3f7d4e); position: relative; display: flex; align-items: center; gap: 12px; margin: 4px 0 16px; padding: 11px 14px 17px; border-radius: 16px;
+  background: color-mix(in srgb, var(--wkb) 9%, var(--bg)); border: 1.5px dashed color-mix(in srgb, var(--wkb) 55%, transparent); overflow: hidden;
+  animation: wkb-in var(--m-med, .32s) var(--m-ease-ios, ease-out) both; }
+@keyframes wkb-in { from { opacity: 0; transform: translateY(-4px); } }
+.wkb-avs { flex: none; display: flex; gap: 6px; padding: 4px; }
+.wkb-avs .av { width: 36px; height: 36px; }
+.wkb-tx { display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1; }
+.wkb-tx b { font-size: var(--fs-15, 15px); font-weight: 600; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.wkb-sub { font-size: var(--fs-13, 13px); color: var(--ink2, var(--dim)); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.wkb-st { flex: none; padding: 3px 11px; border-radius: 999px; background: var(--wkb); color: var(--bg); font-size: var(--fs-12, 12px); font-weight: 600; }
+/* the bottom thread: a dashed running stitch */
+.wkb-thr { position: absolute; left: 12px; right: 12px; bottom: 7px; height: 0; border-top: 1.6px dashed color-mix(in srgb, var(--wkb) 60%, transparent); }
+/* the yarn ball: a full-width box moved with transform only; the ball is its ::before at the right end, rolling while it travels */
+.wkb-ball { position: absolute; left: 12px; right: 12px; bottom: 1px; height: 13px; pointer-events: none;
+  animation: wkb-roll 9s ease-in-out var(--wb, 0s) infinite alternate; }
+.wkb-ball::before { content: ""; position: absolute; right: 0; top: 0; width: 13px; height: 13px; border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, color-mix(in srgb, var(--wkb) 55%, #fff), var(--wkb));
+  box-shadow: inset -2px -2px 0 color-mix(in srgb, var(--ink) 18%, transparent);
+  -webkit-mask: repeating-linear-gradient(35deg, #000 0 2.4px, rgba(0,0,0,.72) 2.4px 3.4px); mask: repeating-linear-gradient(35deg, #000 0 2.4px, rgba(0,0,0,.72) 2.4px 3.4px);
+  animation: wkb-spin 9s ease-in-out var(--wb, 0s) infinite alternate; }
+@keyframes wkb-roll { from { transform: translateX(calc(-100% + 13px)); } to { transform: none; } }
+@keyframes wkb-spin { from { transform: rotate(-900deg); } to { transform: none; } }
+@media (prefers-reduced-motion: reduce) {
+  .wkb { animation: none; }
+  .wkb-ball, .wkb-ball::before { animation: none; }
+  .wkb-ball { transform: translateX(-38%); } }
+@media (max-width: 760px) {
+  .wkb { margin: 2px 0 12px; padding: 9px 12px 15px; gap: 10px; }
+  .wkb-avs .av { width: 32px; height: 32px; } }
+
+/* ---------- ③ a working ring that is not moving reads as "busy", not as a frozen spinner ----------
+   The ring is a conic comet arc while it spins. When it stops (fx.js idle pause: html[data-idle]; prefers-reduced-motion) it becomes one full ring. */
+html[data-idle] .av.working::before, html[data-idle] .hd-mini.working::before { background: var(--wk-ring); }
+@media (prefers-reduced-motion: reduce) { .av.working::before, .hd-mini.working::before { background: var(--wk-ring); } }
+
+/* ---------- ④ one-time hint on the first plan card (drawer.js planHint) ---------- */
+.ph-tip { position: absolute; z-index: 60; width: min(300px, calc(100vw - 32px)); padding: 12px 14px 10px; border-radius: 14px; background: var(--ink); color: var(--bg);
+  font-size: var(--fs-14, 14px); line-height: 1.5; box-shadow: 0 10px 28px rgba(0,0,0,.24); animation: ph-tip-in .36s var(--m-ease-ios, ease-out) both; }
+.ph-tip b { display: block; margin-bottom: 2px; }
+.ph-tip button { display: block; margin: 6px 0 0 auto; padding: 4px 10px; border: 0; border-radius: 999px; background: color-mix(in srgb, var(--bg) 16%, transparent); color: inherit; font: inherit; font-size: var(--fs-13, 13px); cursor: pointer;
+  transition: background .18s, transform .18s; }
+.ph-tip button:hover { background: color-mix(in srgb, var(--bg) 26%, transparent); }
+.ph-tip button:active { transform: scale(.96); }
+.ph-tip::after { content: ""; position: absolute; right: var(--ph-x, 28px); bottom: -6px; width: 12px; height: 12px; background: inherit; transform: rotate(45deg); }
+.ph-tip.out { animation: ph-tip-out .2s ease-in both; }
+@keyframes ph-tip-in { from { opacity: 0; transform: translateY(6px) scale(.98); } }
+@keyframes ph-tip-out { to { opacity: 0; transform: translateY(4px); } }
+.ab.ok.ph-lit { outline: 2px dashed var(--ink); outline-offset: 3px; }
+@media (prefers-reduced-motion: reduce) { .ph-tip, .ph-tip.out { animation: none; } }

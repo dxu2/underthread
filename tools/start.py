@@ -136,8 +136,8 @@ def agents_stale():
         newest = max(os.path.getmtime(os.path.join(d, f)) for f in os.listdir(d) if f.endswith(".md"))
     except (OSError, ValueError):
         return True
-    r = os.path.join(ROOT, "roster.json")
-    return os.path.exists(r) and os.path.getmtime(r) > newest
+    # roster.json changed, or an update brought a new make_agents.py (new hard rules reach existing installs: t-oss-polish-1121)
+    return any(os.path.exists(r) and os.path.getmtime(r) > newest for r in (os.path.join(ROOT, "roster.json"), os.path.join(ROOT, "make_agents.py")))
 
 
 def ensure_agents():

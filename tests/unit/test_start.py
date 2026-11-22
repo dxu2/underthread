@@ -71,6 +71,13 @@ class StartTest(unittest.TestCase):
         later = time.time() + 5
         os.utime(r, (later, later))
         self.assertTrue(self.m.agents_stale())   # roster changed after the agents were made
+        os.utime(r, None)
+        os.utime(os.path.join(ag, "underthread-scout.md"), (later + 5, later + 5))
+        self.assertFalse(self.m.agents_stale())
+        mk = os.path.join(self.d, "make_agents.py")
+        open(mk, "w").close()
+        os.utime(mk, (later + 10, later + 10))
+        self.assertTrue(self.m.agents_stale())   # an update brought new hard rules (t-oss-polish-1121)
 
     def test_a_click_a_moment_ago_counts_as_online(self):
         os.makedirs(os.path.join(self.d, "logs"))
