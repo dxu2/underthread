@@ -234,3 +234,14 @@ body.lb-open #pal { z-index: 9100; }   /* ⌘K over an open viewer shows on top,
 .mb-page { max-width: 880px; }
 .mb-page .mb-i { padding: 12px 10px; }
 .mb-page .mb-x { -webkit-line-clamp: 3; }
+/* t-mail-width (user 11-21 23:14 「宽度要固定，不能左右滑动」): the drop-down and the desk 信箱 page keep their width whatever a letter holds.
+   The text column was a plain 1fr (min = content), so a long URL or card title stretched every row and .mb-list (overflow-y auto => x auto too)
+   scrolled sideways. Now the column can shrink, long words break, names and card titles ellipsize, and the list never scrolls x. */
+.mb-i { grid-template-columns: 22px minmax(0, 1fr) 8px; }
+.mb-i > *, .mb-b, .mb-m, .mb-page { min-width: 0; }
+.mb-list, .mb-page { overflow-x: hidden; }
+.mb-x { word-break: break-word; overflow-wrap: anywhere; }
+.mb-x img, .mb-x video, .mb-x svg { max-width: 100%; height: auto; }
+.mb-x pre, .mb-x table { max-width: 100%; overflow-x: auto; }
+.mb-m b { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mb-m i, .mb-m span { flex: none; }

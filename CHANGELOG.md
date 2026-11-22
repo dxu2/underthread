@@ -13,6 +13,23 @@ Versions follow [semantic versioning](https://semver.org) and the `VERSION` file
 
 Work in progress goes under `## Unreleased`; the release renames it to `## [X.Y.Z] - YYYY-MM-DD`. Sections dated before 0.1.0 are from before versioning.
 
+## Unreleased
+
+### Added
+Nothing.
+
+### Changed
+Nothing.
+
+### Fixed
+- **The mailbox keeps its width (t-mail-width)**: a letter with a long link, an unbroken word or a long card title stretched the 信箱 / Mail drop-down and the desk Mail page sideways, so the list could be dragged left and right. Rows now shrink to the panel, long words break, names and card titles end in …, and the list never scrolls sideways.
+
+### Upgrade notes
+- Migrations: none
+- New config keys: none
+- Extension API: unchanged
+- Manual steps: none
+
 ## [0.2.0] - 2026-11-21
 
 Highlights since 0.1.0:
