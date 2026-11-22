@@ -371,7 +371,7 @@ html[data-home="widgets"] .wg-review .ri13-acts { margin: 6px 0 0; gap: 5px; }
 html[data-home="widgets"] .wg-review .wg-row.ri13-m { margin-left: 4px; box-shadow: inset 2px 0 0 var(--line3); border-radius: 0 12px 12px 0; }
 html[data-home="widgets"] .wg-review .ri13-c .ri13-n { margin-right: 2px; }
 
-/* t-section-titles (11-21, desk only): every home section wears a sewn-on label (S2) that sits on the top edge, with a one-line subtitle under it;
+/* t-section-titles (11-21, desk only; review label rules carry :not(.hero) so they outrank the shared label rule): every home section wears a sewn-on label (S2) that sits on the top edge, with a one-line subtitle under it;
    under leather the label takes the section's own dye (L1). 等你拍板 is first and full width (widgets.js pins it); 最近 is a full-width row of 5 tiles.
    The phone keeps the old in-card title. Default (non-Underthread) skins keep the plain eyebrow; only the wide rows and tiles apply there. */
 html[data-home="widgets"] .sct-sub { display: none; }
@@ -410,12 +410,12 @@ html[data-home="widgets"] .sct-pin { margin-left: 8px; font-size: var(--fs-12); 
   html[data-ut][data-home="widgets"] #wg .wg:not(.hero) .wg-eb .wnb-unit { font-size: var(--fs-12); font-weight: 400; opacity: .85; }
   html[data-ut][data-home="widgets"] #wg .wg:not(.hero) .wg-eb > span:not(.n) { color: inherit; }   /* 用量's 今天 / token words take the label's ink */
   html[data-ut][data-home="widgets"] #wg .wg:not(.hero) .sct-sub { display: block; margin: 8px 0 6px; font-size: var(--fs-12); color: var(--dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  html[data-ut][data-home="widgets"] #wg .wg-review .wg-eb { transform: rotate(-1.6deg); padding: 5px 16px 6px; background: var(--accent); color: var(--accent-ink); outline-color: color-mix(in srgb, var(--accent-ink) 45%, transparent); }
-  html[data-ut][data-home="widgets"] #wg .wg-review .wg-eb b { font-size: var(--fs-16); color: var(--accent-ink); }
+  html[data-ut][data-home="widgets"] #wg .wg-review:not(.hero) .wg-eb { transform: rotate(-1.6deg); padding: 5px 16px 6px; background: var(--accent); color: var(--accent-ink); outline-color: color-mix(in srgb, var(--accent-ink) 45%, transparent); }
+  html[data-ut][data-home="widgets"] #wg .wg-review:not(.hero) .wg-eb b { font-size: var(--fs-16); color: var(--accent-ink); }
   html[data-ut][data-home="widgets"] #wg.edit .wg-eb { padding-left: 13px; }
   /* L1: under leather the label is the section's own dye, darkened, stitched in the same colour */
   html[data-ut][data-texture^="leather"][data-home="widgets"] #wg .wg:not(.hero) .wg-eb { background: color-mix(in srgb, var(--dye, var(--panel)) 78%, #120a06); color: color-mix(in srgb, #F6E6CC 75%, transparent);
     outline: 1.5px dashed color-mix(in srgb, var(--dye, #caa) 45%, #fff); box-shadow: 0 2px 0 rgba(0,0,0,.3), 0 5px 10px rgba(0,0,0,.2); }
   html[data-ut][data-texture^="leather"][data-home="widgets"] #wg .wg:not(.hero) .wg-eb b { color: #F6E6CC; }
-  html[data-ut][data-texture^="leather"][data-home="widgets"] #wg .wg-review .wg-eb { background: color-mix(in srgb, var(--dye, var(--accent)) 92%, #000); }
+  html[data-ut][data-texture^="leather"][data-home="widgets"] #wg .wg-review:not(.hero) .wg-eb { background: color-mix(in srgb, var(--dye, var(--accent)) 92%, #000); }
 }
