@@ -185,3 +185,12 @@ html[data-texture^="leather"] #wtoasts .wt { --dim: color-mix(in srgb, var(--lt-
 .cal-i.cal-pf-in { animation: cal-pf-in var(--m-base, .28s) var(--m-ease, ease) both; }
 @keyframes cal-pf-in { from { opacity: 0; translate: 0 -4px; } }
 @media (prefers-reduced-motion: reduce) { .cal-pf .cal-pf-cv { transition: none; } .cal-i.cal-pf-in { animation: none; } }
+
+/* r-improve-1122 P3: the 推荐 / Recommended tag on an answer option wraps as one piece (it split 推 | 荐 when the label ended at the line's edge) */
+:is(.ask-o, .opts .btn-s, .ri13-o) .rec-b { display: inline-block; white-space: nowrap; }
+/* r-improve-1122 P4: under Knit the top-right reply / DM cards get the arrival pill's stitched edge, shadow and a rounder corner, so the two
+   read as one set when both are up (Leather already dyes and stitches them; other skins unchanged). */
+html[data-texture^="knit"] #wtoasts .wt { border-radius: 22px; border-color: transparent;
+  box-shadow: 0 18px 44px rgba(4,2,1,.5), 0 4px 12px rgba(4,2,1,.35), inset 0 1px 0 rgba(255,246,232,.14), inset 0 0 0 1px color-mix(in srgb, var(--ink) 9%, transparent); }
+html[data-texture^="knit"][data-theme="white"] #wtoasts .wt { box-shadow: 0 16px 40px rgba(60,40,25,.16), 0 3px 10px rgba(60,40,25,.1), inset 0 1px 0 rgba(255,255,255,.7), inset 0 0 0 1px var(--line2); }
+html[data-texture^="knit"] #wtoasts .wt::after { content: ""; position: absolute; inset: 4px; border-radius: 18px; pointer-events: none; border: 1.5px dashed color-mix(in srgb, var(--ink) 24%, transparent); }

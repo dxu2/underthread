@@ -13,6 +13,25 @@ Versions follow [semantic versioning](https://semver.org) and the `VERSION` file
 
 Work in progress goes under `## Unreleased`; the release renames it to `## [X.Y.Z] - YYYY-MM-DD`. Sections dated before 0.1.0 are from before versioning.
 
+## Unreleased
+
+### Added
+- Nothing.
+
+### Changed
+- **Phone: Assets and the hiring market use the same filter row as Quests and Notifications (r-improve-1122 P2)**: one track, the same height and sliding pill in every look, instead of their own chips. The desktop keeps its chips.
+
+### Fixed
+- **The 推荐 / Recommended tag on an answer option no longer splits over two lines (r-improve-1122 P3).**
+- **Knit: the top-right reply and message cards get a stitched edge and a rounder corner (r-improve-1122 P4)**, like the cards around them. Leather and the other looks are unchanged.
+- **e2e: the settings toggle's mid-slide check reads one held frame (r-improve-1122 P5)** instead of hoping a frame lands mid-slide, which failed now and then on slow WebKit.
+
+### Upgrade notes
+- Migrations: none
+- New config keys: none
+- Extension API: unchanged
+- Manual steps: none
+
 ## [0.2.0] - 2026-11-21
 
 Highlights since 0.1.0:
