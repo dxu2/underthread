@@ -1,4 +1,9 @@
 {
   "_doc": "Page errors that are real but known and tracked elsewhere. drive.js logs them as 'known' instead of failing the run. Each entry: pattern (regex on the error line), why (where it is tracked). Remove an entry once fixed.",
-  "issues": []
+  "issues": [
+    {
+      "pattern": "^Fetch API cannot load http: ?/+127\\.0\\.0\\.1:\\d+/api/\\S+ due to access control checks\\.$",
+      "why": "WebKit (Playwright) reports a same-origin fetch that a reload or goto aborts (the long poll, push status) as a page error; Chromium stays quiet. Journeys that reload mid-run (lookaway.js, detailclose.js) hit it. Not an app bug."
+    }
+  ]
 }
