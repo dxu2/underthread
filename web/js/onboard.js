@@ -104,7 +104,7 @@
     const d = SU(); if (!d) return kit.eb("setup");
     queueAnim();
     const a = !d.all && act(d.next);   // the current step's button sits in the title row, so the hint below gets the whole column
-    return `<div class="ob-row"><div class="ob-main"><div class="wg-eb"><b>${esc(L("开工清单", "Getting started"))}</b><span class="n">${esc(count(d))}</span>${a ? `<button type="button" class="ob-go" data-ob-step="${d.next}">${esc(a)}</button>` : ""}</div>${track(d)}${d.all ? doneLine() : `<div class="ob-hint"><span>${esc(hint(d.next))}</span></div>`}</div>${optArea()}</div>`;
+    return `<div class="ob-row"><div class="ob-main"><div class="wg-eb"><b>${esc(L("开工清单", "Getting started"))}</b><span class="n">${esc(count(d))}</span>${window.Tour ? Tour.link() : ""}${a ? `<button type="button" class="ob-go" data-ob-step="${d.next}">${esc(a)}</button>` : ""}</div>${track(d)}${d.all ? doneLine() : `<div class="ob-hint"><span>${esc(hint(d.next))}</span></div>`}</div>${optArea()}</div>`;
   }
   /* phone card under the stat row: the thread (no labels), the current step's name and hint; 全部 › lists all six; the optional chips below */
   const PH = { all: false };
@@ -112,7 +112,7 @@
     const d = SU(); if (!d || !phone()) return "";
     queueAnim();
     const cur = d.steps.find(x => x.id === d.next), ci = d.steps.indexOf(cur);
-    return `<section class="ob-card${d.all ? " is-done" : ""}" data-ob-card><div class="ob-hd"><b>${esc(L("开工清单", "Getting started"))}</b><span class="n">${esc(count(d))}</span>`
+    return `<section class="ob-card${d.all ? " is-done" : ""}" data-ob-card><div class="ob-hd"><b>${esc(L("开工清单", "Getting started"))}</b><span class="n">${esc(count(d))}</span>${window.Tour ? Tour.link() : ""}`
       + (d.all ? `<button type="button" class="ob-lnk" data-ob-hide>${esc(L("现在收起", "Hide now"))}</button>` : `<button type="button" class="ob-lnk" data-ob-all aria-expanded="${PH.all}">${esc(PH.all ? L("收起", "Less") : L("全部 ›", "All ›"))}</button>`)
       + `</div>${track(d)}`
       + (PH.all && !d.all ? `<div class="ob-list">${d.steps.map((x, i) => stepBtn(x, i, x === cur)).join("")}</div>` : cur ? `<div class="ob-cur">${ci + 1} · ${esc(L(...NAME[cur.id]))}</div>` : "")

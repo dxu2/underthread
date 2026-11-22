@@ -228,14 +228,15 @@
    },
    "schema": {
     "ahead": [],
-    "code": 3,
+    "code": 4,
     "config": 0,
     "roster": 0,
-    "state": 3,
+    "state": 4,
     "steps": [
      "0001_baseline",
      "0002_routines_log",
-     "0003_onboarding"
+     "0003_onboarding",
+     "0004_tour"
     ]
    },
    "server": {
@@ -612,6 +613,7 @@
     "/static/js/mobile.js?v=<h>",
     "/static/js/push.js?v=<h>",
     "/static/js/welcome.js?v=<h>",
+    "/static/js/tour.js?v=<h>",
     "/static/js/core/util.js?v=<h>",
     "/static/js/core/i18n.js?v=<h>",
     "/static/js/core/store.js?v=<h>",
@@ -697,6 +699,7 @@
     "/static/css/welcome.css?v=<h>",
     "/static/css/texture-knit.css?v=<h>",
     "/static/css/texture-leather.css?v=<h>",
+    "/static/css/tour.css?v=<h>",
     "/static/css/onboard.css?v=<h>",
     "/static/css/polish-1115b.css?v=<h>",
     "/static/css/polish-1121.css?v=<h>",
@@ -744,6 +747,7 @@
     "/static/js/splash.js": "/static/js/splash.js?v=<h>",
     "/static/js/team.js": "/static/js/team.js?v=<h>",
     "/static/js/toast.js": "/static/js/toast.js?v=<h>",
+    "/static/js/tour.js": "/static/js/tour.js?v=<h>",
     "/static/js/transfer.js": "/static/js/transfer.js?v=<h>",
     "/static/js/vendor/qrcode.js": "/static/js/vendor/qrcode.js?v=<h>",
     "/static/js/viewer.js": "/static/js/viewer.js?v=<h>",
@@ -2459,12 +2463,24 @@
       "ran": [
        "0001_baseline",
        "0002_routines_log",
-       "0003_onboarding"
+       "0003_onboarding",
+       "0004_tour"
       ],
-      "to": 3
+      "to": 4
      }
     ],
-    "onboarding": {},
+    "onboarding": {
+     "tour": {
+      "desk": {
+       "at": "2026-01-20T06:38:35+00:00",
+       "how": "upgrade"
+      },
+      "phone": {
+       "at": "2026-01-20T06:38:35+00:00",
+       "how": "upgrade"
+      }
+     }
+    },
     "owner": "You",
     "owner_loc": null,
     "plan_tip": true,
@@ -2473,8 +2489,8 @@
     "rev": 56,
     "routines": [],
     "routines_log": {},
-    "schema": 3,
-    "schema_code": 3,
+    "schema": 4,
+    "schema_code": 4,
     "seats": {
      "artist": [
       0.46,
@@ -4115,12 +4131,24 @@
       "ran": [
        "0001_baseline",
        "0002_routines_log",
-       "0003_onboarding"
+       "0003_onboarding",
+       "0004_tour"
       ],
-      "to": 3
+      "to": 4
      }
     ],
-    "onboarding": {},
+    "onboarding": {
+     "tour": {
+      "desk": {
+       "at": "2026-01-20T06:38:35+00:00",
+       "how": "upgrade"
+      },
+      "phone": {
+       "at": "2026-01-20T06:38:35+00:00",
+       "how": "upgrade"
+      }
+     }
+    },
     "owner": "You",
     "owner_loc": null,
     "plan_tip": false,
@@ -4129,8 +4157,8 @@
     "rev": 123,
     "routines": [],
     "routines_log": {},
-    "schema": 3,
-    "schema_code": 3,
+    "schema": 4,
+    "schema_code": 4,
     "seats": {
      "artist": [
       0.46,
@@ -5359,12 +5387,24 @@
       "ran": [
        "0001_baseline",
        "0002_routines_log",
-       "0003_onboarding"
+       "0003_onboarding",
+       "0004_tour"
       ],
-      "to": 3
+      "to": 4
      }
     ],
-    "onboarding": {},
+    "onboarding": {
+     "tour": {
+      "desk": {
+       "at": "2026-01-20T06:38:35+00:00",
+       "how": "upgrade"
+      },
+      "phone": {
+       "at": "2026-01-20T06:38:35+00:00",
+       "how": "upgrade"
+      }
+     }
+    },
     "owner": "You",
     "owner_loc": null,
     "plan_tip": true,
@@ -5373,8 +5413,8 @@
     "rev": 56,
     "routines": [],
     "routines_log": {},
-    "schema": 3,
-    "schema_code": 3,
+    "schema": 4,
+    "schema_code": 4,
     "seats": {
      "artist": [
       0.46,

@@ -23,7 +23,9 @@ t-onb-polish B: five optional steps beside the six, never counted, never in the 
   phone   a phone opened the board through Tailscale Serve (note_phone() on /api/state: a *.ts.net Host or a Tailscale-User-Login
           header, and a phone user agent), or 「手机上能用了」 (op=tick k=phone). The probe also reads `tailscale status` and
           `tailscale serve status` (only the server's own port counts) for the three-step guide and the QR code.
-op=skip k=<id> folds one away (meta.onboarding.skip), op=unskip brings it back. All new fields; older code does not read them."""
+op=skip k=<id> folds one away (meta.onboarding.skip), op=unskip brings it back. All new fields; older code does not read them.
+meta.onboarding.tour (t-onboard-tour, migration 0004) is where the first-run welcome + tour has been seen, per form factor: {desk, phone} =
+{at, how: done | skip | upgrade}; it travels with meta.onboarding in every poll."""
 import datetime as dt
 import json
 import os
@@ -233,7 +235,8 @@ def _onboarding(a):
     op=clear_samples: archive every live q-demo-* sample card (t-onb-polish 清掉示例; they stay findable in the archive);
     op=tick k=chrome|app|look|phone: an optional step is done (meta.onboarding.tick_by[k] = me, or auto for app / look, which only the page sees);
     op=skip / unskip k=<optional id>: fold one away or bring it back; op=recheck: probe Codex and Tailscale again now;
-    op=tip k=plan: the one-time 批准开工 bubble was dismissed (meta.onboarding.plan_tip_at)."""
+    op=tip k=plan: the one-time 批准开工 bubble was dismissed (meta.onboarding.plan_tip_at).
+    op=tour (t-onboard-tour): the welcome + tour was finished / skipped on this form (desk | phone), or reset so it opens again."""
     op, ob = a.body.get("op"), a.st["meta"].setdefault("onboarding", {})
     if not isinstance(ob, dict):
         ob = a.st["meta"]["onboarding"] = {}
@@ -272,5 +275,15 @@ def _onboarding(a):
     elif op == "hide":
         ob["keep"] = False
         ob["retired_at"] = S.now()
+    elif op == "tour":   # t-onboard-tour: {form: desk|phone, how: done|skip|reset}; reset = this form opens the welcome again on its next load
+        form, how = a.body.get("form"), a.body.get("how")
+        if form not in ("desk", "phone") or how not in ("done", "skip", "reset"):
+            raise ValueError("bad tour form / how")
+        tour = ob.get("tour") if isinstance(ob.get("tour"), dict) else {}
+        ob["tour"] = tour
+        if how == "reset":
+            tour.pop(form, None)
+        else:
+            tour[form] = {"at": S.now(), "how": how}
     else:
         raise ValueError("bad onboarding op")

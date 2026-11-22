@@ -27,3 +27,4 @@ import "./js/glass.js";
 import "./js/mobile.js";
 import "./js/push.js";
 import "./js/welcome.js";   // t-hire-celebration: the new-teammate welcome (meta.hires)
+import "./js/tour.js";   // t-onboard-tour: first-run welcome pages + anchored tour (meta.onboarding.tour)

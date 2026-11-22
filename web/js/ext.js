@@ -8,9 +8,12 @@
      UTExt.cardKind({ id, label: [zh, en] })     labels for a card kind (kinds from ext.json "card_kinds" are loaded from /api/ext)
      UTExt.toolPill(fn)                          fn(agent, toolKey, stale) -> extra HTML in a working agent's tool pill
      UTExt.statusRow(fn)                         fn(en) -> { t, s, lv: "ok"|"warn"|"bad" } or null: one more row in 系统状态
+     UTExt.tourStep({ id, after, t: [zh, en], b: [zh, en], desk(), phone(), side })
+         one more step in the first-run tour (web/js/tour.js). desk() / phone() return the element to ring (null = the step is skipped on
+         that form); after = the core step id it follows ("chat" | "review" | "team"; default: the end). b may hold <em>; {mgr} = the steward.
    UTExt.api is the registry API number (same as core/registry.py API). Registering after the page has drawn redraws it. */
 (() => {
-  const W = new Map(), K = {}, PILLS = [], ROWS = [];
+  const W = new Map(), K = {}, PILLS = [], ROWS = [], TOUR = [];
   let tm = 0;
   const changed = () => { clearTimeout(tm); tm = setTimeout(() => { const A = window.App; if (A && A.refreshPage) try { A.refreshPage(); } catch (e) { } }, 30); };
   const idOk = id => typeof id === "string" && /^[a-z][a-z0-9_-]{0,23}$/.test(id);
@@ -39,6 +42,8 @@
     toolPill(fn) { if (typeof fn === "function") { PILLS.push(fn); const A = window.App; if (A && A.addToolExtra) A.addToolExtra(fn); } },
     pills: () => PILLS.slice(),
     statusRow(fn) { if (typeof fn === "function") ROWS.push(fn); },
+    tourStep(spec) { if (spec && idOk(spec.id) && Array.isArray(spec.t) && Array.isArray(spec.b) && !TOUR.some(x => x.id === spec.id)) TOUR.push(spec); },   /* t-onboard-tour */
+    tourSteps: () => TOUR.slice(),
     statusRows(en) { return ROWS.map(fn => { try { return fn(en); } catch (e) { return null; } }).filter(r => r && r.t); },
     info: null,   // GET /api/ext, once
   };

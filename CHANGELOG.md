@@ -35,6 +35,7 @@ Nothing.
 ### Fixed
 Nothing.
 Nothing.
+- **Welcome pages and a short tour for a new board (t-onboard-tour)**: the first time a new board is opened on a computer, and again on a phone, five centred welcome pages play: what Underthread is, your team (names, jobs and faces read from your roster), telling the steward, watching the work, and which calls stay yours (with the routines you really have), each with a small stitched kitten and yarn drawn in motion. The last page's 带我认一下路 / Show me around folds the card into a three-step tour anchored on the real page: the steward chat, 等你拍板 / Your call and the team. An extension can add a step with `UTExt.tourStep`. 跳过 / Skip, Esc or 跳过引导 / Skip tour end it at any point. With reduced motion the pages swap with a 150 ms crossfade and nothing walks. Settings → 通用 / General → 上手引导 / Getting started · 再走一遍 / Replay plays it again, and the 开工清单 / Getting started header gets 导览 › / Tour › for the tour alone. Where it was seen is recorded per form factor in `meta.onboarding.tour` (action `onboarding`, `op` tour, `form` desk / phone, `how` done / skip / reset). Existing boards are marked by migration 0004, so an update never shows it. `tests/e2e/journeys/tour.js` (fresh board) and `tourup.js` (updated board) cover it.
 
 ### Changed
 Nothing.
@@ -88,6 +89,12 @@ Nothing.
 - Extension api: unchanged (1)
 - Extension API: `local/web/art/yarn/<id>.json` (+ `<id>/` folder) adds a level-2 kitten for a role; listed in `meta.art[id].yarn`
 - Extension API: `UI.confirm({ title, text, ok, cancel, danger })` returns a promise of true / false
+Nothing.
+
+### Upgrade notes
+- Migrations: 0004 (records `meta.onboarding.tour` desk and phone as `upgrade` on a board that was already in use, so the welcome pages and tour never open there; a fresh board gets an empty record)
+- New config keys: none
+- Extension API: new `UTExt.tourStep({ id, after, t, b, desk, phone })` adds a step to the first-run tour (`docs/extensions.md`); otherwise unchanged
 - Manual steps: none
 
 ## [0.2.0] - 2026-11-21
