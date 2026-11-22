@@ -19,7 +19,7 @@ Work in progress goes under `## Unreleased`; the release renames it to `## [X.Y.
 Nothing.
 
 ### Changed
-- **The card detail's two "close" buttons no longer look alike (t-detail-close)**: the top-right ✕ is now 收起 › / Hide ›, which only hides the panel; the card stays where it was. The 关单 / Close pill at the bottom left became a ⋯ menu with 复制链接 / Copy link and a red 不做了，结束这张卡… / Not doing it · end this card…, which opens the same reason dialog as before. The bottom row keeps 稍后 / Later and the main button.
+- **The card detail's two "close" buttons no longer look alike (t-detail-close)**: the top-right ✕ is now 收起 › / Hide ›, which only hides the panel; the card stays where it was. The 关单 / Close pill at the bottom left became a quiet 结束 / End text button that opens the same reason dialog as before, and 复制链接 / Copy link is a link icon next to the card id in the header. The bottom row keeps 稍后 / Later and the main button.
 
 ### Fixed
 Nothing.

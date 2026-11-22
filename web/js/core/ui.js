@@ -83,9 +83,9 @@ function closeModal() { $("#modal").hidden = true; $("#modal").innerHTML = "";
   if (f && f.isConnected && typeof f.focus === "function") try { f.focus({ preventScroll: true }); } catch (_) { } }
 // t-close-bottom: 关单 from the detail's bottom bar, any kind / stage. One confirm; the optional reason goes into the card's thread as your message
 // (so the owner sees it), then the card is closed. Open questions do not block it (they are listed and closed with the card).
-// t-detail-close B (user pick 11-21): the pill is now a ⋯ menu button (views/drawer.js moreMenu); ending the card is the red item inside it, so it is
-// never read as the top-right 「收起 ›」 and never hit by a slip next to 完成委托. The reason dialog below is unchanged.
-const closeBtn = () => `<button class="ab mo" data-more aria-haspopup="menu" aria-expanded="false" aria-label="${UI.lang === "en" ? "More" : "更多"}" title="${UI.lang === "en" ? "More" : "更多"}"><svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><circle cx="3.2" cy="8" r="1.45" fill="currentColor"/><circle cx="8" cy="8" r="1.45" fill="currentColor"/><circle cx="12.8" cy="8" r="1.45" fill="currentColor"/></svg></button>`;
+// t-detail-close B (user pick 11-21) + End (user 11-21 23:03 「二级菜单有点繁琐」): the bottom-left button is a quiet 「结束 / End」 text button that
+// opens the reason dialog below directly. Not red and not a ✕, so it never reads as the top-right 「收起 ›」; 复制链接 moved to the header (drawer.js dce-lnk).
+const closeBtn = () => `<button class="ab dce-end" data-act="close" title="${UI.lang === "en" ? "End this card · asks for a reason" : "结束这张卡 · 会问一句原因"}">${UI.lang === "en" ? "End" : "结束"}</button>`;
 function modalClose() {
   const it = ST.items.find(i => i.id === UI.item); if (!it) return;
   const zh = UI.lang !== "en", oa = openAsks(it), id = it.id;
