@@ -214,7 +214,7 @@ async function ghDo(k, el) {
   if (k === "replace") { GT.replace = true; say(""); ghPaint(); const i = $("#modal #gt .gt-in"); if (i) i.focus(); return; }
   if (k === "file") { GT.confirmFile = true; return ghPaint(); }
   if (k === "file_no") { GT.confirmFile = false; return ghPaint(); }
-  if (k === "erase" && !confirm(gz("删除存好的 GitHub 令牌？之后推送又要你输令牌。", "Delete the stored GitHub token? Pushes will ask you for a token again."))) return;
+  if (k === "erase" && !(await UI.confirm({ title: gz("删除存好的 GitHub 令牌？", "Delete the stored GitHub token?"), text: gz("之后推送又要你输令牌。", "Pushes will ask you for a token again."), ok: gz("删除", "Delete"), danger: true }))) return;
   let tok = null;
   if (k === "set") {
     const i = el.closest("#gt").querySelector(".gt-in"); tok = i ? i.value.trim() : ""; if (i) i.value = "";

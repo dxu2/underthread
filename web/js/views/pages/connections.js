@@ -186,7 +186,7 @@ async function rowDo(k, b) {
     const r = await fcApi("set", { source: id, interval: v }); if (!r.ok) toast(errTxt(r.j), true);
     setTimeout(paint, RMQ.matches ? 0 : 260); return;
   }
-  if (k === "disconnect" && !confirm(L("断开后不再收集，存好的密码会删掉。之后要重新输入。", "Stop collecting and delete the stored password? You'll need to enter it again later."))) return;
+  if (k === "disconnect" && !(await UI.confirm({ title: L("断开这个连接？", "Disconnect?"), text: L("断开后不再收集，存好的密码会删掉，之后要重新输入。", "Stops collecting and deletes the stored password. You'll need to enter it again later."), ok: L("断开", "Disconnect"), danger: true }))) return;
   FC.busy[id] = k; delete FC.msg[id]; paint();
   const r = await fcApi(k === "poll" ? "poll" : "disconnect", { source: id });
   delete FC.busy[id];

@@ -841,17 +841,17 @@ function rtLine(it) {
   return `<div class="dw-rt"><b>${en ? `Daily ${r.time}` : `每天 ${esc(r.time)}`}</b><span>${en ? "next" : "下次"} ${esc(nx)}</span></div>`;
 }
 /* t-ri1104-p3: the one pause / resume path, used by the card dock above and by the 常驻活动 schedule page. */
-function rtToggle(it, r, pause) {
+async function rtToggle(it, r, pause) {
   const zh = UI.lang !== "en";
   if (r.unknown) return toast(zh ? "这个按钮要等看板重启后才能用" : "Needs a dashboard restart first", true);
   if (r.ondemand) {   /* t-routine-detect: by item only, never a made-up routine id */
-    if (pause && !confirm(zh ? `暂停常驻「${it.title}」？\n暂停以后管家不再做这张卡，随时可以再开启。` : `Pause "${it.title}"? The manager skips it until you turn it back on.`)) return;
+    if (pause && !(await UI.confirm(zh ? { title: `暂停常驻「${it.title}」？`, text: "暂停以后管家不再做这张卡，随时可以再开启。", ok: "暂停" } : { title: `Pause "${it.title}"?`, text: "The manager skips it until you turn it back on.", ok: "Pause" }))) return;
     api(pause ? "routine_pause" : "routine_resume", { item: it.id })
       .then(() => toast(pause ? (zh ? "已暂停 · 管家不再做这张卡" : "Paused") : (zh ? "已开启" : "Turned on")))
       .catch(e => { if (/no routine/.test(String(e && e.message))) toast(zh ? "这个按钮要等看板重启后才能用" : "Needs a dashboard restart first", true); });
     return;
   }
-  if (pause && !confirm(zh ? `暂停常驻任务「${it.title}」？\n暂停以后每天 ${r.time} 不再自动开子卡；已有的子卡不受影响。随时可以再开启。` : `Stop "${it.title}"? No new daily runs until you resume.`)) return;
+  if (pause && !(await UI.confirm(zh ? { title: `暂停常驻任务「${it.title}」？`, text: `暂停以后每天 ${r.time} 不再自动开子卡；已有的子卡不受影响。随时可以再开启。`, ok: "暂停" } : { title: `Stop "${it.title}"?`, text: "No new daily runs until you resume.", ok: "Stop" }))) return;
   api(pause ? "routine_pause" : "routine_resume", { routine: r.id, item: it.id })
     .then(() => toast(pause ? (zh ? "已暂停 · 不会再定时触发" : "Paused") : (zh ? "已开启 · 每天 " + r.time : "Turned on"))).catch(() => { });   /* api() already toasts the error */
 }

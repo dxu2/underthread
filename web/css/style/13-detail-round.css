@@ -296,3 +296,6 @@ html:not([data-theme="dark"]) .tag.deliverable::selection, html:not([data-theme=
 .dw-top .dw-id.dce-lnk { padding: 2px 3px; margin-left: -2px; }
 #modal .mo-note { margin: 0 0 10px; font-size: var(--fs-13); color: var(--dim); }
 @media (prefers-reduced-motion: reduce) { .dw-top button.dw-hide[data-close] svg { transition: none; } }
+/* t-native-dialogs: UI.confirm (core/ui.js): title + one line + Cancel / Confirm in the usual #modal frame (bottom sheet on phone) */
+#modal .ncf h2 { margin-bottom: 6px; }
+#modal .ncf-p { margin: 0 0 4px; font-size: var(--fs-14); line-height: 1.5; color: var(--ink2, var(--dim)); overflow-wrap: anywhere; }

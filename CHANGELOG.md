@@ -49,6 +49,11 @@ Nothing.
 ### Changed
 - Nothing.
 
+- Nothing.
+
+### Changed
+- **The board's own confirm dialog replaces the browser's**: pausing an ongoing card, disconnecting a connection, deleting the stored GitHub token, update / go back / restart and moving a card on the production line now ask in a themed dialog (a bottom sheet on phone) with a title, one line, Cancel and Confirm; destructive ones use the warning colour. Esc cancels, Enter confirms, Tab stays inside. Extensions can use `await UI.confirm({ title, text, ok, danger })`.
+
 ### Fixed
 - Nothing.
 
@@ -81,6 +86,7 @@ Nothing.
 - New config keys: none
 - Extension api: unchanged (1)
 - Extension API: `local/web/art/yarn/<id>.json` (+ `<id>/` folder) adds a level-2 kitten for a role; listed in `meta.art[id].yarn`
+- Extension API: `UI.confirm({ title, text, ok, cancel, danger })` returns a promise of true / false
 - Manual steps: none
 
 ## [0.2.0] - 2026-11-21
