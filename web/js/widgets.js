@@ -131,7 +131,7 @@
     week: ["近 7 天交了多少", "What shipped in the last 7 days"], ongoing: ["常驻的活", "Standing jobs"], media: ["最近出的图和片段", "Pictures and clips made lately"],
     recent: ["最近动过的卡 · 点一下回到那张卡", "Cards that moved lately · click to jump back in"] };
   const sub = k => SUB[k] ? `<span class="sct-sub">${en() ? SUB[k][1] : SUB[k][0]}</span>` : "";
-  const eb = (k, n, dot) => `<div class="wg-eb">${dot ? '<span class="wg-dot"></span>' : ""}<b>${nm(k)}</b>${n != null ? wnb(n) : ""}</div>${sub(k)}`;
+  const eb = (k, n, dot) => `<div class="wg-eb">${dot ? '<span class="wg-dot"></span>' : ""}<b>${nm(k)}</b>${n != null ? wnb(n) : ""}${bplKnot(k)}</div>${sub(k)}`;
   /* t-ri1114-a P3: open asks outrank the card kind (a plan card with unanswered asks read as a grey 「方案」) */
   const askN = i => i.stage !== "review" ? A().openAsks(i).length : 0;
   const isQ = i => i.kind === "question" || askN(i) > 0;
@@ -254,8 +254,94 @@
     MV.dirty = true;
     return true;
   }
+  /* ===== t-board-pulse (user pick A, 11-21): when a home board gets something new, its label is tugged once (a small damped wiggle) and one
+     stitch of light runs around the board's border; then a knot stays on the label until you have seen it: 0.8 s hover, a click on the board,
+     or 2 s fully on screen while the window has focus. Anti-spam: a board cues at most once every 20 s (changes in between only move the
+     numbers and keep the knot; this also merges a burst inside 1.5 s); at most 2 boards cue at once, 150 ms apart, 等你拍板 → 此刻在忙 → the
+     rest; quiet hours (ticker quietNight) and a hidden tab show the knot only, a hidden tab replays once on return. Reduced motion: the label
+     brightens for 300 ms, nothing moves. Only transform (rotate / translate / scale), opacity and stroke-dashoffset animate. Desk home only. */
+  const BPL_K = ["review", "busy", "replies", "today", "ongoing", "media"], BPL_GAP = 20000, BPL_SEEN_HOVER = 800, BPL_SEEN_VIEW = 2000;
+  const BPL = { sig: null, last: {}, unseen: new Set(), q: new Set(), pend: new Set(), view: {}, hov: null };
+  try { JSON.parse(localStorage.getItem("rt.bpUnseen") || "[]").forEach(k => BPL_K.includes(k) && BPL.unseen.add(k)); } catch (e) { }
+  const bplSave = () => { try { localStorage.setItem("rt.bpUnseen", JSON.stringify([...BPL.unseen])); } catch (e) { } };
+  const bplSig = D => ({ review: D.waiting.map(i => i.id), busy: D.busy.map(x => x.a.id + ":" + x.it.id), replies: D.nr.map(g => g.it.id + "@" + ((g.ms[g.ms.length - 1] || {}).t || "")),
+    today: D.shipped.map(i => i.id), ongoing: D.ongoing.map(i => i.id + "@" + (i.activity || "")), media: D.imgs.map(x => x.p) });
+  const bplKnot = k => BPL.unseen.has(k) ? `<i class="bpl-knot" aria-hidden="true" title="${en() ? "New since you last looked" : "有新内容，还没看"}"></i>` : "";
+  const bplTile = k => document.querySelector(`html[data-home="widgets"] #wg .wg-grid > .wg[data-wg="${k}"]`);
+  const bplDesk = () => matchMedia("(min-width: 761px)").matches && document.documentElement.dataset.home === "widgets";
+  function bplScan(D) {   // called from html() with the data it draws: a board whose list gained an entry gets a cue
+    const S = bplSig(D), P = BPL.sig; BPL.sig = S;
+    if (!P || EDIT || !bplDesk()) return;
+    const hit = BPL_K.filter(k => S[k].some(x => !P[k].includes(x)));
+    if (!hit.length) return;
+    hit.forEach(k => BPL.unseen.add(k)); bplSave();
+    BPL.fresh = new Set(hit.flatMap(k => S[k].filter(x => !P[k].includes(x)).map(x => x.split("@")[0].split(":").pop())));   // item ids of the rows that are new
+    const quiet = A() && A().quietNight ? A().quietNight() : false;
+    if (quiet) return;
+    if (document.hidden) { hit.forEach(k => BPL.pend.add(k)); return; }
+    const now = Date.now(); hit.forEach(k => { if (!(now - (BPL.last[k] || 0) < BPL_GAP)) BPL.q.add(k); });
+    if (BPL.q.size) requestAnimationFrame(() => requestAnimationFrame(bplFlush));   // after the caller has put this render on the page
+  }
+  function bplFlush() {
+    const order = k => k === "review" ? 0 : k === "busy" ? 1 : 2 + BPL_K.indexOf(k);
+    const ks = [...BPL.q].sort((a, b) => order(a) - order(b)); BPL.q.clear();
+    ks.slice(0, 2).forEach((k, i) => setTimeout(() => bplPlay(k), i * 150));   // the rest keep their knot only
+  }
+  function bplPlay(k) {
+    const el = bplTile(k), eb = el && el.querySelector(".wg-eb"); if (!eb) return;
+    BPL.last[k] = Date.now(); el.dataset.bplAt = BPL.last[k];
+    const knot = eb.querySelector(".bpl-knot");
+    if (RMQ.matches) { eb.animate([{ opacity: 1 }, { opacity: .55 }, { opacity: 1 }], { duration: 300, easing: "ease-in-out" }); return; }
+    /* the tug: someone yanks the label's thread once; damped wiggle sampled into keyframes (spring-ish, ~1.2 s) */
+    const damp = x => Math.exp(-4.2 * x) * Math.sin(2 * Math.PI * 2.4 * x), N = 18, kf = [];
+    for (let i = 0; i <= N; i++) { const w = i === N ? 0 : damp(i / N * 1.5); kf.push({ rotate: `${(-5.5 * w).toFixed(2)}deg`, translate: `${(2 * w).toFixed(2)}px ${(-3 * Math.abs(w)).toFixed(2)}px`, scale: `${(1 + .05 * Math.abs(w)).toFixed(3)}` }); }
+    eb.animate(kf, { duration: 1200, delay: 0, easing: "linear" });
+    const n = eb.querySelector(".n"); if (n) n.animate([{ translate: "0 45%", opacity: .2 }, { translate: "0 0", opacity: 1 }], { duration: 350, easing: "cubic-bezier(.2,.8,.2,1)" });
+    if (knot) knot.animate([{ opacity: 0, scale: ".4" }, { opacity: 0, scale: ".4", offset: .82 }, { opacity: 1, scale: "1" }], { duration: 2200, easing: "ease-out" });
+    /* new rows slide in from the left with a pale gold wash that fades (opacity of ::after, CSS) */
+    el.querySelectorAll(".wg-row[data-item]").forEach(r => { if (BPL.fresh && BPL.fresh.has(r.dataset.item)) { r.classList.add("bpl-new"); r.animate([{ translate: "-14px 0", opacity: 0 }, { translate: "0 0", opacity: 1 }], { duration: 450, delay: 100, easing: "cubic-bezier(.2,.8,.2,1)", fill: "backwards" }); } });
+    /* one stitch of light around the border: a trail that draws in (dashoffset P -> 0) and fades, with a brighter head running ahead */
+    const b = el.getBoundingClientRect(), r0 = parseFloat(getComputedStyle(el).borderTopLeftRadius) || 18, ins = 7, w = b.width - 2 * ins, h = b.height - 2 * ins, r = Math.max(4, r0 - ins);
+    if (w < 40 || h < 40) return;
+    const d = `M${ins + r} ${ins}H${ins + w - r}A${r} ${r} 0 0 1 ${ins + w} ${ins + r}V${ins + h - r}A${r} ${r} 0 0 1 ${ins + w - r} ${ins + h}H${ins + r}A${r} ${r} 0 0 1 ${ins} ${ins + h - r}V${ins + r}A${r} ${r} 0 0 1 ${ins + r} ${ins}Z`;
+    el.querySelectorAll(":scope > .bpl-svg").forEach(x => x.remove());
+    el.insertAdjacentHTML("beforeend", `<svg class="bpl-svg" aria-hidden="true" viewBox="0 0 ${b.width} ${b.height}" preserveAspectRatio="none"><path class="bpl-tr" d="${d}"/><path class="bpl-hd" d="${d}"/></svg>`);
+    const sv = el.lastElementChild, tr = sv.querySelector(".bpl-tr"), hd = sv.querySelector(".bpl-hd"), P = tr.getTotalLength(), H = 60;
+    tr.style.strokeDasharray = `${P} ${P}`; hd.style.strokeDasharray = `${H} ${P + H}`;
+    const run = { duration: 1400, delay: 250, easing: "cubic-bezier(.45,0,.55,1)", fill: "both" };
+    tr.animate([{ strokeDashoffset: P }, { strokeDashoffset: 0 }], run);
+    hd.animate([{ strokeDashoffset: H }, { strokeDashoffset: H - P }], run);
+    hd.animate([{ opacity: 1 }, { opacity: 1, offset: .9 }, { opacity: 0 }], { duration: 1400, delay: 250, fill: "both" });
+    sv.animate([{ opacity: 1 }, { opacity: 1, offset: .62 }, { opacity: 0 }], { duration: 2600, fill: "forwards" }).finished.then(() => sv.remove(), () => sv.remove());
+  }
+  function bplSeen(k) {
+    if (!BPL.unseen.delete(k)) return; bplSave(); delete BPL.view[k];
+    document.querySelectorAll(`#wg .wg[data-wg="${k}"] .bpl-knot`).forEach(x => { const a = x.animate([{ opacity: 1 }, { opacity: 0 }], { duration: RMQ.matches ? 0 : 250, fill: "forwards" }); a.finished.then(() => x.remove(), () => x.remove()); });
+  }
+  document.addEventListener("pointerover", e => {
+    const t = e.target.closest && e.target.closest("#wg .wg-grid > .wg[data-wg]"), k = t && t.dataset.wg;
+    if (BPL.hov && BPL.hov.k === k) return;
+    if (BPL.hov) clearTimeout(BPL.hov.t);
+    BPL.hov = k && BPL.unseen.has(k) ? { k, t: setTimeout(() => bplSeen(k), BPL_SEEN_HOVER) } : k ? { k, t: 0 } : null;
+  });
+  document.addEventListener("click", e => { const t = e.target.closest && e.target.closest("#wg .wg-grid > .wg[data-wg]"); if (t && !EDIT) bplSeen(t.dataset.wg); });
+  setInterval(() => {   // 2 s fully on screen with focus (counted after the cue has played)
+    if (!BPL.unseen.size || document.hidden || !document.hasFocus() || !bplDesk()) { BPL.view = {}; return; }
+    const now = Date.now();
+    BPL.unseen.forEach(k => { const el = bplTile(k); if (!el) return;
+      const r = el.getBoundingClientRect(), vis = r.width > 0 && r.top >= 0 && r.left >= 0 && r.bottom <= innerHeight && r.right <= innerWidth && now - (+el.dataset.bplAt || 0) > 2200;
+      if (!vis) { delete BPL.view[k]; return; }
+      BPL.view[k] = BPL.view[k] || now; if (now - BPL.view[k] >= BPL_SEEN_VIEW) bplSeen(k); });
+  }, 250);
+  document.addEventListener("visibilitychange", () => {   // came back to the tab: replay once what arrived while away
+    if (document.hidden || !BPL.pend.size) return;
+    const now = Date.now(); BPL.pend.forEach(k => { if (BPL.unseen.has(k) && !(now - (BPL.last[k] || 0) < BPL_GAP)) BPL.q.add(k); }); BPL.pend.clear();
+    if (BPL.q.size && !(A() && A().quietNight && A().quietNight())) setTimeout(bplFlush, 300);
+  });
+  window.BoardPulse = { seen: bplSeen, unseen: () => [...BPL.unseen], _play: bplPlay, _last: BPL.last };   // e2e hooks
   function html(body, tail) {
     const L = load(), D = data(), calm = [], tiles = [];
+    bplScan(D);   // t-board-pulse
     const count = { review: D.waiting.length, replies: D.nr.length, today: D.shipped.length };
     L.forEach(([k, s0], i) => {
       if (isGone(k)) return;

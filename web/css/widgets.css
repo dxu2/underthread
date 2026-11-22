@@ -419,3 +419,21 @@ html[data-home="widgets"] .sct-pin { margin-left: 8px; font-size: var(--fs-12); 
   html[data-ut][data-texture^="leather"][data-home="widgets"] #wg .wg:not(.hero) .wg-eb b { color: #F6E6CC; }
   html[data-ut][data-texture^="leather"][data-home="widgets"] #wg .wg-review:not(.hero) .wg-eb { background: color-mix(in srgb, var(--dye, var(--accent)) 92%, #000); }
 }
+
+/* t-board-pulse (user pick A, 11-21): a board that got something new is tugged by its label and one stitch of light runs around it (widgets.js bplPlay);
+   the knot on the label stays until you have seen the board. Only transform / opacity / stroke-dashoffset animate. */
+html[data-home="widgets"] #wg { --bpl-hi: var(--accent); }
+html[data-ut][data-texture^="knit"][data-home="widgets"] #wg { --bpl-hi: #F2C77A; }
+html[data-ut][data-texture^="leather"][data-home="widgets"] #wg .wg { --bpl-hi: color-mix(in srgb, var(--dye, var(--accent)) 35%, #FFE9C2); }
+html[data-home="widgets"] .bpl-knot { display: inline-block; flex: none; align-self: center; width: 7px; height: 7px; margin-left: 6px; border-radius: 50%;
+  background: var(--bpl-hi); box-shadow: 0 0 0 2px color-mix(in srgb, var(--bpl-hi) 22%, transparent); }
+html[data-ut][data-home="widgets"] #wg .wg-review .wg-eb .bpl-knot { background: var(--accent-ink); box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent-ink) 25%, transparent); }
+html[data-ut][data-texture^="leather"][data-home="widgets"] #wg .wg-review .wg-eb .bpl-knot { background: var(--bpl-hi); }
+html[data-home="widgets"] .bpl-svg { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 2; overflow: visible; }
+html[data-home="widgets"] .bpl-svg path { fill: none; stroke: var(--bpl-hi); stroke-linecap: round; }
+html[data-home="widgets"] .bpl-svg .bpl-tr { stroke-width: 2.2; opacity: .85; }
+html[data-home="widgets"] .bpl-svg .bpl-hd { stroke-width: 3.2; filter: drop-shadow(0 0 3px var(--bpl-hi)); }
+html[data-home="widgets"] .wg-row.bpl-new { position: relative; }
+html[data-home="widgets"] .wg-row.bpl-new::after { content: ""; position: absolute; inset: 0 -6px; border-radius: 10px; pointer-events: none; background: color-mix(in srgb, var(--bpl-hi) 16%, transparent); animation: bpl-wash 2.6s ease-out forwards; }
+@keyframes bpl-wash { 0%, 40% { opacity: 1; } 100% { opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { html[data-home="widgets"] .wg-row.bpl-new::after { animation-duration: .3s; } }
