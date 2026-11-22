@@ -32,9 +32,7 @@ html[data-theme="white"] #right .msg.me .mb::after { background: var(--bub-me); 
   color: var(--dim); font: inherit; font-size: var(--fs-14); text-align: left; cursor: text; transition: transform var(--m-quick) var(--m-ease-std); }
 .q-search svg { width: 16px; height: 16px; flex: none; }
 .q-search:active { transform: scale(var(--m-press-row)); }
-.m-seg.q { overflow-x: auto; margin: 0 -16px 8px; padding: 0 16px; scrollbar-width: none; } .m-seg.q::-webkit-scrollbar { display: none; }
-.m-seg.q .seg { width: max-content; min-width: 100%; }
-.m-seg.q .seg-i { flex: 1 0 auto; padding: 0 14px; white-space: nowrap; }
+/* t-phone-filter-row (user 11-22): the 委托 category row is now the 通知 filter row (.filters.mb-row > .seg, mobile/05); its edge fades are in mobile/09 */
 .q-search svg { fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; }
 
 /* ===== P5 (t-aes-p5): phone home 待审 = review cards. Image first (the first image attachment, 150px), then owner · category · time, title, two-line summary,

@@ -253,7 +253,8 @@ function wirePages2() {
     if (e.target.closest("[data-doc-back]")) { const was = UI.doc; UI.docLast = was; UI.doc = null; UI.docText = ""; renderPage();   /* t-phone-docs: back to the list, the doc just read in view */
       requestAnimationFrame(() => { const b = was && [...document.querySelectorAll(".docs [data-doc]")].find(x => x.dataset.doc === was); if (b) b.scrollIntoView({ block: "center" }); }); }
     const ls = e.target.closest("[data-lesson]"); if (ls) api("lesson", { id: ls.dataset.lesson, decision: ls.dataset.d });
-    const mf = e.target.closest("[data-mailf]"); if (mf) { UI.mailFilter = mf.dataset.mailf; renderPage(); renderMailbox(); }
+    /* t-phone-filter-row v2: a pick inside the page's 1.4 s entrance (.enter, fx.js) would replay it on the rebuilt row (opacity 0 -> 1 under the sliding pill): end it first */
+    const mf = e.target.closest("[data-mailf]"); if (mf) { UI.mailFilter = mf.dataset.mailf; const pb = $("#pagebody"); if (pb) pb.classList.remove("enter"); renderPage(); renderMailbox(); }
     if (e.target.closest("[data-mailall]")) api("mail_read", { all: true });
     const ml = e.target.closest("[data-mail]");
     if (ml) {

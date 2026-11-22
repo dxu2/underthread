@@ -55,6 +55,10 @@ Nothing.
 
 ### Changed
 - **The board's own confirm dialog replaces the browser's**: pausing an ongoing card, disconnecting a connection, deleting the stored GitHub token, update / go back / restart and moving a card on the production line now ask in a themed dialog (a bottom sheet on phone) with a title, one line, Cancel and Confirm; destructive ones use the warning colour. Esc cancels, Enter confirms, Tab stays inside. Extensions can use `await UI.confirm({ title, text, ok, danger })`.
+- Nothing.
+
+### Changed
+- **Phone: the Quests category row matches the Notifications filter row**: same side margins, height, pill and selected state in every look (it used to run to both screen edges). A category cut by the edge fades as you swipe. Picking a filter in either row now slides the pill in one smooth motion: the row stays in place (no fade-out and back), the list below swaps without a blank frame, and the row only scrolls when the picked filter is cut off.
 
 ### Fixed
 - Nothing.
