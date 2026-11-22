@@ -13,6 +13,23 @@ Versions follow [semantic versioning](https://semver.org) and the `VERSION` file
 
 Work in progress goes under `## Unreleased`; the release renames it to `## [X.Y.Z] - YYYY-MM-DD`. Sections dated before 0.1.0 are from before versioning.
 
+## Unreleased
+
+### Added
+- **A clock on the home date line**: the current time (H:MM, your browser's 12 / 24-hour habit, tabular figures, no seconds) sits right after the date above 「今天.」 / Today, on desk and phone. It turns on the minute (a changed digit rolls up once; still under reduced motion) and sleeps while the tab is hidden.
+
+### Changed
+- Nothing.
+
+### Fixed
+- Nothing.
+
+### Upgrade notes
+- Migrations: none
+- New config keys: none
+- Extension API: unchanged
+- Manual steps: none
+
 ## [0.2.0] - 2026-11-21
 
 Highlights since 0.1.0:
