@@ -23,24 +23,29 @@
   const SIZES = new Proxy({}, { get: (_, k) => { const w = REG()(k); return w ? w.sizes : undefined; } });
   const allIds = () => window.UTExt ? UTExt.widgets().map(w => w.id) : [];
   /* the default layout: the core nine in this order, then any extension widget at its own size; 恢复默认 shows this */
-  const DEF_CORE = [["setup", "w"], ["team", "m"], ["usage", "l"], ["review", "l"], ["busy", "l"], ["replies", "l"], ["today", "m"], ["week", "m"], ["ongoing", "m"], ["media", "m"]];
+  /* t-section-titles (user 11-21): 等你拍板 first and full width (pinned there, see html()), 团队交接 gone from the home (its busy count lives in the
+     此刻在忙 label now), 最近 = the five cards that moved last, at the bottom */
+  const DEF_CORE = [["setup", "w"], ["review", "l"], ["usage", "l"], ["busy", "l"], ["replies", "l"], ["today", "m"], ["week", "m"], ["ongoing", "m"], ["media", "m"]];
   const defL = () => [...DEF_CORE.filter(x => REG()(x[0])), ...(window.UTExt ? UTExt.widgets().filter(w => !w.core) : []).map(w => [w.id, w.size])];
   const DEF = { map: f => defL().map(f) };   // DEF.map(x => x.slice()) as before
+  /* t-section-titles (user 11-21 23:50 「recent 这个 panel 有点冗余」): 最近 stays in 添加小组件 but is off by default; a board that already got it
+     once loses it once. "recent-off" in meta.widgets.seen (rt.recentOff for a browser-only layout) marks that this was done, so adding it back sticks. */
+  const OPTIN = new Set(["recent"]), RC_OFF = "recent-off";
   const KEY = "rt.widgets";
   const loadLocal = () => { try { let v = JSON.parse(localStorage.getItem(KEY) || "null"); if (Array.isArray(v) && v.length && v.every(x => Array.isArray(x) && typeof x[0] === "string")) {
-      v = v.filter(x => SIZES[x[0]]);   // S8: an id whose widget is not registered (an extension that is gone) drops out
+      v = v.filter(x => SIZES[x[0]]);
+      if (!localStorage.getItem("rt.recentOff")) { localStorage.setItem("rt.recentOff", "1"); if (v.some(x => x[0] === "recent")) { v = v.filter(x => x[0] !== "recent"); localStorage.setItem(KEY, JSON.stringify(v)); } }   // S8: an id whose widget is not registered (an extension that is gone) drops out
       // t-home-usage / t-rb-build: a browser-only layout from before 用量 / 团队交接 existed gets them once (the server path uses meta.widgets.seen)
       if (!v.some(x => x[0] === "usage") && !localStorage.getItem("rt.wgUsage")) { v.unshift(["usage", "l"]); localStorage.setItem("rt.wgUsage", "1"); localStorage.setItem(KEY, JSON.stringify(v)); }
-      if (!v.some(x => x[0] === "team") && !localStorage.getItem("rt.wgTeam")) { v.unshift(["team", "m"]); localStorage.setItem("rt.wgTeam", "1"); localStorage.setItem(KEY, JSON.stringify(v)); }
       if (v.length) return v; } } catch { } return DEF.map(x => x.slice()); };
   const saveLocal = L => { try { localStorage.setItem(KEY, JSON.stringify(L)); } catch { } };
   /* t-widget-drag (11-11, option a): the layout lives on the server (meta.widgets, action widget_layout), so every computer you open it on shows the
      same home. localStorage stays as this browser's cache. meta.widgets missing = never saved: this browser's old layout is uploaded once.
      meta.widgets.layout null = 恢复默认. PEND keeps a just-made change on screen until the poll brings it back (a poll in flight would undo it). */
   let PEND = null;
-  const known = v => Array.isArray(v) ? v.filter(x => Array.isArray(x) && SIZES[x[0]] && SIZES[x[0]].includes(x[1])) : null;
+  const known = v => Array.isArray(v) ? v.map(x => Array.isArray(x) && x[0] === "review" && x[1] === "w" ? ["review", "l"] : x).filter(x => Array.isArray(x) && SIZES[x[0]] && SIZES[x[0]].includes(x[1])) : null;
   const srv = () => { const m = A() && A().ST && A().ST.meta; return m ? m.widgets : undefined; };   // undefined = no state yet, null = never saved
-  const seenNow = () => { const w = srv(); return [...new Set([...(w && Array.isArray(w.seen) ? w.seen : []), ...allIds()])].sort(); };
+  const seenNow = () => { const w = srv(); return [...new Set([...(w && Array.isArray(w.seen) ? w.seen : []), ...allIds(), RC_OFF])].sort(); };
   const push = L => send(L ? { kind: "widget_layout", layout: L, seen: seenNow() } : { kind: "widget_layout", reset: true, seen: seenNow() }, L);
   const send = (body, L) => { PEND = { L: L ? JSON.stringify(L) : null, t: Date.now() };
     fetch("/api/action", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) })
@@ -52,7 +57,10 @@
       if (w && got === PEND.L || now - PEND.t > 15000) PEND = null;
       else return PEND.L ? JSON.parse(PEND.L) : DEF.map(x => x.slice());
     }
-    if (w && typeof w === "object") { const v = known(w.layout); let L = v && v.length ? v : DEF.map(x => x.slice()); L = meet(w, L, !!(v && v.length)); saveLocal(L); return L; }
+    if (w && typeof w === "object") { let v = known(w.layout);
+      if (v && !(Array.isArray(w.seen) && w.seen.includes(RC_OFF)) && !rcOff.sent) { rcOff.sent = 1; const had = v.some(x => x[0] === "recent"); v = v.filter(x => x[0] !== "recent");   // once: 最近 out again
+        if (v.length) { send({ kind: "widget_layout", layout: v, seen: seenNow() }, v); saveLocal(v); return v; } }
+      let L = v && v.length ? v : DEF.map(x => x.slice()); L = meet(w, L, !!(v && v.length)); saveLocal(L); return L; }
     const L = loadLocal();
     if (w === null || (A() && A().ST && A().ST.meta && !("widgets" in A().ST.meta))) {   // first load against a server that has no layout yet: upload this browser's once
       let had = null; try { had = localStorage.getItem(KEY); } catch { }
@@ -63,7 +71,7 @@
   /* S8 (the server path; replaces rt.wgUsage / rt.wgTeam there): meta.widgets.seen lists every widget id this board has met. No list yet = everything
      registered now counts as met (the upgrade inserts nothing). A registered id not on it is new: it goes into a saved layout once
      (first: true = at the front, else at the end) and joins seen; removing it later sticks. A default layout (null) shows it anyway. */
-  let MET = "";
+  let MET = ""; const rcOff = {};
   /* S9: the page scripts are modules and extension scripts are deferred after them, so readyState is already "interactive" here while
      extensions are still to come: DOMContentLoaded is the first moment every script has run */
   let BOOTED = document.readyState === "complete";
@@ -71,9 +79,9 @@
   function meet(w, L, saved) {
     const ids = allIds();
     if (!ids.length || !BOOTED) return L;   // extension scripts (after this file) have not registered yet
-    const seen = Array.isArray(w.seen) ? w.seen : null, fresh = seen ? ids.filter(k => !seen.includes(k)) : [];
+    const seen = Array.isArray(w.seen) ? w.seen : null, fresh = seen ? ids.filter(k => !seen.includes(k) && !OPTIN.has(k)) : [];   // an opt-in widget is only offered in 添加小组件
     if (seen && !fresh.length) return L;
-    const all = [...new Set([...(seen || []), ...ids])].sort(), key = all.join(",");
+    const all = [...new Set([...(seen || []), ...ids, RC_OFF])].sort(), key = all.join(",");
     if (MET === key) return L;   // sent once already; PEND keeps it on screen until the poll brings it back
     MET = key;
     if (saved && fresh.length) {
@@ -102,7 +110,8 @@
     const live = its.filter(i => i.stage !== "done"), rp = (ST.meta && ST.meta.routines_paused) || {};
     const ongoing = its.filter(i => i.category === "ongoing" && i.stage !== "done").sort((a, b) => ms(b.activity) - ms(a.activity));
     const imgs = []; its.slice().sort((a, b) => ms(b.activity) - ms(a.activity)).forEach(i => [...(i.draft_attachments || []), ...(i.attachments || [])].forEach(p => { if (/\.(png|jpe?g|webp|gif)$/i.test(p) && !imgs.some(x => x.p === p) && imgs.length < 6) imgs.push({ p, it: i }); }));
-    return { waiting, busy, nr, shipped, days, doing: live.filter(i => app.grpOf(i) === "doing").length, todo: live.filter(i => app.grpOf(i) === "todo").length, ongoing, rp, imgs };
+    const recent = its.filter(i => !i.archived).sort((a, b) => ms(b.activity || b.updated) - ms(a.activity || a.updated)).slice(0, 5);   /* t-section-titles 最近 */
+    return { recent, waiting, busy, nr, shipped, days, doing: live.filter(i => app.grpOf(i) === "doing").length, todo: live.filter(i => app.grpOf(i) === "todo").length, ongoing, rp, imgs };
   }
   /* t-onboarding P0: gone() = the widget is retired (the 开工清单 once setup is done): no tile, no calm line, and 「添加小组件」 offers it,
      whose click calls revive() to bring it back. A layout keeps its entry, so nothing has to be saved when it retires. */
@@ -116,7 +125,13 @@
   /* t-widget-num-b: number + unit split so the desk leather tab (widgets.css .wnb-num) wraps only the digits */
   const wnb = n => { const m = /^(\d+)\s*(.*)$/.exec(String(n)); return m ? `<span class="n wnb"><span class="wnb-num">${m[1]}</span>${m[2] ? `<span class="wnb-unit">${m[2]}</span>` : ""}</span>` : `<span class="n">${n}</span>`; };
   window.WgNum = wnb;
-  const eb = (k, n, dot) => `<div class="wg-eb">${dot ? '<span class="wg-dot"></span>' : ""}<b>${nm(k)}</b>${n != null ? wnb(n) : ""}</div>`;
+  /* t-section-titles: one line under each sewn label saying what the section is (shown under the Underthread skins only, widgets.css) */
+  const SUB = { review: ["要你点头、回答或改的卡", "Cards that need your yes, an answer or an edit"], busy: ["此刻谁在做哪张卡", "Who is on a card right now"],
+    usage: ["今天各角色用了多少", "Tokens spent today, by teammate"], replies: ["队友回你了", "Teammates answered you"], today: ["今天跑完的和交的", "Today's runs and deliveries"],
+    week: ["近 7 天交了多少", "What shipped in the last 7 days"], ongoing: ["常驻的活", "Standing jobs"], media: ["最近出的图和片段", "Pictures and clips made lately"],
+    recent: ["最近动过的卡 · 点一下回到那张卡", "Cards that moved lately · click to jump back in"] };
+  const sub = k => SUB[k] ? `<span class="sct-sub">${en() ? SUB[k][1] : SUB[k][0]}</span>` : "";
+  const eb = (k, n, dot) => `<div class="wg-eb">${dot ? '<span class="wg-dot"></span>' : ""}<b>${nm(k)}</b>${n != null ? wnb(n) : ""}</div>${sub(k)}`;
   /* t-ri1114-a P3: open asks outrank the card kind (a plan card with unanswered asks read as a grey 「方案」) */
   const askN = i => i.stage !== "review" ? A().openAsks(i).length : 0;
   const isQ = i => i.kind === "question" || askN(i) > 0;
@@ -126,14 +141,13 @@
   // more: one row + 「还有 N 件 ›」 (the footer used to be clipped by ~21px under two rows)
   const fitM = (s, len, big) => s === "l" ? { n: big, foot: true } : len <= 2 ? { n: 2, foot: false } : { n: 1, foot: true };
   const W = {
-    team(s) { return window.Team ? Team.widget(s) : eb("team"); },   /* t-rb-build: drawn by web/team.js (S ring, M mini graph, L full graph + last 3) */
     usage(s) {   // t-home-usage: tokens per role today + the quota strip; markup shared with the phone card / 系统状态 (App.ruHTML)
       const R = A().roleUsage && A().roleUsage(), all = R && R.rows && R.rows.length;   // t-sync-pill batch 2: 「全部 N 位 ›」 replaces the bottom 「+N more」 line
-      return `<div class="wg-eb" data-ru-open><b>${nm("usage")}</b><span>${en() ? "today" : "今天"}</span>${all ? `<span class="n ru-all">${en() ? `all ${all} ›` : `全部 ${all} 位 ›`}</span>` : `<span class="n">token</span>`}</div>`
+      return `<div class="wg-eb" data-ru-open><b>${nm("usage")}</b><span>${en() ? "today" : "今天"}</span>${all ? `<span class="n ru-all">${en() ? `all ${all} ›` : `全部 ${all} 位 ›`}</span>` : `<span class="n">token</span>`}</div>${sub("usage")}`
         + A().ruHTML(s === "l" ? 7 : 4, { tot: s === "l", quota: true, soul: true, fit: true });   /* t-soul-widget: lower half = Soul rows per model */
     },
     review(s, D) {
-      const L = D.waiting, { n, foot } = fitM(s, L.length, 5);
+      const W2 = s === "w", L = D.waiting, { n, foot } = W2 ? { n: L.length > 4 ? 10 : 4, foot: true } : fitM(s, L.length, 5);   /* t-section-titles: full width = two columns of up to 4 rows */
       const row = i => { const a = A().agent(i.owner);
         return `<div class="wg-row" data-item="${esc(i.id)}"><img class="wg-av" src="${A().avatarUrl(a)}" alt=""><div class="t">${A().nrDot ? A().nrDot(i.id) : ""}${window.Onboard ? Onboard.exT(i) : esc(i.title)}<small>${esc(A().aname(a))} · ${en() ? "waiting" : "等了"} ${waitAgo(i)}${askN(i) ? (en() ? ` · ${askN(i)} question${askN(i) > 1 ? "s" : ""}` : ` · ${askN(i)} 个问题`) : ""}</small></div>${i.snoozed ? `<span class="wg-tg snz">${en() ? "Snoozed" : "推迟过"}</span>` : ""}<span class="wg-tg${i.kind === "plan" && !isQ(i) ? "" : " hot"}">${kindL(i)}</span></div>`; };
       /* t-ri1113-a P3: the same sweep question on 3+ cards is one group row (2 row slots, its buttons answer them all); 逐张看 lists them under it.
@@ -142,13 +156,13 @@
       let slots = 0, shown = 0; const out = [];
       for (const e of E) {
         if (e.g) {
-          const w = s === "l" ? 2 : 1; if (out.length && slots + w > n) break;
-          out.push(s === "l" ? A().grpHTML(e.g, "wg") : `<div class="wg-row ri13-c" data-go="board"><span class="ri13-n">${e.g.items.length}</span><div class="t">${esc(e.g.a.q)}<small>${en() ? `same question on ${e.g.items.length} cards` : `${e.g.items.length} 张卡同一个问题`}</small></div><span class="wg-tg hot">${en() ? "Question" : "问题"}</span></div>`);
-          slots += w; shown += e.g.open && s === "l" ? 0 : e.g.items.length;
-          if (e.g.open && s === "l") for (const i of e.g.items) { if (slots + 1 > n) break; out.push(row(i).replace('class="wg-row"', 'class="wg-row ri13-m"')); slots++; shown++; }
+          const w = s !== "m" ? 2 : 1; if (out.length && slots + w > n) break;
+          out.push(s !== "m" ? A().grpHTML(e.g, "wg") : `<div class="wg-row ri13-c" data-go="board"><span class="ri13-n">${e.g.items.length}</span><div class="t">${esc(e.g.a.q)}<small>${en() ? `same question on ${e.g.items.length} cards` : `${e.g.items.length} 张卡同一个问题`}</small></div><span class="wg-tg hot">${en() ? "Question" : "问题"}</span></div>`);
+          slots += w; shown += e.g.open && s !== "m" ? 0 : e.g.items.length;
+          if (e.g.open && s !== "m") for (const i of e.g.items) { if (slots + 1 > n) break; out.push(row(i).replace('class="wg-row"', 'class="wg-row ri13-m"')); slots++; shown++; }
         } else { if (slots + 1 > n) break; out.push(row(e.it)); slots++; shown++; }
       }
-      return eb("review", L.length, true) + out.join("") +
+      return eb("review", L.length, true) + (W2 ? `<div class="sct-rows">${out.join("")}</div>` : out.join("")) +
         (!foot ? "" : L.length <= shown && window.Onboard && Onboard.exFoot() ? Onboard.exFoot() : `<div class="wg-more">${L.length > shown ? `<span data-go="board">${en() ? `${L.length - shown} more ›` : `还有 ${L.length - shown} 件 ›`}</span>` : `${en() ? "Oldest waiting" : "最久的已经等了"} ${waitAgo(L.reduce((a, b) => (A().waitMs ? A().waitMs(b) > A().waitMs(a) : 0) ? b : a))}`}</div>`);
     },
     busy(s, D) {
@@ -161,7 +175,7 @@
       const ut = !!document.documentElement.dataset.ut, ws = ut && A().wsheet ? A().wsheet(a, 320) : "";
       return (ut ? `<div class="wg-utav" data-noidle><i class="wg-utp${ws ? " ws" : ""}" data-chat="${esc(a.id)}" title="${esc(A().aname(a))}" style="background-image:url('${A().avatarUrl(a, 1)}')${ws}${ws ? `;--wg-fd:-${Date.now() % 4000}ms` : ""}"></i></div>`   /* v4: same phase as App.av (--wp = Date.now() % 4000), so this patch and the Team column show the same frame */
         : `<div class="wg-bg" style="background-image:url('${art(a)}')"></div><div class="wg-sh"></div>`) + `
-        <div class="wg-top">${eb("busy", B.length)}</div>
+        <div class="wg-top">${eb("busy", en() ? `${B.length} busy` : `${B.length} 人在忙`)}</div>
         <div class="wg-in"><h3 data-chat="${esc(a.id)}">${esc(A().aname(a))}<small>${esc(A().atitle(a) || "")}</small>${A().qBadge ? A().qBadge(a.id) : ""}</h3>
         <div class="wg-job" data-item="${esc(m.it.id)}" style="--wg-fd:-${Date.now() % 2400}ms"><span>${esc(m.it.title)}</span><b>${hm(m.since)} ${en() ? "start" : "起"} · ${ago(m.since)} ›</b></div>
         ${side.length || more > 0 ? `<div class="wg-side">${side.map(x => `<div class="wg-sr" data-item="${esc(x.it.id)}"><img src="${A().avatarUrl(x.a)}" alt="" data-chat="${esc(x.a.id)}"><div class="st"><b><span class="wg-nm">${esc(A().aname(x.a))}</span>${A().qBadge ? A().qBadge(x.a.id) : ""}</b><span>${esc(x.it.title)}</span><i><em style="width:${bar(x)}%"></em></i></div><time>${ago(x.since)}</time></div>`).join("")}${more > 0 ? `<div class="wg-sr plus" data-go="board">${en() ? `+${more} more working ›` : `+${more} 人在忙 · 看全部 ›`}</div>` : ""}</div>` : ""}</div>`;
@@ -190,6 +204,10 @@
       const isR = i => RK.has(i.id.replace(/^r-/, "")), paused = i => !!D.rp[i.id.replace(/^r-/, "")];
       return eb("ongoing", D.ongoing.length) + D.ongoing.slice(0, s === "s" ? 2 : 3).map(i => `<div class="wg-row tight" data-item="${esc(i.id)}"><div class="t">${esc(i.title)}</div>${isR(i) ? `<span class="wg-tg">${paused(i) ? (en() ? "Paused" : "暂停") : (en() ? "Daily" : "每天")}</span>` : ""}</div>`).join("");
     },
+    recent(s, D) {   /* t-section-titles: the five cards that moved last, as small tiles; a click opens the card */
+      return eb("recent") + `<div class="sct-tiles">${D.recent.map(i => { const a = A().agent(i.owner);
+        return `<div class="sct-tile" data-item="${esc(i.id)}"><b>${esc(i.title)}</b><div class="sct-meta"><img class="wg-av" src="${A().avatarUrl(a)}" alt=""><span>${esc(A().aname(a))} · ${ago(i.activity || i.updated)}</span></div></div>`; }).join("")}</div>`;
+    },
     media(s, D) {
       const n = s === "s" ? 4 : 3;
       return eb("media", D.imgs.length) + `<div class="wg-thumbs" style="--tc:${s === "s" ? 2 : 3}">${D.imgs.slice(0, n).map(x => { const u = fileUrl(x.p), name = esc(x.p.split("/").pop());
@@ -197,7 +215,7 @@
     },
   };
   const sizeBtns = (k, s) => `<span class="wg-sz">${SIZES[k].map(z => `<button type="button" data-wg-size="${k}:${z}" class="${z === s ? "on" : ""}">${z.toUpperCase()}</button>`).join("")}</span>`;
-  const editBar = (k, s, i, n) => `<i class="wg-eband" aria-hidden="true"></i><button type="button" class="wg-x" data-wg-hide="${k}" title="${en() ? "Remove" : "移除"}" aria-label="${en() ? "Remove widget" : "移除这个小组件"}">−</button>${sizeBtns(k, s)}<span class="wg-mv">${i > 0 ? `<button type="button" data-wg-move="${k}:-1">←</button>` : ""}${i < n - 1 ? `<button type="button" data-wg-move="${k}:1">→</button>` : ""}</span>`;
+  const editBar = (k, s, i, n) => k === "review" ? `<i class="wg-eband" aria-hidden="true"></i><button type="button" class="wg-x" data-wg-hide="${k}" title="${en() ? "Remove" : "移除"}" aria-label="${en() ? "Remove widget" : "移除这个小组件"}">−</button>${sizeBtns(k, s)}<span class="sct-pin">${en() ? "Always first · M = half, L = full width" : "固定在最上面 · M 半行 · L 占满一行"}</span>` : `<i class="wg-eband" aria-hidden="true"></i><button type="button" class="wg-x" data-wg-hide="${k}" title="${en() ? "Remove" : "移除"}" aria-label="${en() ? "Remove widget" : "移除这个小组件"}">−</button>${sizeBtns(k, s)}<span class="wg-mv">${i > 0 ? `<button type="button" data-wg-move="${k}:-1">←</button>` : ""}${i < n - 1 ? `<button type="button" data-wg-move="${k}:1">→</button>` : ""}</span>`;
 
   // t-home-flicker (11-03): the HTML carries wall-clock phases (--wg-fd) so a rebuilt node does not restart the sweep; they are not data,
   // so every compare strips them. Same data: keep the DOM. Changed data (C): replace only the tiles / header / tail / tray whose HTML changed,
@@ -241,11 +259,12 @@
     const count = { review: D.waiting.length, replies: D.nr.length, today: D.shipped.length };
     L.forEach(([k, s0], i) => {
       if (isGone(k)) return;
-      const s = !EDIT && s0 === "l" && count[k] != null && count[k] <= 2 ? "m" : s0;   // a big widget with one or two rows drops to M so the grid stays tight
+      /* t-wy-size (user 11-22): 等你拍板 M = half of L (half the width, a normal tall tile with full rows), L = the full row */
+      const s = k === "review" ? (s0 === "m" ? "l" : "w") : !EDIT && s0 === "l" && count[k] != null && count[k] <= 2 ? "m" : s0;   // a big widget with one or two rows drops to M so the grid stays tight; 等你拍板 is always full width (t-section-titles)
       if (!EDIT && isEmpty(k, D)) { calm.push(calmText(k)); return; }
       const inner = EDIT && isEmpty(k, D) ? eb(k) + `<div class="wg-calm-in">${calmText(k)}</div>` : tileHTML(k, s, D);
       const multi = k === "busy" && D.busy.length > 1 ? " multi" : "";
-      tiles.push([k, `<section class="wg wg-${k} sz-${s}${k === "busy" && !isEmpty(k, D) ? (document.documentElement.dataset.ut ? " utav" : " hero") + multi : ""}" data-wg="${k}">${inner}${EDIT ? editBar(k, s0, i, L.length) : ""}</section>`]);
+      tiles[k === "review" ? "unshift" : "push"]([k, `<section class="wg wg-${k} sz-${s}${k === "review" && s === "l" ? " wy-half" : ""}${k === "review" && s === "w" && D.waiting.length > 4 ? " sct-tall" : ""}${k === "busy" && !isEmpty(k, D) ? (document.documentElement.dataset.ut ? " utav" : " hero") + multi : ""}" data-wg="${k}"${k === "review" ? " data-pin" : ""}>${inner}${EDIT ? editBar(k, s0, i, L.length) : ""}</section>`]);
     });
     const hidden = allIds().filter(k => !L.some(x => x[0] === k) || isGone(k));
     const P = { edit: EDIT, tiles,
@@ -317,7 +336,7 @@
   function over() {   // the tile under the pointer (layout boxes, so a sliding tile does not flicker the target)
     const d = DR.d, op = d.el.offsetParent; if (!op) return null;
     const r = op.getBoundingClientRect(), px = d.x - r.left - op.clientLeft + op.scrollLeft, py = d.y - r.top - op.clientTop + op.scrollTop;
-    return [...d.grid.children].find(t => { if (t === d.el || !t.dataset.wg) return false; const b = lay(t); return px >= b.left && px < b.left + b.width && py >= b.top && py < b.top + b.height; }) || null;
+    return [...d.grid.children].find(t => { if (t === d.el || !t.dataset.wg || t.hasAttribute("data-pin")) return false; const b = lay(t); return px >= b.left && px < b.left + b.width && py >= b.top && py < b.top + b.height; }) || null;
   }
   function reorder(tgt) {
     const d = DR.d, kids = [...d.grid.children], i = kids.indexOf(d.el), j = kids.indexOf(tgt); if (i < 0 || j < 0) return;
@@ -341,22 +360,32 @@
     if (JSON.stringify(nu) !== JSON.stringify(L)) save(nu);
     redraw();   // the ← → buttons follow the new order; patch() keeps the tile nodes
   }
+  /* the pinned tile tugs a few px toward the pointer and springs back (held by its pin); entering 编辑 by a hold = a small press-in */
+  function pinBounce(k, dx, dy) {
+    const el = tileOf(k); if (!el || RMQ.matches) return;
+    const h = Math.hypot(dx, dy) || 1, mx = dx ? dx / h * 7 : 0, my = dy ? dy / h * 7 : 0;
+    el.animate(dx || dy ? [{ translate: "0px 0px" }, { translate: `${mx}px ${my}px`, offset: .3 }, { translate: `${-mx * .35}px ${-my * .35}px`, offset: .62 }, { translate: "0px 0px" }]
+      : [{ scale: "1" }, { scale: ".985", offset: .35 }, { scale: "1" }], { duration: 420, easing: "cubic-bezier(.3,.7,.3,1)" });
+  }
   const cancelPress = () => { if (DR.p) { clearTimeout(DR.p.tm); DR.p = null; } };
   document.addEventListener("pointerdown", e => {
     if (e.button || !e.isPrimary || DR.d || document.documentElement.dataset.home !== "widgets" || (A() && A().UI.page !== "review")) return;
     const t = e.target.closest && e.target.closest("#wg .wg-grid > .wg[data-wg]");
+    /* t-wy-size: 等你拍板 is pinned first (t-section-titles). A hold on it still enters 编辑 (resize / remove); dragging it only bounces back */
+    const pin = !!(t && t.hasAttribute("data-pin"));
     if (!t || e.target.closest("[data-wg-hide],[data-wg-size],[data-wg-move],input,textarea,select,video,audio")) return;
     cancelPress();
-    DR.p = { k: t.dataset.wg, x: e.clientX, y: e.clientY, edit: EDIT, tm: EDIT ? 0 : setTimeout(() => {   // not editing: a hold enters 编辑 and picks the tile up
+    DR.p = { k: t.dataset.wg, pin, x: e.clientX, y: e.clientY, edit: EDIT, tm: EDIT ? 0 : setTimeout(() => {   // not editing: a hold enters 编辑 and picks the tile up
       const p = DR.p; if (!p) return; DR.p = null; DR.eat = Date.now();
-      EDIT = true; redraw(); lift(p.k, p.lx ?? p.x, p.ly ?? p.y); }, HOLD) };
+      EDIT = true; redraw(); if (p.pin) pinBounce(p.k, 0, 0); else lift(p.k, p.lx ?? p.x, p.ly ?? p.y); }, HOLD) };
   }, true);
   window.addEventListener("pointermove", e => {
     if (DR.d) { if (!e.isPrimary) return; e.preventDefault(); DR.d.x = e.clientX; DR.d.y = e.clientY; follow();
       retarget(false); return; }
     const p = DR.p; if (!p) return; p.lx = e.clientX; p.ly = e.clientY;
     const m = Math.hypot(e.clientX - p.x, e.clientY - p.y);
-    if (p.edit && m > 4) { DR.p = null; lift(p.k, p.x, p.y); DR.d && (DR.d.x = e.clientX, DR.d.y = e.clientY, follow()); }
+    if (p.edit && m > 4 && p.pin) { DR.p = null; DR.eat = Date.now(); pinBounce(p.k, e.clientX - p.x, e.clientY - p.y); }
+    else if (p.edit && m > 4) { DR.p = null; lift(p.k, p.x, p.y); DR.d && (DR.d.x = e.clientX, DR.d.y = e.clientY, follow()); }
     else if (!p.edit && m > 8) cancelPress();   // moved before the hold: a normal click / selection, not a drag
   }, { passive: false });
   const end = () => { cancelPress(); if (DR.d) drop(); };
@@ -425,7 +454,6 @@
   document.addEventListener("visibilitychange", vis); vis();
   /* S8: the core nine, registered the way an extension registers its own (docs/extensions.md) */
   const CORE = [
-    ["team", ["团队交接", "Team handoffs"], ["s", "m", "l"], "m", null, null, true],
     ["usage", ["各角色用量", "Usage by role"], ["m", "l"], "l"],
     ["review", ["等你拍板", "Waiting on you"], ["m", "l"], "l", D => !D.waiting.length, ["没有等你拍板的", "Nothing waiting on you"]],
     ["busy", ["此刻在忙", "Working now"], ["m", "l"], "l", D => !D.busy.length, ["大家都在待机", "Everyone is idle"]],
@@ -434,6 +462,7 @@
     ["week", ["本周进度", "This week"], ["s", "m"], "m"],
     ["ongoing", ["每日", "Dailies"], ["s", "m"], "m", D => !D.ongoing.length, ["没有每日的活", "No dailies"]],
     ["media", ["最近素材", "Recent media"], ["s", "m"], "m", D => !D.imgs.length, ["还没有素材", "No media yet"]],
+    ["recent", ["最近", "Recent"], ["w"], "w", D => !D.recent.length, ["还没有卡", "No cards yet", false]],
   ];
   if (window.UTExt) CORE.forEach(([id, name, sizes, size, empty, calm, first]) => UTExt.widget({ id, name, sizes, size, html: W[id], empty, calm, first: !!first, core: true }));
   window.Widgets = { html, editing: () => EDIT };
