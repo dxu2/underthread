@@ -83,18 +83,20 @@ function closeModal() { $("#modal").hidden = true; $("#modal").innerHTML = "";
   if (f && f.isConnected && typeof f.focus === "function") try { f.focus({ preventScroll: true }); } catch (_) { } }
 // t-close-bottom: 关单 from the detail's bottom bar, any kind / stage. One confirm; the optional reason goes into the card's thread as your message
 // (so the owner sees it), then the card is closed. Open questions do not block it (they are listed and closed with the card).
-const closeBtn = () => `<button class="ab cl" data-act="close" title="${UI.lang === "en" ? "Close this card" : "关掉这张卡"}">${UI.lang === "en" ? "Close" : "关单"}</button>`;
+// t-detail-close B (user pick 11-21) + End (user 11-21 23:03 「二级菜单有点繁琐」): the bottom-left button is a quiet 「结束 / End」 text button that
+// opens the reason dialog below directly. Not red and not a ✕, so it never reads as the top-right 「收起 ›」; 复制链接 moved to the header (drawer.js dce-lnk).
+const closeBtn = () => `<button class="ab dce-end" data-act="close" title="${UI.lang === "en" ? "End this card · asks for a reason" : "结束这张卡 · 会问一句原因"}">${UI.lang === "en" ? "End" : "结束"}</button>`;
 function modalClose() {
   const it = ST.items.find(i => i.id === UI.item); if (!it) return;
   const zh = UI.lang !== "en", oa = openAsks(it), id = it.id;
-  openModal(`<h2>${zh ? "关单" : "Close card"}</h2><p class="cl-t">${esc(it.title)}</p>${oa.length ? `<p class="cl-w">${zh ? `还有 ${oa.length} 个问题没答，会随卡一起关掉。` : `${oa.length} open question${oa.length > 1 ? "s" : ""} will close with it.`}</p>` : ""}
-    <label>${zh ? "原因（可不填，会记进卡的动态）" : "Reason (optional, goes into the card's thread)"}</label><textarea></textarea>
-    <div class="foot"><button class="btn" data-x>${t("cancel")}</button><button class="btn primary" data-ok>${zh ? "关单" : "Close"}</button></div>`, m => {
+  openModal(`<h2>${zh ? "不做了，结束这张卡" : "End this card"}</h2><p class="cl-t">${esc(it.title)}</p>${oa.length ? `<p class="cl-w">${zh ? `还有 ${oa.length} 个问题没答，会随卡一起关掉。` : `${oa.length} open question${oa.length > 1 ? "s" : ""} will close with it.`}</p>` : ""}
+    <p class="mo-note">${zh ? "卡会进「已完成」，之后可以重开。" : "It moves to Done; you can reopen it later."}</p><label>${zh ? "原因（可不填，会记进卡的动态）" : "Reason (optional, goes into the card's thread)"}</label><textarea></textarea>
+    <div class="foot"><button class="btn" data-x>${t("cancel")}</button><button class="btn primary" data-ok>${zh ? "结束这张卡" : "End card"}</button></div>`, m => {
     const ta = $("textarea", m);
     const submit = async () => { const reason = ta.value.trim(); closeModal();
       if (reason) await api("comment", { item: id, text: (zh ? "关单原因：" : "Closed because: ") + reason });
       await api("done", { item: id, skip_asks: oa.length ? true : undefined });
-      toast(zh ? "已关单" : "Closed"); };
+      toast(zh ? "已结束这张卡" : "Card ended"); };
     $("[data-ok]", m).onclick = submit; $("[data-x]", m).onclick = closeModal;
     ta.addEventListener("keydown", e => { if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) { e.preventDefault(); submit(); } });
     ta.focus();

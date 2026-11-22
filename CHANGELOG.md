@@ -27,6 +27,13 @@ Work in progress goes under `## Unreleased`; the release renames it to `## [X.Y.
 
 ### Fixed
 - A working avatar in the left rail no longer looks stuck: with power saving on, its ring now spins while you use the board, and whenever it stops (20 s idle, or reduced motion) it turns into one full ring instead of a frozen half arc.
+Nothing.
+
+### Changed
+- **The card detail's two "close" buttons no longer look alike (t-detail-close)**: the top-right ✕ is now 收起 › / Hide ›, which only hides the panel; the card stays where it was. The 关单 / Close pill at the bottom left became a quiet 结束 / End text button that opens the same reason dialog as before, and 复制链接 / Copy link is a link icon next to the card id in the header. The bottom row keeps 稍后 / Later and the main button.
+
+### Fixed
+Nothing.
 
 ### Upgrade notes
 - Migrations: none
