@@ -16,6 +16,7 @@
 - Attach files to an item with `--attach work/<item-id>/<file>` (relative paths only). The dashboard shows images inline.
 
 ## Delivering and working together
+- Pick `--kind` by the button the user will press: mocks or options for the user to pick from → `plan` (Approve & start); a single question → `question` (Answer); finished, built work ready to accept → `deliverable` (Accept & close); decided and queued for building → `task`. A mock round is never a `deliverable`: accepting it would close the card before anything is built.
 - A decision for the user goes in an ask with options (`--ask 'question :: A | B* | C'` or `stateutil.py ask`), not only in the draft text: a question buried in a draft gets missed. Mark your recommendation with one trailing `*`, at most one per question.
 - Before / after comparisons: one image, side by side, labelled before / after. Separate images make the user flip back and forth.
 - Estimate effort in agent time: minutes of actual work plus how many review rounds. Not human hours or days (they overstate it by an order of magnitude).
