@@ -57,17 +57,20 @@
       .then(r => { if (!r.ok) throw new Error(r.status); }).catch(() => { PEND = null; if (A() && A().toast) A().toast(en() ? "Layout not saved on the server" : "布局没存到服务器，只存在了这个浏览器", true); }); };
   const load = () => {
     const w = srv(), now = Date.now();
+    /* a cold start paints the offline snapshot first (store.js snapBoot, UI.snap): it can be hours old or older than the server layout, so
+       that paint only draws. Uploading from it put this browser's cached rt.widgets over a newer server layout and dropped its chosen sizes. */
+    const snap = !!(A() && A().UI && A().UI.snap);
     if (PEND) {
       const got = w && (w.layout ? JSON.stringify(w.layout) : null);
       if (w && got === PEND.L || now - PEND.t > 15000) PEND = null;
       else return PEND.L ? JSON.parse(PEND.L) : DEF.map(x => x.slice());
     }
     if (w && typeof w === "object") { let v = known(w.layout);
-      if (v && !(Array.isArray(w.seen) && w.seen.includes(RC_OFF)) && !rcOff.sent) { rcOff.sent = 1; const had = v.some(x => x[0] === "recent"); v = v.filter(x => x[0] !== "recent");   // once: 最近 out again
+      if (v && !snap && !(Array.isArray(w.seen) && w.seen.includes(RC_OFF)) && !rcOff.sent) { rcOff.sent = 1; const had = v.some(x => x[0] === "recent"); v = v.filter(x => x[0] !== "recent");   // once: 最近 out again
         if (v.length) { send({ kind: "widget_layout", layout: v, seen: seenNow() }, v); saveLocal(v); return v; } }
-      let L = v && v.length ? v : DEF.map(x => x.slice()); L = meet(w, L, !!(v && v.length)); saveLocal(L); return L; }
+      let L = v && v.length ? v : DEF.map(x => x.slice()); if (snap) return L; L = meet(w, L, !!(v && v.length)); saveLocal(L); return L; }
     const L = loadLocal();
-    if (w === null || (A() && A().ST && A().ST.meta && !("widgets" in A().ST.meta))) {   // first load against a server that has no layout yet: upload this browser's once
+    if (!snap && (w === null || (A() && A().ST && A().ST.meta && !("widgets" in A().ST.meta)))) {   // first load against a server that has no layout yet: upload this browser's once
       let had = null; try { had = localStorage.getItem(KEY); } catch { }
       if (had && !push.once) { push.once = 1; push(L); }
     }

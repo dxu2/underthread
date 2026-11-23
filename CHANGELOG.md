@@ -54,6 +54,7 @@ Work in progress goes under `## Unreleased`; the release renames it to `## [X.Y.
 - 此刻在忙 / Working now at M no longer pushes the job pill out of the tile when the name and role are long (English).
 - The three numbers in 本周进度 / This week L no longer roll from each other's value.
 - Home boards don't pulse while the tour is open; the unseen knot stays.
+- Opening the board no longer overwrites the widget layout saved on the server with this browser's cached copy (and its picked sizes) while it still shows the offline snapshot from the last visit; it waits for the live state. The browser tests `boardpulse` and `homesml` no longer fail now and then on CI (a knot still fading from the previous step, and the yarn kitten's clipped effect layer counted as overflow).
 - A working avatar in the left rail no longer looks stuck: with power saving on, its ring now spins while you use the board, and whenever it stops (20 s idle, or reduced motion) it turns into one full ring instead of a frozen half arc.
 - The phone home's 看画面 link was hidden in the open-source build (`oss.css`); it shows again while the switch is on.
 - **Quick phrases stay inside the folded chat column (t-rail-overflow)**: with the chat column folded to its avatar strip, the 「想说点什么？ / What's on your mind?」 pill stuck out past the strip. Folded, it is now the yarn ball alone, centred; a click unfolds the column and opens the phrases. The chip row (shown before your 20th message) is hidden while the column is folded. Phones are unchanged.

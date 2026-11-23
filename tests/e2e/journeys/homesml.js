@@ -31,7 +31,13 @@ const look = p => p.evaluate(() => {
       if (r.right > R.right + 1.5 || r.bottom > R.bottom + 1.5 || r.left < R.left - 1.5) bad.push((e.className && e.className.baseVal == null ? e.className : e.tagName) + " " + Math.round(r.right - R.right) + "," + Math.round(r.bottom - R.bottom));
     });
     /* user 11-22 19:43 「M 都出去了」: the tile itself must not scroll, and no child box (pill, row) may leave the tile's rect */
+    /* the yarn kitten (t-yarn-anim: a role working 5+ min wins a 1-in-3 draw seeded from id + since, so it shows on some runs only) draws its
+       effect layer at 130% and its tap area past the patch; the tile clips both (overflow: hidden), they are decoration like the .yk leaves
+       skipped above, so they are left out of the scroll size. Everything else, the kitten's body included, still counts. */
+    const deco = [...t.querySelectorAll(".yk > .yk-fx, .yk > .yk-hit")], was = deco.map(e => e.style.display);
+    deco.forEach(e => { e.style.display = "none"; });
     if (t.scrollHeight > t.clientHeight + 1) bad.push("scrollHeight " + t.scrollHeight + ">" + t.clientHeight);
+    deco.forEach((e, i) => { e.style.display = was[i]; });
     t.querySelectorAll(":scope > *, :scope > * > *").forEach(e => { if (e.closest(".wg-sz, .wg-x, .wg-mv, .wg-eband, .sct-pin, .bpl-knot, .yk, .wg-top, .wg-eb, .wg-bg, .wg-sh") || getComputedStyle(e).position === "fixed") return;
       const r = e.getBoundingClientRect(); if (!r.width || !r.height) return;
       if (r.right > R.right + 1.5 || r.bottom > R.bottom + 1.5 || r.left < R.left - 1.5 || r.top < R.top - 1.5) bad.push("box " + (typeof e.className === "string" ? e.className.split(" ")[0] : e.tagName) + " " + Math.round(r.right - R.right) + "," + Math.round(r.bottom - R.bottom)); });
