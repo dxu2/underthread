@@ -167,6 +167,13 @@ module.exports = {
       await p.evaluate(() => document.getElementById("page").scrollTo(0, 0)); await c.sleep(300);
       await c.shot(`main-${W}-${lang}-${skin}`);
     }
+    /* the blank verdict is per picture, not per box: the same picture in an 860px-wide box (a render before the columns settle) is not dropped.
+       It used to crop the icon to its plain top band there, call it blank and keep that for the page load (CI 1280 en knit, PR #38). */
+    const wide = await p.evaluate(async () => { const v = document.createElement("div"); v.style.cssText = "position:fixed;left:0;top:0;width:860px;height:140px";
+      const im = new Image(); im.dataset.qcp = "work/qc-test/cover.png#wide"; v.appendChild(im); document.body.appendChild(v);
+      await new Promise(r => { im.onload = im.onerror = r; im.src = "/work/qc-test/cover.png"; }); qcCvChk(im);
+      const r = { kept: v.isConnected && !!im.parentNode, ok: im.classList.contains("ok"), qcs: im.dataset.qcs }; v.remove(); return r; });
+    c.check("a normal picture in a wide box is still a cover (verdict does not depend on the box it was checked in)", wide.kept && wide.ok, wide);
     /* chat column open at 1440: the page is narrower, so two columns, still nothing out of a card */
     await p.setViewportSize({ width: 1440, height: 900 });
     await boot(c, "knit", "zh", false);
