@@ -282,7 +282,7 @@
     if (!hit.length) return;
     hit.forEach(k => BPL.unseen.add(k)); bplSave();
     BPL.fresh = new Set(hit.flatMap(k => S[k].filter(x => !P[k].includes(x)).map(x => x.split("@")[0].split(":").pop())));   // item ids of the rows that are new
-    const quiet = A() && A().quietNight ? A().quietNight() : false;
+    const quiet = (A() && A().quietNight ? A().quietNight() : false) || !!(window.Tour && Tour.isOpen());   // t-onboard-tour: the knot stays, no pulse over the tour
     if (quiet) return;
     if (document.hidden) { hit.forEach(k => BPL.pend.add(k)); return; }
     const now = Date.now(); hit.forEach(k => { if (!(now - (BPL.last[k] || 0) < BPL_GAP)) BPL.q.add(k); });
