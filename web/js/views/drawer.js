@@ -175,9 +175,23 @@ function openItemNow(id, nav) {
     const sc = $(".dw-scroll", dw); DW.pin = true; DW.pinUntil = Date.now() + 4000;
     const unpin = () => { DW.pin = false; }; ["wheel", "touchstart", "keydown", "mousedown"].forEach(k => sc.addEventListener(k, unpin, { passive: true }));
     sc.addEventListener("load", dwPinEnd, true); }
-  renderDrawer(true);
+  /* t-perf-smooth F1: a fresh open is two steps. This frame: the panel, its header and the composer, and the slide starts at once. The thread (the
+     heavy part: 100-200 ms on a long card, 900 ms with a slow phone CPU) fills right after that first frame is on screen, while the slide runs on
+     the compositor, so the slide keeps every frame. Card -> card inside an open panel, and cards that still have to be fetched, render at once as before.
+     Any renderDrawer() that comes first (a poll, a click, seekItem) takes over the pending fill. */
+  /* OFF for now (DW_TWO_STEP): a WebKit screen recording showed the phone open motion freezing while the main thread is busy, so a 100 ms fill
+     during the slide drops visible frames there; filling only the newest cards first and the rest after the slide is the follow-up. */
+  const it0 = DW_TWO_STEP && !wasOpen && (ST.items || []).find(i => i.id === id);
+  if (DW.pend) DW.pend.cancel();
+  if (it0 && !it0.slim) {
+    $(".dw-top", dw).innerHTML = dwTopHTML(it0);
+    const pd = DW.pend = { id, r: 0, t: 0, t2: 0, cancel() { cancelAnimationFrame(pd.r); clearTimeout(pd.t); clearTimeout(pd.t2); if (DW.pend === pd) DW.pend = null; },
+      run() { if (DW.pend !== pd) return; pd.cancel(); if (UI.item === id && dw.isConnected) renderDrawer(true, true); } };
+    pd.r = requestAnimationFrame(() => { pd.t = setTimeout(pd.run, 0); });   // after the first frame is painted
+    pd.t2 = setTimeout(pd.run, 100);   // no rAF in a background tab
+  } else renderDrawer(true);
   try { DW.ro && DW.ro.disconnect(); const dk = $(".dw-dock", dw); DW.ro = new ResizeObserver(() => { dw.style.setProperty("--dock-h", dk.offsetHeight + "px"); dwPinEnd(); }); /* t-ask-bottom: the dock can grow (question bar) while the card is pinned to its newest message */ DW.ro.observe(dk); } catch { }   // phone CSS pads the scroller by the dock height
-  if (!matchMedia("(max-width: 760px)").matches) ta.focus({ preventScroll: true });  // phones: don't pop the keyboard
+  if (!matchMedia("(max-width: 760px)").matches) ta.focus({ preventScroll: true });  // phones: don't pop the keyboard. t-perf-smooth F1: still at once: the thread is not in yet, so this layout is the light one, and the focus ring is part of the slide's frames
   slideIn(dw, wasOpen);
   dw.classList.toggle("dw-has-back", dwStack.length > 0);   // desktop shows the back button only when there is a card to go back to
   if (wasOpen && dwNavDir) {   // t-parent-links: card -> card inside the open drawer: the new content slides in from the side you are heading (translate + opacity, --m-move)
@@ -186,7 +200,7 @@ function openItemNow(id, nav) {
     try { $(".dw-scroll", dw).animate(rm ? [{ opacity: 0 }, { opacity: 1 }] : [{ transform: `translateX(${d * 28}px)`, opacity: 0 }, { transform: "none", opacity: 1 }], { duration: dur, easing: ease }); } catch { }
   }
   dwNavDir = 0;
-  hooks.forEach(f => f("drawer"));
+  if (DW.pend) DW.pendHooks = true; else hooks.forEach(f => f("drawer"));   // a deferred fill calls the hooks once the thread is in (end of renderDrawer)
 }
 const curItem = () => (ST.items || []).find(i => i.id === UI.item) || {};
 function drawTo() {
@@ -593,8 +607,15 @@ function askDup(dw, sc, it) {
   DW.askIO = new IntersectionObserver(es => es.forEach(e => ab.classList.toggle("dup", e.isIntersecting && (e.intersectionRatio >= .5 || (!!e.rootBounds && e.intersectionRect.height >= e.rootBounds.height * .5)))),   /* half of it, or half the screen when it is taller */ { root: sc, rootMargin: `-${Math.round(top)}px 0px -${Math.round(bot)}px 0px`, threshold: [0, .25, .5, .75, 1] });
   DW.askIO.observe(el);
 }
-function renderDrawer(first) {
-  if (!first && annSelInDraft()) { ANN.deferred = true; return; }   // t-imp29-p2: a poll must not wipe the text you are selecting
+const DW_TWO_STEP = false;   // t-perf-smooth F1, see openItemNow
+function dwTopHTML(it) {   // t-detail-close B: words, not ✕, so it never reads as ending the card
+  const opts = (list, cur) => list.map(([v, n]) => `<option value="${v}" ${v === cur ? "selected" : ""}>${esc(n)}</option>`).join("");
+  return `<div class="dw-lead"><button class="dw-back" data-close aria-label="${UI.lang === "en" ? "Back" : "返回"}"><svg viewBox="0 0 12 20" width="12" height="20" aria-hidden="true"><path d="M10 2 2 10l8 8" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg><span>${UI.lang === "en" ? "Back" : "返回"}</span></button><span class="tag ${it.stage === "review" || awaitsUser(it) ? it.kind : ""}" title="${esc(it.stage === "review" || awaitsUser(it) ? t(it.kind === "task" ? "deliverable" : it.kind) : stageLabel(it.stage))}"><span class="gl" aria-hidden="true">◆</span>${it.stage === "review" || awaitsUser(it) ? t(it.kind === "task" ? "deliverable" : it.kind) : stageLabel(it.stage)}</span> <button type="button" class="mono dim dw-id" data-copy-id="${esc(it.id)}" title="${UI.lang === "en" ? "Copy card id" : "复制卡号"}"><span>${esc(it.id)}</span><svg viewBox="0 0 16 16" width="11" height="11" aria-hidden="true"><rect x="5" y="5" width="8.5" height="8.5" rx="1.6" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M10.5 3.2V3a1.5 1.5 0 0 0-1.5-1.5H3A1.5 1.5 0 0 0 1.5 3v6A1.5 1.5 0 0 0 3 10.5h.2" fill="none" stroke="currentColor" stroke-width="1.4"/></svg></button><button type="button" class="dw-id dce-lnk" data-copy-link="${esc(it.id)}" title="${UI.lang === "en" ? "Copy link to this card" : "复制这张卡的链接"}" aria-label="${UI.lang === "en" ? "Copy link" : "复制链接"}"><svg viewBox="0 0 16 16" width="12" height="12" aria-hidden="true"><path d="M6.6 9.4a2.6 2.6 0 0 0 3.7 0l2.4-2.4a2.6 2.6 0 0 0-3.7-3.7l-.9.9M9.4 6.6a2.6 2.6 0 0 0-3.7 0L3.3 9a2.6 2.6 0 0 0 3.7 3.7l.9-.9" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></button></div>
+    <div class="r"><select data-f="category">${opts(CATS.map(c => [c, t(c)]), it.category)}</select><button class="dw-hide" data-close title="${UI.lang === "en" ? "Hide the panel · the card stays" : "收起面板 · 卡还在，随时从列表点回来"}"><span>${UI.lang === "en" ? "Hide" : "收起"}</span><svg viewBox="0 0 8 12" width="7" height="11" aria-hidden="true"><path d="M1.5 1.5 6 6l-4.5 4.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button></div>`;
+}
+function renderDrawer(first, fill) {
+  if (DW.pend && !fill) { DW.pend.cancel(); first = true; }   // t-perf-smooth F1: a fresh open's fill was still pending: this render is it
+  if (!first && ANN.selIn && annSelInDraft()) { ANN.deferred = true; return; }   // t-imp29-p2: a poll must not wipe the text you are selecting. t-perf-smooth F4a: ANN.selIn (selectionchange) first
   const it = (ST.items || []).find(i => i.id === UI.item);
   const dw = $("#drawer");
   if (!it && UI.item && archKnown(UI.item) && !ARCH.miss[UI.item]) {   // t-perf A: an archived card, fetched on open
@@ -607,8 +628,7 @@ function renderDrawer(first) {
     else if (!ok && UI.item === it.id) { const s = $("#drawer .dw-scroll [data-sk]"); if (s) s.outerHTML = `<div class="sk-fail">${UI.lang === "en" ? "Drafts did not load · close and reopen the card to retry" : "草稿没加载出来 · 关掉再打开这张卡重试"}</div>`; } }); if (!first) return; }   // t-mobile-crash-state: draft + versions arrive a moment later
   const opts = (list, cur) => list.map(([v, n]) => `<option value="${v}" ${v === cur ? "selected" : ""}>${esc(n)}</option>`).join("");
   const ownerOpts = opts(agents().map(a => [a.id, `${aname(a)} · ${atitle(a)}`]), it.owner);
-  $(".dw-top", dw).innerHTML = `<div class="dw-lead"><button class="dw-back" data-close aria-label="${UI.lang === "en" ? "Back" : "返回"}"><svg viewBox="0 0 12 20" width="12" height="20" aria-hidden="true"><path d="M10 2 2 10l8 8" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg><span>${UI.lang === "en" ? "Back" : "返回"}</span></button><span class="tag ${it.stage === "review" || awaitsUser(it) ? it.kind : ""}" title="${esc(it.stage === "review" || awaitsUser(it) ? t(it.kind === "task" ? "deliverable" : it.kind) : stageLabel(it.stage))}"><span class="gl" aria-hidden="true">◆</span>${it.stage === "review" || awaitsUser(it) ? t(it.kind === "task" ? "deliverable" : it.kind) : stageLabel(it.stage)}</span> <button type="button" class="mono dim dw-id" data-copy-id="${esc(it.id)}" title="${UI.lang === "en" ? "Copy card id" : "复制卡号"}"><span>${esc(it.id)}</span><svg viewBox="0 0 16 16" width="11" height="11" aria-hidden="true"><rect x="5" y="5" width="8.5" height="8.5" rx="1.6" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M10.5 3.2V3a1.5 1.5 0 0 0-1.5-1.5H3A1.5 1.5 0 0 0 1.5 3v6A1.5 1.5 0 0 0 3 10.5h.2" fill="none" stroke="currentColor" stroke-width="1.4"/></svg></button><button type="button" class="dw-id dce-lnk" data-copy-link="${esc(it.id)}" title="${UI.lang === "en" ? "Copy link to this card" : "复制这张卡的链接"}" aria-label="${UI.lang === "en" ? "Copy link" : "复制链接"}"><svg viewBox="0 0 16 16" width="12" height="12" aria-hidden="true"><path d="M6.6 9.4a2.6 2.6 0 0 0 3.7 0l2.4-2.4a2.6 2.6 0 0 0-3.7-3.7l-.9.9M9.4 6.6a2.6 2.6 0 0 0-3.7 0L3.3 9a2.6 2.6 0 0 0 3.7 3.7l.9-.9" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></button></div>
-    <div class="r"><select data-f="category">${opts(CATS.map(c => [c, t(c)]), it.category)}</select><button class="dw-hide" data-close title="${UI.lang === "en" ? "Hide the panel · the card stays" : "收起面板 · 卡还在，随时从列表点回来"}"><span>${UI.lang === "en" ? "Hide" : "收起"}</span><svg viewBox="0 0 8 12" width="7" height="11" aria-hidden="true"><path d="M1.5 1.5 6 6l-4.5 4.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button></div>`;   // t-detail-close B: words, not ✕, so it never reads as ending the card
+  $(".dw-top", dw).innerHTML = dwTopHTML(it);   // t-perf-smooth F1: same markup, shared with the first frame of a fresh open
   const sc = $(".dw-scroll", dw); const keep = sc.scrollTop;
   let lastDay = "";
   const stream = streamOf(it);
@@ -637,10 +657,15 @@ function renderDrawer(first) {
     ${topFiles(it)}
     <div class="sec-h">${t("thread")}</div>${it.slim ? skDraft() : ""}<div class="cs">${tl}</div>
     <div class="cs-jump"><div class="wrap"><button data-jump="top" hidden><span class="ic">↑</span><span class="lb">${t("jump_top")}<small>TOP</small></span></button><button data-jump="end" hidden><span class="ic">↓</span><span class="lb">${t("jump_new")}<small>LATEST</small></span><i class="new" hidden></i></button></div></div>`;
-  { const sm = $(".dw-sum", sc), sb = $("[data-uin-sum]", sc);   // t-ui-next 4: the toggle only shows when the 3-line clamp actually cuts text (or it is open)
-    if (sm && sb) sb.hidden = !DW.sumOpen.has(it.id) && sm.scrollHeight <= sm.clientHeight + 2; }
-  // folded cards only need the toggle when they actually overflow
-  $$(".cs-card.draftc", sc).forEach(c => { const m = $(".md", c), b = $(".cs-more", c); if (!c.classList.contains("folded")) { c.classList.add("folded"); const long = m.scrollHeight > m.clientHeight + 4; c.classList.remove("folded"); b.hidden = !long; } else b.hidden = m.scrollHeight <= m.clientHeight + 4; });
+  { // t-ui-next 4: the summary toggle only shows when the 3-line clamp actually cuts text (or it is open); folded cards only need their toggle
+    // when they actually overflow. t-perf-smooth F1: every box is measured folded in ONE layout (fold all, read all, unfold, then write);
+    // it used to be read-then-write per card, one forced layout each (95 ms on a long card).
+    const sm = $(".dw-sum", sc), sb = $("[data-uin-sum]", sc), cs = [...sc.querySelectorAll(".cs-card.draftc")], un = cs.filter(c => !c.classList.contains("folded"));
+    un.forEach(c => c.classList.add("folded"));
+    const sumCut = sm && sb ? sm.scrollHeight > sm.clientHeight + 2 : false, long = cs.map(c => { const m = $(".md", c); return m.scrollHeight > m.clientHeight + 4; });
+    un.forEach(c => c.classList.remove("folded"));
+    if (sm && sb) sb.hidden = !DW.sumOpen.has(it.id) && !sumCut;
+    cs.forEach((c, i) => { $(".cs-more", c).hidden = !long[i]; }); }
   const jumpEl = first && DW.jumpT ? [...sc.querySelectorAll(".cs-card[data-t]")].find(x => Date.parse(x.dataset.t) >= DW.jumpT) : null;   // t-home-newreplies
   if (jumpEl) { DW.pin = false; DW.jumpT = 0; DW.hitT = jumpEl.dataset.t; DW.hitAt = Date.now(); }
   // t-detail-jump-fix: the 新回复 mark is only a mark. It used to head the else-if chain below, so after a jump no re-render ever pinned,
@@ -652,7 +677,8 @@ function renderDrawer(first) {
   else if (first || dwPinned()) { sc.scrollTop = sc.scrollHeight; dwPinWatch(sc); }   // t-detail-jump: open at the newest message (was: review cards at the current draft, others at the top)
   else if (wasEnd) { DW.pin = true; DW.pinUntil = Math.max(DW.pinUntil || 0, Date.now() + 1500); sc.scrollTop = sc.scrollHeight; dwPinWatch(sc); }   // t-detail-jump: already at the end → stay there while the re-rendered images settle
   else { sc.scrollTop = keep; if (grew) DW.fresh = true; }
-  jumpState(); drawTo(); tocBuild();   // t-ri1103-p4
+  jumpState(); drawTo();
+  if (first) { clearTimeout(DW.tocT); const tid = it.id; DW.tocT = setTimeout(() => { if (UI.item === tid) tocBuild(); }, 0); } else tocBuild();   // t-ri1103-p4; t-perf-smooth F1: on open, in its own task
   askDup(dw, sc, it);   /* t-ri1113-a P2 */
   const done = it.stage === "done";
   const acts = $(".dw-acts", dw);
@@ -676,6 +702,7 @@ function renderDrawer(first) {
   if (window.Preview && contentMode()) Preview.decorate($('.cs-card.draftc[data-vkey="cur"]', sc), it);   // t-imp29-p3: 文稿 / 平台预览 on the current draft
   DW.sig = dwSig();   // t-perf E
   planTip(it);   // t-oss-polish-1121 ④
+  if (DW.pendHooks) { DW.pendHooks = false; hooks.forEach(f => f("drawer")); }   // t-perf-smooth F1
 }
 /* t-oss-polish-1121 ④: the first time a plan card waits on you, a bubble over 批准开工 says nothing starts before it. Shown while the server says
    meta.plan_tip (no 批准 / 驳回 / answer from you on any card yet, and not dismissed: meta.onboarding.plan_tip_at), so an install that has
@@ -899,7 +926,7 @@ function wireDrawer() {
   PHONE.addEventListener && PHONE.addEventListener("change", () => { const dw = $("#drawer"); if (UI.item && dw && !dw.hidden) renderDrawer(); });
   document.addEventListener("selectionchange", () => {
     clearTimeout(ANN.showT);
-    const c = annSelInDraft();
+    const c = annSelInDraft(); ANN.selIn = !!c;   /* t-perf-smooth F4a: renderDrawer reads this before touching the selection */
     if (!c) {   // selection gone: hide shortly (a tap on the menu itself keeps the selection), then catch up a drawer render we held back
       ANN.showT = setTimeout(() => { if (annSelInDraft()) return; annHide(); ANN.cand = null; if (ANN.deferred) { ANN.deferred = false; if (UI.item) renderDrawer(); } }, 250);
       return;

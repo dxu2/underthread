@@ -63,7 +63,7 @@ function actRow(o) {   // one shared row: avatar (+unread dot) | name + title ..
     </div></div>`;
 }
 
-/* t-web-quest-cards-p2: cover check. Samples the part of the picture the 140px cover shows (object-fit: cover, top aligned) at 48 px wide; when
+/* t-web-quest-cards-p2: cover check. Samples the part of the picture a 238x140 cover shows (object-fit: cover, top aligned) at 48 px wide; when
    98.5% or more of the samples sit within 24 levels of the most common colour, the cover is blank (a white page with only a needle) and the card
    goes without it. Same-origin thumbs, so the canvas is readable; any failure keeps the picture. Verdicts per path live in QC_CV for this page load. */
 const QC_CV = new Map();
@@ -72,7 +72,10 @@ function qcCvChk(im) {
   if (QC_CV.get(p) === "ok") { im.classList.add("ok"); return; }   /* a re-render of a checked picture */
   let blank = false;
   try {
-    const bw = v.clientWidth || 300, bh = v.clientHeight || 140, w = im.naturalWidth, h = im.naturalHeight;
+    /* t-perf-smooth: judged on a fixed box, the cover in the narrowest column (QC_MIN 270 minus the card's 32px padding, 140 high), not on the
+       box the picture happens to sit in. The verdict is kept per path for the whole page load, and one render while the columns were still being
+       dealt (a wide box, e.g. right after a reload at a new width) cropped a picture to its top band and dropped it as blank for good (CI, 1280). */
+    const bw = 238, bh = 140, w = im.naturalWidth, h = im.naturalHeight;
     if (w && h) {
       const s = Math.max(bw / w, bh / h), vw = Math.min(w, bw / s), vh = Math.min(h, bh / s), W = 48, H = Math.max(8, Math.round(W * bh / bw));
       const cv = document.createElement("canvas"); cv.width = W; cv.height = H;

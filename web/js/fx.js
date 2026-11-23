@@ -253,15 +253,20 @@
   }
   function sleep() {
     if (idle.on || !psOn()) return;
-    idle.on = true; document.documentElement.dataset.idle = "1"; markAll();
+    idle.on = true; idle.since = performance.now(); document.documentElement.dataset.idle = "1"; markAll();
     idle.subs.forEach(f => f(true));
     if (!window.MutationObserver) return;
     idle.mo = idle.mo || new MutationObserver(() => { if (!idle.q) idle.q = setTimeout(() => { idle.q = 0; if (idle.on) markAll(); }, 300); });
-    idle.mo.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ["class"] });
+    /* t-perf-smooth F3: data-ip too. A same-DOM re-render (widgets, ticker) can strip the mark from a node it keeps; the class did not change, so
+       the loop ran on while idle (nyk-breathe, pulse, ut-wsheet were seen running in html[data-idle]). Re-marking is idempotent, so this settles. */
+    idle.mo.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ["class", "data-ip"] });
   }
+  /* t-perf-smooth F3: belt and braces. A loop that is still running while idle reports its next iteration; mark it then. */
+  addEventListener("animationiteration", () => { if (idle.on && !idle.q) idle.q = setTimeout(() => { idle.q = 0; if (idle.on) markAll(); }, 300); }, true);
   function wake() {
     idle.last = Date.now();
     if (!idle.on) return;
+    if (idle.on) idle.acc = (idle.acc || 0) + performance.now() - idle.since;   // t-perf-smooth F3: total time held by idle (offResume)
     idle.on = false; delete document.documentElement.dataset.idle;
     if (idle.mo) idle.mo.disconnect();
     idle.held.forEach(a => { try { if (a.playState === "paused") a.play(); } catch (_) { } }); idle.held.clear();
@@ -290,6 +295,69 @@
   }
   /* another tab on this device flipped the switch */
   addEventListener("storage", e => { if (e.key === "rt.powerSave") applyPower(psOn()); });
+
+  /* ---------- t-perf-smooth F3: off-screen pause ----------
+     An infinite CSS animation whose element is out of view (a team row scrolled away, a widget below the fold, an avatar off the side of the
+     roster strip) is paused with data-io (s / b / a, like data-ip) and one rule in style.css. An IntersectionObserver with a 300px margin
+     resumes it before it scrolls back in (one observer for the window and one per scroll box: a margin on the window does not see a box's own
+     clipping, so an element counts as out when either says so), and every animation on that element is moved forward by the time it was paused, so it shows the
+     exact frame it would have shown had it never stopped (phase-synced sprites stay in step). Never touched: voice-call rings, [data-noidle],
+     zero-size boxes (their pseudo-elements may paint outside), and everything when 省电模式 is off. Script-made (WAAPI) loops are left alone. */
+  const off = { io: null, roots: new Map(), seen: new WeakSet(), q: 0 };
+  function offRoot(el) {   // the nearest scrolling ancestor below <body>, or null
+    for (let p = el.parentElement; p && p !== document.body && p !== document.documentElement; p = p.parentElement) {
+      const cs = getComputedStyle(p); if (/(auto|scroll)/.test(cs.overflowX + cs.overflowY)) return p;
+    }
+    return null;
+  }
+  function offScan() {
+    off.q = 0;
+    if (!window.IntersectionObserver || !psOn()) return;
+    off.io = off.io || new IntersectionObserver(es => offSeen(es, "_ioV"), { rootMargin: "300px" });
+    let list; try { list = document.getAnimations(); } catch (_) { return; }
+    const kinds = new Map();
+    for (const a of list) {
+      const fx = a.effect, tm = fx && fx.getTiming && fx.getTiming();
+      if (!tm || a.animationName === undefined) continue;
+      const el = fx.target; if (!el || el.nodeType !== 1) continue;
+      const k = fx.pseudoElement === "::before" ? "b" : fx.pseudoElement === "::after" ? "a" : fx.pseudoElement ? "" : "s";
+      const m = kinds.get(el) || {}; kinds.set(el, m);
+      /* a box that also runs a finite animation (an entrance) on the same part is not paused there: play-state would hold the entrance too */
+      if (tm.iterations !== Infinity || isVc(a, el) || !k) m["x" + k] = 1; else m[k] = 1;
+    }
+    kinds.forEach((m, el) => {
+      const ks = ["s", "b", "a"].filter(k => m[k] && !m["x" + k]).join(" ");
+      el._ioK = ks;
+      if (ks && !off.seen.has(el)) { off.seen.add(el); off.io.observe(el);
+        const rt = offRoot(el); if (rt) { let o = off.roots.get(rt); if (!o) off.roots.set(rt, o = new IntersectionObserver(es => offSeen(es, "_ioR"), { root: rt, rootMargin: "300px" })); el._ioO = o; o.observe(el); } }
+    });
+  }
+  function offSeen(es, f) {
+    for (const e of es) {
+      const el = e.target, r = e.boundingClientRect;
+      if (!el.isConnected) { off.io.unobserve(el); if (el._ioO) el._ioO.unobserve(el); off.seen.delete(el); if (el.dataset.io) delete el.dataset.io; continue; }
+      el[f] = !e.isIntersecting && r.width > 0 && r.height > 0;   // _ioV: out of the window, _ioR: out of its scroll box
+      const out = (el._ioV || el._ioR) && el._ioK && psOn();
+      if (out && !el.dataset.io) { el._ioT = performance.now(); el._ioI = idleTot(el._ioT); el.dataset.io = el._ioK; }
+      else if (!out && el.dataset.io) offResume(el);
+    }
+  }
+  function offResume(el) {
+    delete el.dataset.io;
+    /* the paused span, minus any time html[data-idle] held the page meanwhile (on-screen loops were frozen then too) */
+    const now = performance.now(), gap = el._ioT ? (now - el._ioT) - (idleTot(now) - (el._ioI || 0)) : 0;
+    if (gap <= 0) return;
+    let list = []; try { list = el.getAnimations({ subtree: true }).filter(a => a.effect && a.effect.target === el); } catch (_) { }
+    list.forEach(a => { try { if (a.currentTime != null) a.currentTime += gap; } catch (_) { } });
+  }
+  function idleTot(now) { return (idle.acc || 0) + (idle.on ? now - idle.since : 0); }
+  function offAll() { document.querySelectorAll("[data-io]").forEach(offResume); }
+  if (window.MutationObserver && window.IntersectionObserver) {
+    new MutationObserver(() => { if (!off.q) off.q = setTimeout(offScan, 400);
+      off.roots.forEach((o, rt) => { if (!rt.isConnected) { o.disconnect(); off.roots.delete(rt); } }); }).observe(document.documentElement, { childList: true, subtree: true, attributes: true, attributeFilter: ["class"] });
+    off.q = setTimeout(offScan, 400);
+    document.addEventListener("power:change", () => { if (psOn()) offScan(); else offAll(); });
+  }
 
   ambience(); pointerGlow();
   window.FX = { enter, rows, burst, titleCard, countUp, reduce, missionComplete, idle: { isOn: () => idle.on, sleep, wake }, power: { isOn: psOn, set: power } };

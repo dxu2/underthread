@@ -120,6 +120,9 @@ html.th-vt::view-transition-old(root), html.th-vt::view-transition-new(root) { a
 /* t-power-save: idle pause (fx.js). After 20 s without input or when the window loses focus, fx.js marks every element running an infinite animation
    (data-ip: s = itself, b = ::before, a = ::after) and sets html[data-idle]; this pauses only those. Removing data-idle resumes them where they stopped. */
 html[data-idle] [data-ip~="s"], html[data-idle] [data-ip~="b"]::before, html[data-idle] [data-ip~="a"]::after { animation-play-state: paused !important; }
+/* t-perf-smooth F3: off-screen loops (fx.js data-io, same s / b / a marks). fx.js resumes them 300px before they scroll back in and moves them forward
+   by the paused time, so what you see is the frame they would have shown anyway. */
+[data-io~="s"], [data-io~="b"]::before, [data-io~="a"]::after { animation-play-state: paused !important; }
 
 /* t-power-toggle: 设置 › 省电模式 off (html[data-power="off"], fx.js stops going idle). The working-avatar breathe comes back with the exact pre-t-power-save values;
    --wp keeps poll re-renders mid-cycle, and the reduced-motion rule near .av.working (animation: none !important) still wins. */
