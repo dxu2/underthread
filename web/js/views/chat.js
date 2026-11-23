@@ -368,11 +368,12 @@ function renderChat() {
     : a.status === "working" ? `<span class="on">▶ ${t("working")}</span>` : `<span class="idle">${t(a.status || "idle")}</span>`;
   if (window.Market && Market.hrBar) Market.hrBar(r);   /* t-hr-build: the 面试中 bar above the HR DM */
   setSrc($(".ch-who", r), `${av(a, "lg")}<span class="nm">${esc(aname(a))}</span><span class="ti">${esc(atitle(a))}</span>${qBadge(a.id)}${st}<span class="sp"></span>`);
-  setSrc($(".ch-roster", r), agents().filter(x => x.enabled !== false).map(x => {
+  const crsEl = $(".ch-roster", r), crs0 = crsEl && crsEl._src;
+  setSrc(crsEl, agents().filter(x => x.enabled !== false).map(x => {
     const un = x.id !== UI.chat ? unreadOf(x.id) : 0;   /* t-ri1104-p2: a count from unreadOf (was: a dot when the last message was theirs) */
     return `<button data-pick="${x.id}" class="${x.id === UI.chat ? "on" : ""}">${av(x)}<span>${esc(aname(x))}</span>${un ? `<i class="unread n">${unreadTag(un)}</i>` : ""}${qBadge(x.id, true)}</button>`;
   }).join("").replace(UI.chatFold && !MOBQ.matches ? / title="[^"]*"/g : /$^/, ""));   // t-rail-tip: folded rail shows #rail-tip, never the OS tooltip
-  crsAfter($(".ch-roster", r));   /* t-avatar-strip-scroll: keep the open chat's avatar in view + refresh the edge fades */
+  if (!crsEl || crsEl._src !== crs0 || CRS.on !== UI.chat) crsAfter(crsEl);   /* t-avatar-strip-scroll: keep the open chat's avatar in view + refresh the edge fades. t-perf-smooth F4a: not on a poll that left the strip as it was (scrollWidth forced a layout every time) */
   $("textarea", r).placeholder = UI.lang === "en" ? `Message ${aname(a)}…` : `对${aname(a)}说……`;   // t-web-dm: desktop moves the shortcut hint below the field; t-ui-fix-r2 audit P2-12: a phone has no ⌘ key, so no hint there at all
   pendSync();
   const real = chatList(UI.chat), pl = pendOf(UI.chat), list = pl.length ? real.concat(pl) : real;   // t-perf C: local bubbles ride at the end

@@ -266,7 +266,9 @@ function ruHTML(n, o = {}) {
 function ruFit() {
   document.querySelectorAll("[data-wg=usage] .ru-list").forEach(list => {
     const rows = [...list.querySelectorAll(".ru-row")]; rows.forEach(r => r.classList.remove("fit-hide"));
-    for (let i = rows.length - 1; i > 0 && list.scrollHeight > list.clientHeight + 1; i--) rows[i].classList.add("fit-hide");
+    /* t-home-sml-audit: the first row too (it used to stay and show cut in half under the Soul rows of a medium tile); an empty day's 「今天还没用过」 line the same way */
+    for (let i = rows.length - 1; i >= 0 && list.scrollHeight > list.clientHeight + 1; i--) rows[i].classList.add("fit-hide");
+    const w = list.querySelector(":scope > .ru-wait"); if (w) { w.classList.remove("fit-hide"); if (list.scrollHeight > list.clientHeight + 1) w.classList.add("fit-hide"); }
   });
 }
 function ruSettle() {
