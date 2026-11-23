@@ -110,6 +110,7 @@ html.th-vt::view-transition-old(root), html.th-vt::view-transition-new(root) { a
 .rs-d b.ok { background: color-mix(in srgb, var(--ok) 16%, transparent); color: var(--ok); }
 .rs-d b.run, .rs-d b.next { background: var(--accent-soft, color-mix(in srgb, var(--accent) 16%, transparent)); color: var(--accent); }
 .rs-d b.na { background: transparent; box-shadow: inset 0 0 0 1px var(--line); }
+.rs-d b.pre { background: transparent; box-shadow: none; outline: 1px dashed var(--line); outline-offset: -1px; opacity: .6; }   /* r-improve-1118 P5 */
 .rs-d small { font-size: var(--fs-11); color: var(--dim); }
 .rs-last { grid-column: 2 / 4; margin-top: 4px; padding-top: 8px; border-top: 1px dashed var(--line); font-size: var(--fs-12); color: var(--dim); }
 .rs-last u { text-decoration: none; color: var(--ink); font-weight: 600; transition: color .2s var(--ease); }

@@ -173,7 +173,7 @@
     setH($(".hd-sum", root), sumHTML(d.agents, c));
     apply(ob, d, true);
     if (first) as.forEach(a => { S.prev[a.id] = { w: isW(a), item: a.item }; });
-    const old = $(".hd-old", root); if (old) { setT(old, c.review ? oldest(c) : ""); old.classList.toggle("hot", !!c.review && !c.nr && !!c.oldest && mins(new Date(c.oldest).toISOString()) > 12 * 60); }   /* ri1107-P5 */
+    const old = $(".hd-old", root); if (old) { setT(old, c.review ? oldest(c) : ""); old.classList.toggle("hot", !!c.review && !c.nr && !!c.oldest && mins(new Date(c.oldest).toISOString()) > 12 * 60 && !(A().quietNight && A().quietNight())); }   /* ri1107-P5 */
     root.querySelectorAll(".hd-stat").forEach(s => {
       const k = s.dataset.hdF, b = $("b", s), v = String(c[k]);
       s.classList.toggle("on", hf === k); s.classList.toggle("alert", k === "review" && c.review > 0);
@@ -311,7 +311,7 @@
       const el = $(`.a2-r[data-a2="${id}"]`, rows); if (el) a2Mission(el);
       setTimeout(() => { const o = document.getElementById("officebox"); if (o && o.dataset.hv === "a2" && S.last) a2Patch(o, S.last); }, 2350);
     });
-    const old = $(".hd-old", root); if (old) { setT(old, c.review ? oldest(c) : ""); old.classList.toggle("hot", !!c.review && !c.nr && !!c.oldest && mins(new Date(c.oldest).toISOString()) > 12 * 60); }
+    const old = $(".hd-old", root); if (old) { setT(old, c.review ? oldest(c) : ""); old.classList.toggle("hot", !!c.review && !c.nr && !!c.oldest && mins(new Date(c.oldest).toISOString()) > 12 * 60 && !(A().quietNight && A().quietNight())); }
     const hf = A().UI.hf || "review";
     root.querySelectorAll(".hd-stat").forEach(s => { const k = s.dataset.hdF; s.classList.toggle("on", hf === k); s.classList.toggle("alert", k === "review" && c.review > 0); A().roll($("b", s), String(c[k]), "hd." + k); });
   }

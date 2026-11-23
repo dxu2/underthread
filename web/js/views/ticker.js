@@ -10,17 +10,27 @@ import { ST, UI, items, waitMs } from "../core/store.js";
 import { api } from "../core/ui.js";
 import { openItem } from "./drawer.js";
 import { mgrState } from "./header.js";
+/* r-improve-1118 P2 (health): 22:30-08:00 the page stops nagging about cards waiting on review (the user has a 22:30 bedtime reminder).
+   Counts, red dots, urgent cards and manager-offline lines are unchanged; push has its own quiet hours. */
+const QUIET = { from: 22 * 60 + 30, to: 8 * 60 };
+function quietNight(d = new Date()) { const m = d.getHours() * 60 + d.getMinutes(); return m >= QUIET.from || m < QUIET.to; }
 function tickerItems() {
   const out = [];
-  const now = Date.now();
+  const now = Date.now(), quiet = quietNight();
+  let held = 0;
   for (const n of ST.notices || []) if (!n.until || new Date(n.until) > now) out.push({ text: UI.lang === "en" && n.text_en || n.text, level: n.level, id: n.id });   /* t-i18n-c: text_en */
   const m = mgrState();
   if (m.sleep) out.unshift({ text: m.back ? t("mgr_sleep", { t: m.back, n: ST.meta.inbox_unacked || 0 }) : t("mgr_waking"), level: "info" });
   else if (!m.on && ST.meta.inbox_unacked) out.unshift({ text: t("mgr_offline", { n: ST.meta.inbox_unacked }), level: "urgent" });
   for (const it of items()) {
     if (it.category === "urgent" && it.stage !== "done" && it.owner === "manager") out.unshift({ text: t("no_owner_urgent", { t: it.title }), level: "urgent", item: it.id });
-    if (it.stage === "review" && waitMs(it) > 864e5)   /* r-improve-1119 P1: same clock as the card tag */ out.push({ text: t("waiting_long", { t: it.title }), item: it.id });
+    if (it.stage === "review" && waitMs(it) > 864e5) {   /* r-improve-1119 P1: same clock as the card tag */
+      if (quiet) { held++; continue; }
+      /* r-improve-1118 P4: lead with how long it has waited (real days), then the title: a phone cuts the end of the line, not the point */
+      out.push({ text: t("waiting_long", { t: it.title, d: Math.floor(waitMs(it) / 864e5) }), item: it.id });
+    }
   }
+  if (held) out.push({ text: t("night_hold"), level: "calm" });
   return out;
 }
 let tickIdx = 0;
@@ -31,8 +41,6 @@ const NYK_BODY = '<ellipse cx="0" cy="-6.8" rx="8" ry="6.8"/><path d="M-3.8 -12.
 const NYK_TAIL = d => `<path class="th" d="${d}"/><path class="tc" d="${d}"/>`;
 const NYK_SIT = `<svg class="nyk-sit" viewBox="-13 -18 22 19">${NYK_TAIL("M-7 -2.6Q-11.6 -2.6 -11.4 -6.2T-11.3 -11.2")}<g class="bd"><g class="h">${NYK_BODY}${NYK_EAR}</g><g class="c">${NYK_BODY}${NYK_EAR}</g><g class="ey"><ellipse class="e" cx="3.1" cy="-8" rx=".85" ry=".85"/><ellipse class="e" cx="6.1" cy="-8.1" rx=".85" ry=".85"/></g></g></svg>`;
 const NYK_NAP = `<svg class="nyk-nap" viewBox="-13 -18 22 19"><g class="bd"><g class="h">${NYK_BODY}${NYK_EAR}</g><g class="c">${NYK_BODY}${NYK_EAR}</g><path class="el" d="M2.1 -8.2Q3.1 -7.1 4.1 -8.2"/><path class="el sl" d="M5.1 -8.3Q6.1 -7.2 7.1 -8.3"/><ellipse class="e pk" cx="6.1" cy="-8.1" rx=".85" ry=".85" opacity="0"/></g>${NYK_TAIL("M6.4 -3.4C7.6 -10 15 -17 19 -15.4C23 -13.8 23.6 -9.2 22.4 -6.8")}<text class="z" x="-6" y="-13">z</text></svg>`;
-/* 22:30-08:00 the kitten only naps */
-const quietNight = (d = new Date()) => { const m = d.getHours() * 60 + d.getMinutes(); return m >= 1350 || m < 480; };
 const NYK_SEEN = new Set();
 let nykSw = 0;
 const nykKey = n => n.id ? "n:" + n.id : n.item ? "i:" + n.item + ":" + (n.level || "") : "x:" + (n.level || "");
@@ -51,7 +59,7 @@ function renderTicker() {
   /* t-notice-yarn: under Underthread a thread is drawn in from the left and a yarn ball rolls along it to the message; the pager dots
      become knots on a thread. Other looks keep the plain line. CSS: theme-ut.css (nty-). */
   const ut = !!document.documentElement.dataset.ut;
-  const html = `<span class="k">${UI.lang === "en" ? "Notice" : "通知"}</span>${ut ? NTY_THR + "\u0000" + NTY_BALL : ""}<span class="msg ${n.level === "urgent" ? "urgent" : ""}" data-ti="${tickIdx}">${esc(n.text)}</span>${ut ? '<span class="nyk-run" aria-hidden="true"></span><span class="nty-tail" aria-hidden="true"></span>' : ""}
+  const html = `<span class="k">${UI.lang === "en" ? "Notice" : "通知"}</span>${ut ? NTY_THR + "\u0000" + NTY_BALL : ""}<span class="msg ${n.level === "urgent" ? "urgent" : n.level === "calm" ? "calm" : ""}" data-ti="${tickIdx}">${esc(n.text)}</span>${ut ? '<span class="nyk-run" aria-hidden="true"></span><span class="nty-tail" aria-hidden="true"></span>' : ""}
     ${n.id ? `<button class="dim" data-dismiss="${n.id}" title="dismiss">✕</button>` : ""}
     <span class="pager${ut ? " nty-knots" : ""}">${list.map((_, i) => `<i class="${i === tickIdx ? "on" : ""}"></i>`).join("")}</span>`;
   if (html !== renderTicker.last) {  // re-animate only when the notice changes
@@ -83,4 +91,4 @@ function wireTicker() {
   setInterval(() => { if (ST) { tickIdx++; renderTicker(); } }, 6000);
 }
 
-export { tickerItems, tickIdx, renderTicker, wireTicker };
+export { quietNight, tickerItems, tickIdx, renderTicker, wireTicker };

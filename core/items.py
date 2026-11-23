@@ -137,6 +137,11 @@ def upsert_item(st, fields, who="manager"):
             it[k] = it.get(k, []) + [x for x in v if x not in it.get(k, [])]
         else:
             it[k] = v
+    # r-improve-1118 P1: a plan the user already approved (「批准开工」 in its thread) that comes back to review without an explicit kind
+    # is the finished work, not a new plan: make it a deliverable so the big button says 验收 · 关单 instead of 批准开工 again.
+    if (not created and fields.get("stage") == "review" and "kind" not in fields and it.get("kind") == "plan"
+            and any(e.get("kind") == "approve" and str(e.get("text", "")).startswith("批准开工") for e in it.get("thread") or [])):
+        it["kind"] = "deliverable"
     it["updated"] = it["activity"] = now()
     if created:
         add_thread(it, who, f"created · {it['title']}", "event")
