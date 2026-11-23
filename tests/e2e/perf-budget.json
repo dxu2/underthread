@@ -1,0 +1,10 @@
+{
+ "_about": "t-perf-smooth F0 budgets for journeys/perf.js. A median more than `tolerance` over its budget (plus a small absolute slack) fails. Budgets only move down; to raise one, write the reason on the card. `local` is per engine-view and is skipped in CI; `deterministic` always runs.",
+ "tolerance": 0.15,
+ "deterministic": {
+  "reqs": 130,
+  "idle_style_per_s": 12
+ },
+ "local": {},
+ "_about_idle": "idle_style_per_s: recalcs/s while html[data-idle] holds the page ([data-noidle] parts held too). Was ~80 before t-perf-smooth; 0 most runs after, but some sessions show ~10/s from a source not yet found, so the limit is 12 until that is fixed."
+}

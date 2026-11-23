@@ -20,13 +20,22 @@
   const fresh = (el, r) => { el.style.transition = "none"; place(el, r); void el.offsetWidth; el.style.transition = ""; el.dataset.set = "1"; };
 
   // ---- nav pill ----
-  let navLast = null, navRaf = 0;
+  let navLast = null, navRaf = 0, navKey = "", navSz = "";
   function navPill() {
     navRaf = 0;
     const nav = document.getElementById("nav"); if (!nav) return;
     let pill = nav.querySelector(":scope > .nav-pill");
     if (!desk.matches || off()) { if (pill) pill.remove(); navLast = null; return; }
     const on = nav.querySelector(".nav-i.on");
+    /* t-perf-smooth F4a: offsetLeft & co forced a layout on every poll (renderLeft rebuilds #nav). Same rows, same lit row, same labels and the
+       same rail size (ResizeObserver) = same place: re-insert the pill there without reading anything. A real move still measures and slides. */
+    const key = [...nav.children].filter(e => !e.classList.contains("nav-pill")).map(e => (e.dataset.go || e.className) + (e === on ? "*" : "") + e.textContent).join("|") + "|" + navSz;
+    if (navLast && key === navKey && on) {
+      if (!pill) { pill = document.createElement("i"); pill.className = "nav-pill"; pill.setAttribute("aria-hidden", "true"); nav.prepend(pill); }
+      if (!pill.dataset.set) { pill.style.transition = "none"; place(pill, navLast); pill.style.opacity = "1"; pill.dataset.set = "1"; requestAnimationFrame(() => requestAnimationFrame(() => { pill.style.transition = ""; })); }
+      return;
+    }
+    navKey = key;
     if (!pill) { pill = document.createElement("i"); pill.className = "nav-pill"; pill.setAttribute("aria-hidden", "true"); nav.prepend(pill); }
     if (!on || !on.offsetWidth) { pill.style.opacity = "0"; navLast = null; return; }
     const r = { x: on.offsetLeft, y: on.offsetTop, w: on.offsetWidth, h: on.offsetHeight };
@@ -39,6 +48,7 @@
     const nav = document.getElementById("nav"); if (!nav) return setTimeout(watchNav, 300);
     new MutationObserver(navSoon).observe(nav, { childList: true, subtree: true, attributes: true, attributeFilter: ["class"] });
     addEventListener("resize", () => { navLast = null; const p = nav.querySelector(".nav-pill"); if (p) delete p.dataset.set; navSoon(); });
+    if (window.ResizeObserver) new ResizeObserver(es => { const r = es[0].contentRect, s = Math.round(r.width) + "x" + Math.round(r.height); if (s !== navSz) { navSz = s; navSoon(); } }).observe(nav);   /* t-perf-smooth F4a: part of the pill's cache key */
     desk.addEventListener("change", navSoon);
     navSoon();
   }

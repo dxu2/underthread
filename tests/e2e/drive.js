@@ -39,8 +39,8 @@ async function state() { const r = await fetch(BASE + "/api/state"); if (!r.ok) 
 function su(...a) { return cp.execFileSync("python3", ["stateutil.py", ...a], { cwd: SCRATCH, encoding: "utf8" }); }
 async function until(fn, ms = 6000, step = 250) { const t = Date.now(); let v; while (Date.now() - t < ms) { v = await fn(); if (v) return v; await sleep(step); } return v; }
 
-async function openView(engine, view, hash, theme) {
-  const b = await pw[engine].launch();
+async function openView(engine, view, hash, theme, launch) {
+  const b = await pw[engine].launch(launch || undefined);   /* a journey may ask for launch options (perf.js: Chromium with the real GPU) */
   const o = { ...VIEWS[view] }; if (engine === "firefox") delete o.isMobile;
   const ctx = await b.newContext(o);
   if (theme) await ctx.addInitScript(t => { try { localStorage.setItem("rt.theme", JSON.stringify(t)); } catch (_) { } }, theme);
@@ -100,7 +100,7 @@ async function run(journeyPath) {
     const dir = path.join(out, `${engine}-${view}`); fs.mkdirSync(dir, { recursive: true });
     let h;
     try {
-      h = await openView(engine, view, J.hash ? J.hash(view) : "", opt("theme"));
+      h = await openView(engine, view, J.hash ? J.hash(view) : "", opt("theme"), J.launch && J.launch(engine));
       await J.run(makeCtx(engine, view, dir, h, results, log));
     } catch (e) { results.push({ view: `${engine}-${view}`, name: "journey threw", pass: false, detail: String(e && e.stack || e).split("\n").slice(0, 3).join(" | ") }); log(`${engine}-${view} FAIL journey threw: ${e}`); }
     finally {

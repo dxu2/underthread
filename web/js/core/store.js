@@ -230,6 +230,26 @@ async function poll(force, lp) {
   try { return await pollOnce(force, wait, ctl); }
   finally { clearTimeout(tmo); if (ctl && LP.ctl === ctl) LP.ctl = null; if (!lp) { LP.hold--; if (!LP.hold) setTimeout(lpLoop, 0); } }
 }
+/* t-perf-smooth F4a: new data that lands while the detail panel slides or the page changes (a CSS transition or animation on #drawer, #page or
+   #pagebody, or a running view transition) is drawn when that motion ends, at most 600 ms later; polls that arrive meanwhile join the same
+   render. Only polls wait: your own clicks render at once as before. */
+const MOTION = { t: 0, w: false };
+function motionNow() {
+  if (document.documentElement.classList.contains("vt-run")) return [];
+  const out = [];
+  for (const id of ["drawer", "page", "pagebody"]) { const el = document.getElementById(id); if (!el) continue;
+    try { el.getAnimations().forEach(a => { const tm = a.effect && a.effect.getComputedTiming(); if (a.playState === "running" && tm && tm.iterations !== Infinity && tm.endTime < 2000) out.push(a); }); } catch (_) { } }
+  return out;
+}
+function renderAfterMotion() {
+  if (MOTION.w) return;   // a render is already queued: it reads the newest ST
+  const busy = document.hidden ? [] : motionNow();
+  if (!busy.length && !document.documentElement.classList.contains("vt-run")) return render();
+  MOTION.w = true;
+  const go = () => { if (!MOTION.w) return; MOTION.w = false; clearTimeout(MOTION.t); try { render(); } catch (e) { console.error("render failed", e); } };
+  MOTION.t = setTimeout(go, 600);
+  Promise.all(busy.map(a => a.finished.catch(() => { }))).then(() => requestAnimationFrame(go));
+}
 async function pollOnce(force, wait, ctl) {
   try {
     const qs = [REV != null && !force ? `rev=${REV}` : "", "slim=1", wait ? "wait=25" : ""].filter(Boolean).join("&");   // t-mobile-crash-state
@@ -250,7 +270,7 @@ async function pollOnce(force, wait, ctl) {
     UI.fail = 0; UI.lastOk = Date.now(); if (j.same && ST && ST.meta) { ST.meta.inbox_unacked = j.meta.inbox_unacked; syncPaint(); }   // a full state repaints via renderHeader
     if (j.same) { ST.meta.inbox_unacked = j.meta.inbox_unacked; ST.meta.avv = j.meta.avv; avvSeen(j.meta.avv); if (j.meta.hires) ST.meta.hires = j.meta.hires;   /* t-hire-celebration (welcome.js) */ if (back || wait || ++UI.tick % 12 === 0) renderChrome(); return "same"; }   // ri1105-P5: a long-poll "same" is ~25 s apart, so the chrome refreshes on each
     const wasSnap = UI.snap; UI.snap = 0;
-    histSet(j); ST = j; REV = j.meta.rev; rehydrate(); archMerge(); try { doneMailRead(); } catch (_) { } render(); bootDone(); avsCheck(); avvSeen(j.meta.avv);   // t-avatar-live-refresh
+    histSet(j); ST = j; REV = j.meta.rev; rehydrate(); archMerge(); try { doneMailRead(); } catch (_) { } renderAfterMotion(); bootDone(); avsCheck(); avvSeen(j.meta.avv);   // t-avatar-live-refresh
     if (wasSnap) syncPaint();
     snapSave(txt);
     return "full";

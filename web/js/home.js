@@ -212,7 +212,7 @@
       <div class="a2-m"><span class="a2-k"></span><button type="button" class="a2-lk" data-live="${a.id}" hidden>${L2().live} <span aria-hidden="true">›</span></button></div></div><div class="a2-fx" aria-hidden="true"></div></div>`;
   }
   const toolTag = k => k === "chrome" ? "Chrome" : k === "computer" ? (lang() === "en" ? "Computer" : "电脑") : String(k);
-  function a2Lit(el) { el.classList.remove("lit"); void el.offsetWidth; el.classList.add("lit"); setTimeout(() => el.classList.remove("lit"), 1700); }
+  function a2Lit(el) { if (el.classList.contains("lit")) { el.classList.remove("lit"); void el.offsetWidth; } el.classList.add("lit"); setTimeout(() => el.classList.remove("lit"), 1700); }   /* t-perf-smooth F4a: reflow only to restart a row that is still lit (it was forced on every poll that lit a row) */
   function a2Mission(el) {
     const fx = $(".a2-fx", el); if (!fx) return;
     fx.innerHTML = `<i class="s1"></i><i class="s2"></i><i class="fl"></i><b class="pl">COMPLETE<small>${L().done}</small></b>`;
