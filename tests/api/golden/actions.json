@@ -1885,6 +1885,21 @@
   "code": 400,
   "inbox": []
  },
+ "widget_layout_chosen": {
+  "body": {
+   "inbox": null,
+   "ok": true
+  },
+  "code": 200,
+  "inbox": []
+ },
+ "widget_layout_chosen_bad": {
+  "body": {
+   "error": "bad chosen"
+  },
+  "code": 400,
+  "inbox": []
+ },
  "widget_layout_reset": {
   "body": {
    "inbox": null,

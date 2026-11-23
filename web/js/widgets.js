@@ -46,7 +46,12 @@
   const known = v => Array.isArray(v) ? v.map(x => Array.isArray(x) && x[0] === "review" && x[1] === "w" ? ["review", "l"] : x).filter(x => Array.isArray(x) && SIZES[x[0]] && SIZES[x[0]].includes(x[1])) : null;
   const srv = () => { const m = A() && A().ST && A().ST.meta; return m ? m.widgets : undefined; };   // undefined = no state yet, null = never saved
   const seenNow = () => { const w = srv(); return [...new Set([...(w && Array.isArray(w.seen) ? w.seen : []), ...allIds(), RC_OFF])].sort(); };
-  const push = L => send(L ? { kind: "widget_layout", layout: L, seen: seenNow() } : { kind: "widget_layout", reset: true, seen: seenNow() }, L);
+  /* t-home-sml: meta.widgets.chosen = ids whose size the user picked by hand; a short L tile then stays L (the auto shrink below is only for sizes nobody picked).
+     Missing = nothing picked (old boards look exactly as before). LCH = picked in this browser (also the cache for a browser-only layout), cleared by 恢复默认. */
+  let LCH = (() => { try { const v = JSON.parse(localStorage.getItem("rt.wgChosen") || "[]"); return new Set(Array.isArray(v) ? v : []); } catch { return new Set(); } })();
+  const chosen = () => { const w = srv(); if (PEND && PEND.L === null) return new Set(); return new Set([...(w && Array.isArray(w.chosen) ? w.chosen : []), ...LCH]); };
+  const pick = k => { LCH.add(k); try { localStorage.setItem("rt.wgChosen", JSON.stringify([...LCH])); } catch { } };
+  const push = L => send(L ? { kind: "widget_layout", layout: L, seen: seenNow(), chosen: [...chosen()].filter(k => L.some(x => x[0] === k)) } : { kind: "widget_layout", reset: true, seen: seenNow() }, L);
   const send = (body, L) => { PEND = { L: L ? JSON.stringify(L) : null, t: Date.now() };
     fetch("/api/action", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) })
       .then(r => { if (!r.ok) throw new Error(r.status); }).catch(() => { PEND = null; if (A() && A().toast) A().toast(en() ? "Layout not saved on the server" : "布局没存到服务器，只存在了这个浏览器", true); }); };
@@ -93,7 +98,7 @@
     return L;
   }
   const save = L => { saveLocal(L); push(L); };
-  const reset = () => { try { localStorage.removeItem(KEY); } catch { } push(null); };
+  const reset = () => { try { localStorage.removeItem(KEY); localStorage.removeItem("rt.wgChosen"); } catch { } LCH = new Set(); push(null); };
   const nm = k => { const w = REG()(k), n = w && w.name; return n ? (en() ? n[1] || n[0] : n[0]) : k; };
   let EDIT = false;
 
@@ -109,7 +114,7 @@
     const days = [...Array(7)].map((_, k) => { const d = new Date(Date.now() - (6 - k) * 864e5); return { d, n: its.filter(i => i.stage === "done" && i.closed && new Date(i.closed).toDateString() === d.toDateString()).length }; });
     const live = its.filter(i => i.stage !== "done"), rp = (ST.meta && ST.meta.routines_paused) || {};
     const ongoing = its.filter(i => i.category === "ongoing" && i.stage !== "done").sort((a, b) => ms(b.activity) - ms(a.activity));
-    const imgs = []; its.slice().sort((a, b) => ms(b.activity) - ms(a.activity)).forEach(i => [...(i.draft_attachments || []), ...(i.attachments || [])].forEach(p => { if (/\.(png|jpe?g|webp|gif)$/i.test(p) && !imgs.some(x => x.p === p) && imgs.length < 6) imgs.push({ p, it: i }); }));
+    const imgs = []; its.slice().sort((a, b) => ms(b.activity) - ms(a.activity)).forEach(i => [...(i.draft_attachments || []), ...(i.attachments || [])].forEach(p => { if (/\.(png|jpe?g|webp|gif)$/i.test(p) && !imgs.some(x => x.p === p) && imgs.length < 9) imgs.push({ p, it: i }); }));
     const recent = its.filter(i => !i.archived).sort((a, b) => ms(b.activity || b.updated) - ms(a.activity || a.updated)).slice(0, 5);   /* t-section-titles 最近 */
     return { recent, waiting, busy, nr, shipped, days, doing: live.filter(i => app.grpOf(i) === "doing").length, todo: live.filter(i => app.grpOf(i) === "todo").length, ongoing, rp, imgs };
   }
@@ -145,11 +150,14 @@
   const fitM = (s, len, big) => s === "l" ? { n: big, foot: true } : len <= 2 ? { n: 2, foot: false } : { n: 1, foot: true };
   const W = {
     usage(s) {   // t-home-usage: tokens per role today + the quota strip; markup shared with the phone card / 系统状态 (App.ruHTML)
+      if (s === "s") return `<div class="wg-eb" data-ru-open><b>${nm("usage")}</b><span>${en() ? "today" : "今天"}</span></div>` + A().ruHTML(0, { tot: true, quota: true, fit: true });   /* t-home-sml S: today's total + the quota line */
       const R = A().roleUsage && A().roleUsage(), all = R && R.rows && R.rows.length;   // t-sync-pill batch 2: 「全部 N 位 ›」 replaces the bottom 「+N more」 line
       return `<div class="wg-eb" data-ru-open><b>${nm("usage")}</b><span>${en() ? "today" : "今天"}</span>${all ? `<span class="n ru-all">${en() ? `all ${all} ›` : `全部 ${all} 位 ›`}</span>` : `<span class="n">token</span>`}</div>${sub("usage")}`
         + A().ruHTML(s === "l" ? 7 : 4, { tot: s === "l", quota: true, soul: true, fit: true });   /* t-soul-widget: lower half = Soul rows per model */
     },
     review(s, D) {
+      if (s === "s") { const o = D.waiting.reduce((a, b) => (A().waitMs ? A().waitMs(b) > A().waitMs(a) : 0) ? b : a);   /* t-home-sml S: count + the oldest card */
+        return eb("review", null, true) + `<div class="wg-big">${D.waiting.length}</div><div class="wg-sub">${en() ? "oldest waiting" : "最久等了"} ${waitAgo(o)}</div><div class="wg-more clamp2" data-item="${esc(o.id)}">${esc(o.title)}</div>`; }
       const W2 = s === "w", L = D.waiting, { n, foot } = W2 ? { n: L.length > 4 ? 10 : 4, foot: true } : fitM(s, L.length, 5);   /* t-section-titles: full width = two columns of up to 4 rows */
       const row = i => { const a = A().agent(i.owner);
         return `<div class="wg-row" data-item="${esc(i.id)}"><img class="wg-av" src="${A().avatarUrl(a)}" alt=""><div class="t">${A().nrDot ? A().nrDot(i.id) : ""}${window.Onboard ? Onboard.exT(i) : esc(i.title)}<small>${esc(A().aname(a))} · ${en() ? "waiting" : "等了"} ${waitAgo(i)}${askN(i) ? (en() ? ` · ${askN(i)} question${askN(i) > 1 ? "s" : ""}` : ` · ${askN(i)} 个问题`) : ""}</small></div>${i.snoozed ? `<span class="wg-tg snz">${en() ? "Snoozed" : "推迟过"}</span>` : ""}<span class="wg-tg${i.kind === "plan" && !isQ(i) ? "" : " hot"}">${kindL(i)}</span></div>`; };
@@ -169,6 +177,9 @@
         (!foot ? "" : L.length <= shown && window.Onboard && Onboard.exFoot() ? Onboard.exFoot() : `<div class="wg-more">${L.length > shown ? `<span data-go="board">${en() ? `${L.length - shown} more ›` : `还有 ${L.length - shown} 件 ›`}</span>` : `${en() ? "Oldest waiting" : "最久的已经等了"} ${waitAgo(L.reduce((a, b) => (A().waitMs ? A().waitMs(b) > A().waitMs(a) : 0) ? b : a))}`}</div>`);
     },
     busy(s, D) {
+      if (s === "s") { const B = D.busy, m = B[0], bw = Math.min(100, Math.round((Date.now() - ms(m.since)) / 6e4 / 120 * 100));   /* t-home-sml S: stacked faces + who is on what */
+        return eb("busy", en() ? `${B.length} busy` : `${B.length} 人在忙`) + `<div class="sml-stack">${B.slice(0, 4).map(x => `<img class="wg-av" src="${A().avatarUrl(x.a)}" alt="" data-chat="${esc(x.a.id)}">`).join("")}</div>`
+          + `<div class="sml-who" data-item="${esc(m.it.id)}"><b>${esc(A().aname(m.a))}</b><span>${esc(m.it.title)}</span></div><i class="sml-bar"><em style="width:${bw}%"></em></i>`; }
       const B = D.busy, m = B[0], a = m.a, side = B.slice(1, s === "l" ? 3 : 1), more = B.length - 1 - side.length, multi = B.length > 1;
       const bar = x => Math.min(100, Math.round((Date.now() - ms(x.since)) / 6e4 / 120 * 100));   // elapsed, on a 2-hour scale
       /* t-ut-avatar-working: under Underthread the card shows the needle-thread patch (avatars/ut/_s, the 4-frame work sheet when the role has one)
@@ -186,6 +197,8 @@
         ${side.length || more > 0 ? `<div class="wg-side">${side.map(x => `<div class="wg-sr" data-item="${esc(x.it.id)}"><img src="${A().avatarUrl(x.a)}" alt="" data-chat="${esc(x.a.id)}"><div class="st"><b><span class="wg-nm">${esc(A().aname(x.a))}</span>${A().qBadge ? A().qBadge(x.a.id) : ""}</b><span>${esc(x.it.title)}</span><i><em style="width:${bar(x)}%"></em></i></div><time>${ago(x.since)}</time></div>`).join("")}${more > 0 ? `<div class="wg-sr plus" data-go="board">${en() ? `+${more} more working ›` : `+${more} 人在忙 · 看全部 ›`}</div>` : ""}</div>` : ""}</div>`;
     },
     replies(s, D) {
+      if (s === "s") { const g = D.nr[0], m = g.ms[g.ms.length - 1], a = A().agent(m.agent);   /* t-home-sml S: unread count + the latest one */
+        return eb("replies") + `<div class="wg-big">${D.nr.length}</div><div class="sml-who" data-item="${esc(g.it.id)}"><b>${esc(A().aname(a))}</b><span>${esc(A().mailPv ? A().mailPv(m.text, a) : String(m.text || ""))}</span></div>`; }
       const { n } = fitM(s, D.nr.length, 4);
       return eb("replies", D.nr.length) + D.nr.slice(0, n).map(g => { const m = g.ms[g.ms.length - 1], a = A().agent(m.agent);
         return `<div class="wg-row" data-item="${esc(g.it.id)}"><img class="wg-av" src="${A().avatarUrl(a)}" alt=""><div class="t">${esc(g.it.title)}<small>${esc(A().mailPv ? A().mailPv(m.text, a) : String(m.text || ""))}</small></div><time>${ago(m.t)}</time></div>`; }).join("") +
@@ -202,25 +215,34 @@
       const max = Math.max(1, ...D.days.map(x => x.n)), wk = D.days.reduce((t, x) => t + x.n, 0);
       const bars = `<div class="wg-bars">${D.days.map((x, k) => `<span class="${k === 6 ? "on" : ""}" style="height:${Math.max(4, Math.round(x.n / max * 100))}%" title="${x.n}"></span>`).join("")}</div><div class="wg-bl">${D.days.map(x => `<i>${en() ? "SMTWTFS"[x.d.getDay()] : WD[x.d.getDay()]}</i>`).join("")}</div>`;
       if (s === "s") return eb("week", wk) + `<div class="wg-fill" data-go="board">${bars}</div>`;
+      if (s === "l") { const top = D.days.reduce((a, b) => b.n > a.n ? b : a), dn = x => en() ? "Sun Mon Tue Wed Thu Fri Sat".split(" ")[x.d.getDay()] : "周" + WD[x.d.getDay()];   /* t-home-sml L: three numbers, a big chart with each day's count, the busiest day */
+        return eb("week") + `<div class="sml-wk3" data-go="board">${[[wk, en() ? "shipped" : "交付"], [D.doing, en() ? "doing" : "进行中"], [D.todo, en() ? "to do" : "待办"]].map(x => `<div><span class="wg-big">${x[0]}</span><small>${x[1]}</small></div>`).join("")}</div>`
+          + `<div class="sml-wkl" data-go="board"><div class="wg-bars">${D.days.map((x, k) => `<span class="${k === 6 ? "on" : ""}" style="height:${Math.max(4, Math.round(x.n / max * 100))}%"><b>${x.n}</b></span>`).join("")}</div><div class="wg-bl">${D.days.map(x => `<i>${en() ? "SMTWTFS"[x.d.getDay()] : WD[x.d.getDay()]}</i>`).join("")}</div></div>`
+          + `<div class="wg-more">${top.n ? (en() ? `Busiest ${dn(top)} · ${top.n}` : `最忙 ${dn(top)} · ${top.n} 件`) : (en() ? "Nothing shipped this week" : "这周还没有交付")}</div>`; }
       return eb("week") + `<div class="wg-wk" data-go="board"><div><div class="wg-big">${wk}</div><div class="wg-sub">${en() ? `7-day shipped · doing ${D.doing} · to do ${D.todo}` : `7 天交付 · 进行中 ${D.doing} · 待办 ${D.todo}`}</div></div><div class="wg-col">${bars}</div></div>`;
     },
     ongoing(s, D) {
       const meta = A().ST.meta || {}, RK = new Set([...Object.keys(meta.routines_fired || {}), ...Object.keys(D.rp)]);
       const isR = i => RK.has(i.id.replace(/^r-/, "")), paused = i => !!D.rp[i.id.replace(/^r-/, "")];
-      return eb("ongoing", D.ongoing.length) + D.ongoing.slice(0, s === "s" ? 2 : 3).map(i => `<div class="wg-row tight" data-item="${esc(i.id)}"><div class="t">${esc(i.title)}</div>${isR(i) ? `<span class="wg-tg">${paused(i) ? (en() ? "Paused" : "暂停") : (en() ? "Daily" : "每天")}</span>` : ""}</div>`).join("");
+      /* t-home-sml L: six rows, each with its next run (a fixed clock time, so the tile does not redraw as time passes) */
+      const nx = i => { if (s !== "l") return ""; const t = (A().ST.schedules || []).filter(x => x.enabled && x.next && (x.routine && "r-" + x.routine === i.id || String(x.title || "").includes(i.id))).map(x => x.next).sort((a, b) => ms(a) - ms(b))[0];
+        if (!t) return ""; const d = new Date(t), td = new Date().toDateString(), tm = new Date(Date.now() + 864e5).toDateString();
+        const day = d.toDateString() === td ? (en() ? "today" : "今天") : d.toDateString() === tm ? (en() ? "tomorrow" : "明天") : (en() ? `${d.getMonth() + 1}/${d.getDate()}` : `${d.getMonth() + 1}月${d.getDate()}日`);
+        return `<small>${en() ? `next ${day} ${hm(t)}` : `下次 ${day} ${hm(t)}`}</small>`; };
+      return eb("ongoing", D.ongoing.length) + D.ongoing.slice(0, s === "s" ? 2 : s === "l" ? 6 : 3).map(i => `<div class="wg-row tight${s === "l" ? " sml-on" : ""}" data-item="${esc(i.id)}"><div class="t">${esc(i.title)}${nx(i)}</div>${isR(i) ? `<span class="wg-tg">${paused(i) ? (en() ? "Paused" : "暂停") : (en() ? "Daily" : "每天")}</span>` : ""}</div>`).join("");
     },
     recent(s, D) {   /* t-section-titles: the five cards that moved last, as small tiles; a click opens the card */
       return eb("recent") + `<div class="sct-tiles">${D.recent.map(i => { const a = A().agent(i.owner);
         return `<div class="sct-tile" data-item="${esc(i.id)}"><b>${esc(i.title)}</b><div class="sct-meta"><img class="wg-av" src="${A().avatarUrl(a)}" alt=""><span>${esc(A().aname(a))} · ${ago(i.activity || i.updated)}</span></div></div>`; }).join("")}</div>`;
     },
     media(s, D) {
-      const n = s === "s" ? 4 : 3;
-      return eb("media", D.imgs.length) + `<div class="wg-thumbs" style="--tc:${s === "s" ? 2 : 3}">${D.imgs.slice(0, n).map(x => { const u = fileUrl(x.p), name = esc(x.p.split("/").pop());
+      const n = s === "s" ? 4 : s === "l" ? 9 : 3;   /* t-home-sml L: 3 × 3 */
+      return eb("media", D.imgs.length) + `<div class="wg-thumbs${s === "l" ? " sml-g9" : ""}" style="--tc:${s === "s" ? 2 : 3}">${D.imgs.slice(0, n).map(x => { const u = fileUrl(x.p), name = esc(x.p.split("/").pop());
         return `<a href="${u}" target="_blank" class="lb-th" data-lb="${u}" data-kind="image" data-name="${name}" style="background-image:url('/api/thumb?p=${encodeURIComponent(x.p)}&w=360')"></a>`; }).join("")}</div>`;
     },
   };
   const sizeBtns = (k, s) => `<span class="wg-sz">${SIZES[k].map(z => `<button type="button" data-wg-size="${k}:${z}" class="${z === s ? "on" : ""}">${z.toUpperCase()}</button>`).join("")}</span>`;
-  const editBar = (k, s, i, n) => k === "review" ? `<i class="wg-eband" aria-hidden="true"></i><button type="button" class="wg-x" data-wg-hide="${k}" title="${en() ? "Remove" : "移除"}" aria-label="${en() ? "Remove widget" : "移除这个小组件"}">−</button>${sizeBtns(k, s)}<span class="sct-pin">${en() ? "Always first · M = half, L = full width" : "固定在最上面 · M 半行 · L 占满一行"}</span>` : `<i class="wg-eband" aria-hidden="true"></i><button type="button" class="wg-x" data-wg-hide="${k}" title="${en() ? "Remove" : "移除"}" aria-label="${en() ? "Remove widget" : "移除这个小组件"}">−</button>${sizeBtns(k, s)}<span class="wg-mv">${i > 0 ? `<button type="button" data-wg-move="${k}:-1">←</button>` : ""}${i < n - 1 ? `<button type="button" data-wg-move="${k}:1">→</button>` : ""}</span>`;
+  const editBar = (k, s, i, n) => k === "review" ? `<i class="wg-eband" aria-hidden="true"></i><button type="button" class="wg-x" data-wg-hide="${k}" title="${en() ? "Remove" : "移除"}" aria-label="${en() ? "Remove widget" : "移除这个小组件"}">−</button>${sizeBtns(k, s)}<span class="sct-pin">${en() ? "Always first · S = small, M = half, L = full width" : "固定在最上面 · S 小方块 · M 半行 · L 占满一行"}</span>` : `<i class="wg-eband" aria-hidden="true"></i><button type="button" class="wg-x" data-wg-hide="${k}" title="${en() ? "Remove" : "移除"}" aria-label="${en() ? "Remove widget" : "移除这个小组件"}">−</button>${sizeBtns(k, s)}<span class="wg-mv">${i > 0 ? `<button type="button" data-wg-move="${k}:-1">←</button>` : ""}${i < n - 1 ? `<button type="button" data-wg-move="${k}:1">→</button>` : ""}</span>`;
 
   // t-home-flicker (11-03): the HTML carries wall-clock phases (--wg-fd) so a rebuilt node does not restart the sweep; they are not data,
   // so every compare strips them. Same data: keep the DOM. Changed data (C): replace only the tiles / header / tail / tray whose HTML changed,
@@ -347,17 +369,17 @@
   window.BoardPulse = { seen: bplSeen, unseen: () => [...BPL.unseen], _play: bplPlay, _last: BPL.last };   // e2e hooks
   function html(body, tail) {
     const L = load(), D = data(), calm = [], tiles = [];
-    bplScan(D);   // t-board-pulse
     if (A().ykSync) A().ykSync();   /* t-yarn-anim: roles that stopped since the last draw (no beat is drawn for them, their next start still gets one) */
-    const count = { review: D.waiting.length, replies: D.nr.length, today: D.shipped.length };
+    bplScan(D);   // t-board-pulse
+    const count = { review: D.waiting.length, replies: D.nr.length, today: D.shipped.length }, CH = chosen();
     L.forEach(([k, s0], i) => {
       if (isGone(k)) return;
       /* t-wy-size (user 11-22): 等你拍板 M = half of L (half the width, a normal tall tile with full rows), L = the full row */
-      const s = k === "review" ? (s0 === "m" ? "l" : "w") : !EDIT && s0 === "l" && count[k] != null && count[k] <= 2 ? "m" : s0;   // a big widget with one or two rows drops to M so the grid stays tight; 等你拍板 is always full width (t-section-titles)
+      const s = k === "review" ? (s0 === "m" ? "l" : s0 === "s" ? "s" : "w") : !EDIT && s0 === "l" && count[k] != null && count[k] <= 2 && !CH.has(k) ? "m" : s0;   /* t-home-sml: only a size nobody picked */   // a big widget with one or two rows drops to M so the grid stays tight; 等你拍板 is always full width (t-section-titles)
       if (!EDIT && isEmpty(k, D)) { calm.push([calmText(k), ((REG()(k) || {}).calm || [])[2] !== false]); return; }
       const inner = EDIT && isEmpty(k, D) ? eb(k) + `<div class="wg-calm-in">${calmText(k)}</div>` : tileHTML(k, s, D);
       const multi = k === "busy" && D.busy.length > 1 ? " multi" : "";
-      tiles[k === "review" ? "unshift" : "push"]([k, `<section class="wg wg-${k} sz-${s}${k === "review" && s === "l" ? " wy-half" : ""}${k === "review" && s === "w" && D.waiting.length > 4 ? " sct-tall" : ""}${k === "busy" && !isEmpty(k, D) ? (document.documentElement.dataset.ut ? " utav" : " hero") + multi : ""}" data-wg="${k}"${k === "review" ? " data-pin" : ""}>${inner}${EDIT ? editBar(k, s0, i, L.length) : ""}</section>`]);
+      tiles[k === "review" ? "unshift" : "push"]([k, `<section class="wg wg-${k} sz-${s}${k === "review" && s === "l" ? " wy-half" : ""}${k === "review" && s === "w" && D.waiting.length > 4 ? " sct-tall" : ""}${k === "busy" && s !== "s" && !isEmpty(k, D) ? (document.documentElement.dataset.ut ? " utav" : " hero") + multi : ""}" data-wg="${k}"${k === "review" ? " data-pin" : ""}>${inner}${EDIT ? editBar(k, s0, i, L.length) : ""}</section>`]);
     });
     const hidden = allIds().filter(k => !L.some(x => x[0] === k) || isGone(k));
     const P = { edit: EDIT, tiles,
@@ -387,7 +409,7 @@
       if (document.activeElement === t) { const i = [...document.querySelectorAll("[data-wg-hide]")].indexOf(t); setTimeout(() => { const H = document.querySelectorAll("[data-wg-hide]"), n = H[Math.min(i, H.length - 1)] || document.querySelector("[data-wg-edit]"); if (n) n.focus({ preventScroll: true }); }, 80); } }
     else if (t.dataset.wgAdd) { const w = REG()(t.dataset.wgAdd); if (isGone(t.dataset.wgAdd) && w.revive) w.revive();   /* t-onboarding P0 */
       if (!L.some(y => y[0] === t.dataset.wgAdd)) { const x = [t.dataset.wgAdd, SIZES[t.dataset.wgAdd].includes("m") ? "m" : SIZES[t.dataset.wgAdd][0]]; if (w.first) L.unshift(x); else L.push(x); save(L); } }   /* t-rb-build: 团队交接 comes back first (first: true) */
-    else if (t.dataset.wgSize) { const [k, z] = t.dataset.wgSize.split(":"); const x = L.find(y => y[0] === k); if (x) x[1] = z; save(L); }
+    else if (t.dataset.wgSize) { const [k, z] = t.dataset.wgSize.split(":"); const x = L.find(y => y[0] === k); if (x) { x[1] = z; pick(k); } save(L); }
     else if (t.dataset.wgMove) { const [k, d] = t.dataset.wgMove.split(":"); const i = L.findIndex(y => y[0] === k), j = i + +d; if (i >= 0 && j >= 0 && j < L.length) { [L[i], L[j]] = [L[j], L[i]]; save(L); } }
     redraw();
   }, true);
@@ -495,16 +517,18 @@
   // t-home-flicker: tile boxes from layout (offset*), not getBoundingClientRect, which includes a running entry / FLIP transform and made every diff glide all tiles
   const lay = t => ({ left: t.offsetLeft, top: t.offsetTop, width: t.offsetWidth, height: t.offsetHeight });
   const rk = r => r.closest(".wg").dataset.wg + "|" + r.dataset.item;
+  /* t-home-sml: a tile can hold several numbers (本周进度 L: 交付 / 进行中 / 待办), so the key carries the index; with one key per class they rolled from each other's value */
+  const nk = n => { const t = n.closest(".wg"); return t.dataset.wg + "|" + n.className + "|" + [...t.querySelectorAll(".wg-big, .wg-eb .n")].indexOf(n); };
   function mvSnap(wg) {
     MV.rects = new Map([...wg.querySelectorAll(".wg")].map(t => [t.dataset.wg, lay(t)]));
     MV.rows = new Map([...wg.querySelectorAll(".wg-row[data-item]")].map(r => [rk(r), { r: r.getBoundingClientRect(), html: r.outerHTML }]));
-    MV.nums = new Map([...wg.querySelectorAll(".wg-big, .wg-eb .n")].map(n => [n.closest(".wg").dataset.wg + "|" + n.className, n.textContent]));
+    MV.nums = new Map([...wg.querySelectorAll(".wg-big, .wg-eb .n")].map(n => [nk(n), n.textContent]));
   }
   function mvRoll(wg, fromZero) {
     wg.querySelectorAll(".wg-big, .wg-eb .n").forEach(n0 => {
       const n = n0.querySelector(".wnb-num") || n0;   /* t-widget-num-b: roll only the digits, keep the tab spans */
       const to = parseInt(n.textContent, 10); if (isNaN(to)) return;
-      const from = fromZero ? 0 : parseInt(MV.nums.get(n0.closest(".wg").dataset.wg + "|" + n0.className), 10); if (isNaN(from) || from === to) return;
+      const from = fromZero ? 0 : parseInt(MV.nums.get(nk(n0)), 10); if (isNaN(from) || from === to) return;
       const suf = n.textContent.replace(/^\d+/, ""), t0 = performance.now(), dur = 600;
       const step = t => { if (!n.isConnected) return; const p = Math.min(1, (t - t0) / dur); n.textContent = Math.round(from + (to - from) * (1 - Math.pow(1 - p, 3))) + suf; if (p < 1) requestAnimationFrame(step); };
       requestAnimationFrame(step);
@@ -547,14 +571,14 @@
   document.addEventListener("visibilitychange", vis); vis();
   /* S8: the core nine, registered the way an extension registers its own (docs/extensions.md) */
   const CORE = [
-    ["usage", ["各角色用量", "Usage by role"], ["m", "l"], "l"],
-    ["review", ["等你拍板", "Waiting on you"], ["m", "l"], "l", D => !D.waiting.length, ["没有等你拍板的", "Nothing waiting on you"]],
-    ["busy", ["此刻在忙", "Working now"], ["m", "l"], "l", D => !D.busy.length, ["大家都在待机", "Everyone is idle", false]],
-    ["replies", ["新回复", "New replies"], ["m", "l"], "l", D => !D.nr.length, ["没有新回复", "No new replies"]],
+    ["usage", ["各角色用量", "Usage by role"], ["s", "m", "l"], "l"],
+    ["review", ["等你拍板", "Waiting on you"], ["s", "m", "l"], "l", D => !D.waiting.length, ["没有等你拍板的", "Nothing waiting on you"]],
+    ["busy", ["此刻在忙", "Working now"], ["s", "m", "l"], "l", D => !D.busy.length, ["大家都在待机", "Everyone is idle", false]],
+    ["replies", ["新回复", "New replies"], ["s", "m", "l"], "l", D => !D.nr.length, ["没有新回复", "No new replies"]],
     ["today", ["今天交付", "Shipped today"], ["s", "m", "l"], "m", D => !D.shipped.length, ["今天还没有交付", "Nothing shipped today", false]],
-    ["week", ["本周进度", "This week"], ["s", "m"], "m"],
-    ["ongoing", ["每日", "Dailies"], ["s", "m"], "m", D => !D.ongoing.length, ["没有每日的活", "No dailies", false]],
-    ["media", ["最近素材", "Recent media"], ["s", "m"], "m", D => !D.imgs.length, ["还没有素材", "No media yet", false]],
+    ["week", ["本周进度", "This week"], ["s", "m", "l"], "m"],
+    ["ongoing", ["每日", "Dailies"], ["s", "m", "l"], "m", D => !D.ongoing.length, ["没有每日的活", "No dailies", false]],
+    ["media", ["最近素材", "Recent media"], ["s", "m", "l"], "m", D => !D.imgs.length, ["还没有素材", "No media yet", false]],
     ["recent", ["最近", "Recent"], ["w"], "w", D => !D.recent.length, ["还没有卡", "No cards yet", false]],
   ];
   if (window.UTExt) CORE.forEach(([id, name, sizes, size, empty, calm, first]) => UTExt.widget({ id, name, sizes, size, html: W[id], empty, calm, first: !!first, core: true }));

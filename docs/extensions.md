@@ -114,6 +114,10 @@ UTExt.tourStep({ id: "clips", after: "team", t: ["剪辑", "Clips"], b: ["……
 widget's title line), `esc`, `ago`, `hm` and `en`. A widget that throws shows a short error in its tile instead of breaking the
 home. The home layout lives on the server (`meta.widgets`), with `seen`: every widget id this board has met. A widget that is
 new to the board goes into the layout once; if you remove it, it stays removed. When its extension goes away, its tile drops out.
+Sizes follow one grid: `s` = one cell (a number or a line), `m` = two cells side by side, `l` = 2 × 2, `w` = the full row. Draw
+different content per size rather than scaling the same rows. Every core widget offers S / M / L. A size the user picks in 编辑小组件
+is listed in `meta.widgets.chosen` and is drawn as picked; a core L tile nobody picked still drops to M when it has only one or
+two rows.
 Register at the top level of your script (it runs before the first draw); registering later redraws the page.
 
 ## Safety and versions

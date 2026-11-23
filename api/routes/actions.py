@@ -370,6 +370,13 @@ def _widget_layout(a):   # t-widget-drag: the desktop widget home's order / size
             ids.add(x[0])
             out.append([x[0], x[1]])
         w = {"layout": out, "at": S.now()}
+        # t-home-sml: "chosen" = widget ids whose size the user picked by hand (the auto shrink of a short L tile stops for them).
+        # Optional; missing = keep the old list; a reset clears it.
+        ch = body.get("chosen", old.get("chosen"))
+        if ch is not None:
+            if not (isinstance(ch, list) and len(ch) <= 64 and all(isinstance(x, str) and re.fullmatch(idre, x) for x in ch)):
+                raise ValueError("bad chosen")
+            w["chosen"] = sorted(set(ch))
     if seen is not None:
         w["seen"] = seen
     st["meta"]["widgets"] = w
