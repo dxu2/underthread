@@ -539,10 +539,31 @@
       requestAnimationFrame(step);
     });
   }
+  /* t-home-sml-audit (the S 今天交付 title was cut in half by the bottom stitch): a clamped text block ([data-fit], .clamp2)
+     gives up whole lines until it ends above the stitched inner edge (the knit / leather outline-offset, or the padding if that is deeper);
+     no line fits = the block hides. Inline styles only, reset on every pass; patch() swaps in fresh nodes, so each draw is fitted again. */
+  function wgFit(wg) {
+    wg.querySelectorAll(".wg-grid > .wg").forEach(t => {
+      /* the subtitle line (Underthread) shrinks first when the rows need the room: squeezed below its own line, it drops whole instead of showing a sliver */
+      const sb = t.querySelector(":scope > .sct-sub"); if (sb) { sb.style.removeProperty("display"); if (sb.offsetHeight && sb.scrollHeight > sb.clientHeight + 1) sb.style.setProperty("display", "none"); }
+      const F = t.querySelectorAll(".clamp2, [data-fit]"); if (!F.length) return;
+      F.forEach(e => { e.style.removeProperty("-webkit-line-clamp"); e.style.removeProperty("display"); });
+      const cs = getComputedStyle(t), oo = parseFloat(cs.outlineOffset) || 0, R = t.getBoundingClientRect();
+      const lim = R.bottom - Math.max(cs.outlineStyle !== "none" && oo < 0 ? -oo + 3 : 0, parseFloat(cs.paddingBottom) || 0);
+      F.forEach(e => { const r = e.getBoundingClientRect(); if (r.bottom <= lim + .5) return;
+        const lh = parseFloat(getComputedStyle(e).lineHeight) || r.height / Math.max(1, parseInt(getComputedStyle(e).webkitLineClamp) || 1);
+        const n = Math.floor((lim - r.top - (parseFloat(getComputedStyle(e).paddingTop) || 0)) / lh);
+        if (n >= 1) e.style.setProperty("-webkit-line-clamp", String(n)); else e.style.setProperty("display", "none"); });
+    });
+  }
+  let FIT_RO = null;
   function mvPage() {
     const wg = document.getElementById("wg"), page = A().UI.page, entered = page === "review" && MV.page !== "review"; MV.page = page;
     if (!wg) { MV.wg = null; return; }
     const dirty = MV.dirty; MV.dirty = false;
+    if (wg !== MV.wg || entered || dirty) { try { wgFit(wg); } catch (_) { }
+      if (window.ResizeObserver) { if (FIT_RO) FIT_RO.disconnect(); let raf = 0; FIT_RO = new ResizeObserver(() => { if (!raf) raf = requestAnimationFrame(() => { raf = 0; if (wg.isConnected) try { wgFit(wg); } catch (_) { } }); }); FIT_RO.observe(wg); }
+      if (entered || !MV.wg) setTimeout(() => { if (wg.isConnected) try { wgFit(wg); } catch (_) { } }, 1600);   /* after the entry motion (transforms skew the rects) and web fonts */ }
     if (wg === MV.wg && !entered && !dirty) return;   // same DOM (poll with no change): nothing to play; dirty = patch() swapped some tiles in place
     const rm = RMQ.matches;
     [...wg.querySelectorAll(".wg")].forEach((t, i) => t.style.setProperty("--wg-i", i));
