@@ -475,3 +475,34 @@ html[data-home="widgets"] .wg-week.sz-l .wg-more { margin-top: 8px; }
 html[data-home="widgets"] .sml-on .t small { display: block; font-size: var(--fs-11); color: var(--dim); margin-top: 1px; }
 html[data-home="widgets"] .wg-thumbs.sml-g9 { grid-template-rows: repeat(3, minmax(0, 1fr)); }
 
+/* t-home-sml fix: 此刻在忙 M in English overflowed — the name + role wrapped to two lines and pushed the job pill
+   out of the frame. At M: a smaller patch column, the role dropped (L keeps it), the name on one line with an ellipsis, the pill kept in the box. */
+html[data-home="widgets"] .wg-busy.sz-m .wg-in h3 small { display: none; }
+html[data-home="widgets"] .wg-busy.sz-m .wg-in h3 { display: flex; align-items: center; gap: 6px; min-width: 0; white-space: nowrap; }
+html[data-home="widgets"] .wg-busy.sz-m .wg-in h3 .wg-hn { flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+html[data-home="widgets"] .wg-busy.sz-m .wg-in h3 > :not(.wg-hn) { flex: none; }
+html[data-home="widgets"] .wg-busy.sz-m .wg-in { min-height: 0; min-width: 0; }
+html[data-home="widgets"] .wg-busy.sz-m .wg-job { margin-top: auto; }
+html[data-home="widgets"] .utav.sz-m:not(.multi) .wg-utav { width: 32%; }
+html[data-home="widgets"] .utav.sz-m:not(.multi) .wg-utp { width: min(112px, 100cqmin - 18px); }
+html[data-home="widgets"] .utav.sz-m:not(.multi) .wg-top { margin-left: 32%; }
+html[data-home="widgets"] .utav.sz-m:not(.multi) .wg-in { margin-left: 32%; }
+/* ink: 等你拍板 M (the half tile) and L ran 6px into its bottom padding with five rows; one px less per row side keeps it inside */
+html[data-skin="ink"][data-home="widgets"] .wg-review:is(.wy-half, .sz-w) .wg-row { padding-top: 6px; padding-bottom: 6px; }
+
+/* ===== t-home-sml P2 (11-22): the phone widget home, opt-in per device (设置 · 手机首页 = 小组件; index.js phoneWg()).
+   The grid is the existing 2-column container rule (< 640px): S = one column (a square), M = both columns, L = both columns and two rows.
+   编辑 on a phone: a hold opens it (no drag, the finger scrolls), the controls are 44px touch targets, ← → (top right) move a tile, S M L (bottom right) size it. */
+@media (max-width: 760px) {
+  html[data-home="widgets"] #wg { padding-bottom: 8px; }
+  html[data-home="widgets"] #wg .wg { -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; }
+  html[data-home="widgets"] #wg.edit .wg { touch-action: pan-y; cursor: default; }
+  html[data-home="widgets"] .wg-hd .wg-btn { min-height: 44px; padding: 0 18px; font-size: var(--fs-14); }
+  html[data-home="widgets"] .wg-sz button, html[data-home="widgets"] .wg-mv button { min-width: 44px; height: 44px; padding: 0 6px; font-size: var(--fs-15); }
+  html[data-home="widgets"] .wg-sz, html[data-home="widgets"] .wg-mv { gap: 2px; padding: 2px; }
+  html[data-home="widgets"] .wg-mv { left: auto; right: 8px; top: 8px; bottom: auto; }
+  html[data-home="widgets"] .wg-x { width: 32px; height: 32px; left: 6px; top: 6px; }
+  html[data-home="widgets"] .wg-x::before { content: ""; position: absolute; inset: -6px; }
+  html[data-home="widgets"] #wg.edit .sct-pin { display: none; }   /* its 「M 半行」 is the desk rule; on a phone M is the full row */
+  html[data-home="widgets"] .wg-eband { height: 60px; }
+}

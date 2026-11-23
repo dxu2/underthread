@@ -45,6 +45,8 @@ function stGeneral() {
       stSeg("tmode", [["auto", "自动", "Auto"], ["dark", "夜", "Night"], ["white", "昼", "Day"]], mode === "auto" ? "auto" : cur, "data-tmode"), "", "div")
     + utRow(en) + texRow(en)
     + (ut => { const st = ut ? stageSaved() : !!R.dataset.stage; return stRow(en ? "Stage background" : "舞台背景", stageSub(en, ut), stSw(st), `data-stage-tog aria-pressed="${st}"` + (ut ? ' aria-disabled="true" style="display:none"' : ""), "button").replace('class="st-row"', `class="st-row${ut ? " st-dis" : ""}"`); })(!!R.dataset.ut)
+    + (MOBQ.matches ? stRow(en ? "Phone home" : "手机首页", en ? "Widgets: the desk's widgets in two columns; hold one or tap Edit to size it S / M / L" : "小组件：和电脑一样的小组件，两列排；长按或点「编辑」可改 S / M / L",
+        stSeg("phhome", [["list", "列表", "List"], ["widgets", "小组件", "Widgets"]], LS.get("phoneHome", "list") === "widgets" ? "widgets" : "list", "data-phhome-set"), "", "div") : "")   /* t-home-sml P2: per device, default list */
     + stRow(en ? "Yarn kitten" : "小猫彩蛋", "", stSw(ykOn()), `data-yk-tog aria-pressed="${ykOn()}"`)   /* t-yarn-sleep: per device, default on, no caption on purpose */
     + stRow(en ? "Power saving" : "省电模式", psSub(psNow()), stSw(psNow()), `data-power-tog aria-pressed="${psNow()}"`)
     + spRow(en)
@@ -202,6 +204,11 @@ function wireSettings() {
     const body = $("#pagebody"), dir = STU.indexOf(k) >= STU.indexOf(was) ? "r" : "l";
     const draw = () => { go(k); if (RMQ_S.matches) return; body.classList.remove("stu-out"); body.classList.add("stu-in-" + dir); setTimeout(() => body.classList.remove("stu-in-r", "stu-in-l"), 260); };
     if (body && !RMQ_S.matches) { body.classList.add("stu-out"); setTimeout(draw, 90); } else draw();
+  });
+  document.addEventListener("click", e => {   /* t-home-sml P2: 手机首页 列表 / 小组件, flipped in place (the home redraws when you go back to it) */
+    const b = e.target.closest && e.target.closest("[data-phhome-set]"); if (!b) return;
+    const v = b.dataset.phhomeSet === "widgets" ? "widgets" : "list"; LS.set("phoneHome", v);
+    b.parentElement.querySelectorAll("[data-phhome-set]").forEach(x => { const on = x === b; x.classList.toggle("on", on); x.setAttribute("aria-checked", String(on)); });
   });
   document.addEventListener("click", e => {   /* t-yarn-sleep: 小猫彩蛋, flipped in place like 省电模式 */
     const p = e.target.closest && e.target.closest("[data-yk-tog]"); if (!p) return;

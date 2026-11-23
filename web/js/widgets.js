@@ -1,5 +1,5 @@
 // t-home-widgets (plan v2, 方案 A, approved 11-02): the desktop 首页 as macOS-style widgets in a 4-column grid next to the chat.
-// app.js calls Widgets.html(body) from PAGES.review while html[data-home="widgets"] (desktop only; phone home unchanged).
+// app.js calls Widgets.html(body) from PAGES.review while html[data-home="widgets"] (the desktop 首页, and a phone that turned on 设置 · 手机首页 = 小组件, t-home-sml P2).
 // Widgets: 等你拍板 · 此刻在忙 · 新回复 · 今天交付 · 本周进度 · 常驻活动 · 最近素材. 团队 / 体力 / 日程 were dropped on purpose
 // (the TEAM list, the stamina orb and 今日日程 already show them). An empty widget leaves the grid and becomes one quiet line
 // above it. Layout (order, size, hidden) is per browser in localStorage rt.widgets; 编辑小组件 = remove / size / move / add back.
@@ -192,7 +192,7 @@
       return (ut ? `<div class="wg-utav" data-noidle>${A().yk ? A().yk(a, utp, true) : utp}</div>`   /* v4: same phase as App.av (--wp = Date.now() % 16000, t-yarn-anim), so this patch and the Team column show the same frame */
         : `<div class="wg-bg" style="background-image:url('${art(a)}')"></div><div class="wg-sh"></div>`) + `
         <div class="wg-top">${eb("busy", en() ? `${B.length} busy` : `${B.length} 人在忙`)}</div>
-        <div class="wg-in"><h3 data-chat="${esc(a.id)}">${esc(A().aname(a))}<small>${esc(A().atitle(a) || "")}</small>${A().qBadge ? A().qBadge(a.id) : ""}</h3>
+        <div class="wg-in"><h3 data-chat="${esc(a.id)}"><span class="wg-hn">${esc(A().aname(a))}</span><small>${esc(A().atitle(a) || "")}</small>${A().qBadge ? A().qBadge(a.id) : ""}</h3>
         <div class="wg-job" data-item="${esc(m.it.id)}" style="--wg-fd:-${Date.now() % 2400}ms"><span>${esc(m.it.title)}</span><b>${hm(m.since)} ${en() ? "start" : "起"} · ${ago(m.since)} ›</b></div>
         ${side.length || more > 0 ? `<div class="wg-side">${side.map(x => `<div class="wg-sr" data-item="${esc(x.it.id)}"><img src="${A().avatarUrl(x.a)}" alt="" data-chat="${esc(x.a.id)}"><div class="st"><b><span class="wg-nm">${esc(A().aname(x.a))}</span>${A().qBadge ? A().qBadge(x.a.id) : ""}</b><span>${esc(x.it.title)}</span><i><em style="width:${bar(x)}%"></em></i></div><time>${ago(x.since)}</time></div>`).join("")}${more > 0 ? `<div class="wg-sr plus" data-go="board">${en() ? `+${more} more working ›` : `+${more} 人在忙 · 看全部 ›`}</div>` : ""}</div>` : ""}</div>`;
     },
@@ -482,9 +482,11 @@
     el.animate(dx || dy ? [{ translate: "0px 0px" }, { translate: `${mx}px ${my}px`, offset: .3 }, { translate: `${-mx * .35}px ${-my * .35}px`, offset: .62 }, { translate: "0px 0px" }]
       : [{ scale: "1" }, { scale: ".985", offset: .35 }, { scale: "1" }], { duration: 420, easing: "cubic-bezier(.3,.7,.3,1)" });
   }
+  const PHQ = matchMedia("(max-width: 760px)");   /* t-home-sml P2: the phone widget home (设置 · 手机首页 = 小组件) */
   const cancelPress = () => { if (DR.p) { clearTimeout(DR.p.tm); DR.p = null; } };
   document.addEventListener("pointerdown", e => {
     if (e.button || !e.isPrimary || DR.d || document.documentElement.dataset.home !== "widgets" || (A() && A().UI.page !== "review")) return;
+    if (EDIT && PHQ.matches) return;   /* t-home-sml P2: on a phone 编辑 tiles don't drag (the finger scrolls the page); order is the ← → buttons */
     const t = e.target.closest && e.target.closest("#wg .wg-grid > .wg[data-wg]");
     /* t-wy-size: 等你拍板 is pinned first (t-section-titles). A hold on it still enters 编辑 (resize / remove); dragging it only bounces back */
     const pin = !!(t && t.hasAttribute("data-pin"));
@@ -492,7 +494,7 @@
     cancelPress();
     DR.p = { k: t.dataset.wg, pin, x: e.clientX, y: e.clientY, edit: EDIT, tm: EDIT ? 0 : setTimeout(() => {   // not editing: a hold enters 编辑 and picks the tile up
       const p = DR.p; if (!p) return; DR.p = null; DR.eat = Date.now();
-      EDIT = true; redraw(); if (p.pin) pinBounce(p.k, 0, 0); else lift(p.k, p.lx ?? p.x, p.ly ?? p.y); }, HOLD) };
+      EDIT = true; redraw(); if (PHQ.matches) return; if (p.pin) pinBounce(p.k, 0, 0); else lift(p.k, p.lx ?? p.x, p.ly ?? p.y); }, HOLD) };   // phone: the hold only opens 编辑
   }, true);
   window.addEventListener("pointermove", e => {
     if (DR.d) { if (!e.isPrimary) return; e.preventDefault(); DR.d.x = e.clientX; DR.d.y = e.clientY; follow();
