@@ -34,6 +34,7 @@ html[data-home="widgets"] #wg { --g: 14px; max-width: none; margin: 0 auto; padd
 html[data-home="widgets"] .wg-hd { display: flex; align-items: center; gap: 12px; margin: -4px 2px 12px; min-height: 32px; }
 html[data-home="widgets"] .wg-hd .sp { flex: 1; }
 html[data-home="widgets"] .wg-calm { font-size: var(--fs-13); color: var(--dim); letter-spacing: .02em; }
+html[data-home="widgets"] .wg-calm .nc { opacity: .75; }   /* r-improve-1117 P4: not-good-news calm lines, no ✓ */
 html[data-home="widgets"] .wg-btn { font-size: var(--fs-12); color: var(--ink2); padding: 6px 13px; border-radius: 999px; background: var(--glass-lite); border: 0; cursor: pointer; transition: background-color .15s ease; }
 html[data-home="widgets"] .wg-btn:hover { background: color-mix(in srgb, var(--ink) 12%, transparent); }
 html[data-home="widgets"] .wg-btn.on { background: var(--accent); color: var(--accent-ink); }

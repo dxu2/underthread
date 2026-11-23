@@ -117,6 +117,9 @@
      whose click calls revive() to bring it back. A layout keeps its entry, so nothing has to be saved when it retires. */
   const isGone = k => { const w = REG()(k); try { return !!(w && w.gone && w.gone()); } catch (e) { return false; } };
   const isEmpty = (k, D) => { const w = REG()(k); try { return !!(w && w.empty && w.empty(D)); } catch (e) { return false; } };
+  /* r-improve-1117 P4: ✓ only in front of good news (没有新回复 / 没有等你拍板的); 「今天还没有交付」 etc. (calm[2] === false) follow without a tick, a shade dimmer. Extension widgets keep the ✓. */
+  const calmHTML = cs => { const ok = cs.filter(c => c[1]).map(c => c[0]), no = cs.filter(c => !c[1]).map(c => c[0]);
+    return cs.length ? `<span class="wg-calm">${ok.length ? "✓ " + ok.map(esc).join(" · ") : ""}${ok.length && no.length ? " · " : ""}${no.length ? `<span class="nc">${no.map(esc).join(" · ")}</span>` : ""}</span>` : ""; };
   const calmText = k => { const c = (REG()(k) || {}).calm || [nm(k), nm(k)]; return en() ? c[1] || c[0] : c[0]; };
   /* html(size, D, kit): kit = the helpers core widgets use (eb = the eyebrow line). A widget that throws draws a quiet line instead of breaking the home. */
   const tileHTML = (k, s, D) => { try { return REG()(k).html(s, D, { eb, esc, ago, hm, en: en() }); } catch (e) { console.warn("widget " + k, e); return eb(k) + `<div class="wg-calm-in">${en() ? "This widget failed to draw" : "这个小组件出错了"}</div>`; } };
@@ -351,14 +354,14 @@
       if (isGone(k)) return;
       /* t-wy-size (user 11-22): 等你拍板 M = half of L (half the width, a normal tall tile with full rows), L = the full row */
       const s = k === "review" ? (s0 === "m" ? "l" : "w") : !EDIT && s0 === "l" && count[k] != null && count[k] <= 2 ? "m" : s0;   // a big widget with one or two rows drops to M so the grid stays tight; 等你拍板 is always full width (t-section-titles)
-      if (!EDIT && isEmpty(k, D)) { calm.push(calmText(k)); return; }
+      if (!EDIT && isEmpty(k, D)) { calm.push([calmText(k), ((REG()(k) || {}).calm || [])[2] !== false]); return; }
       const inner = EDIT && isEmpty(k, D) ? eb(k) + `<div class="wg-calm-in">${calmText(k)}</div>` : tileHTML(k, s, D);
       const multi = k === "busy" && D.busy.length > 1 ? " multi" : "";
       tiles[k === "review" ? "unshift" : "push"]([k, `<section class="wg wg-${k} sz-${s}${k === "review" && s === "l" ? " wy-half" : ""}${k === "review" && s === "w" && D.waiting.length > 4 ? " sct-tall" : ""}${k === "busy" && !isEmpty(k, D) ? (document.documentElement.dataset.ut ? " utav" : " hero") + multi : ""}" data-wg="${k}"${k === "review" ? " data-pin" : ""}>${inner}${EDIT ? editBar(k, s0, i, L.length) : ""}</section>`]);
     });
     const hidden = allIds().filter(k => !L.some(x => x[0] === k) || isGone(k));
     const P = { edit: EDIT, tiles,
-      hd: `<div class="wg-hd">${calm.length ? `<span class="wg-calm">✓ ${calm.map(esc).join(" · ")}</span>` : ""}${A().snzLine ? A().snzLine() : ""}<span class="sp"></span>${EDIT ? `<button type="button" class="wg-btn" data-wg-reset>${en() ? "Reset" : "恢复默认"}</button>` : ""}<button type="button" class="wg-btn${EDIT ? " on" : ""}" data-wg-edit>${EDIT ? (en() ? "Done" : "完成") : (en() ? "Edit widgets" : "编辑小组件")}</button></div>`,
+      hd: `<div class="wg-hd">${calm.length ? calmHTML(calm) : ""}${A().snzLine ? A().snzLine() : ""}<span class="sp"></span>${EDIT ? `<button type="button" class="wg-btn" data-wg-reset>${en() ? "Reset" : "恢复默认"}</button>` : ""}<button type="button" class="wg-btn${EDIT ? " on" : ""}" data-wg-edit>${EDIT ? (en() ? "Done" : "完成") : (en() ? "Edit widgets" : "编辑小组件")}</button></div>`,
       tail: tail ? `<div class="wg-tail">${tail}</div>` : "",
       tray: EDIT ? `<div class="wg-tray"><h4>${en() ? "Add widgets" : "添加小组件"}<small>${hidden.length ? (en() ? "click to add back" : "点一下加回去") : (en() ? "all widgets are on the page" : "所有小组件都在页面上了")}</small></h4><div class="wg-chips">${hidden.map(k => `<button type="button" data-wg-add="${k}">+ ${nm(k)}</button>`).join("")}</div></div>` : "" };
     const out = `<div id="wg" class="${EDIT ? "edit" : ""}">${P.hd}
@@ -546,12 +549,12 @@
   const CORE = [
     ["usage", ["各角色用量", "Usage by role"], ["m", "l"], "l"],
     ["review", ["等你拍板", "Waiting on you"], ["m", "l"], "l", D => !D.waiting.length, ["没有等你拍板的", "Nothing waiting on you"]],
-    ["busy", ["此刻在忙", "Working now"], ["m", "l"], "l", D => !D.busy.length, ["大家都在待机", "Everyone is idle"]],
+    ["busy", ["此刻在忙", "Working now"], ["m", "l"], "l", D => !D.busy.length, ["大家都在待机", "Everyone is idle", false]],
     ["replies", ["新回复", "New replies"], ["m", "l"], "l", D => !D.nr.length, ["没有新回复", "No new replies"]],
-    ["today", ["今天交付", "Shipped today"], ["s", "m", "l"], "m", D => !D.shipped.length, ["今天还没有交付", "Nothing shipped today"]],
+    ["today", ["今天交付", "Shipped today"], ["s", "m", "l"], "m", D => !D.shipped.length, ["今天还没有交付", "Nothing shipped today", false]],
     ["week", ["本周进度", "This week"], ["s", "m"], "m"],
-    ["ongoing", ["每日", "Dailies"], ["s", "m"], "m", D => !D.ongoing.length, ["没有每日的活", "No dailies"]],
-    ["media", ["最近素材", "Recent media"], ["s", "m"], "m", D => !D.imgs.length, ["还没有素材", "No media yet"]],
+    ["ongoing", ["每日", "Dailies"], ["s", "m"], "m", D => !D.ongoing.length, ["没有每日的活", "No dailies", false]],
+    ["media", ["最近素材", "Recent media"], ["s", "m"], "m", D => !D.imgs.length, ["还没有素材", "No media yet", false]],
     ["recent", ["最近", "Recent"], ["w"], "w", D => !D.recent.length, ["还没有卡", "No cards yet", false]],
   ];
   if (window.UTExt) CORE.forEach(([id, name, sizes, size, empty, calm, first]) => UTExt.widget({ id, name, sizes, size, html: W[id], empty, calm, first: !!first, core: true }));
