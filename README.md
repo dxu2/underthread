@@ -166,6 +166,8 @@ Something not working? See [Troubleshooting](docs/troubleshooting.md). The long 
 
 ## Features at a glance
 
+- **A home you arrange.** The desktop home is a set of widgets. In Edit widgets, drag them around and give each one a size: S (a number), M or L (more rows, a chart, a 3 × 3 of recent images). A size you pick stays. On a phone, Settings → General → Phone home → Widgets shows the same widgets in two columns (the list home stays the default).
+
 - **On your phone, too.** Add the dashboard to your home screen and it runs like an app, with push notifications that respect quiet hours. See [Phone and push](docs/phone-and-push.md).
 
   <p align="center"><img src="docs/img/phone.gif" alt="The phone app: switching tabs on the floating tab bar, pull to refresh" width="300"></p>

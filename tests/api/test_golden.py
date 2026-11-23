@@ -220,6 +220,8 @@ class Golden(unittest.TestCase):
         a("ext_set_bad", {"kind": "ext_set", "name": "nope", "on": False})   # t-oss-live
         a("ext_set_off", {"kind": "ext_set", "name": "live", "on": False})
         a("ext_set_on", {"kind": "ext_set", "name": "live", "on": True})
+        a("widget_layout_chosen", {"kind": "widget_layout", "layout": [["team", "l"]], "chosen": ["team", "team"]})   # t-home-sml
+        a("widget_layout_chosen_bad", {"kind": "widget_layout", "layout": [["team", "l"]], "chosen": "team"})
         a("widget_layout_seen_bad", {"kind": "widget_layout", "layout": [["team", "m"]], "seen": ["Bad id"]})
         a("widget_layout_reset_keeps_seen", {"kind": "widget_layout", "reset": True})
         a("role_look", {"kind": "role_look", "id": "writer", "name": "Golden Quill", "name_en": "Goldie"})   # t-roster-rail

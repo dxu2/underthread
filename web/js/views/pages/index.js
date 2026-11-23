@@ -194,7 +194,10 @@ function rulesBlock() {
 }
 
 /* t-home-style-trim (11-11, user): the desktop 首页 is the widget home only (web/widgets.js + widgets.css); phones keep their own home */
-const widgetHome = () => !MOBQ.matches && UI.page === "review";
+/* t-home-sml P2 (11-22): a phone shows the same widget home (2 columns) only after the user turns it on in 设置 · 手机首页 (rt.phoneHome, per device);
+   until then every phone keeps the list home exactly as before */
+const phoneWg = () => LS.get("phoneHome", "list") === "widgets";
+const widgetHome = () => UI.page === "review" && (!MOBQ.matches || phoneWg());
 const phaseFree = h => h.replace(/--wp:-?[\d.]+s|animation-delay:-\d+ms|--wg-fd:-\d+ms| tl-(?:in|out)/g, "").replace(/(<time class="(?:wk-el|rel)"[^>]*>)[^<]*/g, "$1");   // t-home-flicker
 function renderPage(scrollTop) {
   document.documentElement.dataset.home = widgetHome() ? "widgets" : "classic"; delete document.documentElement.dataset.dense;   /* t-home-style-trim: "widgets" on the desktop 首页, "classic" everywhere else (phones, other pages); data-dense is cleared for pages that still carry it */
@@ -203,7 +206,7 @@ function renderPage(scrollTop) {
   let body = $("#pagebody", page);
   if (!body) { page.innerHTML = `<div class="office" id="officebox"></div><div id="pagebody"></div>`; body = $("#pagebody", page); }
   const ob = $("#officebox", page);
-  if (UI.page === "review" && !widgetHome()) {
+  if (UI.page === "review" && !widgetHome()) {   /* the widget home (desk, and a phone with 手机首页 = 小组件) has no D1 strip: its widgets carry the same counts */
     ob.hidden = false;
     if (window.HomeD) {   /* t-office-d1-s12: phones get the D1 / A2 strip (a desktop 首页 is always the widget home, t-home-style-trim) */
       HomeD.render(ob, { agents: agents(), counts: homeCounts() });
@@ -276,4 +279,4 @@ function wirePages2() {
   });
 }
 
-export { PAGES, rcLinks, rcTasks, rulesBlock, widgetHome, phaseFree, renderPage, docTop, wirePages, wirePages2 };
+export { PAGES, rcLinks, rcTasks, rulesBlock, widgetHome, phoneWg, phaseFree, renderPage, docTop, wirePages, wirePages2 };

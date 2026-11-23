@@ -227,7 +227,8 @@ function soulHTML() {
   const bar = (l, v, est) => `<div class="sl-b"><span>${l}</span><i><em style="--w:${v == null ? 0 : (Math.max(0, Math.min(100, v)) / 100).toFixed(3)}"></em></i><b>${v == null ? "—" : `${est ? "≈" : ""}${v}<small>%</small>`}</b></div>`;
   const cAge = U.at ? relH("ago", U.at, ago(U.at)) : "";
   const cRight = U.none ? (en ? "not connected" : "未接入") : U.stale ? `<em class="sl-old">${cAge}</em>` : U.sub ? (en ? U.sub.replace(/^full at /, "full at <b>") + (/^full at /.test(U.sub) ? "</b>" : "") : U.sub) : "";
-  const claude = `<div class="sl-m${U.stale ? " old" : ""}" title="${esc(U.tip)}">${soulSw(U.left)}<div class="sl-mn"><b>Claude</b></div><div class="sl-full">${cRight}</div>`
+/* .sl-m[data-m=claude|codex]: a neutral hook so an extension can style one model row (for example its own mark over the swatch) */
+  const claude = `<div class="sl-m${U.stale ? " old" : ""}" data-m="claude" title="${esc(U.tip)}">${soulSw(U.left)}<div class="sl-mn"><b>Claude</b></div><div class="sl-full">${cRight}</div>`
     + `<div class="sl-bars">${bar(en ? "5-hour" : "5 小时", U.left, U.approx)}${bar(en ? "Week" : "本周", U.week, U.approxW)}</div></div>`;
   let codex;
   // t-onb-polish: no Codex quota ever read (no ~/.codex/sessions log with rate_limits) = Codex is not set up here, so no row at all
@@ -239,7 +240,7 @@ function soulHTML() {
     const right = reset ? (en ? "reset since" : "之后已重置") : rs ? (en ? `resets <b>${clock(C.resets_at)}</b>` : `<b>${clock(C.resets_at)}</b> 重置`) : "";
     const tip = (en ? `Codex ${plan} · weekly ${Math.round(C.used)}% used` : `Codex ${plan} · 本周已用 ${Math.round(C.used)}%`) + (rs ? (en ? ` · resets ${clock(C.resets_at)}` : ` · ${clock(C.resets_at)} 重置`) : "")
       + (en ? `\nRead from the newest Codex session log at ${hm(C.at)}; it only updates when Codex runs` : `\n${hm(C.at)} 从最新的 Codex 会话日志读到；Codex 跑过才会更新`);
-    codex = `<div class="sl-m${old ? " old" : ""}" title="${esc(tip)}">${soulSw(left)}<div class="sl-mn"><b>Codex</b>${plan ? `<small>${esc(plan)}</small>` : ""}</div><div class="sl-full">${right}</div>`
+    codex = `<div class="sl-m${old ? " old" : ""}" data-m="codex" title="${esc(tip)}">${soulSw(left)}<div class="sl-mn"><b>Codex</b>${plan ? `<small>${esc(plan)}</small>` : ""}</div><div class="sl-full">${right}</div>`
       + `<div class="sl-bars">${bar(en ? "Week" : "本周", left, reset)}<span class="sl-rd">${read}</span></div></div>`;
   }
   return `<div class="sl" data-ru-open><div class="sl-sep">${en ? "Soul <span>quota per model</span>" : "体力 <span>· 每个模型的额度</span>"}</div><div class="sl-ms">${claude}${codex}</div></div>`;

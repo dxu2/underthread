@@ -95,6 +95,7 @@
 #ticker .msg { font-weight: 600; max-width: 900px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; cursor: pointer; letter-spacing: .04em; animation: tick-in var(--m-base) var(--m-ease-emph); }   /* t-anim-p1 ③: was .9s letter-spacing + blur (re-layout every frame, every 6 s) */
 #ticker .msg:hover { color: var(--soul); }
 #ticker .msg.urgent { color: var(--urgent); text-shadow: 0 0 14px rgba(227,115,93,.35); }
+#ticker .msg.calm { font-weight: 400; color: var(--dim); cursor: default; }   /* r-improve-1118 P2: the one night line */
 @keyframes tick-in { from { opacity: 0; transform: translateY(4px); } }
 #ticker button.dim { opacity: .5; transition: opacity .3s; } #ticker button.dim:hover { opacity: 1; }
 #ticker .pager { display: flex; gap: 6px; margin-left: 18px; align-items: center; }

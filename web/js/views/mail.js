@@ -93,7 +93,7 @@ function mailRow(g) {
   const unread = g.ms.some(unreadM);
   return actRow({ attr: `data-mail="${m.id}" data-mailids="${g.ms.map(x => x.id).join(",")}"`, av: a ? av(a, "", m.item) : av("me"), ws: it ? workersOf(it.id) : [], unread,
     name: a ? aname(a) : whoName("me"), title: sansName(it ? it.title : archTitle(m.item), a && aname(a)), time: agoH(m.t), preview: REV_MAIL.test(m.text || "") && it ? cardLine(it, a) : mailPv(m.text, a),
-    chip: it ? rowLabel(it) : (m.kind === "reply" ? t("replies") : t("updates")), n: g.ms.length });
+    chip: it ? rowLabel(it) : (m.kind === "reply" ? t("replies") : t("updates")), n: g.ms.length, un: g.ms.filter(unreadM).length });
 }
 // ---------- ui1-C: mailbox = drop-down panel under the header (the full page stays reachable via "view all") ----------
 function mailFiltered(n) {

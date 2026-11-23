@@ -60,7 +60,7 @@ module.exports = {
       /* removing 最近 sticks */
       await c.tap('[data-wg-edit]'); await c.sleep(600);
       const ed = await p.evaluate(() => { const r = document.querySelector("#wg .wg-review"); return { edit: !!document.querySelector("#wg.edit"), size: r ? [...r.querySelectorAll("[data-wg-size]")].map(b => b.textContent).join("") : "", move: r ? r.querySelectorAll("[data-wg-move]").length : -1, pin: !!(r && r.querySelector(".sct-pin")) }; });
-      c.check("edit mode: 等你拍板 offers M / L, no move buttons, says it is pinned", ed.edit && ed.size === "ML" && ed.move === 0 && ed.pin, ed);
+      c.check("edit mode: 等你拍板 offers S / M / L (t-home-sml), no move buttons, says it is pinned", ed.edit && ed.size === "SML" && ed.move === 0 && ed.pin, ed);
       await c.shot("edit");
       /* M = half of L (a normal tall tile, half the row, t-wy-size 11-22), still first; L = full width (user 11-21 23:41) */
       await c.tap('#wg .wg-review [data-wg-size="review:m"]'); await c.sleep(900);

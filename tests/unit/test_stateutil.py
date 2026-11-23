@@ -43,6 +43,32 @@ class Asks(unittest.TestCase):
             self.assertEqual(c.stateutil.split_rec(["A", "B"]), (["A", "B"], None))
 
 
+class ApprovedPlanBack(unittest.TestCase):   # r-improve-1118 P1
+    def _card(self, S, cid, approve_text):
+        with S.mutate() as st:
+            it = S.upsert_item(st, {"id": cid, "title": "T", "kind": "plan", "stage": "review", "owner": "smith"})
+            S.add_thread(it, "me", approve_text, "approve")
+            it["stage"] = "doing"
+
+    def test_approved_plan_handed_back_without_kind_becomes_deliverable(self):
+        with Core() as c:
+            S = c.stateutil
+            self._card(S, "p-1", "批准开工")
+            with S.mutate() as st:
+                it = S.upsert_item(st, {"id": "p-1", "stage": "review"}, who="smith")
+            self.assertEqual(it["kind"], "deliverable")
+
+    def test_explicit_kind_plan_and_unapproved_plans_stay_plans(self):
+        with Core() as c:
+            S = c.stateutil
+            self._card(S, "p-2", "批准开工")
+            with S.mutate() as st:
+                self.assertEqual(S.upsert_item(st, {"id": "p-2", "stage": "review", "kind": "plan"}, who="smith")["kind"], "plan")
+            self._card(S, "p-3", "验收 · 关单")
+            with S.mutate() as st:
+                self.assertEqual(S.upsert_item(st, {"id": "p-3", "stage": "review"}, who="smith")["kind"], "plan")
+
+
 class Writes(unittest.TestCase):
     def test_upsert_creates_then_updates_one_card_and_bumps_rev(self):
         with Core() as c:

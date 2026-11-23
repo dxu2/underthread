@@ -166,6 +166,8 @@ git clone https://github.com/dxu2/underthread.git && cd underthread
 
 ## 功能一览
 
+- **首页自己摆。** 电脑首页是一组小组件。在「编辑小组件」里拖动排序，每个都能选 S（一个数字）、M 或 L（更多行、柱状图、最近素材 3 × 3）。你选过的尺寸就一直按你选的画。手机上在「设置 → 通用 → 手机首页」选「小组件」，同一组小组件两列排（默认仍是列表首页）。
+
 - **手机上也能用。** 把看板加到主屏幕，就像一个 App，推送通知会避开免打扰时段。见[手机和推送](docs/phone-and-push.md)（英文）。
 
   <p align="center"><img src="docs/img/phone.gif" alt="手机 App：底部浮动标签栏切换、长按看名字、下拉刷新" width="300"></p>

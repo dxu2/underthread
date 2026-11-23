@@ -42,13 +42,18 @@ function card(it, o) {   /* o.noCat (r-improve-1116 P3): on that category's own 
 const MOBQ = matchMedia("(max-width: 760px)");
 const lsGet = (k, d) => { try { const v = localStorage.getItem(k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } };
 const lsSet = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} };
+/* r-improve-1118 P3: the solid badge counts what is unread (o.un, mail rows); a fully read row keeps the outlined total. Rows without o.un keep the old total. */
+function actN(o) {
+  const un = o.unread && o.un > 0, n = un ? o.un : o.n;
+  return un || n > 1 ? `<span class="act-n ${un || (o.unread && o.un == null) ? "on" : ""}"${un ? ` title="${UI.lang === "en" ? `${n} unread of ${o.n}` : `${o.n} 条里 ${n} 条没读`}"` : ""}>${n > 99 ? "99+" : n}</span>` : "";
+}
 function actRow(o) {   // one shared row: avatar (+unread dot) | name + title ... time | preview ... chips
   const ws = o.ws || [];
   return `<div class="act-row ${o.unread ? "unread" : ""}${ws.length ? " wk-on" : ""}" ${o.attr}${wkAttr(ws)}>${wkFx(ws)}
     <span class="act-av">${o.av}${o.unread ? `<i class="act-dot"></i>` : ""}</span>
     <div class="act-main">
       <div class="act-l1"><b class="act-nm">${esc(o.name)}</b>${o.title ? `<span class="act-ti">${esc(o.title)}</span>` : ""}<time class="act-tm">${o.time}</time></div>
-      <div class="act-l2"><span class="act-pv">${esc(o.preview)}</span>${ws.length ? wkTag(ws) : o.chip ? `<span class="act-chip">${esc(o.chip)}</span>` : ""}${o.extra || ""}${o.n > 1 ? `<span class="act-n ${o.unread ? "on" : ""}">${o.n > 99 ? "99+" : o.n}</span>` : ""}</div>
+      <div class="act-l2"><span class="act-pv">${esc(o.preview)}</span>${ws.length ? wkTag(ws) : o.chip ? `<span class="act-chip">${esc(o.chip)}</span>` : ""}${o.extra || ""}${actN(o)}</div>
     </div></div>`;
 }
 

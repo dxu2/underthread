@@ -24,7 +24,7 @@ import { askGroups, askLeft, awaitsUser, decisions, grpHTML, okDone, okLabel, op
 import { wireSchedule } from "./views/pages/schedule.js";
 import { TEXTURES, setTab, stageSub, themeMode, wireSettings } from "./views/pages/settings.js";
 import { ghLabel, ghOpen, loadHealth, modalStatus, statusRows, statusSummary, verCheck, wireStatus } from "./views/status.js";
-import { renderTicker, wireTicker } from "./views/ticker.js";
+import { quietNight, renderTicker, wireTicker } from "./views/ticker.js";
 wireAv();
 wireYk();   /* t-yarn-anim: a kitten beat that ends between re-renders hands over in place */
 // ===== t-m2-a ②: number roll. Runs only when the value really changes: the last value shown is kept in memory per key (NV), not read back from the DOM,
@@ -152,7 +152,7 @@ window.App = {
   refresh: async () => { await poll(true); if (!UI.down) await avLoad(true); return !UI.down; },   // t-m2-c ④ pull-to-refresh: a forced full fetch; false = the server did not answer; t-avatar-live-refresh: then reread the avatar manifests
   tablePv: s => tablePv(s),   // t-chat-table (mobile.js chat list preview)
   mailPv: (s, a) => mailPv(s, a),   /* t-ri1108-a P1 (widgets.js 新回复 rows) */
-  srvT: (s, th) => srvT(s, th), titleEn: (s, it) => titleEn(s, it), tplSeed: d => tplSeed(d), tplEn: (j, v) => tplEn(j, v),   /* t-i18n-c (market.js) */   /* t-i18n-b: server-written zh -> en at display (transfer.js, market.js) */
+  srvT: (s, th) => srvT(s, th), quietNight: d => quietNight(d), titleEn: (s, it) => titleEn(s, it), tplSeed: d => tplSeed(d), tplEn: (j, v) => tplEn(j, v),   /* t-i18n-c (market.js) */   /* t-i18n-b: server-written zh -> en at display (transfer.js, market.js) */
   verCheck: () => verCheck(true), attachPick: p => attachPick(p),   // t-lib-attach (viewer.js)   // t-new-ver (tests)
   queueOf: id => queueOf(id), qBadge: (id, small) => qBadge(id, small),   /* t-agent-queue */ seenOf: id => seenOf(id), unreadOf: id => unreadOf(id),   /* t-ri1104-p2 */ chatMailRead: (id, t) => chatMailRead(id, t),   /* r-improve-1102 P3 (was swallowed by a // comment until 11-04) */   /* t-home-applike (palette) */
   draft: k => DRAFT.get(k), liveItem: a => liveItem(a), mgrOnline: a => mgrOnline(a), isBusy: a => isBusy(a), /* t-ui-fix-r6 R6-08 */ typingOn: (a, l) => typingOn(a, l), typingUntil: l => typingUntil(l),   // t-now-closed (home.js hero, office.js bubble)   // t-draft-keep (mobile.js chat list marks [草稿])

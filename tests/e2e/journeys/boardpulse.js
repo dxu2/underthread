@@ -7,6 +7,10 @@
  *   BP_TEXTURE=knit1|leather1 (default knit1)
  */
 const OK = new Set(["rotate", "translate", "scale", "transform", "opacity", "strokeDashoffset", "offset", "easing", "composite", "computedOffset"]);
+/* the poll has brought the new card: 等你拍板 is unseen again and shows its knot. Waiting for the knot alone is not enough: the knot that
+ * BoardPulse.seen() just cleared fades out for 250 ms, so a bare .bpl-knot can still be the old one (CI 11-22: the reload check then ran before
+ * the poll and found nothing to keep) */
+const landed = x => x.knot && x.unseen.includes("review");
 const probe = p => p.evaluate(() => {
   const el = document.querySelector('#wg .wg-grid > .wg[data-wg="review"]'), eb = el && el.querySelector(".wg-eb");
   const mine = t => t && t.matches && t.matches("#wg .wg-eb, #wg .wg-eb *, #wg .bpl-svg, #wg .bpl-svg *, #wg .bpl-new");   /* this card's animations, not the board's own (sprites, tile enter) */
@@ -52,7 +56,7 @@ module.exports = {
 
     /* 2. another card within 20 s: no second cue, but the knot comes back; a 0.8 s hover clears it */
     land();
-    await c.until(() => probe(p).then(x => x.knot), 8000);
+    await c.until(() => probe(p).then(landed), 8000);
     const b = await probe(p);
     c.check("within 20 s: no second cue, knot is back", !b.tug && !b.svg && b.knot, b);
     const box = await p.evaluate(() => { const r = document.querySelector("#wg .wg-review").getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2 }; });
@@ -64,7 +68,7 @@ module.exports = {
     /* 3. quiet hours: knot only */
     await reset(); await p.evaluate(() => { App.quietNight = () => true; });
     land();
-    await c.until(() => probe(p).then(x => x.knot), 8000); await c.sleep(300);
+    await c.until(() => probe(p).then(landed), 8000); await c.sleep(300);
     const q = await probe(p);
     c.check("quiet hours: knot only, nothing moves", q.knot && !q.tug && !q.svg && !q.flash, q);
     await p.evaluate(() => { App.quietNight = () => false; BoardPulse.seen("review"); });
@@ -73,9 +77,9 @@ module.exports = {
     await reset(); await p.emulateMedia({ reducedMotion: "reduce" });
     await p.evaluate(() => { document.hasFocus = () => false; });   /* from here the window counts as unfocused, so only the steps below can clear the knot */
     land();
-    await c.until(() => probe(p).then(x => x.knot), 8000);
+    await c.until(() => probe(p).then(landed), 8000);
     const r = await probe(p);
-    c.check("reduced motion: a 300 ms brighten, no tug, no loop, knot stays", r.knot && !r.tug && !r.svg, r);
+    c.check("reduced motion: a 300 ms brighten, no tug, no loop, knot stays", r.knot && r.unseen.includes("review") && !r.tug && !r.svg, r);
     await p.emulateMedia({ reducedMotion: "no-preference" });
 
     /* 5. reload keeps the knot until seen */

@@ -126,15 +126,17 @@ function schDots(s, r) {
   const zh = schZh(), today = dayKey(new Date()), WK = zh ? ["周日", "周一", "周二", "周三", "周四", "周五", "周六"] : ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
   const pz = s.paused && s.paused.at, done = new Map();
   (s.runs || []).forEach(x => { const d = x.for && new Date(x.for); if (d && !isNaN(d)) done.set(dayKey(d), x); });
+  const born = s.created ? dayKey(new Date(s.created)) : "";
   const cell = d => {
     const k = dayKey(d), x = r && Array.isArray(r.runs) ? r.runs.find(y => y.date === k) : null;
     if (x) return x.item && x.stage !== "done" ? ["…", "run", x.item] : ["✓", "ok", x.item || ""];
     if (done.has(k)) return ["✓", "ok", ""];
+    if (born && k < born) return ["", "pre", ""];   /* r-improve-1118 P5: before the schedule existed: an empty dashed cell, not 「·」 (which reads as a missed run) */
     if (!s.enabled && pz && k >= dayKey(new Date(pz))) return ["⏸", "off", ""];
     if (k === today && s.enabled && s.next && dayKey(new Date(s.next)) === today) return [schAt(s), "next", ""];
     return ["·", "na", ""];
   };
-  return `<div class="rs-dots">${Array.from({ length: 7 }, (_, i) => new Date(Date.now() - (6 - i) * 864e5)).map((d, i) => { const [x, c, id] = cell(d); return `<span class="rs-d"${id ? ` data-item="${esc(id)}"` : ""}><b class="${c}">${esc(x)}</b><small>${i === 6 ? (zh ? "今天" : "Today") : WK[d.getDay()]}</small></span>`; }).join("")}</div>`;
+  return `<div class="rs-dots">${Array.from({ length: 7 }, (_, i) => new Date(Date.now() - (6 - i) * 864e5)).map((d, i) => { const [x, c, id] = cell(d); return `<span class="rs-d"${id ? ` data-item="${esc(id)}"` : ""}${c === "pre" ? ` title="${zh ? `${born.slice(5)} 才开` : `Added ${born.slice(5)}`}"` : ""}><b class="${c}">${esc(x)}</b><small>${i === 6 ? (zh ? "今天" : "Today") : WK[d.getDay()]}</small></span>`; }).join("")}</div>`;
 }
 function schLastLine(s, r) {
   const zh = schZh(), bits = [], x = schLastRun(s);
@@ -186,7 +188,7 @@ function schedPage() {
   const od = rest.filter(i => grpOf(i) !== "done"), done = rest.filter(i => grpOf(i) === "done");
   const on = live.filter(s => s.enabled).length;
   const hint = zh ? "跟管家说一句「明天 9 点提醒我…」就能建" : "Tell the manager “remind me tomorrow at 9…” to add one";
-  const top = live.length ? `<div class="rs-h"><b>${zh ? "全部定时" : "All schedules"}</b><span>${zh ? `${live.length} 项 · ${on} 项在跑` : `${live.length} · ${on} on`}</span></div>` : "";
+  const top = live.length ? `<div class="rs-h"><b>${zh ? "全部定时" : "All schedules"}</b><span>${on === live.length ? (zh ? `${live.length} 项，全在跑` : `${live.length}, all on`) : zh ? `${live.length} 项 · ${on} 项在跑` : `${live.length} · ${on} on`}</span></div>` : "";
   const odRow = i => { const a = agent(i.owner); return `<div class="rs-row od" data-item="${esc(i.id)}"><div class="rs-m"><div class="rs-n">${a ? av(a, "rs-av", i.id) : ""}<b>${esc(i.title)}</b></div><div class="rs-s">${zh ? "管家说开工才跑" : "Runs when the manager starts it"} · ${zh ? "上次" : "last"} ${esc(when(i.activity || i.updated))}</div></div><span class="rs-nx dim">${i.paused && i.stage === "doing" ? (zh ? "已暂停" : "Paused") : (zh ? "等管家叫" : "On call")}</span></div>`; };
   const finOpen = doneOpen("sched-fin");
   const restH = (od.length ? `<div class="rs-h"><b>${zh ? "按需常驻" : "On demand"}</b><span>${zh ? "没有固定时间" : "no fixed time"}</span></div><div class="rs-list">${od.map(odRow).join("")}</div>` : "") +
