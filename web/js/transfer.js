@@ -1,5 +1,5 @@
 /* t-ht-build: 调岗 / 退休 (plan work/t-hr-transfer/plan.md). Everything here is prefixed ht-.
-   - 设置 · 角色 cards get a row (HT.acts): 调岗 (not for the manager), 退休 (not for the manager / HR / tooling keeper), 返聘 on a soft-retired card.
+   - 团队 page cards get a row (HT.acts): 调岗 (not for the manager), 退休 (not for the manager / HR / tooling keeper), 返聘 on a soft-retired card.
    - 调岗 = POST /api/interview {op:start, mode:transfer, target} -> an xfer-* card + HR's opening DM (the hr-iv bar in market.js says 调岗).
    - The transfer card's current draft shows HT.diffBlock: before / after per field and section (GET /api/transfer-plan, VDiff), the locked
      Confirmed rules line, the rule proposals, and 撤回调岗 for 10 minutes after 批准调岗.

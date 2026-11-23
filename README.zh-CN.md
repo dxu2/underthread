@@ -110,7 +110,7 @@ git clone https://github.com/dxu2/underthread.git && cd underthread
 
 **想在 Claude 桌面 App 里跑管家？** 用 `./start --no-steward`，然后在 App 里打开这个文件夹，说 `Start the manager per manager.md`。**想一步步手动来**（`python3 server.py`、`python3 make_agents.py`、`claude "Start the manager per manager.md"`）？跟以前完全一样，见 [docs/setup-guide.md](docs/setup-guide.md)。
 
-首页的「开工清单」会带你走完这几步，每一步做到了会自己打勾；全部打勾的第二天它自己收起（「编辑小组件」里能加回来）。
+首页的「开工清单」会带你走完这几步，每一步做到了会自己打勾；全部打勾的第二天它自己收起（「编辑小组件」里能加回来）。在这之前，新看板会先放 5 页欢迎页，再带你认三处地方；「设置 → 通用 → 再走一遍」可以重看。
 
 ### 跟管家怎么说
 
@@ -195,7 +195,7 @@ Underthread 不在乎你做什么工作。管家、卡片、审核、规则、�
 
 5. **内容创作者。** 「制作线」和「频道」两页（一条制作流水线，加上 B站 / YouTube / 小红书 的分平台预览）在新装时是关的。用 `content-zh` 预设、或者 `config.json` 里配了发布平台时会自动打开，也可以在 设置 → 制作线和频道 手动开。
 
-在 设置 → 角色 里还可以给队员**调岗**或让他**退休**。
+在左栏「团队」页里还可以给队员**调岗**、让他**退休**，或者**改名**、**换头像**。
 
 <p align="center"><img src="docs/img/market.png" alt="招聘市场：岗位卡片，每个三种性格，面试和直接雇按钮" width="720"></p>
 

@@ -17,11 +17,11 @@ module.exports = {
     const ready = async () => { await p.waitForFunction(() => window.App && App.ST && App.ST.meta && !document.getElementById("ut-splash"), null, { timeout: 15000 }); await c.sleep(1200); };
     await p.evaluate(() => { const s = (k, v) => localStorage.setItem("rt." + k, JSON.stringify(v)); s("ut", "ut"); s("home3", "widgets"); s("lang", "en"); });
     // a layout saved before S8 (no seen list), like a live board on upgrade day
-    const before = [["team", "m"], ["usage", "l"], ["review", "l"], ["busy", "l"], ["today", "m"], ["week", "m"]];
+    const before = [["media", "m"], ["usage", "l"], ["review", "l"], ["busy", "l"], ["today", "m"], ["week", "m"]];
     await p.evaluate(L => fetch("/api/action", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ kind: "widget_layout", layout: L }) }), before);
     await p.reload({ waitUntil: "load" }); await ready();
     const core = await p.evaluate(() => UTExt.widgets().filter(w => w.core).map(w => w.id));
-    c.check("core widgets registered through UTExt (the nine + t-onboarding setup)", core.length === 10 && ["team", "usage", "review", "busy", "replies", "today", "week", "ongoing", "media", "setup"].every(k => core.includes(k)), core);
+    c.check("core widgets registered through UTExt (the nine + t-onboarding setup; t-section-titles swapped team for recent)", core.length === 10 && ["recent", "usage", "review", "busy", "replies", "today", "week", "ongoing", "media", "setup"].every(k => core.includes(k)), core);
     c.check("App.ext is UTExt", await p.evaluate(() => App.ext === window.UTExt && App.ext.api === 1));
     await c.until(async () => { const w = (await c.state()).meta.widgets; return w && Array.isArray(w.seen); }, 8000);
     let w = (await c.state()).meta.widgets;

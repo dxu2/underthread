@@ -20,9 +20,11 @@ import "./js/core/quickguide.js";   // t-onboarding P0: 快捷指南 data (windo
 import "./js/vendor/qrcode.js";   // t-onb-polish: QR code for the phone step (window.QRLite; Kazuhiko Arase, MIT)
 import "./js/onboard.js";   // t-onboarding P0: 开工清单 widget / phone card, steward offline card, quick phrases, 点亮
 import "./js/toast.js";
+import "./js/lookaway.js";   // t-lookaway-fx: full-screen ink arrival + top pill; takes over toast.js notices unless 设置 → 提醒动效 is 关
 import "./js/rolefiles.js";
 import "./js/viewer.js";
 import "./js/glass.js";
 import "./js/mobile.js";
 import "./js/push.js";
 import "./js/welcome.js";   // t-hire-celebration: the new-teammate welcome (meta.hires)
+import "./js/tour.js";   // t-onboard-tour: first-run welcome pages + anchored tour (meta.onboarding.tour)

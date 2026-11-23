@@ -279,3 +279,23 @@ html:not([data-theme="dark"]) .tag.deliverable::selection, html:not([data-theme=
 #drawer .composer:not(.has) .cm-field > .dw-send { background: color-mix(in srgb, var(--ink) 12%, transparent); color: var(--dim); box-shadow: none; pointer-events: none; }
 @media (max-width: 760px) { #drawer .cm-field { display: contents; } #drawer .cm-field > .dw-send { display: none; } #drawer .cm-field > textarea { padding-right: 16px; } }
 @media (prefers-reduced-motion: reduce) { #drawer .cm-field > .dw-send svg { transition: none; } }
+
+/* ===== t-detail-close B (user pick 2026-11-21): the two "close"s no longer look alike.
+   Top right: 「收起 ›」 words in a quiet pill (was a ✕ that turned on hover). Bottom left: the 关单 pill became a quiet 「结束 / End」 button
+   (see End below; the ⋯ menu of the first round is gone), the reason dialog is unchanged. ===== */
+.dw-top button.dw-hide[data-close]:not(.dw-back) { width: auto; height: 28px; display: inline-flex; align-items: center; gap: 5px; padding: 0 10px 0 12px; border-radius: 999px;
+  color: var(--ink2); font: 500 var(--fs-13)/1 var(--f-sys); white-space: nowrap; transition: border-color .2s var(--ease), background-color .2s var(--ease), color .2s var(--ease); }
+.dw-top button.dw-hide[data-close]:not(.dw-back) svg { flex: none; transition: transform .25s var(--ease); }
+@media (hover: hover) { .dw-top button.dw-hide[data-close]:not(.dw-back):hover { transform: none; border-color: var(--ink2); background-color: var(--chip); color: var(--ink); }
+  .dw-top button.dw-hide[data-close]:not(.dw-back):hover svg { transform: translateX(2px); } }
+/* End (user 11-21 23:03): the ⋯ menu is gone; the bottom left is a quiet 「结束 / End」 text button (outline, dim ink, not red) that opens the reason
+   dialog directly. 复制链接 is a link icon next to the card id in the header (.dce-lnk, same look as .dw-id). */
+#drawer .dw-acts .ab.dce-end { flex: none; width: auto; min-width: 0; padding: 0 16px; border: 1px solid var(--line2); border-radius: 999px; background: none; color: var(--ink2);
+  font-weight: 500; transition: color .2s var(--ease), border-color .2s var(--ease), background-color .2s var(--ease); }
+@media (hover: hover) { #drawer .dw-acts .ab.dce-end:hover { color: var(--ink); border-color: var(--line3, var(--ink2)); background: var(--chip); } }
+.dw-top .dw-id.dce-lnk { padding: 2px 3px; margin-left: -2px; }
+#modal .mo-note { margin: 0 0 10px; font-size: var(--fs-13); color: var(--dim); }
+@media (prefers-reduced-motion: reduce) { .dw-top button.dw-hide[data-close] svg { transition: none; } }
+/* t-native-dialogs: UI.confirm (core/ui.js): title + one line + Cancel / Confirm in the usual #modal frame (bottom sheet on phone) */
+#modal .ncf h2 { margin-bottom: 6px; }
+#modal .ncf-p { margin: 0 0 4px; font-size: var(--fs-14); line-height: 1.5; color: var(--ink2, var(--dim)); overflow-wrap: anywhere; }

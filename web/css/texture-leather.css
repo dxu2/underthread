@@ -164,7 +164,7 @@ html[data-texture="leather1"][data-theme] { --lt-thread: color-mix(in srgb, var(
    缝线：夜里比皮亮一档、白天深一档；--lt-st-h/v 必须在卡上重新声明，继承下来的是 html 上已经代入的旧线色。效果图 / 对比度 work/t-home-colors。 ---- */
 html[data-texture^="leather"] .wg-review, html[data-texture^="leather"] .rv-card { --dye: #B4642A; }
 html[data-texture^="leather"] .wg-busy:not(.hero), html[data-texture^="leather"] .hd { --dye: #28426E; }
-html[data-texture^="leather"] .wg-team { --dye: #7A2438; }
+html[data-texture^="leather"] .wg-recent { --dye: #7A2438; }   /* t-section-titles: 团队交接 left the home, 最近 takes its dye */
 html[data-texture^="leather"] .wg-replies { --dye: #6A1F1C; }
 html[data-texture^="leather"] .wg-today { --dye: #2E6040; }
 html[data-texture^="leather"] .wg-week { --dye: #A57A48; }
@@ -182,11 +182,11 @@ html[data-texture^="leather"][data-theme="dark"] :is(.wg-review, .rv-card, .wg-w
 html[data-texture^="leather"] .ru-card { --lt-grain: url("/static/leather/leather-soft-d.webp"); }
 html[data-texture^="leather"][data-theme="white"] .ru-card { --lt-grain: url("/static/leather/leather-soft-l.webp"); }
 /* 同色线：只在有 --dye 的卡上换线（没染的 .wg 不受影响） */
-html[data-texture^="leather"][data-theme="dark"] :is(.wg-review, .wg-busy:not(.hero), .wg-team, .wg-replies, .wg-today, .wg-week, .wg-ongoing, .wg-media, .wg-usage, .hd, .rv-card, .ru-card) {
+html[data-texture^="leather"][data-theme="dark"] :is(.wg-review, .wg-busy:not(.hero), .wg-recent, .wg-replies, .wg-today, .wg-week, .wg-ongoing, .wg-media, .wg-usage, .hd, .rv-card, .ru-card) {
   --lt-thread: color-mix(in srgb, color-mix(in srgb, var(--dye) 55%, #fff) 80%, transparent); }
-html[data-texture^="leather"][data-theme="white"] :is(.wg-review, .wg-busy:not(.hero), .wg-team, .wg-replies, .wg-today, .wg-week, .wg-ongoing, .wg-media, .wg-usage, .hd, .rv-card, .ru-card) {
+html[data-texture^="leather"][data-theme="white"] :is(.wg-review, .wg-busy:not(.hero), .wg-recent, .wg-replies, .wg-today, .wg-week, .wg-ongoing, .wg-media, .wg-usage, .hd, .rv-card, .ru-card) {
   --lt-thread: color-mix(in srgb, color-mix(in srgb, var(--dye) 80%, #000) 75%, transparent); }
-html[data-texture="leather1"] :is(.wg-review, .wg-busy:not(.hero), .wg-team, .wg-replies, .wg-today, .wg-week, .wg-ongoing, .wg-media, .wg-usage, .hd, .rv-card, .ru-card) {
+html[data-texture="leather1"] :is(.wg-review, .wg-busy:not(.hero), .wg-recent, .wg-replies, .wg-today, .wg-week, .wg-ongoing, .wg-media, .wg-usage, .hd, .rv-card, .ru-card) {
   --lt-sw: 2px;
   --lt-st-h: repeating-linear-gradient(90deg, var(--lt-thread) 0 var(--lt-dash), transparent var(--lt-dash) var(--lt-pitch));
   --lt-st-v: repeating-linear-gradient(180deg, var(--lt-thread) 0 var(--lt-dash), transparent var(--lt-dash) var(--lt-pitch)); }

@@ -12,7 +12,7 @@ import { dayKey, pad, whoName } from "../../core/i18n.js";
 import { ARCH, REV, ST, UI, archAll } from "../../core/store.js";
 import { agent, agents, aname, av, ringOnce } from "../../core/av.js";
 import { fmtDur, isAudioAtt, vmBars, vmHTML, vmSync } from "../attach.js";
-import { pageHead } from "./common.js";
+import { MOBQ, pageHead } from "./common.js";
 import { PAGES, renderPage } from "./index.js";
 import { hooks } from "../../app.js";
 const LIB = { kind: "all", who: "", q: "", priv: false, n: 60, rev: null, list: null, sig: "", dur: {}, io: null, dio: null, pio: null, peaks: {}, pq: [], busy: false, ac: null };
@@ -57,8 +57,12 @@ function libChips(L) {
   const kc = k => k === "all" ? byK.length : byK.filter(a => a.kind === k).length;
   const ids = new Set(byW.map(a => a.who)), ag = agents().map(a => a.id), order = ag.filter(id => ids.has(id)).concat([...ids].filter(w => w && !ag.includes(w)));
   const nPriv = L.filter(a => a.priv).length;
-  return `<div class="lib-seg" role="group">${K.map(([k, n]) => `<button type="button" class="${LIB.kind === k ? "on" : ""}" data-libk="${k}">${n} <small>${kc(k)}</small></button>`).join("")}</div>` +
-    `<div class="lib-seg lib-who" role="group"><button type="button" class="${LIB.who ? "" : "on"}" data-libw="">${zh ? "所有人" : "Everyone"}</button>${order.map(w => `<button type="button" class="${LIB.who === w ? "on" : ""}" data-libw="${esc(w)}">${esc(libWho(w))}</button>`).join("")}</div>` +
+  /* r-improve-1122 P2: on a phone both rows are the 通知 / 委托 filter row (div.filters.mb-row.m-seg.q > .seg): same track, sliding pill, soft edges.
+     The desk keeps its .lib-seg chips. Clicks go by data-libk / data-libw either way. */
+  const ph = MOBQ.matches, bc = on => (ph ? "seg-i" : "") + (on ? " on" : "");
+  const row = (key, cls, inner) => ph ? `<div class="filters mb-row m-seg q ri22-row"><div class="seg" data-seg="${key}" role="group">${inner}</div></div>` : `<div class="${cls}" role="group">${inner}</div>`;
+  return row("libk", "lib-seg", K.map(([k, n]) => `<button type="button" class="${bc(LIB.kind === k)}" data-libk="${k}">${n} <small>${kc(k)}</small></button>`).join("")) +
+    row("libw", "lib-seg lib-who", `<button type="button" class="${bc(!LIB.who)}" data-libw="">${zh ? "所有人" : "Everyone"}</button>${order.map(w => `<button type="button" class="${bc(LIB.who === w)}" data-libw="${esc(w)}">${esc(libWho(w))}</button>`).join("")}`) +
     (nPriv ? `<button type="button" class="lib-pvt${LIB.priv ? " on" : ""}" data-libpriv>${LIB.priv ? (zh ? `已显示私用录音 ${nPriv} 个 · 隐藏` : `Showing ${nPriv} private voice files · hide`) : (zh ? `私用录音 ${nPriv} 个已隐藏 · 显示` : `${nPriv} private voice files hidden · show`)}</button>` : "");
 }
 function libDay(ms) {

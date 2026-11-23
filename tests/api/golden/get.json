@@ -6,6 +6,12 @@
   },
   "code": 200
  },
+ "avatar_choices_bad": {
+  "body": {
+   "error": "no role"
+  },
+  "code": 404
+ },
  "avatars_index": {
   "body": {},
   "code": 200
@@ -149,7 +155,21 @@
      ]
     }
    ],
-   "extensions": [],
+   "extensions": [
+    {
+     "api": 1,
+     "builtin": true,
+     "error": null,
+     "legacy": false,
+     "name": "live",
+     "on": true,
+     "requires": null,
+     "server": true,
+     "skipped": null,
+     "stateutil": true,
+     "web": true
+    }
+   ],
    "health": [],
    "jobs": [],
    "legacy_until": "0.3.0",
@@ -186,7 +206,14 @@
    },
    "ext": {
     "api": 1,
-    "extensions": [],
+    "extensions": [
+     {
+      "error": null,
+      "legacy": false,
+      "name": "live",
+      "skipped": null
+     }
+    ],
     "health": []
    },
    "feeds": {
@@ -207,14 +234,15 @@
    },
    "schema": {
     "ahead": [],
-    "code": 3,
+    "code": 4,
     "config": 0,
     "roster": 0,
-    "state": 3,
+    "state": 4,
     "steps": [
      "0001_baseline",
      "0002_routines_log",
-     "0003_onboarding"
+     "0003_onboarding",
+     "0004_tour"
     ]
    },
    "server": {
@@ -585,16 +613,19 @@
     "/static/js/vendor/qrcode.js?v=<h>",
     "/static/js/onboard.js?v=<h>",
     "/static/js/toast.js?v=<h>",
+    "/static/js/lookaway.js?v=<h>",
     "/static/js/rolefiles.js?v=<h>",
     "/static/js/viewer.js?v=<h>",
     "/static/js/glass.js?v=<h>",
     "/static/js/mobile.js?v=<h>",
     "/static/js/push.js?v=<h>",
     "/static/js/welcome.js?v=<h>",
+    "/static/js/tour.js?v=<h>",
     "/static/js/core/util.js?v=<h>",
     "/static/js/core/i18n.js?v=<h>",
     "/static/js/core/store.js?v=<h>",
     "/static/js/core/av.js?v=<h>",
+    "/static/js/core/yarnkit.js?v=<h>",
     "/static/js/core/ui.js?v=<h>",
     "/static/js/core/router.js?v=<h>",
     "/static/js/views/attach.js?v=<h>",
@@ -624,6 +655,7 @@
     "/static/js/phone/hello.js?v=<h>",
     "/static/js/views/ownerloc.js?v=<h>",
     "/static/js/views/pages/pipe.js?v=<h>",
+    "/static/js/views/rolelook.js?v=<h>",
     "/static/js/views/pages/quests.js?v=<h>",
     "/static/js/views/pages/connections.js?v=<h>",
     "/static/icons/favicon-32.png?v=<h>",
@@ -654,6 +686,7 @@
     "/static/css/style/17-avatar-row-market-hr.css?v=<h>",
     "/static/css/style/18-fixes-1108-1112.css?v=<h>",
     "/static/css/style/19-connections.css?v=<h>",
+    "/static/ext/live/live.css?v=<h>",
     "/static/css/mobile/00-layout.css?v=<h>",
     "/static/css/mobile/01-polish-tabbar.css?v=<h>",
     "/static/css/mobile/02-chat.css?v=<h>",
@@ -670,17 +703,23 @@
     "/static/css/skin-ink.css?v=<h>",
     "/static/css/glass.css?v=<h>",
     "/static/css/theme-ut.css?v=<h>",
+    "/static/css/yarnkit.css?v=<h>",
+    "/static/css/lookaway.css?v=<h>",
     "/static/css/welcome.css?v=<h>",
     "/static/css/texture-knit.css?v=<h>",
     "/static/css/texture-leather.css?v=<h>",
+    "/static/css/tour.css?v=<h>",
     "/static/css/onboard.css?v=<h>",
     "/static/css/polish-1115b.css?v=<h>",
+    "/static/css/polish-1121.css?v=<h>",
     "/static/css/oss.css?v=<h>",
     "/static/brand/wordmark-on-dark@2x.png?v=<h>",
     "/static/brand/wordmark-on-light@2x.png?v=<h>",
-    "/static/main.js?v=<h>"
+    "/static/main.js?v=<h>",
+    "/static/ext/live/live.js?v=<h>"
    ],
    "import_map": {
+    "/static/ext/live/live.js": "/static/ext/live/live.js?v=<h>",
     "/static/js/app.js": "/static/js/app.js?v=<h>",
     "/static/js/core/av.js": "/static/js/core/av.js?v=<h>",
     "/static/js/core/i18n.js": "/static/js/core/i18n.js?v=<h>",
@@ -689,11 +728,13 @@
     "/static/js/core/store.js": "/static/js/core/store.js?v=<h>",
     "/static/js/core/ui.js": "/static/js/core/ui.js?v=<h>",
     "/static/js/core/util.js": "/static/js/core/util.js?v=<h>",
+    "/static/js/core/yarnkit.js": "/static/js/core/yarnkit.js?v=<h>",
     "/static/js/diff.js": "/static/js/diff.js?v=<h>",
     "/static/js/ext.js": "/static/js/ext.js?v=<h>",
     "/static/js/fx.js": "/static/js/fx.js?v=<h>",
     "/static/js/glass.js": "/static/js/glass.js?v=<h>",
     "/static/js/home.js": "/static/js/home.js?v=<h>",
+    "/static/js/lookaway.js": "/static/js/lookaway.js?v=<h>",
     "/static/js/lsmigrate.js": "/static/js/lsmigrate.js?v=<h>",
     "/static/js/market.js": "/static/js/market.js?v=<h>",
     "/static/js/md.js": "/static/js/md.js?v=<h>",
@@ -716,6 +757,7 @@
     "/static/js/splash.js": "/static/js/splash.js?v=<h>",
     "/static/js/team.js": "/static/js/team.js?v=<h>",
     "/static/js/toast.js": "/static/js/toast.js?v=<h>",
+    "/static/js/tour.js": "/static/js/tour.js?v=<h>",
     "/static/js/transfer.js": "/static/js/transfer.js?v=<h>",
     "/static/js/vendor/qrcode.js": "/static/js/vendor/qrcode.js?v=<h>",
     "/static/js/viewer.js": "/static/js/viewer.js?v=<h>",
@@ -736,6 +778,7 @@
     "/static/js/views/pages/review.js": "/static/js/views/pages/review.js?v=<h>",
     "/static/js/views/pages/schedule.js": "/static/js/views/pages/schedule.js?v=<h>",
     "/static/js/views/pages/settings.js": "/static/js/views/pages/settings.js?v=<h>",
+    "/static/js/views/rolelook.js": "/static/js/views/rolelook.js?v=<h>",
     "/static/js/views/status.js": "/static/js/views/status.js?v=<h>",
     "/static/js/views/ticker.js": "/static/js/views/ticker.js?v=<h>",
     "/static/js/welcome.js": "/static/js/welcome.js?v=<h>",
@@ -2401,6 +2444,9 @@
     "avatars": {},
     "avv": "<volatile>",
     "codex": null,
+    "exts": {
+     "live": true
+    },
     "fixture": {
      "built_by": "tests/e2e/fixtures/build.py",
      "end": "2026-01-20T09:59:00+00:00",
@@ -2428,21 +2474,34 @@
       "ran": [
        "0001_baseline",
        "0002_routines_log",
-       "0003_onboarding"
+       "0003_onboarding",
+       "0004_tour"
       ],
-      "to": 3
+      "to": 4
      }
     ],
-    "onboarding": {},
+    "onboarding": {
+     "tour": {
+      "desk": {
+       "at": "2026-01-20T06:38:35+00:00",
+       "how": "upgrade"
+      },
+      "phone": {
+       "at": "2026-01-20T06:38:35+00:00",
+       "how": "upgrade"
+      }
+     }
+    },
     "owner": "You",
     "owner_loc": null,
+    "plan_tip": true,
     "platforms_set": false,
     "report_time": "18:00",
     "rev": 56,
     "routines": [],
     "routines_log": {},
-    "schema": 3,
-    "schema_code": 3,
+    "schema": 4,
+    "schema_code": 4,
     "seats": {
      "artist": [
       0.46,
@@ -4053,6 +4112,9 @@
      "writer": "2026-01-20T09:00:00+00:00"
     },
     "codex": null,
+    "exts": {
+     "live": true
+    },
     "fixture": {
      "built_by": "tests/e2e/fixtures/build.py",
      "end": "2026-01-20T09:59:00+00:00",
@@ -4080,21 +4142,34 @@
       "ran": [
        "0001_baseline",
        "0002_routines_log",
-       "0003_onboarding"
+       "0003_onboarding",
+       "0004_tour"
       ],
-      "to": 3
+      "to": 4
      }
     ],
-    "onboarding": {},
+    "onboarding": {
+     "tour": {
+      "desk": {
+       "at": "2026-01-20T06:38:35+00:00",
+       "how": "upgrade"
+      },
+      "phone": {
+       "at": "2026-01-20T06:38:35+00:00",
+       "how": "upgrade"
+      }
+     }
+    },
     "owner": "You",
     "owner_loc": null,
+    "plan_tip": false,
     "platforms_set": false,
     "report_time": "18:00",
-    "rev": 121,
+    "rev": 126,
     "routines": [],
     "routines_log": {},
-    "schema": 3,
-    "schema_code": 3,
+    "schema": 4,
+    "schema_code": 4,
     "seats": {
      "artist": [
       0.46,
@@ -4177,7 +4252,7 @@
       0,
       7
      ],
-     "logs": 80,
+     "logs": 84,
      "mail": [
       20,
       20
@@ -5293,6 +5368,9 @@
     "avatars": {},
     "avv": "<volatile>",
     "codex": null,
+    "exts": {
+     "live": true
+    },
     "fixture": {
      "built_by": "tests/e2e/fixtures/build.py",
      "end": "2026-01-20T09:59:00+00:00",
@@ -5320,21 +5398,34 @@
       "ran": [
        "0001_baseline",
        "0002_routines_log",
-       "0003_onboarding"
+       "0003_onboarding",
+       "0004_tour"
       ],
-      "to": 3
+      "to": 4
      }
     ],
-    "onboarding": {},
+    "onboarding": {
+     "tour": {
+      "desk": {
+       "at": "2026-01-20T06:38:35+00:00",
+       "how": "upgrade"
+      },
+      "phone": {
+       "at": "2026-01-20T06:38:35+00:00",
+       "how": "upgrade"
+      }
+     }
+    },
     "owner": "You",
     "owner_loc": null,
+    "plan_tip": true,
     "platforms_set": false,
     "report_time": "18:00",
     "rev": 56,
     "routines": [],
     "routines_log": {},
-    "schema": 3,
-    "schema_code": 3,
+    "schema": 4,
+    "schema_code": 4,
     "seats": {
      "artist": [
       0.46,

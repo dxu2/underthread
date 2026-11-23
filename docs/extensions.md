@@ -4,6 +4,20 @@ An extension adds a feature to Underthread without changing a core file: an endp
 job, a line on the health panel, a `stateutil.py` command, or its own page scripts and styles. Extensions live in your own layer
 (`local/ext/<name>/`, see `docs/local.md`), so updates never touch them.
 
+## Built-in extensions
+
+Some features ship with the repository as extensions in `ext/<name>/` (same layout as below). They load before your own, and
+`config.json` switches them: `"extensions": {"<name>": false}` turns one off (the default is on). A folder of yours in
+`local/ext/<name>/` with the same name replaces the built-in one.
+
+| Name | What it does | Switch |
+|---|---|---|
+| `live` | 看画面 / Watch: while an agent drives Chrome, a Watch button on its tool pill (and on the phone home's team rows) shows the last screenshot it took. `tools/live_hook.py`, wired in `.claude/settings.json`, saves the last image of each Claude in Chrome step to `.live/<agent>.jpg`. | Settings → Connections → Watch |
+
+Privacy of `live`: one frame per agent, only in `.live/` on this computer (git-ignored). Frames never go into `state.json`, a card
+or a log (`logs/live_hook.log` holds error text only), and nothing is sent to another host. A frame is served only while the agent
+holds the Chrome tool flag and is younger than 15 minutes. Switching it off deletes the saved frames and the hook does nothing.
+
 ## Layout
 
 ```
@@ -92,6 +106,8 @@ UTExt.widget({
 UTExt.cardKind({ id: "clip", label: ["剪辑", "Clip"] });   // kinds from ext.json "card_kinds" are loaded for you
 UTExt.toolPill((agent, toolKey, stale) => "");            // extra HTML in a working teammate's tool pill
 UTExt.statusRow(en => ({ t: "Clips", s: "3 today", lv: "ok" }));   // one more row in 系统状态 (ok / warn / bad)
+UTExt.tourStep({ id: "clips", after: "team", t: ["剪辑", "Clips"], b: ["……", "…"],   // one more step in the first-run tour
+  desk: () => document.querySelector("#clips"), phone: () => null });   // a step with no target on a form is skipped there
 ```
 
 `D` is the data core widgets draw from (`waiting`, `busy`, `nr`, `shipped`, `days`, `ongoing`, `imgs`); `kit` has `eb` (the

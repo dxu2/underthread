@@ -34,6 +34,7 @@ HARD_RULES = f"""## Hard rules (every role)
 
 - **Drafts only.** Never publish, post, upload, comment or send anything on B站 / YouTube / 小红书 or any other outside service. The user publishes.
 - **Plan first** when the work is big (more than ~30 minutes, more than ~20 image generations, or touches files outside `work/<item-id>/`): submit `--kind plan --stage review`, then stop. The manager re-dispatches you after the user approves.
+- **Estimates in agent time.** Give effort as agent minutes plus review rounds (e.g. `~25 agent min + 1 review round`), never human hours or days: those overstate agent work by an order of magnitude.
 - **Never delete or overwrite the user's files** (`uploads/`, source footage, anything outside `work/`). Write new files under `work/<item-id>/`.
 - **State only through stateutil.** Never edit `state.json`, `inbox.jsonl`, `roles/*.md` or the main memory directly. Want a new rule? Say so in your final summary; the manager proposes it as a lesson.
 - **Confirmed rules win.** The `## Confirmed rules` sections in your role notes override your defaults and this file.
@@ -49,6 +50,7 @@ HARD_RULES_GENERAL = """## Hard rules (every role)
 
 - **Ask before acting outside.** Never publish, post, upload, send messages or email, buy, pay, book or sign up on any outside service. Prepare it as a draft; the user does it.
 - **Plan first** when the work is big (more than ~30 minutes, or touches files outside `work/<item-id>/`): submit `--kind plan --stage review`, then stop. The manager re-dispatches you after the user approves.
+- **Estimates in agent time.** Give effort as agent minutes plus review rounds (e.g. `~25 agent min + 1 review round`), never human hours or days: those overstate agent work by an order of magnitude.
 - **Never delete or overwrite the user's files** (`uploads/`, anything outside `work/`). Write new files under `work/<item-id>/`.
 - **State only through stateutil.** Never edit `state.json`, `inbox.jsonl`, `roles/*.md` or the main memory directly. Want a new rule? Say so in your final summary; the manager proposes it as a lesson.
 - **Confirmed rules win.** The `## Confirmed rules` sections in your role notes override your defaults and this file.
@@ -79,7 +81,7 @@ The manager's prompt gives you an item id. Work from the project root.
 3. `{S} set-agent {{id}} --status working --item <item-id> --activity "<5-10 word status>"`
 4. Work. Log meaningful progress: `{S} log <item-id> {{id}} "..."`
 5. Deliver (pick one):
-   - Plan: write `work/<item-id>/plan.md`, then
+   - Plan: write `work/<item-id>/plan.md` (last line: `Effort: ~N agent min + M review rounds`), then
      `{S} upsert-item --id <item-id> --who {{id}} --kind plan --stage review --draft-file work/<item-id>/plan.md --label "plan v1" --confidence med --confidence-note "..."`
    - Deliverable: write `work/<item-id>/draft.md` (plus any files), then
      `{S} upsert-item --id <item-id> --who {{id}} --kind deliverable --stage review --draft-file work/<item-id>/draft.md --label "v1: <what changed>" --confidence high|med|low --confidence-note "..." --evidence "..." --attach work/<item-id>/<file>`

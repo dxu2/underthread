@@ -59,6 +59,15 @@ html[data-skin="ink"] .ph h1::after { content: ""; display: inline-block; width:
 html[data-skin="ink"] .ph .en, html[data-skin="ink"] .ph .orn { display: none; }
 html[data-skin="ink"] .ink-eb { display: flex; gap: 10px; align-items: center; font: 600 var(--fs-12)/1 var(--f-sys); letter-spacing: .04em; color: var(--dim); margin: 0 0 12px; text-transform: uppercase; }
 html[data-skin="ink"] .ink-eb i { flex: 1; height: 1px; background: var(--line2); }
+/* t-home-clock: H:MM right after the home date, a size up from it, same colour; each digit is its own box so a changed one can roll up */
+html[data-skin="ink"] .ink-eb .hc-clk { display: inline-flex; align-items: baseline; font-size: var(--fs-14); font-variant-numeric: tabular-nums; letter-spacing: .02em; margin-left: -2px; overflow: hidden; line-height: 1.15; }
+html[data-skin="ink"] .ink-eb .hc-clk:empty { display: none; }
+html[data-skin="ink"] .ink-eb .hc-d { display: inline-block; }
+html[data-skin="ink"] .ink-eb .hc-c { padding: 0 .04em; }
+html[data-skin="ink"] .ink-eb .hc-p { font-size: var(--fs-11); margin-left: .3em; letter-spacing: .04em; }
+html[data-skin="ink"] .ink-eb .hc-roll { animation: hc-roll .38s cubic-bezier(.2,.8,.2,1) both; }
+@keyframes hc-roll { from { transform: translateY(65%); opacity: 0; } to { transform: none; opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { html[data-skin="ink"] .ink-eb .hc-roll { animation: none; } }
 
 /* ---------- lists: hairline rows, ink section rules ---------- */
 html[data-skin="ink"] .ph-bar { border-bottom: 1px solid var(--line); padding-bottom: 10px; }

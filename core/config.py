@@ -40,6 +40,9 @@ DEFAULTS = {
     # t-oss-gen-s3: tools/image.py picks the picture backend. "auto" = codex if logged in with ChatGPT, else none (hires fall back
     # to template art). t-oss-no-comfy: ComfyUI was removed; an old "comfy" setting is read as auto and old comfy keys are ignored.
     "image": {"backend": "auto"},
+    # t-oss-live: built-in extensions (ext/<name>/) on or off. live = 看画面 / Watch, the last screenshot an agent took in Chrome
+    # (kept only in .live/ on this computer). Settings -> Connections writes the key.
+    "extensions": {"live": True},
 }
 EXAMPLE = {"owner": {"display_name": "<your name>"}}   # placeholders shown only in config.example.json
 ROLE_DEFAULTS = {"enabled": True}
@@ -101,6 +104,27 @@ def _write_owner(root, key, value):
         f.write("\n")
     os.replace(tmp, path)
     _OWN["m"] = None
+
+
+def set_ext(root, name, on):
+    """t-oss-live: write extensions.<name> = on into config.json; every other key (and _schema) stays as it is."""
+    path = os.path.join(root, "config.json")
+    try:
+        with open(path, encoding="utf-8") as f:
+            data = json.load(f)
+    except FileNotFoundError:
+        data = {}
+    if not isinstance(data, dict):
+        raise ValueError("config.json is not an object")
+    if not isinstance(data.get("extensions"), dict):
+        data["extensions"] = {}
+    data["extensions"][name] = bool(on)
+    tmp = path + ".tmp"
+    with open(tmp, "w", encoding="utf-8") as f:
+        json.dump(data, f, ensure_ascii=False, indent=2)
+        f.write("\n")
+    os.replace(tmp, path)
+    return bool(on)
 
 
 def set_owner(root, name):

@@ -11,6 +11,7 @@ import uuid
 from api.ctx import S, C, MG, ROOT, WEB, AVATARS, CONFIG
 from api.router import route
 from api.routes.schedules import routines_view
+from core import rolelook as RL
 
 _roster_mtime = None
 
@@ -39,6 +40,7 @@ def sync_roster():
                     a.pop(k, None)
             a["order"] = r.get("order", i)
             a["enabled"] = r.get("enabled", True)
+            RL.apply(a, r, ROOT)   # t-roster-rail: your display name / avatar pick (团队 page) over the roster's own
             if r["id"] == "manager" and not a.get("last_seen"):
                 a["status"] = "offline"
         # roles removed from the roster: drop them, hand their open items to the manager
@@ -135,7 +137,10 @@ def archive_body(gz):
 # ---- t-hr-registry: which art files each role has (web/art/<id>.jpg, panels/, cut/, avatars/ut/_s/<id>-work-160.webp). The web reads meta.art
 # instead of hard-coded id lists, so a new role's art shows up without a code edit. Cached on the four directories' signatures.
 ART_DIRS = (("jpg", os.path.join(WEB, "art"), ".jpg"), ("panel", os.path.join(WEB, "art", "panels"), ".webp"),
-            ("cut", os.path.join(WEB, "art", "cut"), ".webp"), ("sheet", os.path.join(AVATARS, "ut", "_s"), "-work-160.webp"))
+            ("cut", os.path.join(WEB, "art", "cut"), ".webp"), ("sheet", os.path.join(AVATARS, "ut", "_s"), "-work-160.webp"),
+            # t-yarn-anim: a role with a level-2 yarn kitten script has art/yarn/<id>.json next to an <id>/ folder (eyes, kitten, eyeless art).
+            # Core ships none (every role gets the generic kitten); your own layer adds them under local/web/art/yarn/. Value = mtime (cache key).
+            ("yarn", os.path.join(WEB, "art", "yarn"), ".json"), ("yarn", os.path.join(S.LOCAL, "web", "art", "yarn"), ".json"))
 _ART = {"sig": None, "map": {}}
 # Spare stage seats for roles whose roster entry has no "seat" key (an explicit "seat": null keeps a role off the stage).
 STAGE_SPARE = [[.22, .62], [.60, .22], [.74, .34], [.10, .70], [.46, .76], [.84, .26]]
@@ -245,6 +250,12 @@ def art_scan():
             continue
         for f in names:
             if f.endswith(ext) and not f.startswith("."):
+                if k == "yarn":
+                    try:
+                        m.setdefault(f[:-len(ext)], {})[k] = int(os.path.getmtime(os.path.join(d, f)))
+                    except OSError:
+                        pass
+                    continue
                 m.setdefault(f[:-len(ext)], {})[k] = 1
     _ART.update(sig=sig, map=m)
     return m
@@ -388,6 +399,9 @@ def public_state(slim=False):
     from api.routes import setup as SU   # t-onboarding P0: the 开工清单, only while it is not retired (the page draws nothing without it)
     if not SU.retired(st["meta"].get("onboarding") or {}):
         st["meta"]["setup"] = SU.view(st, a["items"])
+    st["meta"]["plan_tip"] = SU.plan_tip(st, list(st.get("items") or []) + list(a["items"] or []))   # t-oss-polish-1121 ④: the one-time 批准开工 bubble
+    from core.ext import EXT, ext_on   # t-oss-live: built-in extensions the page may show (Settings -> Connections switches them)
+    st["meta"]["exts"] = {"live": bool((EXT.get("live") or {}).get("server")) and ext_on("live")}
     st["meta"]["media_v"] = 1   # t-voice-memo: this server transcribes (the page hides 转写/重试 on older servers)
     trim_state(st)
     ho = st.pop("handoffs", None) or []   # t-rb-build: the log is fetched from /api/handoffs; a poll carries only where it ends

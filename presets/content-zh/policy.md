@@ -26,6 +26,8 @@ Main-quest pipeline: scout → writer → scout (fact-check) → director + arti
 - Using a real person's likeness, or anything that could be read as an ad / sponsorship.
 - Batch jobs larger than ~50 image generations or ~10 minutes of rendering.
 
+When you ask, give the effort in agent time: `~N agent min + M review rounds`, not human hours or days.
+
 ## Priority
 
 1. `urgent` (today's deadline, trending window, broken tooling)

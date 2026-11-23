@@ -41,10 +41,10 @@ urlparse usage_roll uuid wake_loop web_file""".split()
 
 # (method, path, flags, module). "*" = path prefix. flags: raw = the handler reads the body; late = after the extension routes.
 ROUTES = [
-    ("GET", "/", "", "api.routes.web"), ("GET", "/api/archive", "", "api.routes.state"), ("GET", "/api/doc", "", "api.routes.docs"),
+    ("GET", "/", "", "api.routes.web"), ("GET", "/api/archive", "", "api.routes.state"), ("GET", "/api/avatar-choices", "", "api.routes.actions"), ("GET", "/api/doc", "", "api.routes.docs"),
     ("GET", "/api/docs", "", "api.routes.docs"), ("GET", "/api/ext", "", "api.routes.health"), ("GET", "/api/feeds", "", "api.routes.feeds"), ("GET", "/api/handoffs", "", "api.routes.state"),
     ("GET", "/api/health", "", "api.routes.health"), ("GET", "/api/history", "", "api.routes.state"),
-    ("GET", "/api/item", "", "api.routes.state"), ("GET", "/api/memory", "", "api.routes.docs"),
+    ("GET", "/api/item", "", "api.routes.state"), ("GET", "/api/live/*", "", "_ext_live_server"), ("GET", "/api/memory", "", "api.routes.docs"),
     ("GET", "/api/push/history", "", "api.routes.push"), ("GET", "/api/push/key", "", "api.routes.push"),
     ("GET", "/api/push/latest", "", "api.routes.push"), ("GET", "/api/push/status", "", "api.routes.push"),
     ("GET", "/api/presets", "", "api.routes.hr"), ("POST", "/api/preset", "", "api.routes.hr"),
@@ -69,8 +69,8 @@ ROUTES = [
 
 A, SC, SN = "api.routes.actions", "api.routes.schedules", "api.routes.snooze"
 ACTIONS = {"answer": A, "approve": A, "archive": A, "calendar_add": A, "calendar_del": A, "chat": A, "chat_seen": A, "comment": A,
-           "dm": A, "done": A, "lesson": A, "mail_read": A, "new_task": A, "notice_dismiss": A, "onboarding": "api.routes.setup", "owner_location": A, "owner_name": A, "ping": A, "reassign": A, "reject": A,
-           "reopen": A, "report_request": A, "routine_pause": SC, "routine_resume": SC, "schedule_fire": SC, "schedule_pause": SC,
+           "dm": A, "done": A, "ext_set": A, "lesson": A, "mail_read": A, "new_task": A, "notice_dismiss": A, "onboarding": "api.routes.setup", "owner_location": A, "owner_name": A, "ping": A, "reassign": A, "reject": A,
+           "reopen": A, "report_request": A, "role_look": A, "routine_pause": SC, "routine_resume": SC, "schedule_fire": SC, "schedule_pause": SC,
            "schedule_resume": SC, "schedule_rm": SC, "set_category": A, "set_stage": A, "snooze": SN, "stamina": A, "studio_mode": A, "unsnooze": SN,
            "widget_layout": A}
 

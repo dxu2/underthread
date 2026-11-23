@@ -74,27 +74,64 @@ function focusTrap(box, e) {
 /* t-ui-fix-r6 R6-05: the opener is also remembered by its first data-* attribute (like R5-03), because the page behind a dialog can
    re-render (设置 → 系统 repaints on loadHealth) and leave the saved node detached; closeModal then finds the new row */
 const refSel = el => { const a = el && el.attributes ? [...el.attributes].find(x => x.name.startsWith("data-")) : null; return el && el.id ? "#" + CSS.escape(el.id) : a ? `[${a.name}${a.value ? `="${CSS.escape(a.value)}"` : ""}]` : ""; };
-function openModal(html, onMount) { const m = $("#modal"); if (m.hidden) { MODAL.from = document.activeElement !== document.body ? document.activeElement : null; MODAL.sel = refSel(MODAL.from); }
+function openModal(html, onMount) { cfDrop(); const m = $("#modal"); if (m.hidden) { MODAL.from = document.activeElement !== document.body ? document.activeElement : null; MODAL.sel = refSel(MODAL.from); }
   m.innerHTML = `<div class="mdl frame" role="dialog" aria-modal="true">${html}</div>`; m.hidden = false; onMount && onMount($(".mdl", m));
   const box = $(".mdl", m); if (box && !box.contains(document.activeElement)) { const f = box.querySelector(FOCUSABLE); if (f) f.focus(); else { box.tabIndex = -1; box.focus(); } } }
-function closeModal() { $("#modal").hidden = true; $("#modal").innerHTML = "";
+function closeModal() { cfDrop(); $("#modal").hidden = true; $("#modal").innerHTML = "";
   let f = MODAL.from; const sel = MODAL.sel; MODAL.from = MODAL.sel = null;
   if ((!f || !f.isConnected) && sel) f = [...document.querySelectorAll(sel)].find(x => x.offsetParent) || null;
   if (f && f.isConnected && typeof f.focus === "function") try { f.focus({ preventScroll: true }); } catch (_) { } }
+/* ===== t-native-dialogs (user 11-22): the browser's confirm() is gone. await UI.confirm({ title, text, ok, cancel, danger }) -> true / false.
+   One themed dialog in the same #modal as the rest (knit / leather / glass frame on desk, the bottom sheet on phone): a title, one line, Cancel
+   and Confirm (danger = the warning colour). Esc = cancel, Enter = confirm (a focused button keeps its own Enter), Tab stays inside, a click
+   on the scrim cancels, focus goes back to where it was. A dialog that is already open (the GitHub token one) waits underneath and comes back. */
+function cfDrop() { const c = MODAL.cf; MODAL.cf = null; if (c) c(false); }
+function confirmDlg(o) {
+  if (typeof o === "string") o = { title: o };
+  return new Promise(res => {
+    cfDrop();
+    const m = $("#modal"), zh = UI.lang !== "en", from = document.activeElement, prev = m.hidden ? null : [...m.childNodes];
+    if (prev) prev.forEach(n => n.remove());
+    else { MODAL.from = from && from !== document.body ? from : null; MODAL.sel = refSel(MODAL.from); }
+    m.innerHTML = `<div class="mdl frame ncf${o.danger ? " ncf-danger" : ""}" role="alertdialog" aria-modal="true" aria-labelledby="ncf-h"${o.text ? ' aria-describedby="ncf-p"' : ""}><h2 id="ncf-h">${esc(o.title || "")}</h2>${o.text ? `<p class="ncf-p" id="ncf-p">${esc(o.text)}</p>` : ""}<div class="foot"><button type="button" class="btn" data-ncf="0">${esc(o.cancel || t("cancel"))}</button><button type="button" class="btn primary${o.danger ? " danger" : ""}" data-ncf="1">${esc(o.ok || (zh ? "确定" : "OK"))}</button></div></div>`;
+    m.hidden = false;
+    const box = m.firstElementChild;
+    let open = true;
+    const key = e => { if (!open) return m.removeEventListener("keydown", key, true);
+      if (e.key === "Escape") { e.preventDefault(); e.stopPropagation(); fin(false); }
+      else if (e.key === "Tab") { e.preventDefault(); e.stopPropagation(); const b = [...box.querySelectorAll("[data-ncf]")], i = b.indexOf(document.activeElement); b[(i + (e.shiftKey ? b.length - 1 : 1)) % b.length].focus(); }   // two buttons, wrap (WebKit's Tab skips buttons)
+      else if (e.key === "Enter" && !e.isComposing && !(e.target.closest && e.target.closest("[data-ncf]"))) { e.preventDefault(); fin(true); } };
+    function fin(v) {   // MODAL.cf: also called (with false) when something else closes or replaces the dialog
+      if (!open) return; open = false; m.removeEventListener("keydown", key, true);
+      if (MODAL.cf === fin) MODAL.cf = null;
+      if (box.isConnected) {
+        if (prev) { m.replaceChildren(...prev); const f = from && from.isConnected ? from : m.querySelector(FOCUSABLE); if (f) try { f.focus({ preventScroll: true }); } catch (_) { } }
+        else closeModal();
+      }
+      res(v);
+    }
+    MODAL.cf = fin;
+    m.addEventListener("keydown", key, true);
+    box.addEventListener("click", e => { const b = e.target.closest("[data-ncf]"); if (b) fin(b.dataset.ncf === "1"); });
+    box.querySelector('[data-ncf="1"]').focus();
+  });
+}
 // t-close-bottom: 关单 from the detail's bottom bar, any kind / stage. One confirm; the optional reason goes into the card's thread as your message
 // (so the owner sees it), then the card is closed. Open questions do not block it (they are listed and closed with the card).
-const closeBtn = () => `<button class="ab cl" data-act="close" title="${UI.lang === "en" ? "Close this card" : "关掉这张卡"}">${UI.lang === "en" ? "Close" : "关单"}</button>`;
+// t-detail-close B (user pick 11-21) + End (user 11-21 23:03 「二级菜单有点繁琐」): the bottom-left button is a quiet 「结束 / End」 text button that
+// opens the reason dialog below directly. Not red and not a ✕, so it never reads as the top-right 「收起 ›」; 复制链接 moved to the header (drawer.js dce-lnk).
+const closeBtn = () => `<button class="ab dce-end" data-act="close" title="${UI.lang === "en" ? "End this card · asks for a reason" : "结束这张卡 · 会问一句原因"}">${UI.lang === "en" ? "End" : "结束"}</button>`;
 function modalClose() {
   const it = ST.items.find(i => i.id === UI.item); if (!it) return;
   const zh = UI.lang !== "en", oa = openAsks(it), id = it.id;
-  openModal(`<h2>${zh ? "关单" : "Close card"}</h2><p class="cl-t">${esc(it.title)}</p>${oa.length ? `<p class="cl-w">${zh ? `还有 ${oa.length} 个问题没答，会随卡一起关掉。` : `${oa.length} open question${oa.length > 1 ? "s" : ""} will close with it.`}</p>` : ""}
-    <label>${zh ? "原因（可不填，会记进卡的动态）" : "Reason (optional, goes into the card's thread)"}</label><textarea></textarea>
-    <div class="foot"><button class="btn" data-x>${t("cancel")}</button><button class="btn primary" data-ok>${zh ? "关单" : "Close"}</button></div>`, m => {
+  openModal(`<h2>${zh ? "不做了，结束这张卡" : "End this card"}</h2><p class="cl-t">${esc(it.title)}</p>${oa.length ? `<p class="cl-w">${zh ? `还有 ${oa.length} 个问题没答，会随卡一起关掉。` : `${oa.length} open question${oa.length > 1 ? "s" : ""} will close with it.`}</p>` : ""}
+    <p class="mo-note">${zh ? "卡会进「已完成」，之后可以重开。" : "It moves to Done; you can reopen it later."}</p><label>${zh ? "原因（可不填，会记进卡的动态）" : "Reason (optional, goes into the card's thread)"}</label><textarea></textarea>
+    <div class="foot"><button class="btn" data-x>${t("cancel")}</button><button class="btn primary" data-ok>${zh ? "结束这张卡" : "End card"}</button></div>`, m => {
     const ta = $("textarea", m);
     const submit = async () => { const reason = ta.value.trim(); closeModal();
       if (reason) await api("comment", { item: id, text: (zh ? "关单原因：" : "Closed because: ") + reason });
       await api("done", { item: id, skip_asks: oa.length ? true : undefined });
-      toast(zh ? "已关单" : "Closed"); };
+      toast(zh ? "已结束这张卡" : "Card ended"); };
     $("[data-ok]", m).onclick = submit; $("[data-x]", m).onclick = closeModal;
     ta.addEventListener("keydown", e => { if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) { e.preventDefault(); submit(); } });
     ta.focus();
@@ -113,8 +150,9 @@ function modalReject() {
 }
 
 function wireUi() {
+  UI.confirm = confirmDlg;   /* t-native-dialogs: set here, not at module top (ui.js is evaluated before store.js in the import cycle) */
   $("#modal").addEventListener("keydown", e => { if (!$("#modal").hidden) focusTrap($("#modal"), e); });
-  $("#modal").addEventListener("mousedown", e => { if (e.target.id === "modal") closeModal(); });
+  $("#modal").addEventListener("mousedown", e => { if (e.target.id === "modal") { if (MODAL.cf) MODAL.cf(false); else closeModal(); } });   // t-native-dialogs: the scrim cancels a confirm (a dialog under it stays)
 }
 
-export { orn, UE_ART, utEmpty, toast, postAct, api, upload, fmtSize, attChips, stillUploading, MODAL, FOCUSABLE, focusTrap, refSel, openModal, closeModal, closeBtn, modalClose, modalReject, wireUi };
+export { orn, UE_ART, utEmpty, toast, postAct, api, upload, fmtSize, attChips, stillUploading, MODAL, FOCUSABLE, focusTrap, refSel, openModal, closeModal, closeBtn, modalClose, modalReject, confirmDlg, wireUi };

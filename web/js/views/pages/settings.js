@@ -18,12 +18,13 @@ import { MOBQ, pageHead } from "./common.js";
 import { PAGES, renderPage } from "./index.js";
 import { PIPE, contentRoles, isContent, pipeCard, pipeName, pipeOf, pipeWeek, pipeWho } from "./pipe.js";
 import { ghLabel, ghOpen, loadHealth, statusRows, statusSummary } from "../status.js";
+import { ykOn, ykSet } from "../../core/yarnkit.js";
 import { hooks, render } from "../../app.js";
 import { stConnections, wireConnections } from "./connections.js";
 import { locHTML } from "../ownerloc.js";
 const themeMode = () => LS.get("themeMode", "manual") === "auto" ? "auto" : "manual";
 const RMQ_S = matchMedia("(prefers-reduced-motion: reduce)");
-const ST_L = { general: ["通用", "General"], connections: ["连接", "Connections"], roles: ["角色", "Roster"], docs: ["文档", "Docs"], logs: ["日志", "Log"], system: ["系统", "System"] };
+const ST_L = { general: ["通用", "General"], connections: ["连接", "Connections"], docs: ["文档", "Docs"], logs: ["日志", "Log"], system: ["系统", "System"] };
 function setTab(k, dir) {
   if (!SET_TABS.includes(k)) return;
   const was = UI.setTab; UI.setTab = k; LS.set("setTab", k);
@@ -44,6 +45,7 @@ function stGeneral() {
       stSeg("tmode", [["auto", "自动", "Auto"], ["dark", "夜", "Night"], ["white", "昼", "Day"]], mode === "auto" ? "auto" : cur, "data-tmode"), "", "div")
     + utRow(en) + texRow(en)
     + (ut => { const st = ut ? stageSaved() : !!R.dataset.stage; return stRow(en ? "Stage background" : "舞台背景", stageSub(en, ut), stSw(st), `data-stage-tog aria-pressed="${st}"` + (ut ? ' aria-disabled="true" style="display:none"' : ""), "button").replace('class="st-row"', `class="st-row${ut ? " st-dis" : ""}"`); })(!!R.dataset.ut)
+    + stRow(en ? "Yarn kitten" : "小猫彩蛋", "", stSw(ykOn()), `data-yk-tog aria-pressed="${ykOn()}"`)   /* t-yarn-sleep: per device, default on, no caption on purpose */
     + stRow(en ? "Power saving" : "省电模式", psSub(psNow()), stSw(psNow()), `data-power-tog aria-pressed="${psNow()}"`)
     + spRow(en)
     + (window.Onboard ? Onboard.settingsRow(en) : "")   /* t-onboarding P0: quick phrases above the steward's chat field */
@@ -53,7 +55,7 @@ function stGeneral() {
     + (P.on && App.pushPrefs ? `<div class="st-sub">${App.pushPrefs()}</div>` : "")
     + (P.on ? stRow(en ? "Send a test" : "发一条测试通知", "", `<em class="st-go">›</em>`, `data-set="pushtest"`) : "") : "";
   const mic = stRow(en ? "Microphone test" : "麦克风测试", en ? "Check before voice calls" : "语音通话前的真机检查", `<em class="st-go">›</em>`, `data-set="mictest"`);
-  return stSec(en ? "Appearance" : "外观", look) + stSec(en ? "You" : "你", locHTML("set")) + stSec(en ? "Studio" : "制作", studioRow(en)) + stSec(en ? "Notifications" : "通知", push + mic);
+  return stSec(en ? "Appearance" : "外观", look) + stSec(en ? "You" : "你", locHTML("set")) + (window.Tour ? Tour.settingsSec(en) : "") + stSec(en ? "Studio" : "制作", studioRow(en)) + stSec(en ? "Notifications" : "通知", push + (window.LookAway ? LookAway.settingsRow(en) : "") + mic);   /* t-lookaway-fx: 提醒动效 */
 }
 /* t-oss-gen-s5: 制作线和频道 = content mode (views/left.js contentMode). One key, meta.studio, shared by every browser; unset = auto. */
 const studioNow = () => { const m = ST && ST.meta && ST.meta.studio; return m === "on" || m === "off" ? m : "auto"; };
@@ -126,14 +128,14 @@ function stUpdate(en) {
     rows += `<div class="upd-last ${r.ok ? "ok" : "bad"}">${r.ok ? "✓" : "!"} ${H(r.ended.slice(5, 16).replace("T", " "))} · ${H(r.message)}</div>`;
   return stSec(T("更新", "Updates"), rows);
 }
-function updClick(e) {
+async function updClick(e) {
   const n = e.target.closest("[data-upd-notes]");
   if (n) { UPD.notes = !UPD.notes; renderPage(); return; }
   const b = e.target.closest("[data-upd]"); if (!b || b.getAttribute("aria-disabled") === "true") return;
   const op = b.dataset.upd, en = UI.lang === "en", d = UPD.d || {};
-  if (op === "apply" && !confirm(en ? `Update to v${(d.check || {}).latest}? The dashboard restarts once (a few seconds).` : `更新到 v${(d.check || {}).latest}？看板会重启一次（几秒钟）。`)) return;
-  if (op === "rollback" && !confirm(en ? `Go back to v${(d.rollback || {}).version}? The dashboard restarts once.` : `退回到 v${(d.rollback || {}).version}？看板会重启一次。`)) return;
-  if (op === "restart" && !confirm(en ? "Restart the dashboard now? It is back in a few seconds." : "现在重启看板？几秒钟就回来。")) return;
+  if (op === "apply" && !(await UI.confirm(en ? { title: `Update to v${(d.check || {}).latest}?`, text: "The dashboard restarts once (a few seconds).", ok: "Update" } : { title: `更新到 v${(d.check || {}).latest}？`, text: "看板会重启一次（几秒钟）。", ok: "更新" }))) return;
+  if (op === "rollback" && !(await UI.confirm(en ? { title: `Go back to v${(d.rollback || {}).version}?`, text: "The dashboard restarts once.", ok: "Go back" } : { title: `退回到 v${(d.rollback || {}).version}？`, text: "看板会重启一次。", ok: "退回" }))) return;
+  if (op === "restart" && !(await UI.confirm(en ? { title: "Restart the dashboard now?", text: "It is back in a few seconds.", ok: "Restart" } : { title: "现在重启看板？", text: "几秒钟就回来。", ok: "重启" }))) return;
   b.setAttribute("aria-disabled", "true");
   fetch("/api/update", { method: "POST", headers: { "Content-Type": "application/json", "X-Underthread": "1" }, body: JSON.stringify({ op }) })
     .then(r => r.json().then(j => ({ ok: r.ok, j })))
@@ -200,6 +202,11 @@ function wireSettings() {
     const body = $("#pagebody"), dir = STU.indexOf(k) >= STU.indexOf(was) ? "r" : "l";
     const draw = () => { go(k); if (RMQ_S.matches) return; body.classList.remove("stu-out"); body.classList.add("stu-in-" + dir); setTimeout(() => body.classList.remove("stu-in-r", "stu-in-l"), 260); };
     if (body && !RMQ_S.matches) { body.classList.add("stu-out"); setTimeout(draw, 90); } else draw();
+  });
+  document.addEventListener("click", e => {   /* t-yarn-sleep: 小猫彩蛋, flipped in place like 省电模式 */
+    const p = e.target.closest && e.target.closest("[data-yk-tog]"); if (!p) return;
+    const on = !ykOn(); ykSet(on); p.setAttribute("aria-pressed", String(on));
+    const sw = p.querySelector(".sw"); if (sw) sw.classList.toggle("on", on);
   });
   document.addEventListener("click", e => {
     const p = e.target.closest && e.target.closest("[data-power-tog]"); if (!p || !window.FX || !FX.power) return;
@@ -280,12 +287,12 @@ function wireSettings() {
   document.addEventListener("dragstart", e => { const d = e.target.closest("[data-pdrag]"); if (d) e.dataTransfer.setData("text/pipe", d.dataset.pdrag); });
   document.addEventListener("dragover", e => { const c = e.target.closest("[data-pdrop]"); if (c && e.dataTransfer.types.includes("text/pipe")) { e.preventDefault(); c.classList.add("over"); } });
   document.addEventListener("dragleave", e => { const c = e.target.closest("[data-pdrop]"); if (c && !c.contains(e.relatedTarget)) c.classList.remove("over"); });
-  document.addEventListener("drop", e => {
+  document.addEventListener("drop", async e => {
     const c = e.target.closest("[data-pdrop]"); if (!c) return; const id = e.dataTransfer.getData("text/pipe"); c.classList.remove("over"); if (!id) return;
     e.preventDefault();
     const it = items().find(i => i.id === id), p = PIPE.find(x => x.k === c.dataset.pdrop); if (!it || !p) return;
     const cur = pipeOf(it); if (cur.k === p.k && !cur.guess) return;
-    if (!confirm(UI.lang === "en" ? `Ask the manager to move "${it.title}" to ${p.en}?` : `请管家把「${it.title}」挪到「${p.zh}」？\n（发给管家确认，看板不直接改）`)) return;
+    if (!(await UI.confirm(UI.lang === "en" ? { title: `Move "${it.title}" to ${p.en}?`, text: "This asks the manager; the board does not change it directly.", ok: "Ask the manager" } : { title: `请管家把「${it.title}」挪到「${p.zh}」？`, text: "发给管家确认，看板不直接改。", ok: "发给管家" }))) return;
     const tags = (it.tags || []).filter(g => !/^pipe[:：]/i.test(g)).concat("pipe:" + p.k);
     api("chat", { text: `【制作线】请把「${it.title}」（${it.id}）的制作阶段改到「${p.zh}」。\n设成：python3 stateutil.py upsert-item --id ${it.id} --who manager ${tags.map(g => `--tag "${g}"`).join(" ")}\n（--tag 会整组替换 tags，上面已带上原有标签）` })
       .then(() => toast(UI.lang === "en" ? "Sent to the manager" : "已发给管家，确认后会挪过去"));

@@ -1,9 +1,11 @@
-"""t-onboarding P0: migration 0003 (existing boards never see the checklist) and the retire rule of the 开工清单."""
+"""t-onboarding P0: migration 0003 (existing boards never see the checklist) and the retire rule of the 开工清单.
+t-onboard-tour: migration 0004 (existing boards never see the welcome + tour) and action onboarding op=tour."""
 import datetime as dt
 import importlib
 import unittest
 
 M = importlib.import_module("core.migrations.0003_onboarding")
+M4 = importlib.import_module("core.migrations.0004_tour")
 NOW = "2026-11-19T10:00:00-08:00"
 
 
@@ -185,6 +187,50 @@ class OnbMark(unittest.TestCase):
         self.assertTrue(ob["chrome_at"])
         self.assertEqual(ob["tick_by"], {"chrome": "auto"})
         shutil.rmtree(d, ignore_errors=True)
+
+
+class TourMigration(unittest.TestCase):
+    def run_up(self, data):
+        return M4.up(data, {"now": NOW})
+
+    def test_fresh_seed_gets_an_empty_tour(self):
+        d = self.run_up({"meta": {}, "items": [{"id": "q-demo-plan"}], "chat": [], "agents": {"manager": {}}})
+        self.assertEqual(d["meta"]["onboarding"], {"tour": {}})
+
+    def test_used_board_is_marked_upgrade_on_both_forms(self):
+        for d in ({"meta": {}, "items": [{"id": "t-1"}]}, {"meta": {}, "chat": [{"who": "me"}]},
+                  {"meta": {"onboarding": "junk"}, "agents": {"manager": {"last_seen": NOW}}}):
+            t = self.run_up(d)["meta"]["onboarding"]["tour"]
+            self.assertEqual(t, {"desk": {"at": NOW, "how": "upgrade"}, "phone": {"at": NOW, "how": "upgrade"}})
+
+    def test_idempotent_and_keeps_what_is_there(self):
+        mine = {"at": "2026-11-20T09:00:00-08:00", "how": "done"}
+        d = {"meta": {"onboarding": {"done_at": NOW, "tour": {"desk": dict(mine)}}}, "items": [{"id": "t-1"}]}
+        d = self.run_up(self.run_up(d))
+        self.assertEqual(d["meta"]["onboarding"]["tour"], {"desk": mine, "phone": {"at": NOW, "how": "upgrade"}})
+        self.assertEqual(d["meta"]["onboarding"]["done_at"], NOW)
+
+
+class TourAction(unittest.TestCase):
+    def setUp(self):
+        self.SU = importlib.import_module("api.routes.setup")
+
+    def act(self, st, **body):
+        a = type("A", (), {})()
+        a.body, a.st = dict(body, op="tour"), st
+        self.SU._onboarding(a)
+        return st["meta"]["onboarding"].get("tour")
+
+    def test_done_skip_reset(self):
+        st = {"meta": {}}
+        self.assertEqual(self.act(st, form="desk", how="done")["desk"]["how"], "done")
+        self.assertEqual(self.act(st, form="phone", how="skip")["phone"]["how"], "skip")
+        self.assertEqual(set(self.act(st, form="desk", how="reset")), {"phone"})   # reset: only that form opens again
+
+    def test_bad_values_are_refused(self):
+        for b in ({"form": "tv", "how": "done"}, {"form": "desk", "how": "upgrade"}, {"form": "desk"}):
+            with self.assertRaises(ValueError):
+                self.act({"meta": {}}, **b)
 
 
 if __name__ == "__main__":

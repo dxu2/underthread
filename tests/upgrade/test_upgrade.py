@@ -213,6 +213,17 @@ class Upgrade(unittest.TestCase):
             self.assertEqual((u["version"], u["git"]), (read(os.path.join(d, "VERSION")).strip(), True))
             self.assertTrue(u["rollback"], "the settings page offers a way back")
             self.assertEqual(u["run"]["ok"], True)
+            if os.path.isdir(os.path.join(d, "ext", "live")):   # t-oss-live: the built-in Watch is on with no config edit, hooks ship with it
+                self.assertEqual(get(s.port, "/api/state?rev=-1")["meta"].get("exts"), {"live": True})
+                self.assertNotIn("extensions", cfg, "the switch's default is merged at read time")
+                self.assertIn("live_hook.py", read(os.path.join(d, ".claude", "settings.json")), "the hooks arrive with the update")
+                sh(PY, "stateutil.py", "set-agent", "scout", "--tool", "chrome", cwd=d)
+                sh(PY, "stateutil.py", "live-frame", "scout", os.path.join(d, "web", "brand", "wordmark-on-light@2x.png"), cwd=d)
+                with urllib.request.urlopen(f"http://127.0.0.1:{s.port}/api/live/scout.jpg", timeout=5) as r:
+                    self.assertEqual((r.status, len(r.read()) > 1000), (200, True))
+                raw = read(os.path.join(d, "state.json"))
+                self.assertFalse("iVBORw0KGgo" in raw or "/9j/" in raw, "no image data in state.json")
+                sh(PY, "stateutil.py", "set-agent", "scout", "--tool", "", cwd=d)
 
         # ---- rollback ----
         r = self.upd("rollback")

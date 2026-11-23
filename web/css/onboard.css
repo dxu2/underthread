@@ -73,6 +73,9 @@ html[data-home="widgets"] .wg-setup .wg-eb .ob-go { margin-left: 10px; padding: 
 html[data-home="widgets"] .wg-setup .ob-st > b { -webkit-line-clamp: 1; display: block; white-space: nowrap; text-overflow: ellipsis; font-size: var(--fs-11); }
 html[data-home="widgets"] .wg-setup .ob-hint { padding-top: 4px; }
 html[data-home="widgets"] .wg-setup .ob-hint > span { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; }
+/* t-section-titles gives every non-hero tile 28px of top padding for the sewn-on label; the setup tile is a fixed 172px row and its optional column
+   then runs 2px past the bottom (手机 clipped). The label hangs 13px into the card, so 24px still clears it. */
+@media (min-width: 761px) { html[data-ut][data-home="widgets"] #wg .wg-setup:not(.hero) { padding-top: 24px; } }
 
 /* phone card: under the stat row, above usage */
 .ob-card { margin: 0 0 14px; padding: 14px 14px 12px; border-radius: 22px; background: var(--panel, var(--bg2)); box-shadow: 0 0 0 .5px var(--line2) inset; overflow: visible; }
@@ -204,6 +207,14 @@ html[data-home="widgets"] .wg-setup .ob-hint > span { display: -webkit-box; -web
 .qg-pe { display: block; margin: 0 0 4px; padding: 4px 0; border: 0; background: none; color: var(--ink); font: inherit; font-size: var(--fs-13); text-align: left; cursor: pointer; }
 .qg-pe:hover { color: var(--accent); }
 .qg-pop p { margin: 2px 0 0; font-size: var(--fs-12); color: var(--dim); line-height: 1.5; }
+/* t-rail-overflow (user 11-21 22:51): the folded chat column is an 80px avatar strip with no composer, so the chips row has nowhere to go.
+   Folded: the chips row is hidden; the yarn pill shrinks to the ball alone, centred, and a tap unfolds the column (onboard.js data-qg-open). */
+@media (min-width: 761px) {
+  body.chat-folded #right > .qg-row:not(:has(.qg-bulb)) { display: none; }
+  body.chat-folded #right > .qg-row { justify-content: center; padding: 10px 0 14px; overflow: visible; }
+  body.chat-folded #right > .qg-row .qg-bulb { width: 40px; height: 40px; padding: 0; display: grid; place-items: center; }
+  body.chat-folded #right > .qg-row .qg-bulb .nq { font-size: 0; gap: 0; letter-spacing: 0; }
+}
 /* phone: the chips sit above the composer; the keyboard (body.kb) hides them, the field needs the room */
 @media (max-width: 760px) {
   .qg-row { padding: 8px 10px 4px; background: var(--bg2); }

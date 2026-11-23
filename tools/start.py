@@ -136,8 +136,22 @@ def agents_stale():
         newest = max(os.path.getmtime(os.path.join(d, f)) for f in os.listdir(d) if f.endswith(".md"))
     except (OSError, ValueError):
         return True
-    r = os.path.join(ROOT, "roster.json")
-    return os.path.exists(r) and os.path.getmtime(r) > newest
+    # roster.json changed, or an update brought a new make_agents.py (new hard rules reach existing installs: t-oss-polish-1121)
+    return any(os.path.exists(r) and os.path.getmtime(r) > newest for r in (os.path.join(ROOT, "roster.json"), os.path.join(ROOT, "make_agents.py")))
+
+
+def dup_live_hook():
+    """t-oss-live: .claude/settings.json ships the 看画面 hooks. An install that wired tools/live_hook.py itself in
+    .claude/settings.local.json now runs them twice (harmless, just slower). Say so; never edit the user's file."""
+    try:
+        with open(os.path.join(ROOT, ".claude", "settings.local.json"), encoding="utf-8") as f:
+            dup = "live_hook.py" in f.read()
+    except OSError:
+        return False
+    if dup:
+        say("! " + T("看画面的钩子现在随 .claude/settings.json 一起装好了；.claude/settings.local.json 里还有一份 live_hook.py，可以删掉那几行（不删也能用，只是每步多跑一次）。",
+                     "The Watch hooks now ship in .claude/settings.json; .claude/settings.local.json still wires live_hook.py too. You can remove those lines (it works either way, just runs twice)."))
+    return dup
 
 
 def ensure_agents():
@@ -537,6 +551,7 @@ def main():
         return
     ensure_server()
     ensure_agents()
+    dup_live_hook()
     if "--no-open" not in ARGS:
         open_browser(f"http://127.0.0.1:{port()}")
     if not FROM_APP:

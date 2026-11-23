@@ -35,33 +35,52 @@ function badges() {
   return { home: review, dms: chat, activity: mail };   // ui15: dots, not numbers
 }
 // ---------- tabbar motion (t-tabbar-motion) ----------
-// One sliding selection block (.tb-sel: translateX + a mid-move squash, WAAPI), press scale, icon pop, dot pop/fade, page-in.
+// One sliding selection lens (.tb-sel, see t-phone-nav-glass below), press scale, icon pop, dot pop/fade, page-in.
 // Buttons are built once and patched in place (the old code rewrote innerHTML on every tab change, which killed every transition).
 const TBM = { dur: 330, spring: null, rm: window.matchMedia("(prefers-reduced-motion: reduce)") };
 const TBM_EASE = "cubic-bezier(.2,.8,.2,1)";
 const tbmAnim = (el, kf, o) => { try { return el.animate(kf, o); } catch (e) { return null; } };
+/* t-phone-nav-glass (user 11-22, ask b0ba19: motion B everywhere, look per skin): the selection is a lens. While it slides it grows ~1.3x and
+   lifts 4px, its fill goes clearer and its rim brighter (glass), then it settles with a soft overshoot. Under the knit texture the same motion
+   carries a stitched patch and a dashed thread run between the two tabs. Transform / opacity only (WAAPI), no backdrop-filter on the moving
+   element; a retarget starts from the lens's current matrix, so double taps never jump. Navigation itself is never delayed. */
+const NGL_E = "cubic-bezier(.3,.7,.2,1)";
+const nglKnit = () => /^knit/.test(document.documentElement.dataset.texture || "");
 function tbmSel(row, idx, animate) {
   const ind = row.querySelector(".tb-sel"); if (!ind) return;
   const btn = idx >= 0 ? row.querySelectorAll("button")[idx] : null;
-  if (!btn) { if (ind._anim) ind._anim.cancel(); ind._anim = null; ind.style.opacity = 0; ind._x = null; return; }
+  const stop = () => { if (ind._anim) ind._anim.cancel(); ind._anim = null; (ind._sub || []).forEach(a => a && a.cancel()); ind._sub = []; };
+  if (!btn) { stop(); ind.style.opacity = 0; ind._x = null; return; }
   const x = btn.offsetLeft, w = btn.offsetWidth;
   if (!w) return;   // bar not laid out (hidden): the ResizeObserver snaps it later
   if (ind._w !== w) { ind.style.width = w + "px"; ind._w = w; }
   const fresh = ind._x == null;
-  let from = x;   // where the block is RIGHT NOW (mid-flight if the user tapped again), so a retarget never jumps
-  if (!fresh) { try { from = new DOMMatrix(getComputedStyle(ind).transform).m41; } catch (e) {} }
-  if (ind._anim) { ind._anim.cancel(); ind._anim = null; }
+  let from = x, m0 = null;   // where the lens is RIGHT NOW (mid-flight if the user tapped again), so a retarget never jumps
+  if (!fresh) { try { const t = getComputedStyle(ind).transform; m0 = t && t !== "none" ? t : null; from = new DOMMatrix(t).m41; } catch (e) {} }
+  const f = ind.querySelector(".ngl-f"), r = ind.querySelector(".ngl-r");
+  const fo = f ? +getComputedStyle(f).opacity : 1, ro = r ? +getComputedStyle(r).opacity : 1;
+  stop();
   ind.style.opacity = 1; ind.style.transform = `translateX(${x}px)`; ind._x = x;
   if (!animate || (!fresh && Math.abs(from - x) < .5)) return;
   if (fresh || TBM.rm.matches) { ind._anim = tbmAnim(ind, [{ opacity: fresh ? 0 : .35 }, { opacity: 1 }], { duration: fresh ? 160 : 140, easing: "ease-out" }); return; }
-  const k = Math.min(.14, .05 + Math.abs(x - from) / w * .025);   // stretch grows a little with distance, capped at 14%
+  const d = x - from, dur = Math.round(540 + Math.min(160, Math.abs(d) * .4));
   ind.style.willChange = "transform";
   const a = tbmAnim(ind, [
-    { transform: `translateX(${from}px) scale(1,1)` },
-    { offset: .42, transform: `translateX(${(from + x) / 2}px) scale(${1 + k},${1 - k * .45})` },
-    { transform: `translateX(${x}px) scale(1,1)` }], { duration: TBM.dur, easing: TBM.spring || TBM_EASE });
+    { transform: m0 || `translateX(${from}px)`, easing: NGL_E },
+    { offset: .16, transform: `translateX(${from + d * .06}px) translateY(-4px) scale(1.3,1.3)`, easing: NGL_E },
+    { offset: .62, transform: `translateX(${x - d * .04}px) translateY(-4px) scale(1.38,1.2)`, easing: NGL_E },
+    { offset: .84, transform: `translateX(${x}px) translateY(.5px) scale(.96,1.03)`, easing: "ease-in-out" },
+    { transform: `translateX(${x}px) scale(1,1)` }], { duration: dur });
   ind._anim = a;
   if (!a) { ind.style.willChange = ""; return; }
+  if (nglKnit()) {   // the patch stays opaque; a thread runs from the old tab to the new one, then fades
+    const th = row.querySelector(".ngl-thr");
+    if (th) { th.style.left = (Math.min(from, x) + w / 2) + "px"; th.style.width = Math.abs(d) + "px"; th.style.transformOrigin = d > 0 ? "0 50%" : "100% 50%";
+      ind._sub.push(tbmAnim(th, [{ transform: "scaleX(0)", opacity: .9 }, { offset: .55, transform: "scaleX(1)", opacity: .9 }, { transform: "scaleX(1)", opacity: 0 }], { duration: dur + 160, easing: NGL_E })); }
+  } else {   // glass: clearer fill, brighter rim while moving
+    if (f) ind._sub.push(tbmAnim(f, [{ opacity: fo }, { offset: .2, opacity: .3 }, { offset: .7, opacity: .3 }, { opacity: 1 }], { duration: dur, easing: "ease-in-out" }));
+    if (r) ind._sub.push(tbmAnim(r, [{ opacity: ro }, { offset: .2, opacity: 1 }, { offset: .75, opacity: 1 }, { opacity: .55 }], { duration: dur, easing: "ease-in-out" }));
+  }
   const clear = () => { if (ind._anim === a) { ind._anim = null; ind.style.willChange = ""; } };
   a.onfinish = clear; a.oncancel = () => { if (ind._anim === a || !ind._anim) ind.style.willChange = ""; };
 }
@@ -156,7 +175,7 @@ function renderBar() {
   let bar = $("#tabbar");
   if (!bar) {
     bar = document.createElement("nav"); bar.id = "tabbar"; document.body.appendChild(bar);
-    bar.innerHTML = `<i class="tb-orn"></i><span class="tb-ind"><b></b></span><div class="tb-row"><i class="tb-sel" aria-hidden="true"></i></div>`;
+    bar.innerHTML = `<i class="tb-orn"></i><span class="tb-ind"><b></b></span><div class="tb-row"><i class="ngl-thr" aria-hidden="true"></i><i class="tb-sel" aria-hidden="true"><i class="ngl-f"></i><i class="ngl-r"></i></i></div>`;
     bar.addEventListener("click", e => {
       const b = e.target.closest("button"); if (!b) return;
       const it = BAR5.find(x => x.k === b.dataset.k); if (!it) return;
@@ -195,18 +214,43 @@ function renderBar() {
 
 // ---------- per-render additions ----------
 // t-vis-b2 (方案 A): home has no category bar any more (its stats row is its only filter). The 委托 tab = search field + 「全部 / 主线 / 支线 / 日常委托 / 紧急活动 / 常驻活动」 + the list grouped by stage.
+/* t-phone-filter-row v2 (user 11-22 「一下一下」): picking a category re-renders #pagebody, which used to throw the row away and build a new one
+   that then faded in with the page (.enter .filters) - the pill vanished for a few frames and popped up at the new place. The row and the search
+   field are now kept (QROW) and put back after each render, with the track's scroll position, so the ui4 pill (app.js) slides on the same node;
+   .keep skips the entrance. A language change still rebuilds them. */
+const QROW = { seg: null, sr: null, lang: "" };
+/* a pick in the row: the page render that follows swaps the list softly (fx.js rows(), mobile/09 [data-soft]); cleared after the entrance */
+document.addEventListener("click", e => {
+  if (!e.target.closest || !e.target.closest(".m-seg.q [data-go]")) return;
+  const b = $("#pagebody"); if (!b) return; b.dataset.soft = "1"; clearTimeout(b._softT); b._softT = setTimeout(() => { delete b.dataset.soft; }, 800);
+}, true);
 function catChips() {
   const body = $("#pagebody"), p = App.UI.page; if (!body || !QPAGES.includes(p) || $(".m-seg", body)) return;
   setLastQ(p);
-  const seg = document.createElement("div"); seg.className = "m-seg q";
-  seg.innerHTML = `<div class="seg" data-seg="mseg">` + QPAGES.map(c => `<button class="seg-i ${p === c ? "on" : ""}" data-go="${c}">${App.t(c === "quests" ? "all_quests" : c)}</button>`).join("") + `</div>`;
-  const sr = document.createElement("button"); sr.type = "button"; sr.className = "q-search";
-  sr.innerHTML = `${SEARCH}<span>${App.t("search_ph")}</span>`; sr.addEventListener("click", () => openSearch());
+  let seg = QROW.lang === App.UI.lang ? QROW.seg : null, sr = seg ? QROW.sr : null;
+  const keep = !!seg, tr0 = seg && $(".seg", seg), sl = tr0 ? tr0._sl || 0 : 0;   /* _sl: a detached node reads scrollLeft 0 */
+  if (!seg) {
+    seg = document.createElement("div"); seg.className = "filters mb-row m-seg q";   /* t-phone-filter-row: the 通知 filter row's classes (same pill, margins, height in every skin) */
+    seg.innerHTML = `<div class="seg" data-seg="mseg">` + QPAGES.map(c => `<button class="seg-i" data-go="${c}">${App.t(c === "quests" ? "all_quests" : c)}</button>`).join("") + `</div>`;
+    sr = document.createElement("button"); sr.type = "button"; sr.className = "q-search";
+    sr.innerHTML = `${SEARCH}<span>${App.t("search_ph")}</span>`; sr.addEventListener("click", () => openSearch());
+    Object.assign(QROW, { seg, sr, lang: App.UI.lang });
+  }
+  seg.classList.toggle("keep", keep); sr.classList.toggle("keep", keep);
+  seg.querySelectorAll(".seg-i").forEach(b => { const o = b.dataset.go === p; if (b.classList.contains("on") !== o) b.classList.toggle("on", o); });
   const ph = $(".ph", body); ph ? ph.after(sr) : body.prepend(sr); sr.after(seg);
-  const tr = $(".seg", seg), on = $(".seg-i.on", seg); if (on && on.offsetLeft + on.offsetWidth > tr.clientWidth) tr.scrollLeft = on.offsetLeft - 16;   // keep the picked category in view (t-ri1111-a: the track scrolls, not the wrapper)
-  /* t-ri1111-a P5: edge fades say there is more to swipe; .fl / .fr drop off at each end */
-  const edge = () => { const m = tr.scrollWidth - tr.clientWidth; tr.classList.toggle("fl", tr.scrollLeft > 2); tr.classList.toggle("fr", tr.scrollLeft < m - 2); };
-  tr.addEventListener("scroll", edge, { passive: true }); requestAnimationFrame(edge);
+  const tr = $(".seg", seg), on = $(".seg-i.on", seg);
+  if (keep) {   // a node put back keeps its place, then eases the picked button into view (ui4's own scroll stopped when the render detached it)
+    tr.scrollLeft = sl;
+    if (window.__segInView) window.__segInView(tr, on, true);   /* app.js ui4: only as far as needed, smooth */
+  }
+  else if (on && on.offsetLeft + on.offsetWidth > tr.clientWidth) tr.scrollLeft = on.offsetLeft - 16;   // keep the picked category in view (t-ri1111-a: the track scrolls, not the wrapper)
+  if (!tr._edge) {
+    /* t-ri1111-a P5: edge fades say there is more to swipe; .fl / .fr drop off at each end */
+    const edge = () => { const m = tr.scrollWidth - tr.clientWidth; tr._sl = tr.scrollLeft; tr.classList.toggle("fl", tr.scrollLeft > 2); tr.classList.toggle("fr", tr.scrollLeft < m - 2); };
+    tr._edge = edge; tr.addEventListener("scroll", edge, { passive: true });
+  }
+  requestAnimationFrame(tr._edge);
 }
 function strip() {
   const r = $("#right"), msgs = r && $(".ch-msgs", r); if (!msgs) return;

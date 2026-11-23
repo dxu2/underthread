@@ -24,6 +24,8 @@ Roles are by function. The item's category (main / side / daily / urgent / ongoi
 - Anything that would contact other people or act on an outside account.
 - Batch jobs larger than ~50 image generations or ~10 minutes of processing.
 
+When you ask, give the effort in agent time: `~N agent min + M review rounds`, not human hours or days.
+
 ## Priority
 
 1. `urgent` (due today, broken tooling)

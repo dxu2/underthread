@@ -110,7 +110,7 @@ The first time, Claude Code asks you to sign in and to trust this folder. The re
 
 **Running the steward in the Claude desktop app instead?** Use `./start --no-steward`, then open this folder in the app and say `Start the manager per manager.md`. **Prefer to do every step by hand** (`python3 server.py`, `python3 make_agents.py`, `claude "Start the manager per manager.md"`)? That still works exactly as before; see [docs/setup-guide.md](docs/setup-guide.md).
 
-The **Getting started** checklist on the home page walks you through these steps and ticks each one by itself. It goes away the day after the last tick (Edit widgets brings it back).
+The **Getting started** checklist on the home page walks you through these steps and ticks each one by itself. It goes away the day after the last tick (Edit widgets brings it back). Before that, a new board opens with five short welcome pages and a three-step tour of the page; Settings → General → Replay shows them again.
 
 ### What to say to the steward
 
@@ -195,7 +195,7 @@ Underthread itself doesn't care what kind of work you do. The steward, cards, re
 
 5. **Content creators.** The Pipeline and Channels pages (a production line and per-platform previews for B站 / YouTube / 小红书) are off on a fresh install. They switch on by themselves with the `content-zh` preset or when `config.json` lists platforms, or by hand in Settings → Pipeline & Channels.
 
-Teammates can also be moved to a new job (**Transfer**) or retired (**Retire**) from Settings → Roster.
+The **Team** page in the left rail is the roster: move a teammate to a new job (**Transfer**), retire them (**Retire**), rename them or pick their avatar.
 
 <p align="center"><img src="docs/img/market.png" alt="The hiring market: job cards with three personalities each, Interview and Hire buttons" width="720"></p>
 

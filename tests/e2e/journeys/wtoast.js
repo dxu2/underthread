@@ -13,7 +13,7 @@ module.exports = {
   hash: () => "#page=review",
   async run(c) {
     const p = c.p, desk = c.view === "desk";
-    await p.evaluate(() => { const s = (k, v) => localStorage.setItem("rt." + k, JSON.stringify(v)); s("ut", "ut"); s("texture", "leather1"); s("home3", "widgets"); s("lang", "en"); s("chat", "manager"); s("chatFold", false); });
+    await p.evaluate(() => { const s = (k, v) => localStorage.setItem("rt." + k, JSON.stringify(v)); s("ut", "ut"); s("texture", "leather1"); s("home3", "widgets"); s("lang", "en"); s("chat", "manager"); s("chatFold", false); s("lka", "off"); });   /* t-lookaway-fx: these are the 关 path; journeys/lookaway.js covers the pill */
     await p.reload({ waitUntil: "load" }); await p.waitForFunction(() => window.App && App.ST && App.ST.meta && window.WebToast && !document.getElementById("ut-splash"), null, { timeout: 15000 }); await c.sleep(2500);
     const items = await p.evaluate(() => App.items().filter(i => i.stage !== "done" && !i.archived).slice(0, 4).map(i => i.id));
     if (!desk) { su("reply", items[0], "smith", "toast test (phone)"); await c.sleep(4000); const T = await toasts(p); c.check("phone: no in-app toast", T.every(t => !t.vis), T); return; }

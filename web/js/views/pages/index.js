@@ -15,6 +15,7 @@ import { renderHeader, ruCard } from "../header.js";
 import { renderLeft } from "../left.js";
 import { homeCounts, logRows, logText, mailFiltered, mailGroups, mailPv, mailRep, mailRow, mbGroups, mbRow, newReplies, nrBlock, nrRead, renderMailbox, wkFrom } from "../mail.js";
 import { MOBQ, card, lsSet, pageHead } from "./common.js";
+import { lookBtns } from "../rolelook.js";
 import { catPage, doneOpen, questsPage } from "./quests.js";
 import { RV, askGroups, askGuard, decHead, decRow, decisions, grpHTML, nowBlock, reviewCard, reviewRow, todayBlock } from "./review.js";
 import { ongoingPage, schedPage } from "./schedule.js";
@@ -22,7 +23,11 @@ import { hooks, liveItem, wkAttr, wkFx, wkTag, workersOf } from "../../app.js";
 const PAGES = {
   quests() { return questsPage(); },
   market() { return window.Market ? Market.page(pageHead("market")) : pageHead("market"); },
-  crew() { return window.Team ? Team.page(pageHead("crew")) : pageHead("crew"); },   /* t-rb-build: web/team.js (null = keep its DOM) */   /* t-hm-build: web/market.js (null = keep its DOM) */
+  /* t-hm-build: web/market.js (null = keep its DOM) */
+  /* t-roster-rail (11-21, option A): 团队 / Team in the left rail is the roster that used to be 设置 · 角色, cards as they were, plus
+     改名 (display name) and 换头像 (one of the role's own pictures), web/js/views/rolelook.js. 设置 no longer has a 角色 tab (user, 11-21 22:03).
+     (The old t-rb-build 团队 page in web/team.js has had no rail row since t-drop-team-tab; its home widget stays.) */
+  crew() { return rosterPage(); },
   ongoing() { return Array.isArray(ST.schedules) ? schedPage() : ongoingPage(); },   /* t-ri1104-p3; t-schedule-ui: 定时 page when the server sends state.schedules */
   review() {
     if (widgetHome()) return window.Widgets ? Widgets.html($("#pagebody"), rulesBlock()) : rulesBlock();   // t-home-widgets: null = keep the current DOM
@@ -109,25 +114,6 @@ const PAGES = {
       ds.map(d => `<button class="${(UI.doc || UI.docLast) === d.path ? "on" : ""}" data-doc="${esc(d.path)}" title="${esc(d.path)}">${esc(d.path.split("/").pop())}</button>`).join("")).join("")}</div>
       <div class="md">${back}${UI.doc ? (UI.docText ? md(UI.docText) : `<div class="empty">${en ? "Loading…" : "加载中…"}</div>`) : `<div class="empty">${t("docs_pick")}</div>`}</div></div>`;
   },
-  roles() {
-    const ls = ST.lessons || [];
-    window.RF && RF.ensure(() => { if (UI.page === "settings" && UI.setTab === "roles") renderPage(); });
-    return pageHead("roles") + `<div class="roster">${agents().map(a => {
-      const mine = items().filter(i => i.owner === a.id);
-      const done = mine.filter(i => i.stage === "done"), first = done.filter(i => !i.rejects).length;
-      const adopted = ls.filter(l => l.agent === a.id && l.status === "adopted").length;
-      const pend = ls.filter(l => l.agent === a.id && l.status === "pending");
-      const cur = liveItem(a);   // t-now-closed: a closed card is not "current"
-      return `<div class="rc frame ${a.enabled === false ? "disabled" : ""}">${hasArt(a, "jpg") || !(ST.meta && ST.meta.art) ? `<img class="rc-art" src="/static/art/${esc(a.id)}.jpg?v=1" alt="" width="560" height="840" loading="lazy" decoding="async" onerror="this.remove()">` : ""}<div class="rc-h">${av(a, "lg")}<div><div class="nm">${esc(aname(a))}</div><div class="ti">${esc(atitle(a))} · <span class="mono">${esc(a.agent_name || "main session")}</span></div></div></div>
-        <div class="du">${esc(aduty(a))}</div>
-        <div class="now">${a.status === "working" ? `<span style="color:var(--accent)">▶ ${t("working")}</span> ${esc(a.activity || "")} ${cur ? `· <a data-item="${cur.id}" href="#">${esc(cur.title)}</a>` : ""}` : `<span class="dim">${t(a.status || "idle")} ${a.last_seen ? "· " + ago(a.last_seen) : ""}</span>`}</div>
-        <div class="stats"><div><b>${done.length}</b><small>${t("closed")}</small></div><div><b>${done.length ? Math.round(first / done.length * 100) + "%" : "—"}</b><small>${t("first_pass")}</small></div><div><b>${adopted}</b><small>${t("adopted")}</small></div></div>
-        ${rcLinks(a)}
-        ${rcTasks(a, mine)}
-        ${pend.length ? `<div class="dim" style="font-size:12px;margin-top:6px"><a href="#" data-ui12go="review">${UI.lang === "en" ? `${pend.length} rule proposal(s) → Review page` : `${pend.length} 条规则提议 → 在「审核」页处理`}</a></div>` : ""}
-        <div style="display:flex;gap:8px;margin-top:10px">${a.id !== "manager" ? `<button class="btn-s" data-chat="${a.id}">${t("dm")}</button>` : `<button class="btn-s" data-chat="manager">${t("dm")}</button>`}</div>${window.HT ? HT.acts(a) : ""}</div>`;
-    }).join("")}</div>`;
-  },
   mail() {
     const f = UI.mailFilter, mob = MOBQ.matches;
     let list = mailFiltered(300);
@@ -142,6 +128,29 @@ const PAGES = {
       (list.length ? `<div class="mb-page">${ringOnce(() => { const ix = new Map(items().map(i => [i.id, i])); return mbGroups(list).map((g, i) => mbRow(g, i, ix)).join(""); })}</div>` : utEmpty(t("empty")));
   },
 };
+// ===== t-roster-rail: the 团队 / Team page (was 设置 · 角色). Same cards; a lead line counts the team; 改名 / 换头像 per card (rolelook.js) =====
+function rosterPage() {
+  const ls = ST.lessons || [], en = UI.lang === "en";
+  window.RF && RF.ensure(() => { if (UI.page === "crew") renderPage(); });
+  const all = agents(), on = all.filter(a => a.enabled !== false), busy = on.filter(a => a.status === "working" && a.id !== "manager").length;
+  const lead = `<p class="rl-lead">${en ? `${on.length} on the team · ${busy} busy. Each card is one teammate: status, their cards, message, rename, avatar, transfer, retire.` : `${on.length} 位队员 · ${busy} 位在忙。每张卡是一位队员：状态、手上的单子、私信、改名、换头像、调岗、退休。`}</p>`;
+  return pageHead("crew") + lead + `<div class="roster">${all.map(a => {
+
+      const mine = items().filter(i => i.owner === a.id);
+      const done = mine.filter(i => i.stage === "done"), first = done.filter(i => !i.rejects).length;
+      const adopted = ls.filter(l => l.agent === a.id && l.status === "adopted").length;
+      const pend = ls.filter(l => l.agent === a.id && l.status === "pending");
+      const cur = liveItem(a);   // t-now-closed: a closed card is not "current"
+      return `<div class="rc frame ${a.enabled === false ? "disabled" : ""}">${hasArt(a, "jpg") || !(ST.meta && ST.meta.art) ? `<img class="rc-art" src="/static/art/${esc(a.id)}.jpg?v=1" alt="" width="560" height="840" loading="lazy" decoding="async" onerror="this.remove()">` : ""}<div class="rc-h">${av(a, "lg")}<div><div class="nm">${esc(aname(a))}</div><div class="ti">${esc(atitle(a))} · <span class="mono">${esc(a.agent_name || "main session")}</span></div></div></div>
+        <div class="du">${esc(aduty(a))}</div>
+        <div class="now">${a.status === "working" ? `<span style="color:var(--accent)">▶ ${t("working")}</span> ${esc(a.activity || "")} ${cur ? `· <a data-item="${cur.id}" href="#">${esc(cur.title)}</a>` : ""}` : `<span class="dim">${t(a.status || "idle")} ${a.last_seen ? "· " + ago(a.last_seen) : ""}</span>`}</div>
+        <div class="stats"><div><b>${done.length}</b><small>${t("closed")}</small></div><div><b>${done.length ? Math.round(first / done.length * 100) + "%" : "—"}</b><small>${t("first_pass")}</small></div><div><b>${adopted}</b><small>${t("adopted")}</small></div></div>
+        ${rcLinks(a)}
+        ${rcTasks(a, mine)}
+        ${pend.length ? `<div class="dim" style="font-size:12px;margin-top:6px"><a href="#" data-ui12go="review">${UI.lang === "en" ? `${pend.length} rule proposal(s) → Review page` : `${pend.length} 条规则提议 → 在「审核」页处理`}</a></div>` : ""}
+        <div class="rc-bt"><button class="btn-s" data-chat="${a.id}">${t("dm")}</button>${lookBtns(a)}</div>${window.HT ? HT.acts(a) : ""}</div>`;
+    }).join("")}</div>`;
+}
 // ===== t-agent-memory v2: 记忆 / 灵魂 pills on the role card (viewer lives in rolefiles.js; read-only) =====
 function rcLinks(a) {
   const c = window.RF && RF.counts, n = c && c !== "old" ? c[a.id] : null;
@@ -244,7 +253,8 @@ function wirePages2() {
     if (e.target.closest("[data-doc-back]")) { const was = UI.doc; UI.docLast = was; UI.doc = null; UI.docText = ""; renderPage();   /* t-phone-docs: back to the list, the doc just read in view */
       requestAnimationFrame(() => { const b = was && [...document.querySelectorAll(".docs [data-doc]")].find(x => x.dataset.doc === was); if (b) b.scrollIntoView({ block: "center" }); }); }
     const ls = e.target.closest("[data-lesson]"); if (ls) api("lesson", { id: ls.dataset.lesson, decision: ls.dataset.d });
-    const mf = e.target.closest("[data-mailf]"); if (mf) { UI.mailFilter = mf.dataset.mailf; renderPage(); renderMailbox(); }
+    /* t-phone-filter-row v2: a pick inside the page's 1.4 s entrance (.enter, fx.js) would replay it on the rebuilt row (opacity 0 -> 1 under the sliding pill): end it first */
+    const mf = e.target.closest("[data-mailf]"); if (mf) { UI.mailFilter = mf.dataset.mailf; const pb = $("#pagebody"); if (pb) pb.classList.remove("enter"); renderPage(); renderMailbox(); }
     if (e.target.closest("[data-mailall]")) api("mail_read", { all: true });
     const ml = e.target.closest("[data-mail]");
     if (ml) {
