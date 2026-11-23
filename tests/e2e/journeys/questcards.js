@@ -152,7 +152,7 @@ module.exports = {
       c.check(`${tag}: picture card shows its cover (loaded, inside the card, avatar below)`, pa.cv && pa.shown && pa.loaded && pa.inside && pa.avBelow, pa);
       c.check(`${tag}: no picture = no cover; missing file falls back to no cover`, !pb.cv && !pb.hasCv && !pc.cv && !pc.hasCv, { pb, pc });
       pd.http = await p.evaluate(() => fetch("/api/thumb?p=" + encodeURIComponent("work/qc-test/blank.png") + "&w=780").then(r => r.status));   /* it loads: dropped as blank, not as a 404 */
-      c.check(`${tag}: near-blank picture (white page, one needle) = no cover`, pd.found && !pd.cv && !pd.hasCv && pd.http === 200, pd);
+      c.check(`${tag}: near-blank picture (white page, one needle) = no cover`, pd.found && !pd.cv && !pd.hasCv && (pd.http === 200 || pd.http === 415), pd);   /* 415: no thumbnail tool here (Linux CI), the card fell back to the full file */
       for (const k of ["a", "b"]) { const f = await foot(p, ID(k));
         c.check(`${tag}: footer ${k}: date at the right edge, same row as the pills`, f.found && f.right >= 10 && f.right <= 20 && f.sameRow, f); }
       const ch = await chips(p, ID("a"));
