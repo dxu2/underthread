@@ -22,9 +22,11 @@ function reviewRow(it, fresh) {
 // A tap on 批准 is held for RV_HOLD ms behind an undo pill before the same POST /api/action {kind:"approve"} the detail page sends.
 const RV = { pending: null, timer: 0 }, RV_HOLD = 4500;
 const rvCanApprove = it => !!it && it.stage === "review" && (it.kind === "plan" || it.kind === "deliverable");
+/* the card's picture: the first image of the open draft, else of the item's attachments. Shared with the desk lane cards (common.js card, t-web-quest-cards). */
+const cardImg = it => (it.draft_attachments && it.draft_attachments.length ? it.draft_attachments : it.attachments || []).find(p => /^(uploads|work)\/.+\.(png|jpe?g|webp|gif)$/i.test(p));
 function reviewCard(it, fresh) {
   const a = agent(it.owner), zh = UI.lang !== "en";
-  const img = (it.draft_attachments && it.draft_attachments.length ? it.draft_attachments : it.attachments || []).find(p => /^(uploads|work)\/.+\.(png|jpe?g|webp|gif)$/i.test(p));
+  const img = cardImg(it);
   const kind = it.kind === "plan" ? (zh ? "方案" : "Plan") : it.kind === "question" ? (zh ? "问题" : "Question") : (zh ? "交付" : "Delivery");
   const u = img && "/" + img.split("/").map(encodeURIComponent).join("/");
   const media = img ? `<div class="rv-media"><img src="/api/thumb?p=${encodeURIComponent(img)}&w=780" alt="" loading="lazy" onerror="if(!this.dataset.f){this.dataset.f=1;this.src='${u}'}else{this.parentNode.remove()}"><span class="rv-kind">${kind}</span></div>` : "";
@@ -41,7 +43,11 @@ const awaitsUser = it => !!it && it.stage === "waiting" && (it.kind === "plan" |
 // t-wait-days: a card on the user (review, or waiting on a plan / question) for more than 24 h gets an amber 「等了 N 天」 tag (same idea as 暂停).
 // The wait starts at the last 提交审核 event in the thread; no such event -> it.updated.
 /* r-improve-1119 P1: waitSince now lives in core/store.js (shared with widgets, ticker and the phone hero) */
-function waitTag(it) { return snzWas(it) + waitTag0(it); }
+/* fold (t-web-quest-cards-p2, desk lane cards): a card that came back from Later AND waits >24 h shows one pill, 「推迟过 · 2 天」 / "Snoozed · 2d", not two */
+function waitTag(it, fold) {
+  const s = snzWas(it), w = waitTag0(it); if (!fold || !s || !w) return s + w;
+  const d = Math.floor(waitMs(it) / 864e5); return `<span class="wait-d snz" title="${UI.lang === "en" ? "Came back from Later" : "之前点过稍后，到点回来了"}">${UI.lang === "en" ? `Snoozed · ${d}d` : `推迟过 · ${d} 天`}</span>`;
+}
 const snzWas = it => it && it.snoozed && !snoozed(it) ? `<span class="snz-was" title="${UI.lang === "en" ? "Came back from Later" : "之前点过稍后，到点回来了"}">${UI.lang === "en" ? "Snoozed" : "推迟过"}</span>` : "";   // ri1103-P2
 function waitTag0(it) {
   if (!it || !(it.stage === "review" || awaitsUser(it))) return "";
@@ -168,10 +174,11 @@ const okDockIn = (it, full, short) => { const l = askLeft(it), n = openAsks(it).
   return `<b><span class="ok-s">${esc(tail ? short : full)}</span>${tail ? `<span class="ok-x">${esc(tail)}</span>` : ""}</b>${n ? `<i class="ok-n" aria-hidden="true">${n}</i><small class="ok-ask">${l}</small>` : ""}`; };
 const okAria = (it, full) => { const l = askLeft(it); return ` aria-label="${esc(full + (l ? (UI.lang === "en" ? ", " : "，") + l : ""))}"`; };
 const okBtnIn = it => { const l = askLeft(it); return `<b>${okLabel(it)}</b>${l ? `<small class="ok-ask">${l}</small>` : ""}`; };   // label + the open-question line under it
-function askChips(it, a, cls = "") {
+function askChips(it, a, cls = "", tail) {   /* tail: extra html kept on one line with 「其他…」 (askRow tail mode) */
   const done = it.stage === "done", zh = UI.lang !== "en";
   const rec = !a.answer && recOf(a), pend = arPick(it.id, a.id);   // t-ask-rec
-  return `<div class="ask-opts${cls}">${a.options.map(o => `<button type="button" class="ask-o${(a.answer ? a.answer.opt === o : pend === o) ? " on" : ""}${rec === o ? " rec" : ""}" data-ask-opt="${esc(o)}" data-ask="${esc(a.id)}" data-ask-item="${esc(it.id)}"${done ? " disabled" : ""}>${esc(o)}${rec === o && !REC_TXT.test(o) ? `<i class="rec-b">${zh ? "推荐" : "Rec."}</i>` : ""}</button>`).join("")}${a.other !== false && !done ? `<button type="button" class="ask-o ghost" data-ask-other="${esc(a.id)}" data-ask-item="${esc(it.id)}">${zh ? "其他…" : "Other…"}</button>` : ""}</div>`;
+  const oth = a.other !== false && !done ? `<button type="button" class="ask-o ghost" data-ask-other="${esc(a.id)}" data-ask-item="${esc(it.id)}">${zh ? "其他…" : "Other…"}</button>` : "";
+  return `<div class="ask-opts${cls}">${a.options.map(o => `<button type="button" class="ask-o${(a.answer ? a.answer.opt === o : pend === o) ? " on" : ""}${rec === o ? " rec" : ""}" data-ask-opt="${esc(o)}" data-ask="${esc(a.id)}" data-ask-item="${esc(it.id)}"${done ? " disabled" : ""}>${esc(o)}${rec === o && !REC_TXT.test(o) ? `<i class="rec-b">${zh ? "推荐" : "Rec."}</i>` : ""}</button>`).join("")}${tail == null ? oth : `<span class="ask-tail">${oth}${tail}</span>`}</div>`;
 }
 function askCard(it, a, n) {
   const zh = UI.lang !== "en", by = aname(agent(a.by || it.owner));
@@ -189,12 +196,12 @@ function askBlock(it) {
   const open = DW.askOpen.has(it.id), picks = all.map(a => a.answer.opt).join(" · ");
   return `${head}<button type="button" class="uin-asum${open ? " open" : ""}" data-uin-asks aria-expanded="${open}"><b>${zh ? `${all.length} 个问题都答了` : `${all.length} answered`}</b><span class="p">${esc(picks)}</span><span class="t">${open ? (zh ? "收起 ▴" : "Hide ▴") : (zh ? "展开 ▾" : "Show ▾")}</span></button>${open ? list : ""}`;
 }
-function askRow(it, dock) {   // list cards: the first open question with its options, answerable in place (dock = the card's own question bar)
+function askRow(it, dock, tail) {   /* tail (t-web-quest-cards-p2, desk lane cards): 「其他…」 and 「还有 N 题 ›」 sit together at the end of the chip row */   // list cards: the first open question with its options, answerable in place (dock = the card's own question bar)
   const oa = openAsks(it); if (!oa.length) return "";
   const zh = UI.lang !== "en", a = oa[0], n = oa.length - 1;
   /* t-ri1114-a P4: list cards clamp the question to 2 lines (ri14-clamp) and 「+N」 is a button that opens the card at 「要你拿主意」 */
   const more = !n ? "" : dock ? `<span class="ask-more">+${n}</span>` : `<button type="button" class="ri14-more" data-askjump="${it.id}">${zh ? `还有 ${n} 题` : `${n} more`}<span aria-hidden="true">›</span></button>`;
-  return `<div class="ask-row${dock ? "" : " ri14-clamp"}"><div class="ask-rt"><i></i><b>${zh ? `${oa.length} 个问题要你选` : `${oa.length} question${oa.length > 1 ? "s" : ""} for you`}</b><span><span class="ask-sep"> · </span>${esc(a.q)}</span></div>${askChips(it, a, " sm")}${more}</div>`;
+  return `<div class="ask-row${dock ? "" : " ri14-clamp"}"><div class="ask-rt"><i></i><b>${zh ? `${oa.length} 个问题要你选` : `${oa.length} question${oa.length > 1 ? "s" : ""} for you`}</b><span><span class="ask-sep"> · </span>${esc(a.q)}</span></div>${tail ? askChips(it, a, " sm", more) : askChips(it, a, " sm") + more}</div>`;
 }
 /* t-ri1114-a P4: 「还有 N 题 ›」 on a list card opens the card scrolled to 「要你拿主意」 (same placing as seekItem) */
 function askJump(id) {
@@ -402,4 +409,4 @@ function wireReview() {
   document.addEventListener("visibilitychange", () => { if (document.visibilityState === "hidden") rvCommit(true); });
 }
 
-export { reviewRow, RV, RV_HOLD, rvCanApprove, reviewCard, awaitsUser, waitSince, waitTag, snzWas, waitTag0, liveAsks, openAsks, isHire, isXfer, okLabel, okDone, askLeft, REC_TXT, recOf, optChips, MSEL, msendBtn, CHIP_RE, chipParens, optDone, AR, arPick, arButton, arCommit, arHide, arStart, arUndo, GRP, GRP_MIN, grpAsk, grpId, askGroups, grpHTML, grpFind, grpStart, grpCommit, grpUndo, okShort, okDockIn, okAria, okBtnIn, askChips, askCard, askBlock, askRow, askJump, ASK_CV, askFold, askFoldWire, AG, askGuard, decisions, decHead, decRow, DC_KIND, todayBlock, nowBlock, shipBlock, rvEase, rvReduce, rvCollapse, rvExpand, rvUndoBar, rvHideBar, rvCommit, rvApprove, rvUndo, wireReview };
+export { cardImg, reviewRow, RV, RV_HOLD, rvCanApprove, reviewCard, awaitsUser, waitSince, waitTag, snzWas, waitTag0, liveAsks, openAsks, isHire, isXfer, okLabel, okDone, askLeft, REC_TXT, recOf, optChips, MSEL, msendBtn, CHIP_RE, chipParens, optDone, AR, arPick, arButton, arCommit, arHide, arStart, arUndo, GRP, GRP_MIN, grpAsk, grpId, askGroups, grpHTML, grpFind, grpStart, grpCommit, grpUndo, okShort, okDockIn, okAria, okBtnIn, askChips, askCard, askBlock, askRow, askJump, ASK_CV, askFold, askFoldWire, AG, askGuard, decisions, decHead, decRow, DC_KIND, todayBlock, nowBlock, shipBlock, rvEase, rvReduce, rvCollapse, rvExpand, rvUndoBar, rvHideBar, rvCommit, rvApprove, rvUndo, wireReview };

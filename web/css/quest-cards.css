@@ -1,0 +1,66 @@
+/* t-web-quest-cards (plan B, approved 2026-11-22 20:33): the desk lane pages (主线 / 支线 / 杂活 / 紧急活动, also the done fold and 常驻's done
+   fold) show their cards in the phone card format, up to three columns, with the ask options kept inside the card.
+   Everything sits in one @media (min-width: 761px) block, so phones keep their list; the only rule outside hides the desk cover (.qc-cv) there.
+   quests.js wraps each stage group in .qc-grid; common.js card() adds .qc-cv + .has-cv when the card has a picture (same pick as the phone
+   review card, review.js cardImg). No picture = no cover, as on the phone.
+   t-web-quest-cards-p2: masonry columns (.qc-col, dealt by quests.js) so cards keep their own height; one footer row with
+   the date on the right and 归档 / 完成 over it on hover; ask chips flow inline with 「其他…」 + 「还有 N 题」 kept together (.ask-tail);
+   near-blank covers are dropped (common.js qcCvChk) and a cover fades in once checked.
+   Selectors carry #pagebody so they outrank glass.css's t-card-revamp grid (html[data-theme]:not([data-glass="0"]) .card). */
+
+.qc-cv { display: none; }
+
+@media (min-width: 761px) {
+/* columns: quests.js picks N (at most 3, never narrower than 270px: 1440 with the chat column open gives 2, chat folded gives 3) */
+#pagebody .qc-grid.qc-m { display: flex; align-items: flex-start; gap: 14px; margin: 0 0 16px; }
+#pagebody .qc-grid.qc-m > .qc-col { flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; gap: 14px; }
+
+/* the card: title + summary + asks on top, the footer row at the bottom, avatar top-right (as on the phone) */
+html[data-theme] #pagebody .qc-col > .card { margin: 0; min-width: 0; display: grid; grid-template-columns: minmax(0, 1fr); grid-template-rows: auto auto;
+  grid-template-areas: "body" "meta"; row-gap: 12px; padding: 16px 16px 14px; border-radius: 20px; }
+html[data-theme] #pagebody .qc-col > .card .body { grid-area: body; min-width: 0; padding-right: 40px; order: 0; }
+html[data-theme] #pagebody .qc-col > .card .body h3 { font-size: var(--fs-16); line-height: 1.35; margin: 0 0 6px; }
+html[data-theme] #pagebody .qc-col > .card .body p { -webkit-line-clamp: 2; font-size: var(--fs-13); line-height: 1.55; }
+html[data-theme] #pagebody .qc-col > .card .owner { position: absolute; right: 14px; top: 14px; display: flex; z-index: 1; }
+html[data-theme] #pagebody .qc-col > .card .owner > span:not(.av) { display: none; }
+html[data-theme] #pagebody .qc-col > .card .owner .av.sm { width: 30px; height: 30px; }
+
+/* footer: one row, pills on the left, the date pushed to the right; when it runs out of room the date drops to its own line, still right-aligned */
+html[data-theme] #pagebody .qc-col > .card .meta { grid-area: meta; order: 0; position: static; display: flex; flex-wrap: wrap; align-items: center; gap: 6px;
+  padding: 0; margin: 0; font-size: var(--fs-11); min-width: 0; min-height: 22px; }
+html[data-theme] #pagebody .qc-col > .card .meta > * { margin-left: 0; }
+html[data-theme] #pagebody .qc-col > .card .meta > span.dim { display: none; }   /* one time is enough, as on the phone */
+html[data-theme] #pagebody .qc-col > .card .meta > span:empty { display: none; }
+html[data-theme] #pagebody .qc-col > .card .meta > .qc-dt { order: 9; margin-left: auto; white-space: nowrap; color: var(--dim); font-variant-numeric: tabular-nums;
+  transition: opacity var(--m-fast, .16s) ease; }
+html[data-theme] #pagebody .qc-col > .card .meta > .qc-dt::before { content: none; }
+/* 归档 / 完成 sit over the date (bottom right) and swap with it on hover / keyboard focus, so the row never reflows */
+html[data-theme] #pagebody .qc-col > .card .acts { position: absolute; right: 16px; bottom: 14px; gap: 12px; white-space: nowrap; line-height: 22px; z-index: 1; }
+html[data-theme] #pagebody .qc-col > .card:is(:hover, :focus-within) .meta > .qc-dt { opacity: 0; }
+html[data-theme] #pagebody .qc-col > .card:focus-within .acts { opacity: 1; transform: none; }
+
+/* asks inside a ~300px card: chips flow inline and wrap; a long option breaks inside its pill instead of leaving the card;
+   「其他…」 and 「还有 N 题 ›」 stay together on one line (.ask-tail) */
+html[data-theme] #pagebody .qc-col > .card .ask-row { min-width: 0; max-width: 100%; }
+html[data-theme] #pagebody .qc-col > .card .ask-opts.sm { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; min-width: 0; }
+html[data-theme] #pagebody .qc-col > .card .ask-o { max-width: 100%; white-space: normal; text-align: left; height: auto; min-height: 26px; }
+html[data-theme] #pagebody .qc-col > .card .ask-tail { display: inline-flex; flex-wrap: nowrap; gap: 6px; max-width: 100%; }
+html[data-theme] #pagebody .qc-col > .card .ask-tail > * { flex: none; white-space: nowrap; margin: 0; }
+html[data-theme] #pagebody .qc-col > .card .ask-tail .ri14-more { display: inline-flex; width: auto; }
+html[data-theme] #pagebody .qc-col > .card .wk-tag { max-width: 100%; }
+html[data-theme] #pagebody .qc-col > .card .wait-d.snz { white-space: nowrap; }   /* 推迟过 · 2 天: one pill (review.js waitTag fold) */
+
+/* the old desk card hover lift stays; the stitch frame (knit ::before) follows the new radius */
+html[data-theme] #pagebody .qc-col > .card::before { border-radius: inherit; }
+
+/* the picture on top: inset inside the stitch frame, avatar moves below it; it fades in once qcCvChk has passed it (blank ones are removed) */
+html[data-theme] #pagebody .qc-col > .card.has-cv { grid-template-rows: auto auto auto; grid-template-areas: "cv" "body" "meta"; }
+html[data-theme] #pagebody .qc-col > .card .qc-cv { grid-area: cv; display: block; position: relative; height: 140px; border-radius: 12px; overflow: hidden; background: var(--bg2);
+  box-shadow: inset 0 0 0 1px var(--line); }
+html[data-theme] #pagebody .qc-col > .card .qc-cv img { width: 100%; height: 100%; object-fit: cover; object-position: 50% 0; display: block; opacity: 0; transition: opacity var(--m-base, .28s) ease; }
+html[data-theme] #pagebody .qc-col > .card .qc-cv img.ok { opacity: 1; }
+html[data-theme] #pagebody .qc-col > .card.has-cv .owner { top: 166px; }
+}
+@media (min-width: 761px) and (prefers-reduced-motion: reduce) {
+  html[data-theme] #pagebody .qc-col > .card .qc-cv img, html[data-theme] #pagebody .qc-col > .card .meta > .qc-dt { transition: none; }
+}

@@ -231,7 +231,7 @@ html[data-home="widgets"] .wg-usage.sz-m .ru-row { padding-top: 2px; padding-bot
 /* ===== t-sync-pill batch 2: the usage widget. Wider name column, no bottom divider / 「+N more」 (the header's 「全部 N 位 ›」 opens the list),
    rows that do not fit fold away (app.js ruFit), the quota strip is one line and a stale reading is a warn dot before the age. ===== */
 html[data-home="widgets"] .wg-usage .ru-row { grid-template-columns: 22px minmax(0, 96px) 1fr auto; }
-html[data-home="widgets"] .wg-usage .ru-row.fit-hide { display: none; }
+html[data-home="widgets"] .wg-usage :is(.ru-row, .ru-wait).fit-hide { display: none; }
 html[data-home="widgets"] .wg-usage .ru-list { overflow: hidden; }
 html[data-home="widgets"] .wg-usage .ru-q { border-top: 0; padding-top: 4px; margin-top: auto; gap: 4px 12px; flex-wrap: nowrap; overflow: hidden; white-space: nowrap; font-size: var(--fs-12); }
 html[data-home="widgets"] .wg-usage .ru-q > span { flex: none; }
@@ -447,7 +447,7 @@ html[data-home="widgets"] .wg-review.wy-half { grid-column: span 2; }
 /* t-home-sml P1 (11-22): every core widget has S / M / L. S = one grid cell (a number or one line), L = 2 × 2 with more content.
    New pieces carry the sml- prefix. */
 html[data-home="widgets"] .wg.sz-s { min-width: 0; }
-html[data-ut][data-home="widgets"] #wg :is(.wg-review, .wg-usage, .wg-busy, .wg-replies).sz-s .sct-sub { display: none; }   /* the new S tiles: no room for the subtitle (today / week / ongoing / media S keep theirs, as before) */
+html[data-ut][data-home="widgets"] #wg .wg.sz-s .sct-sub { display: none; }   /* S has no room for the subtitle: it only showed as 「Today's runs and d…」 and pushed the title onto the stitch (t-home-sml-audit) */
 html[data-home="widgets"] .wg.sz-s .wg-big { margin-top: 2px; }
 html[data-home="widgets"] .sml-stack { display: flex; margin: 4px 0 8px; }
 html[data-home="widgets"] .sml-stack .wg-av { width: 30px; height: 30px; border-radius: 50%; box-shadow: 0 0 0 2px var(--card, var(--bg)); flex: none; cursor: pointer; }
@@ -506,3 +506,8 @@ html[data-skin="ink"][data-home="widgets"] .wg-review:is(.wy-half, .sz-w) .wg-ro
   html[data-home="widgets"] #wg.edit .sct-pin { display: none; }   /* its 「M 半行」 is the desk rule; on a phone M is the full row */
   html[data-home="widgets"] .wg-eband { height: 60px; }
 }
+
+/* t-home-sml-audit: no text may be cut by, or sit on, the stitched border (tests/e2e/journeys/wgfit.js measures every line).
+   A squeezed subtitle (新回复 M in knit) showed a 2px sliver of its line: widgets.js wgFit() drops it whole when squeezed, and clamped titles
+   give up whole lines until they end above the stitch. */
+html[data-ut][data-home="widgets"] #wg .wg-usage.sz-m .sct-sub { display: none; }   /* 用量 M: the label already says 各角色用量 · 今天; the subtitle left no room for even one role row (it showed cut in half) */
