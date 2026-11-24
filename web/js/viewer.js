@@ -8,8 +8,10 @@
   const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
   const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
   const phoneQ = matchMedia("(max-width: 760px), (hover: none) and (pointer: coarse)");   // phone UI: no zoom buttons, PDF as cover + 新标签打开 (iOS iframes show page 1 only)
-  // what opens the viewer: [data-lb] thumbnails, plus PDF links in attachment strips and the asset library
-  const SEL = '[data-lb], .atts a[href$=".pdf" i], a.lib-doc[href$=".pdf" i]';
+  // what opens the viewer: [data-lb] thumbnails, plus PDF links in attachment strips and the asset library,
+  // plus .md / .txt attachments (t-md-viewer: read in place, .md through the cards' own md(), .txt as preformatted text)
+  const SEL = '[data-lb], .atts a[href$=".pdf" i], a.lib-doc[href$=".pdf" i], .atts a[href$=".md" i], .atts a[href$=".txt" i]';
+  const DOCMAX = 200 * 1024;   // a bigger text file shows its first ~200 KB, a note, and a link to the raw file
   let rangeOK = null;   // new server (Range-aware) answers /api/thumb?p=none with 403; the old one has no such route (404)
   function detect() {
     if (rangeOK !== null) return Promise.resolve(rangeOK);
@@ -40,11 +42,11 @@
 
   function entry(el) {
     const url = el.dataset.lb || el.getAttribute("href") || "";
-    const pdf = !el.dataset.lb && /\.pdf$/i.test(url);
+    const pdf = !el.dataset.lb && /\.pdf$/i.test(url), doc = !el.dataset.lb && /\.(md|txt)$/i.test(url);
     const t = el.closest(".lib-t"), cap = t && $(".lib-cap[data-item]", t);
     let name = el.dataset.name || "";
     if (!name) { const sm = $("small", el); name = (sm ? sm.textContent : el.textContent).replace(/^\s*📎\s*/, "").trim(); }
-    return { url, kind: pdf ? "pdf" : el.dataset.kind, name, item: el.dataset.libItem || (pdf && cap ? cap.dataset.item : "") || "", title: el.dataset.libTitle || "", path: el.dataset.libPath || "" };
+    return { url, kind: pdf ? "pdf" : doc ? "doc" : el.dataset.kind, name, item: el.dataset.libItem || (pdf && cap ? cap.dataset.item : "") || "", title: el.dataset.libTitle || "", path: el.dataset.libPath || "" };
   }
   function collect(a) {
     const box = a.closest(".atts, .pending-att, .lib-g") || a.parentElement;   // .lib-g: one day of the asset library (t-imp29-p4)
@@ -104,13 +106,16 @@
     const it = items[idx], st = $(".lb-stage", root), phone = phoneQ.matches;
     stopVideo(); zoom = { s: 1, x: 0, y: 0 }; pct();
     root.classList.toggle("is-video", it.kind === "video"); root.classList.toggle("is-pdf", it.kind === "pdf");
-    root.classList.toggle("is-img", it.kind !== "video" && it.kind !== "pdf"); root.classList.toggle("ph", phone);
+    root.classList.toggle("is-doc", it.kind === "doc");
+    root.classList.toggle("is-img", it.kind !== "video" && !/^(pdf|doc)$/.test(it.kind)); root.classList.toggle("ph", phone);
     cnt();
     const gb = $(".lb-go", root); gb.hidden = !it.item; gb.title = it.title || "";
     $(".lb-att", root).hidden = !(it.path && matchMedia("(max-width: 760px)").matches);   // t-lib-attach: phone only (desktop drags the tile)
     const dl = $(".lb-dl", root); dl.href = it.url; dl.setAttribute("download", it.name || "");
     prefetch(it, phone);
-    $(".lb-new", root).href = it.url;
+    const nw = $(".lb-new", root); nw.href = it.url;   // t-md-viewer: for a text file this chip is the way to the raw file
+    nw.textContent = it.kind === "doc" ? L("原文 ↗", "Raw ↗") : L("↗ 新标签", "↗ New tab");
+    nw.setAttribute("aria-label", it.kind === "doc" ? L("在新标签打开原文", "Open the raw file in a new tab") : L("在新标签打开", "Open in new tab"));
     $(".lb-prev", root).hidden = idx <= 0; $(".lb-next", root).hidden = idx >= items.length - 1;
     $(".lb-dots", root).innerHTML = items.length > 1 && items.length <= 12 ? items.map((_, k) => `<i class="${k === idx ? "on" : ""}"></i>`).join("") : "";
     if (it.kind === "video") {
@@ -123,6 +128,18 @@
         st.innerHTML = `<div class="lb-pdfc"><img class="lb-cover" src="${thumbOf(it.url, 900)}" alt="${esc(it.name)}" draggable="false" onerror="this.remove()">
           <a class="lb-pdfgo" href="${esc(it.url)}" target="_blank" rel="noopener">${L("新标签打开 PDF", "Open PDF in new tab")}</a></div>`;
       } else st.innerHTML = `<iframe class="lb-media lb-pdf" src="${esc(it.url)}#view=FitH" title="${esc(it.name)}"></iframe>`;
+    } else if (it.kind === "doc") {
+      st.innerHTML = `<div class="lb-doc" tabindex="0"><div class="lb-docin md"><p class="lb-wait">${L("载入中…", "Loading…")}</p></div></div>`;
+      const box = $(".lb-docin", st), raw = `<a href="${esc(it.url)}" target="_blank" rel="noopener">${L("打开原文", "Open the raw file")}</a>`;
+      fetch(it.url, { cache: "no-cache" }).then(r => { if (!r.ok) throw new Error(r.status); return r.text(); }).then(t => {
+        if (items[idx] !== it || !box.isConnected) return;
+        let s = t; const cut = t.length > DOCMAX;
+        if (cut) { s = t.slice(0, DOCMAX); const nl = s.lastIndexOf("\n"); if (nl > DOCMAX * .8) s = s.slice(0, nl); }   // end on a whole line
+        const kb = n => Math.max(1, Math.round(new Blob([n]).size / 1024));
+        box.innerHTML = (/\.md$/i.test(it.url) && window.md ? window.md(s) : `<pre class="lb-txt">${esc(s)}</pre>`)
+          + (cut ? `<p class="lb-cut">${L(`文件较大（${kb(t)} KB），这里只显示前 ${kb(s)} KB。`, `Large file (${kb(t)} KB): showing the first ${kb(s)} KB.`)} ${raw}</p>` : "");
+        if (!it.size) { it.size = new Blob([t]).size; cnt(); }
+      }).catch(() => { if (items[idx] === it && box.isConnected) box.innerHTML = `<p class="lb-cut">${L("读不到这个文件。", "Couldn't read this file.")} ${raw}</p>`; });
     } else {
       const alpha = /\.(png|webp|gif|avif|svg)(\?|$)/i.test(it.url) ? " lb-alpha" : "";   // transparent images sit on a light checkerboard
       st.innerHTML = `<img class="lb-media${alpha}" src="${esc(it.url)}" alt="${esc(it.name)}" draggable="false">`;
@@ -141,8 +158,8 @@
   function dropPre() { if (pre && pre.ctl) { try { pre.ctl.abort(); } catch (_) { } } pre = null; }
   function dlLabel() {
     const dl = root && $(".lb-dl", root), it = items[idx]; if (!dl || !it) return;
-    const share = phoneQ.matches && it.kind !== "pdf" && canShareFiles();
-    dl.textContent = !share ? (phoneQ.matches ? L("⤓ 保存原图", "⤓ Save original") : L("⤓ 保存", "⤓ Save")) : pre && pre.state === "loading" ? L("准备中…", "Preparing…") : L("⤓ 保存原图", "⤓ Save original");
+    const share = phoneQ.matches && !/^(pdf|doc)$/.test(it.kind) && canShareFiles();
+    dl.textContent = !share ? (phoneQ.matches && it.kind !== "doc" ? L("⤓ 保存原图", "⤓ Save original") : L("⤓ 保存", "⤓ Save")) : pre && pre.state === "loading" ? L("准备中…", "Preparing…") : L("⤓ 保存原图", "⤓ Save original");
     dl.classList.toggle("wait", !!(share && pre && pre.state === "loading"));
   }
   /* fetch the original into a File; resolves to pre (state ready / big / fail) */
@@ -165,7 +182,7 @@
   }
   function prefetch(it, phone) {
     dropPre();
-    if (!phone || it.kind === "pdf" || !canShareFiles()) { dlLabel(); return; }
+    if (!phone || /^(pdf|doc)$/.test(it.kind) || !canShareFiles()) { dlLabel(); return; }
     grab(it, false); dlLabel();
   }
   function fallbackDL(dl) { dl.dataset.nosh = "1"; dl.click(); delete dl.dataset.nosh; toast(L("已存到 文件 → 下载", "Saved to Files → Downloads")); }
@@ -176,8 +193,8 @@
   // the 「保存原图」 tap. Desktop and no-share browsers keep the plain <a download>.
   function saveClick(e) {
     const dl = e.currentTarget, it = items[idx];
-    if (dl.dataset.nosh || !it || !phoneQ.matches || it.kind === "pdf" || !canShareFiles()) {
-      if (phoneQ.matches && !dl.dataset.nosh && it && it.kind !== "pdf") toast(L("已存到 文件 → 下载", "Saved to Files → Downloads"));
+    if (dl.dataset.nosh || !it || !phoneQ.matches || /^(pdf|doc)$/.test(it.kind) || !canShareFiles()) {
+      if (phoneQ.matches && !dl.dataset.nosh && it && !/^(pdf|doc)$/.test(it.kind)) toast(L("已存到 文件 → 下载", "Saved to Files → Downloads"));
       return;
     }
     e.preventDefault(); e.stopPropagation();
@@ -216,7 +233,7 @@
     if (!root || !root.classList.contains("on") || e.defaultPrevented || e.isComposing) return;
     if (document.body.classList.contains("pal-on")) return;
     if (e.key === "Tab") {   // R4-12: Tab / Shift+Tab cycle through the viewer's own visible controls only
-      const f = [...root.querySelectorAll("button, a[href], video, iframe")].filter(x => !x.hidden && x.offsetParent !== null);
+      const f = [...root.querySelectorAll("button, a[href], video, iframe, .lb-doc")].filter(x => !x.hidden && x.offsetParent !== null);
       if (f.length) { const k = f.indexOf(document.activeElement), n = k < 0 ? (e.shiftKey ? f.length - 1 : 0) : (k + (e.shiftKey ? -1 : 1) + f.length) % f.length; f[n].focus(); }
       e.preventDefault(); e.stopImmediatePropagation(); return;
     }

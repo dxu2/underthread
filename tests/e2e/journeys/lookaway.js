@@ -1,7 +1,8 @@
 /* t-lookaway-fx: full-screen ink arrival (#lka-fs) and the top pill (#lka-pw). Real path: stateutil writes in the scratch copy -> long poll ->
  * toast.js -> LookAway.take. Checks: a card handed in for review plays the full screen (48 px backdrop blur even under the knit palette, avatar,
- * title, gone after ~3 s); a second one within 20 min becomes the pill; the pill drops in with an overshoot; reply + DM merge into 「还有 N 条」;
- * the chip shows the next; hover pauses the 5 s countdown; click opens the card; 设置 has no 提醒动效 row (t-drop-arrival-fx) and a stale saved pref is ignored;
+ * title, gone after ~3 s); a second one within 20 min becomes the pill; the pill grows out of the top edge as a droplet (t-pill-wellness: WebGL
+ * canvas #lka-drop during the morph, the CSS glass after, look per theme); reply + DM merge into 「还有 N 条」; the chip shows the next;
+ * an ask has a separate 回答 bud, no countdown, stays until answered and goes once answered on the card; hover pauses the 5 s countdown; click opens the card; 设置 has no 提醒动效 row (t-drop-arrival-fx) and a stale saved pref is ignored;
  * reduced motion = pill, no slide; day's end plays once.
  *   node tests/e2e/drive.js run tests/e2e/journeys/lookaway.js --out work/<item>/verify/<run> --views desk,phone --engines chromium,webkit
  */
@@ -41,15 +42,19 @@ module.exports = {
     c.check("full screen gone after ~3 s", !(await fsInfo(p)));
     c.check("fsAt recorded", await p.evaluate(() => +JSON.parse(localStorage.getItem("rt.lka.fsAt") || "0") > 0));
 
-    /* 2 · second review within 20 min = pill, with overshoot */
-    const samp = p.evaluate(() => new Promise(res => { const ys = []; const t0 = performance.now();
-      const f = () => { const e = document.querySelector("#lka-pw .lka-pill"); if (e) ys.push(e.getBoundingClientRect().top); if (performance.now() - t0 < 9000 && !(ys.length > 50)) requestAnimationFrame(f); else res(ys); }; f(); }));
+    /* 2 · second review within 20 min = pill, grown out of the top edge as a droplet (t-pill-wellness) */
+    const samp = p.evaluate(() => new Promise(res => { const o = { cv: 0, morph: 0, ty: [], n: 0 }; const t0 = performance.now();
+      const f = () => { const w = document.getElementById("lka-pw"), e = w && w.querySelector(".lka-pill");
+        if (e) { o.n++; if (document.getElementById("lka-drop")) o.cv++; if (w.classList.contains("lka-morph")) o.morph++; const m = /(-?[\d.]+)px$/.exec(e.style.translate || ""); if (m) o.ty.push(+m[1]); }
+        if (performance.now() - t0 < 4000) requestAnimationFrame(f); else { o.end = { cv: !!document.getElementById("lka-drop"), morph: !!(w && w.classList.contains("lka-morph")), tr: e ? e.style.translate : "" }; res(o); } }; f(); }));
     toReview(items[1]);
     c.check("second hand-in within 20 min = pill, not full screen", await waitPill(p) && !(await fsInfo(p)));
-    const ys = await samp; await c.sleep(300); let P = await pillInfo(p);
-    const maxY = Math.max(...ys), rest = P ? P.y : 0;
-    c.check("pill drops in and overshoots ~12 px past its rest", ys.length > 5 && ys[0] < rest - 30 && maxY - rest >= 7 && maxY - rest <= 16, { first: Math.round(ys[0]), max: Math.round(maxY), rest });
-    c.check("pill at top centre, review kind", P && /lka-c-decide/.test(P.cls) && Math.abs(P.cx - (await p.evaluate(() => innerWidth)) / 2) < 3 && P.y < 70, P);
+    const D = await samp; let P = await pillInfo(p);
+    const webgl = await p.evaluate(() => !!(window.PillDrop && PillDrop.ok()));
+    c.check("pill grows out of the top edge: droplet canvas while it morphs (starts above its rest), CSS glass after", webgl ? D.cv > 3 && D.morph > 3 && D.ty.length > 0 && Math.min(...D.ty) < -30 && !D.end.cv && !D.end.morph && !D.end.tr : D.n > 3,
+      { webgl, cv: D.cv, morph: D.morph, minTy: D.ty.length ? Math.round(Math.min(...D.ty)) : null, end: D.end });
+    c.check("pill at top centre, review kind, look follows the theme", P && /lka-c-decide/.test(P.cls) && Math.abs(P.cx - (await p.evaluate(() => innerWidth)) / 2) < 3 && P.y < 120
+      && (await p.evaluate(() => document.getElementById("lka-pw").dataset.m === String(PillDrop.look()))), P);
 
     /* 3 · merge. Split A (11-22): on a computer replies / DMs go to the top-right cards, never the pill; the phone keeps them in the pill. */
     su("reply", items[2], "smith", "lookaway test reply");
@@ -74,6 +79,20 @@ module.exports = {
     const P2 = await pillInfo(p);
     c.check("chip shows the next notice", P2 && P2.cls !== P.cls || (P2 && P2.sub !== P.sub), [P && P.sub, P2 && P2.sub]);
     if (desk) {
+      /* t-pill-wellness: an ask has the separate 回答 bud and no countdown; it stays until answered, then goes by itself */
+      await c.sleep(1500);
+      const A = await p.evaluate(() => { const w = document.getElementById("lka-pw"), b = w && w.querySelector(".lka-bud"); return w && { cls: w.querySelector(".lka-pill").className, bud: !!b && !b.hidden && b.textContent, cd: !!w.querySelector(".lka-pcd"), timer: !!LookAway._S.cd }; });
+      c.check("ask: separate 回答 bud, no countdown", A && /lka-c-ask/.test(A.cls) && /回答/.test(A.bud) && !A.cd && !A.timer, A);
+      await c.shot("pill-ask-bud");
+      await p.mouse.move(300, 600); await c.sleep(6500);
+      c.check("ask stays past 5 s (until answered)", !!(await pillInfo(p)));
+      const q0 = await p.evaluate(() => LookAway._S.q.length);
+      for (const [it, id] of await p.evaluate(() => LookAway._S.q.map(n => [n.it && n.it.id, n.ask]))) if (id) su("ask-close", it, id);
+      await p.waitForFunction(() => !document.querySelector("#lka-pw .lka-pill") || document.getElementById("lka-pw")._out, null, { timeout: 9000 }).catch(() => {});
+      c.check("answered on the card = the ask pill goes by itself", !(await pillInfo(p)), { q0 });
+      await c.sleep(1500);
+      /* hover pause, on a pill that counts down */
+      await p.evaluate(() => LookAway.pillAdd([{ cls: "decide", agent: "smith", it: App.items()[0], sub: "hover test" }])); await c.sleep(1800);
       await p.hover("#lka-pw .lka-tx"); await c.sleep(6500);
       c.check("hover pauses the 5 s countdown", !!(await pillInfo(p)));
       await p.mouse.move(300, 600); await c.sleep(6000);
@@ -95,7 +114,7 @@ module.exports = {
     toReview(items[4]);
     c.check("reduced motion: pill, never full screen", await waitPill(p) && !(await fsInfo(p)));
     await p.emulateMedia({ reducedMotion: "no-preference" });
-    await p.evaluate(() => LookAway.pillOut()); await c.sleep(500);
+    await p.evaluate(() => LookAway.pillOut()); await c.sleep(1300);   // the droplet exit takes ~1 s (t-pill-wellness)
 
     /* 6 · t-drop-arrival-fx: no 设置 row; a pref saved by an older build ("off") is dropped at load and the effects still play */
     await p.evaluate(() => { localStorage.setItem("rt.lka", JSON.stringify("off")); document.querySelectorAll("#wtoasts .wt").forEach(e => e.remove()); });
@@ -111,7 +130,7 @@ module.exports = {
     await c.sleep(4500);
     const off = await p.evaluate(() => ({ pill: !!document.querySelector("#lka-pw .lka-pill"), wt: document.querySelectorAll("#wtoasts .wt").length }));
     c.check(desk ? "stale 关 ignored: reply still goes to the top-right card" : "stale 关 ignored: reply shows the pill on the phone", desk ? off.wt >= 1 : off.pill, off);
-    await p.evaluate(() => LookAway.pillOut()); await c.sleep(500);
+    await p.evaluate(() => LookAway.pillOut()); await c.sleep(1300);   // the droplet exit takes ~1 s (t-pill-wellness)
 
     /* 7 · day's end once */
     await p.evaluate(() => { localStorage.removeItem("rt.lka.eod"); document.querySelectorAll("#wtoasts .wt").forEach(e => e.remove()); });

@@ -51,7 +51,7 @@
     asks.forEach(({ it, a }) => {
       if (T.asks.has(a.id)) return; T.asks.add(a.id);
       if (cardOpen(it.id)) return;
-      fresh.push({ t: a.t || new Date().toISOString(), cls: "ask", agent: a.who || it.owner, it, text: a.q });
+      fresh.push({ t: a.t || new Date().toISOString(), cls: "ask", agent: a.who || it.owner, it, text: a.q, ask: a.id });   // ask id: lookaway.js drops the pill once it is answered (t-pill-wellness)
     });
     if (!fresh.length) return;
     fresh.sort((x, y) => String(x.t).localeCompare(String(y.t)));

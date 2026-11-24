@@ -378,7 +378,11 @@ html[data-home="widgets"] .wg-review .ri13-c .ri13-n { margin-right: 2px; }
 html[data-home="widgets"] .sct-sub { display: none; }
 html[data-home="widgets"] .wg-review.sz-w.sct-tall { grid-row: span 2; }
 html[data-home="widgets"] .sct-rows { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); column-gap: 26px; align-content: start; }
-html[data-home="widgets"] .sct-rows > :not(.wg-row) { grid-column: 1 / -1; }   /* an ask group (several cards, one question) keeps the full width */
+html[data-home="widgets"] .sct-rows > :not(.wg-row) { grid-column: 1 / -1; }
+/* t-promo-ui-nits: a one-row-tall full-width tile with two lines of cards plus the foot (「最久的已经等了」 / example-card line) ran 9-11px past
+   the stitch. Those tiles get tighter rows and foot so the foot sits inside the stitch; one line or a tall tile keeps the roomy rows. */
+html[data-home="widgets"] .wg-review.sz-w:not(.sct-tall) .sct-rows:has(> :nth-child(3)):has(~ .wg-more) > .wg-row { padding-top: 2px; padding-bottom: 2px; }
+html[data-home="widgets"] .wg-review.sz-w:not(.sct-tall) .sct-rows:has(> :nth-child(3)) ~ .wg-more { padding-top: 3px; }   /* an ask group (several cards, one question) keeps the full width */
 html[data-home="widgets"] .sct-tiles { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 10px; margin-top: 6px; flex: 1; align-content: start; }
 html[data-home="widgets"] .sct-tile { min-width: 0; display: grid; gap: 6px; align-content: space-between; padding: 10px 12px; border-radius: 14px; cursor: pointer; font-size: var(--fs-13);
   background: color-mix(in srgb, var(--ink) 5%, transparent); }

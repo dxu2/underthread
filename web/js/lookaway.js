@@ -6,9 +6,10 @@
  *   Split (user 11-22, ask dde091 A): the pill = what waits on you (review hand-ins, rule proposals, questions, reminders, day's end);
  *     on a computer, replies and DMs go to the top-right cards (toast.js WebToast.show) and never to the pill. Phone: everything in the pill.
  *     route() is the one place that decides; each notice reaches exactly one surface.
- *   Pill: every notice that waits on you (ask, reminder, review when full screen is not allowed; replies too on the phone). One capsule at top centre drops in
- *     from above the screen edge with a 12 px overshoot (cubic-bezier(.22,1.6,.36,1), 600 ms); a second notice bumps it and grows the
- *     「还有 N 条」 chip (no stacked edges); the 5 s stitched countdown restarts on each merge and pauses while hovered or hidden.
+ *   Pill: every notice that waits on you (ask, reminder, review when full screen is not allowed; replies too on the phone). One capsule at top centre
+ *     grows out of the top edge as a droplet (t-pill-wellness, web/js/pilldrop.js; no WebGL = the old 600 ms drop-in); a second notice bumps it and grows the
+ *     「还有 N 条」 chip (no stacked edges); the 5 s stitched countdown restarts on each merge and pauses while hovered or hidden. Asks have no countdown
+ *     and a separate 回答 bud: they stay until answered.
  *     Click = open; chip = next notice; swipe up = dismiss. Reduced motion = 150 ms fades only.
  *   No setting since t-drop-arrival-fx (user 11-23): always full screen + pill. The old 设置 → 提醒动效 pref (localStorage rt.lka) is ignored and removed at load.
  *   Classes: lka-* (checked unused). Knit theme kills backdrop-filter for * with !important; lookaway.css re-enables it for these two layers only.
@@ -90,73 +91,179 @@
   addEventListener("keydown", e => { if (S.fs && (e.key === "Escape" || e.key === " ")) { e.preventDefault(); fsEnd(true); } }, true);
 
   /* ---------- pill ---------- */
+  /* t-pill-wellness (user 11-23, ask a1778c 「a+b 都做（日/夜切换）」): the pill is a droplet. web/js/pilldrop.js draws the morphs on a WebGL canvas
+     (out of the top edge on a thread that snaps -> spreads into the capsule with a ripple; an ask buds a separate 回答 button off its right end;
+     leaving folds it back into a drop that the top edge swallows). At rest the CSS pill below takes over (data-m on #lka-pw: 0 night = dark liquid
+     glass, 1 knit day = felt, 2 other day = white frosted). Asks no longer count down: they stay until answered (opened, answered on the card,
+     or swiped / Esc'd away); the rest keep the 5 s countdown. No WebGL: the old drop-in; reduced motion: fades only. */
   const TAG = { reply: ["回复", "Reply"], decide: ["交给你审核", "Handed in for review"], ask: ["问你一件事", "Has a question"], remind: ["提醒", "Reminder"], eod: ["今天收工了", "That's a wrap"] };
   const BTN = { reply: ["回复", "Reply"], decide: ["打开", "Open"], ask: ["回答", "Answer"], remind: ["查看", "View"], eod: ["去看", "View"] };
   const L2 = (p) => p ? p[en() ? 1 : 0] : "";
+  const PD = () => window.PillDrop && !RM.matches && PillDrop.ok() ? PillDrop : null;
+  const lookOf = () => window.PillDrop ? PillDrop.look() : (document.documentElement.dataset.theme === "white" ? 2 : 0);
   function pillHTML(n) {
-    const a = ag(n.agent), more = S.q.length - 1;
+    const a = ag(n.agent), more = S.q.length - 1, ask = n.cls === "ask";
     return `<img class="lka-pav" src="${esc(av(a))}" alt=""><span class="lka-tx"><b>${esc(nm(a) || n.agent || "")}<em> · ${esc(L2(TAG[n.cls]))}</em></b><small>${esc(n.sub || "")}</small></span>`
       + `<button type="button" class="lka-more" data-lka-more aria-label="${en() ? `${more} more` : `还有 ${more} 条`}"${more > 0 ? "" : " hidden"}><span class="lka-mf">${en() ? `${more} more` : `还有 ${more} 条`}</span><span class="lka-mb" aria-hidden="true">+${more}</span></button>`
-      + `<span class="lka-go" aria-hidden="true">${esc(L2(BTN[n.cls]))}</span><i class="lka-pcd" aria-hidden="true"><i></i></i>`;
+      + (ask ? "" : `<span class="lka-go" aria-hidden="true">${esc(L2(BTN[n.cls]))}</span><i class="lka-pcd" aria-hidden="true"><i></i></i>`);
   }
   function pillBox() {
     if (S.pill && S.pill.isConnected) return S.pill;
-    const w = document.createElement("div"); w.id = "lka-pw";
-    w.innerHTML = `<div class="lka-pill" role="link" tabindex="0" aria-live="polite"></div>`;
-    document.body.appendChild(w); S.pill = w; return w;
+    const w = document.createElement("div"); w.id = "lka-pw"; w.dataset.m = lookOf();
+    w.innerHTML = `<div class="lka-pill" role="link" tabindex="0" aria-live="polite"></div><button type="button" class="lka-bud" data-lka-bud hidden><span></span></button>`;
+    document.body.appendChild(w); S.pill = w; S.budOn = false; return w;
+  }
+  /* t-pill-overlap: on a computer the centred pill could cover the 「Chrome 使用中」 chip at the top left (#toolbar). Then it drops in under the top bar. */
+  function place(w) {
+    w.style.top = "";
+    if (PHONE.matches) return;
+    const chip = document.querySelector("#toolbar .tool-pill"), p = w.firstElementChild; if (!chip || !p) return;
+    const c = chip.getBoundingClientRect(), r = p.getBoundingClientRect(), b = w.querySelector(".lka-bud");
+    const right = b && !b.hidden ? b.getBoundingClientRect().right : r.right;
+    if (!c.width || c.right + 10 <= r.left || c.left >= right + 10 || c.top >= r.bottom || c.bottom <= r.top) return;
+    const top = document.getElementById("top"), tb = top ? top.getBoundingClientRect().bottom : c.bottom;
+    w.style.top = Math.round(Math.max(tb, c.bottom) + 8) + "px";
+  }
+  /* desktop Chromium: a refracting rim at rest (backdrop-filter url(#svg)); the CSS reads --lka-bf */
+  function lensOn(w) {
+    if (!window.PillDrop || lookOf() === 1) return;
+    [w.firstElementChild, w.querySelector(".lka-bud")].forEach(e => { if (!e || e.hidden) return; const r = e.getBoundingClientRect(), id = PillDrop.lens(r.width, r.height);
+      if (id) e.style.setProperty("--lka-bf", `url(#${id}) blur(${lookOf() ? 20 : 14}px) saturate(${lookOf() ? 1.8 : 1.6})`); else e.style.removeProperty("--lka-bf"); });
+  }
+  /* the pill / bud geometry at rest (no translate), for the canvas */
+  function geo(w) {
+    const p = w.firstElementChild, b = w.querySelector(".lka-bud"), r = p.getBoundingClientRect();
+    const G = { RX: r.left + r.width / 2, Y: r.top + r.height / 2, HW: r.width / 2, HH: r.height / 2, R0: PHONE.matches ? 11 : 12, BR: 28, GAP: 14 };
+    G.CX = G.RX;
+    if (b && !b.hidden) { const q = b.getBoundingClientRect(); G.BR = q.width / 2; G.BX = q.left + q.width / 2; G.GAP = q.left - r.right; G.CX = G.RX + (G.GAP + 2 * G.BR) / 2; G.ask = true; }
+    return G;
+  }
+  /* each canvas frame moves the DOM pill (content fades / blurs in, clipped to the shape) and the bud with it; --lka-sk = how much of the CSS glass shows */
+  function follow(w, G) {
+    const p = w.firstElementChild, b = w.querySelector(".lka-bud");
+    return s => {
+      const [cx, y, hw, hh] = s.pill, ins = Math.max(0, G.HW - hw), iv = Math.max(0, G.HH - hh);
+      p.style.translate = `${(cx - G.RX).toFixed(2)}px ${(y - G.Y).toFixed(2)}px`;
+      p.style.clipPath = ins > 0.3 || iv > 0.3 ? `inset(${iv.toFixed(2)}px ${ins.toFixed(2)}px round ${Math.max(0.1, Math.min(hw, hh)).toFixed(2)}px)` : "";
+      p.style.setProperty("--lka-c", s.c.toFixed(3)); p.style.setProperty("--lka-sk", (1 - s.shape).toFixed(3));
+      if (b && !b.hidden && G.BX != null) {
+        const [bx, by, br] = s.bud;
+        b.style.translate = `${(bx - G.BX).toFixed(2)}px ${(by - G.Y).toFixed(2)}px`; b.style.scale = (br / G.BR).toFixed(4);
+        b.style.setProperty("--lka-c", s.bl.toFixed(3)); b.style.setProperty("--lka-sk", (1 - s.shape).toFixed(3));
+      }
+    };
+  }
+  function settle(w) {
+    w.classList.remove("lka-morph");
+    [w.firstElementChild, w.querySelector(".lka-bud")].forEach(e => { if (!e) return; e.style.translate = ""; e.style.clipPath = ""; e.style.scale = ""; e.style.removeProperty("--lka-c"); e.style.removeProperty("--lka-sk"); });
+  }
+  function budSync(w) {
+    const n = S.q[0], want = !!n && n.cls === "ask", b = w.querySelector(".lka-bud"); if (!b) return;
+    b.firstElementChild.textContent = L2(BTN.ask); b.setAttribute("aria-label", L2(BTN.ask));
+    if (w._entering || w._out || want === S.budOn) return;
+    S.budOn = want;
+    const p = w.firstElementChild, r0 = p.getBoundingClientRect();
+    b.hidden = !want; place(w);
+    const D = PD();
+    if (want && D) {   // the bud splits off the right end
+      const G = geo(w); G.CX = r0.left + r0.width / 2;
+      w.classList.add("lka-morph"); const f = follow(w, G); f(PillDrop.scene("bud", 0, G));
+      D.play("bud", G, f).then(() => { if (S.pill === w && !w._out) { settle(w); lensOn(w); } });
+      return;
+    }
+    if (RM.matches) { if (want) b.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 150 }); lensOn(w); return; }
+    const r1 = p.getBoundingClientRect(), dx = (r0.left + r0.width / 2) - (r1.left + r1.width / 2);   // FLIP: the pill slides to its new centre
+    if (Math.abs(dx) > 0.5) p.animate([{ translate: `${dx}px 0` }, { translate: "0 0" }], { duration: 420, easing: "cubic-bezier(.22,1.4,.36,1)" });
+    if (want) b.animate([{ scale: 0, opacity: 0 }, { scale: 1, opacity: 1 }], { duration: 420, easing: "cubic-bezier(.22,1.4,.36,1)" });
+    lensOn(w);
   }
   function paint(bump) {
     const w = pillBox(), p = w.firstElementChild, n = S.q[0];
+    w.dataset.m = lookOf();
     p.className = "lka-pill lka-c-" + n.cls; p.innerHTML = pillHTML(n);
     p.setAttribute("aria-label", `${nm(ag(n.agent))} · ${L2(TAG[n.cls])} · ${n.sub || ""}`);
-    if (bump && !RM.matches) p.animate([{ translate: "0 0" }, { translate: "0 3px", offset: .3 }, { translate: "0 -1px", offset: .7 }, { translate: "0 0" }], { duration: 450, easing: "ease-out" });
+    if (bump && !RM.matches && !w._entering) p.animate([{ translate: "0 0" }, { translate: "0 3px", offset: .3 }, { translate: "0 -1px", offset: .7 }, { translate: "0 0" }], { duration: 450, easing: "ease-out" });
+    if (!w._entering) { place(w); budSync(w); lensOn(w); }
     countdown();
   }
   function countdown() {
+    if (S.cd) { S.cd.cancel(); S.cd = null; }
+    const n = S.q[0]; if (!n || n.cls === "ask") return;   // asks wait for you
     const bar = S.pill && S.pill.querySelector(".lka-pcd > i"); if (!bar) return;
-    if (S.cd) S.cd.cancel();
     S.cd = bar.animate([{ transform: "scaleX(1)" }, { transform: "scaleX(0)" }], { duration: HOLD, easing: "linear", fill: "forwards" });
-    S.cd.onfinish = () => pillOut();
+    S.cd.onfinish = () => { S.cd = null; const asks = S.q.filter(x => x.cls === "ask"); if (asks.length && S.pill && !S.pill._out) { S.q = asks; paint(false); } else pillOut(); };
     if (document.hidden || (S.pill && ((S.mouse && S.pill.matches(":hover")) || S.pill.querySelector(":focus-visible") || S.pill.matches(":focus-visible")))) S.cd.pause();   // touch leaves a sticky :hover and tap focus behind; neither holds it
   }
   function pillAdd(list) {
     if (S.fs) { S.wait.push(...list); return; }
     const was = S.q.length > 0 && S.pill && S.pill.isConnected && !S.pill._out;
-    if (!was) { if (S.pill) { S.pill.remove(); S.pill = null; } S.q = []; }
+    if (!was) { if (window.PillDrop) PillDrop.stop(); if (S.pill) { S.pill.remove(); S.pill = null; } S.q = []; }
     S.q.push(...list);
     if (was) { paint(true); return; }
-    const w = pillBox(); paint(false);
+    const w = pillBox(), D = PD();
+    if (D) w._entering = true;
+    paint(false);
     const p = w.firstElementChild;
-    if (RM.matches) p.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 150, fill: "backwards" });
-    else {
-      p.animate([{ transform: "translateY(-112px)" }, { transform: "none" }], { duration: 600, easing: "cubic-bezier(.22,1.6,.36,1)", fill: "backwards" });
-      p.animate([{ filter: "blur(6px)" }, { filter: "blur(0)" }], { duration: 330, easing: "ease-out", fill: "backwards" });
-      p.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 150, easing: "ease-out", fill: "backwards" });
+    place(w);
+    if (RM.matches) { p.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 150, fill: "backwards" }); budSync(w); return; }
+    if (D) {
+      const G = geo(w), f = follow(w, G);
+      w.classList.add("lka-morph"); f(PillDrop.scene("in", 0, G));
+      D.play("in", G, f).then(() => { if (S.pill !== w || w._out) return; w._entering = false; settle(w); lensOn(w); budSync(w); });
+      return;
     }
+    p.animate([{ transform: "translateY(-112px)" }, { transform: "none" }], { duration: 600, easing: "cubic-bezier(.22,1.6,.36,1)", fill: "backwards" });
+    p.animate([{ filter: "blur(6px)" }, { filter: "blur(0)" }], { duration: 330, easing: "ease-out", fill: "backwards" });
+    p.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 150, easing: "ease-out", fill: "backwards" });
+    budSync(w);
   }
-  function pillOut() {
+  function pillOut(o = {}) {
     const w = S.pill; if (!w || w._out) return; w._out = true; S.q = []; if (S.cd) { S.cd.cancel(); S.cd = null; }
-    const p = w.firstElementChild;
-    const a = RM.matches ? p.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 150, fill: "forwards" })
+    const p = w.firstElementChild, bud = w.querySelector(".lka-bud"), D = !o.fast && PD();
+    const gone = () => { if (w._out) w.remove(); if (S.pill === w) S.pill = null; };
+    if (D) {
+      if (window.PillDrop) PillDrop.stop(); settle(w);
+      const G = geo(w), f = follow(w, G);
+      w.classList.add("lka-morph"); f(PillDrop.scene("out", 0, G));
+      D.play("out", G, f).then(gone);
+      return;
+    }
+    if (window.PillDrop) PillDrop.stop();
+    const a = RM.matches ? w.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 150, fill: "forwards" })
       : p.animate([{ transform: "none", opacity: 1, filter: "blur(0)" }, { opacity: 1, filter: "blur(0)", offset: .6 }, { transform: "translateY(-112px)", opacity: 0, filter: "blur(4px)" }],
         { duration: 380, easing: "cubic-bezier(.55,0,.75,.2)", fill: "forwards" });
-    a.finished.then(() => { if (w._out) w.remove(); if (S.pill === w) S.pill = null; }, () => { });
+    if (!RM.matches && bud && !bud.hidden) bud.animate([{ opacity: 1 }, { opacity: 0, scale: .6 }], { duration: 240, fill: "forwards" });
+    a.finished.then(gone, () => { });
   }
   function next() { S.q.shift(); if (!S.q.length) return pillOut(); paint(false); const p = S.pill.firstElementChild; if (!RM.matches) p.animate([{ opacity: .3, filter: "blur(3px)" }, { opacity: 1, filter: "blur(0)" }], { duration: 220, easing: "ease-out" }); }
+  /* an ask answered (or closed) elsewhere leaves the queue; the pill goes when nothing is left */
+  function prune() {
+    const w = S.pill; if (!w || w._out || !S.q.length) return;
+    const live = n => { if (n.cls !== "ask" || !n.it) return true; const it = App.items().find(i => i.id === n.it.id); if (!it) return false;
+      const asks = App.openAsks ? App.openAsks(it) : (it.asks || []).filter(a => !a.answer && !a.closed); return asks.some(a => n.ask ? a.id === n.ask : a.q === n.text); };
+    const keep = S.q.filter(live); if (keep.length === S.q.length) return;
+    if (!keep.length) return pillOut();
+    const head = keep[0] === S.q[0]; S.q = keep; paint(false);
+    if (!head && !RM.matches) w.firstElementChild.animate([{ opacity: .3, filter: "blur(3px)" }, { opacity: 1, filter: "blur(0)" }], { duration: 220, easing: "ease-out" });
+  }
+  App.on(() => prune());
+  /* the look follows day / night and the texture while the pill is up */
+  new MutationObserver(() => { const w = S.pill; if (w && w.isConnected) { w.dataset.m = lookOf(); if (!w._entering && !w._out) lensOn(w); } })
+    .observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme", "data-texture"] });
   function open(n) {
     if (n.cls === "eod") return App.route("#page=review");
     if (n.it) App.route("#item=" + encodeURIComponent(n.it.id));
     else if (n.chat) { App.route("#dm=" + encodeURIComponent(n.chat)); if (App.UI.chatFold) { const f = document.querySelector("#right .ch-fold"); f && f.click(); } }
   }
   document.addEventListener("click", e => {
-    const p = e.target.closest && e.target.closest("#lka-pw .lka-pill"); if (!p || !S.pill || S.pill._out) return;
+    const p = e.target.closest && e.target.closest("#lka-pw .lka-pill, #lka-pw .lka-bud"); if (!p || !S.pill || S.pill._out) return;
     if (p._swiped && Date.now() - p._swiped < 400) return;
     if (e.target.closest("[data-lka-more]")) return next();
     const n = S.q[0]; if (n) open(n); next();
   });
   document.addEventListener("keydown", e => {
     const p = e.target.closest && e.target.closest("#lka-pw .lka-pill"); if (!p) return;
-    if (e.key === "Escape") pillOut();
+    if (e.key === "Escape") pillOut();   // t-pill-wellness: also closes an ask without answering it
     else if ((e.key === "Enter" || e.key === " ") && !e.target.closest("[data-lka-more]")) { e.preventDefault(); const n = S.q[0]; if (n) open(n); next(); }
   });
   const hold = on => { if (!S.cd) return; if (on) S.cd.pause(); else if (!document.hidden) S.cd.play(); };
@@ -179,7 +286,7 @@
     const p = SW.p; if (!p || e.pointerId !== SW.id) return; SW.p = null; if (!SW.on) return;
     p._swiped = Date.now(); const dy = e.clientY - SW.y;
     p.style.translate = ""; p.style.opacity = "";
-    if (e.type === "pointerup" && dy < -28) pillOut(); else hold(false);
+    if (e.type === "pointerup" && dy < -28) pillOut({ fast: true }); else hold(false);
   };
   document.addEventListener("pointerup", swEnd); document.addEventListener("pointercancel", swEnd);
 
