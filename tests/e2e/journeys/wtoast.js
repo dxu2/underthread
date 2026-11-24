@@ -1,5 +1,5 @@
 /* t-web-toast: desktop in-app notice. Real path: stateutil writes in the scratch copy (reply / ask / dm) -> long poll -> render -> web/js/toast.js.
- * Checks: reply / ask / dm each pop a card top right; hover pauses the 5 s auto-hide; at most 3 stacked; click opens the card; nothing for the open card;
+ * Checks: reply / dm pop a card top right (an ask goes to the lookaway pill since t-drop-arrival-fx); hover pauses the 5 s auto-hide; at most 3 stacked; click opens the card; nothing for the open card;
  * reduced motion = no slide; phone shows nothing.
  *   node tests/e2e/drive.js run tests/e2e/journeys/wtoast.js --out work/<item>/verify/<run> --views desk,phone --engines chromium,webkit --theme dark
  */
@@ -13,7 +13,7 @@ module.exports = {
   hash: () => "#page=review",
   async run(c) {
     const p = c.p, desk = c.view === "desk";
-    await p.evaluate(() => { const s = (k, v) => localStorage.setItem("rt." + k, JSON.stringify(v)); s("ut", "ut"); s("texture", "leather1"); s("home3", "widgets"); s("lang", "en"); s("chat", "manager"); s("chatFold", false); s("lka", "off"); });   /* t-lookaway-fx: these are the 关 path; journeys/lookaway.js covers the pill */
+    await p.evaluate(() => { const s = (k, v) => localStorage.setItem("rt." + k, JSON.stringify(v)); s("ut", "ut"); s("texture", "leather1"); s("home3", "widgets"); s("lang", "en"); s("chat", "manager"); s("chatFold", false); });   /* t-drop-arrival-fx: the 提醒动效 switch (rt.lka) is gone; on a computer replies and DMs are cards here, asks go to the top pill (journeys/lookaway.js) */
     await p.reload({ waitUntil: "load" }); await p.waitForFunction(() => window.App && App.ST && App.ST.meta && window.WebToast && !document.getElementById("ut-splash"), null, { timeout: 15000 }); await c.sleep(2500);
     const items = await p.evaluate(() => App.items().filter(i => i.stage !== "done" && !i.archived).slice(0, 4).map(i => i.id));
     if (!desk) { su("reply", items[0], "smith", "toast test (phone)"); await c.sleep(4000); const T = await toasts(p); c.check("phone: no in-app toast", T.every(t => !t.vis), T); return; }
@@ -31,9 +31,10 @@ module.exports = {
     c.check("at most 3 stacked, newest on top", T.length === 3 && T[0].y < T[1].y && T[1].y < T[2].y, T.map(t => t.cls + " " + t.line));
     await c.shot("stack3");
     const kinds = T.map(t => t.cls).join(" ");
-    c.check("ask and DM kinds show (ask + chat)", /wt-ask/.test(kinds) && T.some(t => /Asks/.test(t.line)) && T.some(t => /Chat/.test(t.sub)), T.map(t => [t.cls, t.sub, t.line]));
-    const want = await p.evaluate(() => { const e = document.querySelector("#wtoasts .wt.wt-ask:not(.out)"); return e ? e._n.it.id : null; });
-    await p.click("#wtoasts .wt.wt-ask:not(.out) p", { timeout: 3000 }).catch(() => {}); await c.sleep(1500);
+    const pill = await p.evaluate(() => { const e = document.querySelector("#lka-pw .lka-pill"); return e ? e.textContent : ""; });
+    c.check("DM is a card (Chat), the ask goes to the top pill, not a card", T.some(t => /Chat/.test(t.sub)) && !/wt-ask/.test(kinds) && /Toast test question/.test(pill), { cards: T.map(t => [t.cls, t.sub, t.line]), pill });
+    const want = await p.evaluate(() => { const e = [...document.querySelectorAll("#wtoasts .wt:not(.out)")].find(e => e._n && e._n.it); return e ? e._n.it.id : null; });
+    await p.click(`#wtoasts .wt:not(.out) p >> nth=${await p.evaluate(() => [...document.querySelectorAll("#wtoasts .wt:not(.out)")].findIndex(e => e._n && e._n.it))}`, { timeout: 3000 }).catch(() => {}); await c.sleep(1500);
     const open = await p.evaluate(() => App.UI.item || null); c.check("click opens that card", !!open && open === want, { open, want });
     await p.evaluate(() => document.querySelectorAll("#wtoasts .wt").forEach(e => e.remove()));
     su("reply", open || items[0], "smith", "Toast test: reply on the open card");

@@ -385,7 +385,7 @@ function entryHTML(e, it) {
   if (e.kind === "draft") {
     const open = e.old ? DW.open.has(e.vkey) : !DW.open.has("x" + e.vkey);
     const dk = e.dkind && e.dkind !== "task" ? t("k_" + e.dkind) : (e.old ? "" : t("k_task"));
-    const conf = !e.old && it.confidence ? `<div class="conf">${t("confidence")} <b>${esc(it.confidence)}</b>${it.confidence_note ? ": " + esc(it.confidence_note) : ""}</div>` : "";
+    const conf = !e.old && it.confidence ? `<div class="conf">${t("confidence")} <b>${esc(UI.lang === "en" ? it.confidence : ({ high: "高", med: "中", medium: "中", low: "低" })[it.confidence] || it.confidence)}</b>${it.confidence_note ? (UI.lang === "en" ? ": " : "：") + esc(it.confidence_note) : ""}</div>` : "";
     return `<div class="cs-card draftc ${e.dkind === "deliverable" ? "deliverable" : ""} ${e.old ? "old" : ""} ${open ? "" : "folded"}" data-vkey="${e.vkey}">
       <div class="cs-h">${av(agent(e.who), "sm")}<span class="nm">${esc(whoName(e.who))}</span><span class="at">@${esc(whoName("me"))}</span><span class="tm">· ${hm(e.t)}</span>
         ${e.old ? `<span class="dtag dold">${UI.lang === "en" ? "Older" : "旧版"}</span>` : ""}${dk ? `<span class="dtag">${esc(dk)}</span>` : ""}${e.label ? `<span class="dlabel">${esc(e.label)}</span>` : ""}<span class="sp"></span><button data-copy-v="${e.vkey}">${t("copy")}</button></div>

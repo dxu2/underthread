@@ -63,7 +63,7 @@ function renderTicker() {
      become knots on a thread. Other looks keep the plain line. CSS: theme-ut.css (nty-). */
   const ut = !!document.documentElement.dataset.ut;
   const html = `<span class="k">${UI.lang === "en" ? "Notice" : "通知"}</span>${ut ? NTY_THR + "\u0000" + NTY_BALL : ""}<span class="msg ${n.level === "urgent" ? "urgent" : n.level === "calm" ? "calm" : ""}" data-ti="${tickIdx}">${esc(n.text)}</span>${ut ? '<span class="nyk-run" aria-hidden="true"></span><span class="nty-tail" aria-hidden="true"></span>' : ""}
-    ${n.id ? `<button class="dim" data-dismiss="${n.id}" title="dismiss">✕</button>` : ""}
+    ${n.id ? `<button class="dim" data-dismiss="${n.id}" title="${UI.lang === "en" ? "Dismiss" : "关掉"}" aria-label="${UI.lang === "en" ? "Dismiss" : "关掉"}">✕</button>` : ""}
     <span class="pager${ut ? " nty-knots" : ""}">${list.map((_, i) => `<i class="${i === tickIdx ? "on" : ""}"></i>`).join("")}</span>`;
   const part = ut ? nykPart() : "";
   if (html + part !== renderTicker.last) {  // re-animate only when the notice (or the part of the day) changes

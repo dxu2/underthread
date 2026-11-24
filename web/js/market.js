@@ -17,6 +17,8 @@
   const CATS = ["研究", "工程", "创作", "运营", "生活"];
   const CAT_EN = { 研究: "Research", 工程: "Engineering", 创作: "Writing", 运营: "Operations", 生活: "Life" };
   const catL = c => en() ? (CAT_EN[c] || c) : c;
+  /* t-i18n-leftovers: one language per card; an English board with no title_en falls back to the folder name (trend-watcher -> Trend watcher), never the Chinese job */
+  const jobL = t => !en() ? t.job : t.title_en || (/[\u3400-\u9fff]/.test(t.job) ? String(t.key).replace(/[-_]+/g, " ").replace(/^./, c => c.toUpperCase()) : t.job);
   const avUrl = (t, v) => `/api/tpl-av?job=${encodeURIComponent(t.key)}&v=${encodeURIComponent(v.key)}`;
   const vOf = t => t.variants[Math.min(MK.pick[t.key] || 0, t.variants.length - 1)] || t.variants[0];
   const sample = v => en() && v.sample_en || ((v.habits || []).find(h => /^示例/.test(h)) || "").replace(/^示例[:：]?\s*/, "");
@@ -125,7 +127,7 @@
   function card(t) {
     const v = vOf(t), on = hiredOf(t).some(x => x.on);
     return `<article class="mk-card${on ? " hired" : ""}" data-mk="${esc(t.key)}" data-cat="${esc(t.cat)}" style="--t:${esc(v.tint)}">
-      <div class="mk-top"><img class="mk-av" alt="" src="${avUrl(t, v)}" loading="lazy"><div class="mk-id"><b>${esc(en() ? t.title_en || t.job : t.job)}</b><small>${esc(en() ? t.job : t.title_en)}${t.cat ? " · " + esc(catL(t.cat)) : ""}</small></div>${badge(t)}</div>
+      <div class="mk-top"><img class="mk-av" alt="" src="${avUrl(t, v)}" loading="lazy"><div class="mk-id"><b>${esc(jobL(t))}</b>${t.cat ? `<small>${esc(catL(t.cat))}</small>` : ""}</div>${badge(t)}</div>
       <p class="mk-duty">${esc(en() ? t.duty_en || t.duty : t.duty)}</p>
       ${sw(t)}<p class="mk-style">${esc(vStyle(v))}</p>
       <div class="mk-st-h">${L("派活可以这样说", "Try asking")}</div>${starters(t).slice(0, 2).map(s => `<div class="mk-q" title="${esc(s)}">${en() ? `“${esc(s)}”` : `「${esc(s)}」`}</div>`).join("")}
@@ -229,24 +231,24 @@
     const st = { vi: Math.min(MK.pick[t.key] || 0, t.variants.length - 1), tintSet: false, seq: 0 };
     const ids = (MK.data.ids || []).concat(Object.keys(App.ST.agents || {}));
     const v0 = t.variants[st.vi];
-    App.openModal(`<h2>${L("雇一个", "Hire a")} ${esc(en() ? t.title_en || t.job : t.job)}</h2>
+    App.openModal(`<h2>${L("雇一个", "Hire a")} ${esc(jobL(t))}</h2>
       <div class="mk-sh">
-        <div class="mk-sh-top"><img class="mk-av xl" alt="" src="${avUrl(t, v0)}"><div class="mk-sh-pv"><b data-pv-name></b><small>${esc(en() ? t.title_en || t.job : t.job)} · <span data-pv-v></span></small><p class="mk-say" data-pv-say></p></div></div>
+        <div class="mk-sh-top"><img class="mk-av xl" alt="" src="${avUrl(t, v0)}"><div class="mk-sh-pv"><b data-pv-name></b><small>${esc(jobL(t))} · <span data-pv-v></span></small><p class="mk-say" data-pv-say></p></div></div>
         <label>${L("性格", "Personality")}</label><div class="mk-sw big" role="radiogroup">${t.variants.map((v, i) => `<button type="button" role="radio" aria-checked="${i === st.vi}" class="${i === st.vi ? "on" : ""}" data-sh-v="${i}" style="--t:${esc(v.tint)}"><i></i><span data-t="${esc(vLabel(v))}">${esc(vLabel(v))}</span></button>`).join("")}</div>
         <div class="mk-sh-row">
-          <div><label for="mk-name">${L("名字", "Name")}</label><input type="text" id="mk-name" maxlength="20" value="${esc(freeName(t.job))}"></div>
+          <div><label for="mk-name">${L("名字", "Name")}</label><input type="text" id="mk-name" maxlength="20" value="${esc(freeName(jobL(t)))}"></div>
           <div><label for="mk-id">id <small>${L("小写字母，雇后不能改", "lowercase, fixed after hiring")}</small></label><input type="text" id="mk-id" maxlength="16" value="${esc(freeId(t.key, ids))}"></div>
           <div class="mk-tint"><label for="mk-tint">${L("颜色", "Colour")}</label><input type="color" id="mk-tint" value="${esc(v0.tint)}"></div>
         </div>
         <label>${L("会做的事（new_role.py 预演，还没写任何文件）", "What happens (new_role.py dry run, nothing written yet)")}</label>
         <pre class="mk-plan" data-plan aria-live="polite">…</pre>
-        <p class="mk-note">${L("雇完就出现在左栏 TEAM；管家要重开会话后才能派活给新角色。", "The new role shows in TEAM at once; the manager can dispatch to it after its session restarts.")}</p>
+        <p class="mk-note">${L("雇完就出现在左栏「团队」；管家要重开会话后才能派活给新角色。", "The new role shows in TEAM at once; the manager can dispatch to it after its session restarts.")}</p>
       </div>
       <div class="foot"><button class="btn" data-x>${L("取消", "Cancel")}</button><button class="btn primary" data-ok disabled>${L("确认雇用", "Hire")}</button></div>`, m => {
       m.classList.add("mk-mdl");
       const name = $("#mk-name", m), id = $("#mk-id", m), tint = $("#mk-tint", m), ok = $("[data-ok]", m), plan = $("[data-plan]", m);
       const cur = () => t.variants[st.vi];
-      const fill = () => { const v = cur(); $("[data-pv-name]", m).textContent = name.value || t.job; $("[data-pv-v]", m).textContent = vLabel(v); $("[data-pv-say]", m).textContent = sample(v) || vStyle(v);
+      const fill = () => { const v = cur(); $("[data-pv-name]", m).textContent = name.value || jobL(t); $("[data-pv-v]", m).textContent = vLabel(v); $("[data-pv-say]", m).textContent = sample(v) || vStyle(v);
         if (!st.tintSet) tint.value = v.tint; $(".mk-av", m).src = avUrl(t, v); m.style.setProperty("--t", tint.value); };
       let tm = 0;
       const dry = () => { clearTimeout(tm); ok.disabled = true; plan.classList.remove("bad"); plan.textContent = "…"; const my = ++st.seq;
@@ -267,7 +269,7 @@
           const j = await hireApi({ op: "apply", job: t.key, variant: cur().key, id: id.value.trim(), name: name.value.trim(), tint: tint.value });
           if (!j.ok) { plan.textContent = (j.err || j.out).trim(); plan.classList.add("bad"); ok.textContent = L("确认雇用", "Hire"); return; }
           App.closeModal(); MK.pick[t.key] = st.vi;
-          undoBar(L(`${name.value.trim()} · 已出现在左栏 TEAM`, `${name.value.trim()} · now in TEAM`), id.value.trim());
+          undoBar(L(`${name.value.trim()} · 已出现在左栏「团队」`, `${name.value.trim()} · now in TEAM`), id.value.trim());
           await load(true);
         } catch (e) { plan.textContent = String(e.message || e); plan.classList.add("bad"); ok.textContent = L("确认雇用", "Hire"); ok.disabled = false; }
       };

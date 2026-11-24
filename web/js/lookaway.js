@@ -10,7 +10,7 @@
  *     from above the screen edge with a 12 px overshoot (cubic-bezier(.22,1.6,.36,1), 600 ms); a second notice bumps it and grows the
  *     「还有 N 条」 chip (no stacked edges); the 5 s stitched countdown restarts on each merge and pauses while hovered or hidden.
  *     Click = open; chip = next notice; swipe up = dismiss. Reduced motion = 150 ms fades only.
- *   Setting rt.lka = "on" (default) | "pill" | "off" (off = the old top-right cards, toast.js). 设置 → 通用 → 通知 → 提醒动效, with 预览.
+ *   No setting since t-drop-arrival-fx (user 11-23): always full screen + pill. The old 设置 → 提醒动效 pref (localStorage rt.lka) is ignored and removed at load.
  *   Classes: lka-* (checked unused). Knit theme kills backdrop-filter for * with !important; lookaway.css re-enables it for these two layers only.
  *   Test hook: window.LookAway. */
 (function () {
@@ -21,7 +21,9 @@
   const en = () => App.UI.lang === "en";
   const esc = s => String(s == null ? "" : s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
   const LS = { get(k, d) { try { const v = JSON.parse(localStorage.getItem(k)); return v == null ? d : v; } catch (e) { return d; } }, set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) { } } };
-  const mode = () => { const m = LS.get("rt.lka", "on"); return ["on", "pill", "off"].includes(m) ? m : "on"; };
+  /* t-drop-arrival-fx: the 设置 row is gone; a pref saved by an older build ("pill" / "off") is dropped so every install behaves the same */
+  try { localStorage.removeItem("rt.lka"); } catch (e) { }
+  const mode = () => "on";
   const ag = id => App.agent(id), nm = a => a ? App.aname(a) : "", av = a => a ? App.avatarUrl(a) : "";
   const hhmm = d => String(d.getHours()).padStart(2, "0") + ":" + String(d.getMinutes()).padStart(2, "0");
   const today = () => { const d = new Date(); return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0"); };
@@ -212,35 +214,7 @@
   }
   App.on(k => { if (k === "all") eodCheck(); });
 
-  /* ---------- 设置 row ---------- */
-  const SUB = { on: ["交稿和收工时全屏一下（20 分钟内最多一次，22:30–8:30 不全屏），其余等你处理的用顶部小胶囊；电脑上回复和私信走右上角小卡片", "Full screen when cards are handed in and at day's end (at most once per 20 min, never 22:30–8:30); a small pill at the top for the rest of what waits on you. On a computer, replies and DMs use the top-right cards"],
-    pill: ["等你处理的只用顶部小胶囊，不全屏；电脑上回复和私信走右上角小卡片", "What waits on you uses only the small pill at the top, never full screen. On a computer, replies and DMs use the top-right cards"], off: ["关：电脑用右上角的小卡片，手机不弹", "Off: small cards at the top right on a computer, nothing on the phone"] };
-  const OPTS = [["on", "全屏 + 胶囊", "Full + pill"], ["pill", "只用胶囊", "Pill only"], ["off", "关", "Off"]];
-  function settingsRow(E) {
-    const m = mode();
-    return `<div class="st-row lka-set"><span class="st-tx"><b>${E ? "Arrival effects" : "提醒动效"}</b><small>${esc(SUB[m][E ? 1 : 0])}</small></span>`
-      + `<button type="button" class="st-prev" data-lka-prev aria-label="${E ? "Preview the arrival effect" : "预览提醒动效"}"><i aria-hidden="true">▶</i>${E ? "Preview" : "预览"}</button>`
-      + `<div class="seg st-seg" data-seg="lka" role="radiogroup">${OPTS.map(([v, z, e]) => `<button type="button" class="seg-i ${v === m ? "on" : ""}" role="radio" aria-checked="${v === m}" data-lka-set="${v}">${E ? e : z}</button>`).join("")}</div></div>`;
-  }
-  function setPaint() {
-    const m = mode(), E = en();
-    document.querySelectorAll("[data-lka-set]").forEach(b => { const on = b.dataset.lkaSet === m; b.classList.toggle("on", on); b.setAttribute("aria-checked", String(on)); });
-    document.querySelectorAll(".lka-set .st-tx small").forEach(s => { const t = SUB[m][E ? 1 : 0]; if (s.textContent !== t) { s.classList.remove("st-swap"); void s.offsetWidth; s.textContent = t; s.classList.add("st-swap"); } });
-  }
-  function preview() {
-    const its = App.items(), it = its.find(i => i.stage === "review") || its[0], a = it ? it.owner : "manager";
-    const n = { t: new Date().toISOString(), cls: "decide", agent: a, it, text: "待审核", sub: it ? it.title : "" };
-    if (mode() === "on" && !RM.matches && !S.fs) fsPlay("review", [n], { preview: true });
-    else pillAdd([n]);
-  }
-  document.addEventListener("click", e => {
-    const b = e.target.closest && e.target.closest("[data-lka-set],[data-lka-prev]"); if (!b) return;
-    if (b.hasAttribute("data-lka-prev")) return preview();
-    LS.set("rt.lka", b.dataset.lkaSet); setPaint();
-  });
-  addEventListener("storage", e => { if (e.key === "rt.lka") setPaint(); });
-
   /* t-onboard-tour: the tour closed; what arrived meanwhile comes in as the quiet top pill (never the full-screen arrival) */
   function release() { const h = S.held || []; S.held = []; if (h.length && mode() !== "off") route(h); }
-  window.LookAway = { release, take, route, fsPlay, fsEnd, pillAdd, pillOut, settingsRow, preview, mode, fsBlock, eodCheck, _S: S };
+  window.LookAway = { release, take, route, fsPlay, fsEnd, pillAdd, pillOut, mode, fsBlock, eodCheck, _S: S };
 })();

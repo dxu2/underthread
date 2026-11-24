@@ -42,7 +42,7 @@ function composers() {
     b.addEventListener("click", () => sendVia($("textarea", chat))); chat.appendChild(b);
   }
   const ta = chat && $("textarea", chat), a = App.agent(App.UI.chat);
-  if (ta) ta.placeholder = en() ? `Message ${App.aname(a)}…` : `对${App.aname(a)}说……`;
+  if (ta) ta.placeholder = en() ? `Message ${App.aname(a)}…` : `对${/^[A-Za-z0-9]/.test(App.aname(a)) ? " " : ""}${App.aname(a)}${/[A-Za-z0-9]$/.test(App.aname(a)) ? " " : ""}说……`;
   const comp = $("#drawer .composer");
   if (comp && !$(".m-send", comp)) {
     const b = document.createElement("button"); b.className = "m-send"; b.setAttribute("aria-label", "send"); b.innerHTML = SEND;
@@ -64,7 +64,7 @@ function wirePhComposer() {
     const sync = () => {   // --comp-h = pill height (target, not the eased one) + the 14px it floats above the bottom
       const ta = find(), comp = ta && ta.closest(".ch-comp"), right = document.getElementById("right"); if (!comp || !right) return;
       const h = parseFloat(ta.style.height) || MIN, box = right.querySelector(".ch-msgs");
-      const atBottom = !!box && box.scrollHeight - box.scrollTop - box.clientHeight < 90;
+      const atBottom = !!box && !!box.querySelector(".msg") && box.scrollHeight - box.scrollTop - box.clientHeight < 90;   /* t-onboard-review ②: a thread with no messages (steward offline card) is left at its top */
       const v = (comp.offsetHeight - ta.offsetHeight + h + 14) + "px";
       if (right.style.getPropertyValue("--comp-h") === v) return;
       right.style.setProperty("--comp-h", v);   // ui23: the composer floats over the list, so the list needs to know how tall it is

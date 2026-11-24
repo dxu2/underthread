@@ -62,7 +62,7 @@
     const p = perm(), n = srv ? srv.devices : "?";
     const me = srv && srv.me, code = me && me.last_code;
     const diag = (en() ? `permission ${p} · this device ${sub ? "subscribed" : "not subscribed"} · server ${srv && srv.mine ? "has it" : "doesn't have it"} (${n} total)`
-      : `权限 ${p} · 本机${sub ? "已订阅" : "未订阅"} · 服务器${srv && srv.mine ? "已登记" : "未登记"}（共 ${n} 台）`)
+      : `权限${({ granted: "已允许", denied: "已拒绝", default: "未询问" })[p] || " " + p} · 本机${sub ? "已订阅" : "未订阅"} · 服务器${srv && srv.mine ? "已登记" : "未登记"}（共 ${n} 台）`)
       + (code != null ? (en() ? ` · last send ${code}` : ` · 上次发送 ${code}`) : "")
       + (lastErr ? ` · ${lastErr.slice(0, 80)}` : "");
     if (p === "denied") return { on: false, label: en() ? "Blocked in iOS Settings → Notifications" : "已在系统设置 → 通知 中关闭", diag };

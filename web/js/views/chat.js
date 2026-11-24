@@ -196,6 +196,13 @@ function foldChat(on) {
 // red with 重试 / 删除 if it failed ("fail"). It stays a local bubble until a poll brings the server's copy (matched by text after the last
 // message that was there when you sent), then the real message replaces it. No forced full re-download any more: one ordinary rev poll.
 const PEND = { n: 0, list: [] };
+/* t-chat-send-flash: one message, one entry animation. The local bubble is redrawn as it goes sending -> ok -> server copy, and each redraw is a
+   new node that would play the entry animation again (desk: .msg:last-child rise, blur in twice more). A redraw of a bubble that was already
+   on screen (the pending one after its first draw, the server copy that replaces it) continues the first animation with a negative delay
+   while it is still running (.m-ago), and has none at all after that (.m-quiet). */
+const QUIET = new Map();   // server message key -> when its local bubble was first drawn
+const qkey = m => m.id || (m.t + "|" + m.text);
+const reEntry = at => { const ago = Date.now() - at; return ago > 900 ? ' m-quiet"' : ` m-ago${MOBQ.matches ? " m-new" : ""}" style="--m-ago:-${ago}ms"`; };   // the class list's tail + closing quote
 const isoNow = () => { const d = new Date(), o = -d.getTimezoneOffset(), p = n => String(Math.floor(Math.abs(n))).padStart(2, "0");
   return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}${o >= 0 ? "+" : "-"}${p(o / 60)}:${p(o % 60)}`; };
 function sendChat(text, attachments, replyTo) {
@@ -221,7 +228,7 @@ function pendSync() {   // drop the local bubbles whose server copy has arrived
   PEND.list = PEND.list.filter(p => {
     const L = chatList(p.chat); let from = 0;
     if (p.after) { let i = L.length - 1; while (i >= 0 && L[i].id !== p.after) i--; from = i >= 0 ? i + 1 : Math.max(0, L.length - 50); }
-    for (let k = from; k < L.length; k++) { const m = L[k], key = p.chat + ":" + (m.id || k); if (m.who === "me" && m.text === p.text && !claimed.has(key)) { claimed.add(key); return false; } }
+    for (let k = from; k < L.length; k++) { const m = L[k], key = p.chat + ":" + (m.id || k); if (m.who === "me" && m.text === p.text && !claimed.has(key)) { claimed.add(key); if (p.drawn) QUIET.set(qkey(m), p.drawn); return false; } }
     return !(p.st === "ok" && Date.now() - p.okAt > 60e3);   // safety net: the server has had it for a minute
   });
 }
@@ -367,14 +374,14 @@ function renderChat() {
   const st = a.id === "manager" ? (ms.on ? `<span class="on">▶ ${t("online")}</span>` : ms.sleep ? `<span class="zz">☾ ${esc(ms.txt)}</span>` : `<span class="off">● ${t("offline")}</span>`)
     : a.status === "working" ? `<span class="on">▶ ${t("working")}</span>` : `<span class="idle">${t(a.status || "idle")}</span>`;
   if (window.Market && Market.hrBar) Market.hrBar(r);   /* t-hr-build: the 面试中 bar above the HR DM */
-  setSrc($(".ch-who", r), `${av(a, "lg")}<span class="nm">${esc(aname(a))}</span><span class="ti">${esc(atitle(a))}</span>${qBadge(a.id)}${st}<span class="sp"></span>`);
+  setSrc($(".ch-who", r), `${av(a, "lg")}<span class="nm">${esc(aname(a))}</span>${atitle(a) && atitle(a) !== aname(a) ? `<span class="ti">${esc(atitle(a))}</span>` : ""}${qBadge(a.id)}${st}<span class="sp"></span>`);
   const crsEl = $(".ch-roster", r), crs0 = crsEl && crsEl._src;
   setSrc(crsEl, agents().filter(x => x.enabled !== false).map(x => {
     const un = x.id !== UI.chat ? unreadOf(x.id) : 0;   /* t-ri1104-p2: a count from unreadOf (was: a dot when the last message was theirs) */
     return `<button data-pick="${x.id}" class="${x.id === UI.chat ? "on" : ""}">${av(x)}<span>${esc(aname(x))}</span>${un ? `<i class="unread n">${unreadTag(un)}</i>` : ""}${qBadge(x.id, true)}</button>`;
   }).join("").replace(UI.chatFold && !MOBQ.matches ? / title="[^"]*"/g : /$^/, ""));   // t-rail-tip: folded rail shows #rail-tip, never the OS tooltip
   if (!crsEl || crsEl._src !== crs0 || CRS.on !== UI.chat) crsAfter(crsEl);   /* t-avatar-strip-scroll: keep the open chat's avatar in view + refresh the edge fades. t-perf-smooth F4a: not on a poll that left the strip as it was (scrollWidth forced a layout every time) */
-  $("textarea", r).placeholder = UI.lang === "en" ? `Message ${aname(a)}…` : `对${aname(a)}说……`;   // t-web-dm: desktop moves the shortcut hint below the field; t-ui-fix-r2 audit P2-12: a phone has no ⌘ key, so no hint there at all
+  $("textarea", r).placeholder = UI.lang === "en" ? `Message ${aname(a)}…` : `对${/^[A-Za-z0-9]/.test(aname(a)) ? " " : ""}${aname(a)}${/[A-Za-z0-9]$/.test(aname(a)) ? " " : ""}说……`;   // t-web-dm: desktop moves the shortcut hint below the field; t-ui-fix-r2 audit P2-12: a phone has no ⌘ key, so no hint there at all
   pendSync();
   const real = chatList(UI.chat), pl = pendOf(UI.chat), list = pl.length ? real.concat(pl) : real;   // t-perf C: local bubbles ride at the end
   const obTop = UI.chat === "manager" && window.Onboard ? Onboard.chatTop() : "";   /* t-onboarding P0: steward offline / online card (onboard.js); part of sig so it follows the heartbeat */
@@ -412,19 +419,22 @@ function renderChat() {
   const pendSt = m => m.st === "fail" ? `<span class="pend-x">${UI.lang === "en" ? "Not sent" : "没发出去"}</span><button type="button" class="pend-b" data-pend-retry="${m.pend}">${UI.lang === "en" ? "Retry" : "重试"}</button><button type="button" class="pend-b" data-pend-drop="${m.pend}">${UI.lang === "en" ? "Delete" : "删除"}</button>`
     : m.st === "ok" ? whenH(m.t) : (UI.lang === "en" ? "Sending…" : "发送中…");
   chatPatch(box, list.length ? [obTop, more].concat(view.map((m, i) => sepHTML(i) + (m.pend
-    ? `<div class="msg me pend${m.st === "ok" ? " pend-ok" : m.st === "fail" ? " pend-fail" : ""}" data-t="${esc(m.t)}" data-pend="${m.pend}">${rqLine(m)}<div class="mb">${md(m.text)}${attHTML(m.attachments)}</div><div class="mt">${pendSt(m)}</div></div>`
+    ? `<div class="msg me pend${m.st === "ok" ? " pend-ok" : m.st === "fail" ? " pend-fail" : ""}${m.drawn ? reEntry(m.drawn) : '"'} data-t="${esc(m.t)}" data-pend="${m.pend}">${rqLine(m)}<div class="mb">${md(m.text)}${attHTML(m.attachments)}</div><div class="mt">${pendSt(m)}</div></div>`
     : m.who === "me"
-    ? `<div class="msg me" data-t="${esc(m.t)}"${m.id ? ` data-mid="${esc(m.id)}"` : ""}>${rqLine(m)}<div class="mb">${md(m.text)}${attHTML(m.attachments)}</div><div class="mt">${whenH(m.t)}</div></div>`
+    ? `<div class="msg me${QUIET.has(qkey(m)) ? reEntry(QUIET.get(qkey(m))) : '"'} data-t="${esc(m.t)}"${m.id ? ` data-mid="${esc(m.id)}"` : ""}>${rqLine(m)}<div class="mb">${md(m.text)}${attHTML(m.attachments)}</div><div class="mt">${whenH(m.t)}</div></div>`
     : `<div class="msg" data-t="${esc(m.t)}"${m.id ? ` data-mid="${esc(m.id)}"` : ""} data-who="${esc(m.who)}"><div class="mh">${mav(m, i)}${esc(aname(agent(m.who)))} <small>${whenH(m.t)}</small></div><div class="mb md">${chipParens(md(m.text))}${m.ask === "name" ? askName() + locHTML("chat") : ""}</div>${attHTML(m.attachments)}
        ${optsOf(m, i)}</div>`)))
     : UI.chat === "manager" && window.Onboard ? [obTop, Onboard.chatEmpty()]   /* t-onboarding P0 ②: three examples instead of one line */
     : [`<div class="empty">${UI.chat === "manager" ? (UI.lang === "en" ? "Tell the manager what you want done." : "跟管家说你想做什么。") : (UI.lang === "en" ? "DM goes through the manager to this agent." : "私信会由管家转给这个角色。")}</div>`]);
-  if (nearBottom) box.scrollTop = box.scrollHeight;
+  pl.forEach(x => { if (!x.drawn) x.drawn = Date.now(); });   /* t-chat-send-flash: its next redraw comes in quiet */
+  /* t-onboard-review ②: a steward thread with no messages yet is the offline card + examples: open it at the top (pinned to the bottom, the card's first lines sat under the avatar strip) */
+  const obEmpty = !list.length && UI.chat === "manager" && !!window.Onboard;
+  if (obEmpty) box.scrollTop = 0; else if (nearBottom) box.scrollTop = box.scrollHeight;
   const opened = !!CHN.fresh; CHN.fresh = false;
   chatRenderedFor = UI.chat; chatCount = sig;
   decorateDesk(box, list);
   newSepPlace(box, opened);
-  if (nearBottom && !(opened && $("[data-newsep]", box) && box.scrollHeight - box.scrollTop - box.clientHeight > 80)) chatPinWatch(box);   /* t-ui-fix-p1 P2-6: late thumbnails / chips no longer leave a just-opened thread short of the bottom */
+  if (nearBottom && !obEmpty && !(opened && $("[data-newsep]", box) && box.scrollHeight - box.scrollTop - box.clientHeight > 80)) chatPinWatch(box);   /* t-ui-fix-p1 P2-6: late thumbnails / chips no longer leave a just-opened thread short of the bottom */
   if (real.length && (!document.body.dataset.mtab || (document.body.dataset.mtab === "chat" && document.body.dataset.cv === "thread"))) { UI.seen["chat." + UI.chat] = real[real.length - 1].t; LS.set("seen", UI.seen); chatMailRead(UI.chat, real[real.length - 1].t); }   /* t-perf C: read marks only from server messages */  // phones: only an open thread counts as read; P3: and the mailbox copies
 }
 
@@ -437,6 +447,7 @@ function chatPinWatch(box) {
   try {
     if (CP.ro) CP.ro.disconnect(); CP.ro = null;
     if (MOBQ.matches || !box || !box.isConnected || !box.clientHeight) return;
+    if (UI.chat === "manager" && window.Onboard && !box.querySelector(".msg")) return;   /* t-onboard-review ②: the empty steward thread stays at its top (offline card) */
     CP.until = Date.now() + 1500; box.scrollTop = box.scrollHeight;
     if (!box._cpu) { box._cpu = 1; const stop = () => { CP.until = 0; }; ["wheel", "touchstart", "mousedown", "keydown"].forEach(t => box.addEventListener(t, stop, { passive: true })); }
     const ro = CP.ro = new ResizeObserver(() => { if (Date.now() > CP.until) { ro.disconnect(); return; } box.scrollTop = box.scrollHeight; });

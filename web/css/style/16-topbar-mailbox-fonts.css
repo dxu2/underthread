@@ -116,6 +116,9 @@ div.rq { cursor: default; } div.rq:hover { background: color-mix(in srgb, var(--
 #right .msg.pend .pend-b:hover { color: var(--ink); border-color: var(--line3); background: var(--accent-soft); }
 #right .msg.pend .pend-b[data-pend-retry] { color: var(--urgent); border-color: var(--urgent); }
 @media (prefers-reduced-motion: reduce) { #right .msg.pend .mb, #right .msg.pend .pend-b { transition: none; } }
+/* t-chat-send-flash: a bubble already on screen (pending -> ok -> server copy, each a new node) does not play its entry animation again (chat.js QUIET) */
+#right .msg.m-quiet { animation: none !important; }
+#right .msg.m-ago { animation-delay: var(--m-ago) !important; }   /* redrawn while the first entry still runs: carry on from where it was */
 
 /* ===== t-ut-orb A: the Soul block takes only its content width (the week line under it was ~1000 px), no STAMINA caption. Desktop only. */
 @media (min-width: 761px) { #top > #stamina { justify-self: start; } .stamina .lbl small { display: none; } }

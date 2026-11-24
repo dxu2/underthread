@@ -329,9 +329,19 @@
     if (e.target.closest(".a2-stack, .a2-fold")) { S2.x = !S2.x; if (S.last) a2Patch(ob, S.last); return; }
     if (e.target.closest("[data-chat]")) return;   // app.js handles it (idle faces, a working member with no card)
     const f = e.target.closest("[data-hd-f]");
-    if (f) { const k = f.dataset.hdF, U = A().UI; U.hf = (U.hf || "review") === k && k !== "review" ? "review" : k; A().refreshPage(); return; }
+    if (f) { const k = f.dataset.hdF, U = A().UI; if ((U.hf || "review") !== k) { U.hf = k; A().refreshPage(); } jumpTo(); return; }   // t-home-v3-jump: a tile shows its list and scrolls there (no toggle back)
     const o = e.target.closest("[data-hd-open]"); if (o) { A().openItem(o.dataset.hdOpen); return; }
   });
+  /* t-home-v3-jump (user 11-23): on the phone the list below the status card used to change off screen, so a tap looked like nothing happened.
+     Now the page scrolls to the head of that list: 新回复 + 等你拍板 for 「等你看 / On you」, the 进行中 / 待办 / 近 7 天交付 list for the other three.
+     #page is the scroller and #top sits outside it, so no sticky offset beyond a small gap. Smooth unless reduced motion. */
+  function jumpTo() {
+    requestAnimationFrame(() => {
+      const pg = document.getElementById("page"), t = pg && pg.querySelector("#pagebody :is(.nr:has(> .nr-h), .ph-bar, .dc-h, .dc-none, .rv-list, .act-list, .empty)"); if (!t) return;
+      const y = pg.scrollTop + t.getBoundingClientRect().top - pg.getBoundingClientRect().top - 10;
+      pg.scrollTo({ top: Math.max(0, y), behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" });
+    });
+  }
 
   // ---------- entry ----------
   function render(ob, d) {
