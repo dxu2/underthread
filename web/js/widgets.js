@@ -153,10 +153,10 @@
   const fitM = (s, len, big) => s === "l" ? { n: big, foot: true } : len <= 2 ? { n: 2, foot: false } : { n: 1, foot: true };
   const W = {
     usage(s) {   // t-home-usage: tokens per role today + the quota strip; markup shared with the phone card / 系统状态 (App.ruHTML)
-      if (s === "s") return `<div class="wg-eb" data-ru-open><b>${nm("usage")}</b><span>${en() ? "today" : "今天"}</span></div>` + A().ruHTML(0, { tot: true, quota: true, fit: true });   /* t-home-sml S: today's total + the quota line */
+      if (s === "s") return `<div class="wg-eb" data-ru-open><b>${nm("usage")}</b><span>${en() ? "today" : "今天"}</span></div>` + A().ruHTML(0, { tot: true, quota: true, fit: true, v3: true });   /* t-home-sml S: today's total + the quota line */
       const R = A().roleUsage && A().roleUsage(), all = R && R.rows && R.rows.length;   // t-sync-pill batch 2: 「全部 N 位 ›」 replaces the bottom 「+N more」 line
       return `<div class="wg-eb" data-ru-open><b>${nm("usage")}</b><span>${en() ? "today" : "今天"}</span>${all ? `<span class="n ru-all">${en() ? `all ${all} ›` : `全部 ${all} 位 ›`}</span>` : `<span class="n">token</span>`}</div>${sub("usage")}`
-        + A().ruHTML(s === "l" ? 7 : 4, { tot: s === "l", quota: true, soul: true, fit: true });   /* t-soul-widget: lower half = Soul rows per model */
+        + A().ruHTML(s === "l" ? 7 : 4, { tot: s === "l", quota: true, soul: true, fit: true, v3: true });   /* t-soul-widget: lower half = Soul rows per model */
     },
     review(s, D) {
       if (s === "s") { const o = D.waiting.reduce((a, b) => (A().waitMs ? A().waitMs(b) > A().waitMs(a) : 0) ? b : a);   /* t-home-sml S: count + the oldest card */

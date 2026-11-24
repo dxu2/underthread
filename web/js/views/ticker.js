@@ -42,18 +42,21 @@ const NYK_TAIL = d => `<path class="th" d="${d}"/><path class="tc" d="${d}"/>`;
 const NYK_SIT = `<svg class="nyk-sit" viewBox="-13 -18 22 19">${NYK_TAIL("M-7 -2.6Q-11.6 -2.6 -11.4 -6.2T-11.3 -11.2")}<g class="bd"><g class="h">${NYK_BODY}${NYK_EAR}</g><g class="c">${NYK_BODY}${NYK_EAR}</g><g class="ey"><ellipse class="e" cx="3.1" cy="-8" rx=".85" ry=".85"/><ellipse class="e" cx="6.1" cy="-8.1" rx=".85" ry=".85"/></g></g></svg>`;
 const NYK_NAP = `<svg class="nyk-nap" viewBox="-13 -18 22 19"><g class="bd"><g class="h">${NYK_BODY}${NYK_EAR}</g><g class="c">${NYK_BODY}${NYK_EAR}</g><path class="el" d="M2.1 -8.2Q3.1 -7.1 4.1 -8.2"/><path class="el sl" d="M5.1 -8.3Q6.1 -7.2 7.1 -8.3"/><ellipse class="e pk" cx="6.1" cy="-8.1" rx=".85" ry=".85" opacity="0"/></g>${NYK_TAIL("M6.4 -3.4C7.6 -10 15 -17 19 -15.4C23 -13.8 23.6 -9.2 22.4 -6.8")}<text class="z" x="-6" y="-13">z</text></svg>`;
 const NYK_SEEN = new Set();
-let nykSw = 0;
+/* t-kitten-daypart: one kitten action per part of the day, local time, instead of the A/B/C rotation.
+   08:00-12:00 morning = A (sits up and nudges the ball), 12:00-18:00 midday = C (tugs the thread), 18:00-22:30 evening = B (dozes: ear
+   twitch, one eye peeks), 22:30-08:00 night = N (sound asleep: breathing and a z only). No timer of its own: the 6 s rotation and every poll
+   call renderTicker, and a change of part redraws the kitten even when the notice text is the same. */
+function nykPart(d = new Date()) { if (quietNight(d)) return "n"; const h = d.getHours(); return h < 12 ? "a" : h < 18 ? "c" : "b"; }
 const nykKey = n => n.id ? "n:" + n.id : n.item ? "i:" + n.item + ":" + (n.level || "") : "x:" + (n.level || "");
 function renderTicker() {
   const list = tickerItems();
   const el = $("#ticker");
   if (!list.length) { el.innerHTML = ""; return; }
-  /* t-yarn-anim: a notice we have not seen in this page before jumps to the front of the rotation and gets kitten A */
+  /* t-yarn-anim: a notice we have not seen in this page before jumps to the front of the rotation (t-kitten-daypart: the kitten keeps the part-of-day action) */
   const keys = list.map(nykKey), ut0 = !!document.documentElement.dataset.ut;
   const fi = renderTicker.slid ? keys.findIndex(k => !NYK_SEEN.has(k)) : -1;
   keys.forEach(k => NYK_SEEN.add(k));
   if (ut0 && fi >= 0) tickIdx = fi;
-  const fresh = ut0 && fi >= 0;
   tickIdx %= list.length;
   const n = list[tickIdx];
   /* t-notice-yarn: under Underthread a thread is drawn in from the left and a yarn ball rolls along it to the message; the pager dots
@@ -62,19 +65,19 @@ function renderTicker() {
   const html = `<span class="k">${UI.lang === "en" ? "Notice" : "通知"}</span>${ut ? NTY_THR + "\u0000" + NTY_BALL : ""}<span class="msg ${n.level === "urgent" ? "urgent" : n.level === "calm" ? "calm" : ""}" data-ti="${tickIdx}">${esc(n.text)}</span>${ut ? '<span class="nyk-run" aria-hidden="true"></span><span class="nty-tail" aria-hidden="true"></span>' : ""}
     ${n.id ? `<button class="dim" data-dismiss="${n.id}" title="${UI.lang === "en" ? "Dismiss" : "关掉"}" aria-label="${UI.lang === "en" ? "Dismiss" : "关掉"}">✕</button>` : ""}
     <span class="pager${ut ? " nty-knots" : ""}">${list.map((_, i) => `<i class="${i === tickIdx ? "on" : ""}"></i>`).join("")}</span>`;
-  if (html !== renderTicker.last) {  // re-animate only when the notice changes
+  const part = ut ? nykPart() : "";
+  if (html + part !== renderTicker.last) {  // re-animate only when the notice (or the part of the day) changes
     /* the thread slides in from the left only the first time a notice shows; after that a switch keeps the thread still and the
        ball rolls once in place while the text changes (.nty-first gates the slide in theme-ut.css). */
     const first = ut && !renderTicker.slid;
     el.classList.toggle("nty-first", first);
-    /* t-yarn-anim: the kitten between the thread and the ball. A = a new notice arrived (nudges the ball), C = now and then on a switch
-       (tugs the thread), B = every other switch, the first show and all night (naps). CSS: css/yarnkit.css (nyk-). */
-    let v = !ut ? "" : first || quietNight() || !renderTicker.slid ? "b" : fresh ? "a" : (++nykSw % 5 === 0 ? "c" : "b");
-    if (v === "b" && window.__nykNext === "c" && !first && !quietNight()) v = "c";   /* test hook (tests/e2e/journeys/yarnkit.js): the next switch tugs */
-    window.__nykNext = null;
-    el.classList.remove("nyk-a", "nyk-b", "nyk-c");
-    if (v) el.classList.add("nyk-" + v);
-    el.innerHTML = html.replace("\u0000", v ? `<span class="nyk" aria-hidden="true">${v === "b" ? NYK_NAP : NYK_SIT}</span>` : ""); renderTicker.last = html;
+    /* t-yarn-anim: the kitten between the thread and the ball; t-kitten-daypart: its action comes from the part of the day (nykPart).
+       A / C sit up, B / N nap. The first show is the pose only: the action classes would cut the thread's roll-in. CSS: css/yarnkit.css (nyk-). */
+    const v = part;
+    el.classList.remove("nyk-a", "nyk-b", "nyk-c", "nyk-n");
+    if (v && !first) el.classList.add("nyk-" + v);
+    if (v) el.dataset.nykPart = v; else delete el.dataset.nykPart;
+    el.innerHTML = html.replace("\u0000", v ? `<span class="nyk" aria-hidden="true">${v === "a" || v === "c" ? NYK_SIT : NYK_NAP}</span>` : ""); renderTicker.last = html + part;
     if (ut) renderTicker.slid = true;
     const thr = ut && el.querySelector(".nty-thr"), ball = thr && el.querySelector(".nty-ball");
     if (ball) ball.style.setProperty("--run", thr.getBoundingClientRect().width + "px");   // the ball starts at the thread's left end
@@ -91,4 +94,4 @@ function wireTicker() {
   setInterval(() => { if (ST) { tickIdx++; renderTicker(); } }, 6000);
 }
 
-export { quietNight, tickerItems, tickIdx, renderTicker, wireTicker };
+export { quietNight, nykPart, tickerItems, tickIdx, renderTicker, wireTicker };

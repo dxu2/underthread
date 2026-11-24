@@ -200,7 +200,7 @@ The screenshots below are a sample board (the `classic` seven-person crew, made-
 - **Watch.** While a teammate drives Chrome, a **Watch** button on its pill shows the last screenshot it took and follows new ones. Frames stay in `.live/` on this computer and are never uploaded; Settings → Connections turns it off.
 - **Your mail in the steward's inbox (optional).** Connect Gmail in Settings → Connections (app password, stored in the keychain) and new mail arrives as one headers-only entry every few minutes, sorted into "needs you / can draft / FYI". Read-only: nothing is ever sent or deleted. See [Feeds](docs/feeds.md).
 - **⌘K, or just `/`.** Search every card, draft and everything said in chat, and run actions such as approving a card.
-- **Usage.** Today's tokens per role (read from Claude Code's own transcripts on this machine) and how much of your plan window is left.
+- **Usage.** Today's tokens per role (read from Claude Code's own transcripts on this machine) and how much of your plan window is left. The usage widget shows today's total, one bar split by role and each role's share.
 - **Archive.** Old finished cards move out of the way so the dashboard stays quick; search still finds them.
 
 ### Looks
@@ -223,7 +223,7 @@ The same dashboard, laid out for a phone. Add it to your home screen and it runs
 
 <p align="center"><img src="docs/img/phone-en.png" alt="The phone app: home with the team and status card, the quests list, a plan card with its question, chats, and notifications (example data)" width="840"></p>
 
-- **Home** opens with a status card: who is working on what, then four tiles (on you, doing, to do, shipped in 7 days). Tap a tile and the page scrolls to that list. Below it: usage, the checklist and the latest activity. Prefer widgets? Settings → General → Phone home → Widgets shows the desk widgets in two columns.
+- **Home** opens with a status card: who is working on what, then four tiles (on you, doing, to do, shipped in 7 days). Tap a tile and the page scrolls to that list. Below it: usage (your quota left as knit meters), the checklist and the latest activity. Prefer widgets? Settings → General → Phone home → Widgets shows the desk widgets in two columns.
 - **A floating tab bar**: Home, Chats, Notifications, More and Quests. The selected tab slides like a glass lens; a long press shows the name.
 - **Cards** open full screen with the question panel above the buttons. Pull down anywhere to refresh.
 - **Push notifications** (optional): per device, for decisions only, decisions plus replies, or everything, with quiet hours and a morning digest.
