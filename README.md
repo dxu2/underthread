@@ -251,6 +251,8 @@ Underthread itself doesn't care what kind of work you do. The steward, cards, re
 
 5. **Content creators.** The Pipeline and Channels pages (a production line and per-platform previews for B站 / YouTube / 小红书) are off on a fresh install. They switch on by themselves with the `content-zh` preset or when `config.json` lists platforms, or by hand in Settings → Pipeline & Channels.
 
+<p align="center"><img src="docs/img/market-en.png" alt="The Hiring market: role templates in cards by category, each with a duty line, a voice to pick, two example requests and Interview / Hire buttons (example data)" width="840"></p>
+
 The **Team** page in the left rail is the roster: move a teammate to a new job (**Transfer**), retire them (**Retire**), rename them or pick their avatar. Rename and avatar choices are saved on the role's entry in `roster.json`, which updates never replace.
 
 Full guide, with every roster field and a worked example: [docs/custom-crew.md](docs/custom-crew.md).
