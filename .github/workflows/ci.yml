@@ -54,7 +54,7 @@ jobs:
     # Pinned: ubuntu-latest moved to 26.04 in 11-2026 and Playwright has no browser builds for it yet.
     runs-on: ubuntu-24.04
     continue-on-error: ${{ matrix.engine == 'webkit' }}
-    timeout-minutes: 45
+    timeout-minutes: 70   # the suite takes ~40-45 min on ubuntu-24.04; 45 cut PR #40 off at its last five journeys (all passing)
     strategy:
       fail-fast: false
       matrix:
