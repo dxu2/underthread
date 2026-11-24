@@ -90,7 +90,7 @@
 
 /* ---------- ticker ---------- */
 #ticker { display: flex; justify-content: center; align-items: center; gap: 14px; padding: 9px 28px 7px; font-size: var(--fs-14); min-height: 38px; }
-#ticker .k { color: var(--dim); font-size: var(--fs-12); font-family: var(--f-cjk); letter-spacing: .04em; display: flex; align-items: center; gap: 10px; }
+#ticker .k { color: var(--dim); font-size: var(--fs-12); font-family: var(--f-cjk); letter-spacing: .04em; display: flex; align-items: center; gap: 10px; white-space: nowrap; flex: none; }   /* t-i18n-leftovers: 通知 wrapped to one character per line */
 #ticker .k::before { content: ""; width: 34px; height: 1px; background: linear-gradient(90deg, transparent, var(--line3)); }
 #ticker .msg { font-weight: 600; max-width: 900px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; cursor: pointer; letter-spacing: .04em; animation: tick-in var(--m-base) var(--m-ease-emph); }   /* t-anim-p1 ③: was .9s letter-spacing + blur (re-layout every frame, every 6 s) */
 #ticker .msg:hover { color: var(--soul); }

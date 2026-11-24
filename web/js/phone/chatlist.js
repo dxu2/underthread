@@ -161,7 +161,7 @@ function convList() {
     $(".cl-x", el).addEventListener("click", e => { e.preventDefault(); const i = $(".cl-search input", el); i.value = ""; convQ = ""; $(".cl-search", el).classList.remove("has-q"); convList(); i.focus(); });
     el.addEventListener("click", e => { const b = e.target.closest("[data-conv]"); if (b) openConv(b.dataset.conv); });
     const bar = document.createElement("div"); bar.className = "cl-back";
-    bar.innerHTML = `<button aria-label="back">${BACK}<i class="n"></i></button><div class="who"></div>`;
+    bar.innerHTML = `<button aria-label="${en() ? "Back" : "返回"}">${BACK}<i class="n"></i></button><div class="who"></div>`;
     $(".ch-head", r).before(bar);
     $("button", bar).addEventListener("click", backToList);
   }

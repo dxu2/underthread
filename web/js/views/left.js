@@ -115,7 +115,7 @@ function renderLeft() {
   // ui1: rows animate in once (not on every poll re-render); the open chat's row is marked; unread mail shows a dot
   const teamFirst = !UI.teamIn; UI.teamIn = true; $("#team").classList.toggle("team-enter", teamFirst);
   /* t-ri1104-p2: TEAM rows use the same unread count as the chat (was: unread mail from that agent) */
-  setSrc($("#team"), `<div class="side-h"><span class="sc">TEAM</span><button type="button" class="rk-all" data-go="crew">${UI.lang === "en" ? "Roster ›" : "名册 ›"}</button></div>` +   /* t-roster-rail */ agents().map((a, i) => {   // t-send-flicker: unchanged rail keeps its avatar rings running
+  setSrc($("#team"), `<div class="side-h"><span class="sc">${UI.lang === "en" ? "TEAM" : "团队"}</span><button type="button" class="rk-all" data-go="crew">${UI.lang === "en" ? "Roster ›" : "名册 ›"}</button></div>` +   /* t-roster-rail */ agents().map((a, i) => {   // t-send-flicker: unchanged rail keeps its avatar rings running
     const ms = a.id === "manager" && mgrState();
     const st = ms ? (ms.on ? "working" : ms.sleep ? "sleeping" : "offline") : a.status || "idle";
     const sub = mgrOnline(a) ? (MOBQ.matches ? MGR_ON() : MGR_WATCH()) : a.status === "working" && a.activity ? `▶ ${esc(a.tool ? toolWhat(a) || a.activity : a.activity)}` : esc(aduty(a));   // t-now-closed
