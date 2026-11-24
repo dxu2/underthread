@@ -10,7 +10,7 @@
 import { $, LS } from "../core/util.js";
 import { D, ago, dayKey, hm, pad, relH, srvLocal, srvT, t, when } from "../core/i18n.js";
 import { ST, UI, mailUnread } from "../core/store.js";
-import { agent, agents, aname, avatarUrl } from "../core/av.js";
+import { agent, agents, aname, avatarUrl, tintOf } from "../core/av.js";
 import { api, toast } from "../core/ui.js";
 import { go } from "../core/router.js";
 import { chatPop } from "./chat.js";
@@ -206,11 +206,11 @@ function ruTip(r) { const en = UI.lang === "en", f = fmtTok;
   return en ? `input ${f(r.in)} · output ${f(r.out)} · cache write ${f(r.cw)} · cache read ${f(r.cr)} · ${r.msgs} replies · ${r.sessions} sessions`
     : `输入 ${f(r.in)} · 输出 ${f(r.out)} · 写缓存 ${f(r.cw)} · 读缓存 ${f(r.cr)} · ${r.msgs} 次回复 · ${r.sessions} 个会话`; }
 // quota strip: 5 小时 / 本周 / 管家上下文 (what is LEFT), greyed + 「X 分钟前 · 可能已过期」 past USAGE_STALE (same usage() as the orb)
-function ruQuota(compact) {   // compact (home widget, t-sync-pill batch 2): one line, no manager context, a stale reading = warn dot + age
+function ruQuota(compact, lf) {   // compact (home widget, t-sync-pill batch 2): one line, no manager context, a stale reading = warn dot + age; lf (V3): a 「Left / 剩余」 label first
   const U = usage(), en = UI.lang === "en"; if (U.none) return "";
   const v = (x, est) => x == null ? "—" : `${est ? "≈" : ""}${x}%`;
   const age = U.at ? relH("ago", U.at, ago(U.at)) : "";
-  return `<div class="ru-q${U.stale ? " old" : ""}" data-ru-open><span>${en ? "5-hour" : "5 小时"} <b>${v(U.left, U.approx)}</b></span><span>${en ? "Week" : "本周"} <b>${v(U.week, U.approxW)}</b></span>`
+  return `<div class="ru-q${U.stale ? " old" : ""}" data-ru-open>${lf ? `<span class="ru-ql">${en ? "Left" : "剩余"}</span>` : ""}<span>${en ? "5-hour" : "5 小时"} <b>${v(U.left, U.approx)}</b></span><span>${en ? "Week" : "本周"} <b>${v(U.week, U.approxW)}</b></span>`
     + (U.context != null && !compact ? `<span>${en ? "Manager context" : "管家上下文"} <b>${v(100 - U.context, U.stale)}</b></span>` : "")
     + (compact ? `<span class="ru-age${U.stale ? " old" : ""}" title="${U.stale ? (en ? "may be out of date" : "可能已过期") : ""}">${age}</span></div>`
       : `<span class="ru-age">${U.stale ? `<em>${age} · ${en ? "may be out of date" : "可能已过期"}</em>` : age}</span></div>`);
@@ -224,7 +224,8 @@ function soulSw(left) {   /* 3 x 4 knit V stitches, filled from the bottom = wha
   return s + "</svg>"; }
 function soulHTML() {
   const en = UI.lang === "en", U = usage(), C = ST.meta.codex;
-  const bar = (l, v, est) => `<div class="sl-b"><span>${l}</span><i><em style="--w:${v == null ? 0 : (Math.max(0, Math.min(100, v)) / 100).toFixed(3)}"></em></i><b>${v == null ? "—" : `${est ? "≈" : ""}${v}<small>%</small>`}</b></div>`;
+  /* t-home-cards-redesign V3: the % is what is LEFT, so it says so (「% left」 / 「% 剩」) */
+  const bar = (l, v, est) => `<div class="sl-b"><span>${l}</span><i><em style="--w:${v == null ? 0 : (Math.max(0, Math.min(100, v)) / 100).toFixed(3)}"></em></i><b>${v == null ? "—" : `${est ? "≈" : ""}${v}<small>%<span class="sl-lf">${en ? " left" : " 剩"}</span></small>`}</b></div>`;
   const cAge = U.at ? relH("ago", U.at, ago(U.at)) : "";
   const cRight = U.none ? (en ? "not connected" : "未接入") : U.stale ? `<em class="sl-old">${cAge}</em>` : U.sub ? (en ? U.sub.replace(/^full at /, "full at <b>") + (/^full at /.test(U.sub) ? "</b>" : "") : U.sub) : "";
 /* .sl-m[data-m=claude|codex]: a neutral hook so an extension can style one model row (for example its own mark over the swatch) */
@@ -245,20 +246,46 @@ function soulHTML() {
   }
   return `<div class="sl" data-ru-open><div class="sl-sep">${en ? "Soul <span>quota per model</span>" : "体力 <span>· 每个模型的额度</span>"}</div><div class="sl-ms">${claude}${codex}</div></div>`;
 }
-// n: rows to list; o.tot: the big total line; o.quota: the strip
+/* t-home-cards-redesign V3: knit swatch meter, 2 x 5 V stitches filled from the bottom = what is LEFT (10 % a stitch) */
+function hv3Sw(left) {
+  const on = left == null ? 0 : Math.round(Math.max(0, Math.min(100, left)) / 10); let s = `<svg class="hv3-sw" viewBox="0 0 20 34" aria-hidden="true">`, n = 0;
+  for (let r = 4; r >= 0; r--) for (let c = 0; c < 2; c++) { const x = 2.2 + c * 8.2, y = 2 + r * 6.2; s += `<path class="${n++ < on ? "on" : "off"}" style="--k:${n}" d="M${x.toFixed(1)} ${y.toFixed(1)}Q${(x + 1.1).toFixed(1)} ${(y + 4).toFixed(1)} ${(x + 3).toFixed(1)} ${(y + 4.7).toFixed(1)}Q${(x + 4.9).toFixed(1)} ${(y + 4).toFixed(1)} ${(x + 6).toFixed(1)} ${y.toFixed(1)}"></path>`; }
+  return s + "</svg>"; }
+/* phone usage card V3: 「额度剩余 / Quota left」, three knit swatch meters (5 小时 / 本周 / 管家上下文), all three are amounts LEFT; < 40 % warn, < 20 % urgent */
+function hv3Quota() {
+  const U = usage(), en = UI.lang === "en"; if (U.none) return "";
+  const v = (x, est) => x == null ? "—" : `${est ? "≈" : ""}${x}%`, lv = x => x == null ? "" : x < 20 ? " low" : x < 40 ? " mid" : "";
+  const age = U.at ? relH("ago", U.at, ago(U.at)) : "";
+  const ms = [[en ? "5-hour" : "5 小时", U.left, U.approx], [en ? "Week" : "本周", U.week, U.approxW]];
+  if (U.context != null) ms.push([en ? "Context" : "上下文", 100 - U.context, U.stale]);
+  return `<div class="hv3-q${U.stale ? " old" : ""}" data-ru-open title="${esc(U.tip || "")}"><div class="hv3-qh"><span>${en ? "Quota left" : "额度剩余"}</span><time>${U.stale ? `<em>${age} · ${en ? "may be out of date" : "可能已过期"}</em>` : age}</time></div>`
+    + `<div class="hv3-qm" style="--n:${ms.length}">` + ms.map(([l, x, est]) => `<div class="hv3-m${lv(x)}">${hv3Sw(x)}<b>${v(x, est)}</b><span>${l}</span></div>`).join("") + `</div></div>`;
+}
+// n: rows to list; o.tot: the big total line; o.quota: the strip; o.v3 (t-home-cards-redesign): total + one bar split by role, rows without bars (share %), knit quota meters on the phone card
 function ruHTML(n, o = {}) {
   const R = roleUsage(), en = UI.lang === "en";
-  if (!R) return `<div class="ru-wait">${en ? "Counting…" : "正在统计…"}</div>` + (o.soul ? soulHTML() : o.quota ? ruQuota() : "");
-  const rows = R.rows, max = rows.length ? rows[0].new : 1, more = rows.length - n;
-  const list = rows.length ? rows.slice(0, n).map((r, i) => `<div class="ru-row${r.a ? "" : " nd"}"${r.a ? ` data-chat="${esc(r.id)}"` : ""} title="${esc(ruTip(r))}" style="--ru-i:${i}">`
+  const qt = () => o.soul ? soulHTML() : o.quota ? (o.v3 && !o.fit ? hv3Quota() : ruQuota(o.fit, o.v3)) : "";
+  if (!R) return `<div class="ru-wait">${en ? "Counting…" : "正在统计…"}</div>` + qt();
+  const rows = R.rows, max = rows.length ? rows[0].new : 1, more = rows.length - n, tot1 = R.total || rows.reduce((a, r) => a + r.new, 0) || 1;
+  const share = r => { const x = r.new / tot1 * 100; return x < 1 ? "<1%" : Math.round(x) + "%"; };
+  const tint = r => r.a ? tintOf(r.a) : "color-mix(in srgb, var(--ink) 30%, transparent)";
+  const list = rows.length ? rows.slice(0, n).map((r, i) => `<div class="ru-row${r.a ? "" : " nd"}"${r.a ? ` data-chat="${esc(r.id)}"` : ""} title="${esc(ruTip(r))}" style="--ru-i:${i}${o.v3 ? `;--ru-t:${tint(r)}` : ""}">`
       + (r.a ? `<img class="ru-av" src="${avatarUrl(r.a)}" alt="">` : `<span class="ru-av"></span>`)
       + `<span class="ru-n"><span class="t">${esc(ruName(r))}</span>${r.a && r.a.status === "working" ? `<i class="ru-on" title="${en ? "working" : "工作中"}"></i>` : ""}</span>`
-      + `<i class="ru-bar"><em data-ru="${esc(r.id)}" style="--ru-w:${Math.max(0.02, r.new / max).toFixed(3)}"></em></i><b data-ru-v="${r.new}">${fmtTok(r.new)}</b></div>`).join("")
+      + (o.v3 ? `<b data-ru-v="${r.new}">${fmtTok(r.new)}</b><small class="ru-sh">${share(r)}</small></div>`
+        : `<i class="ru-bar"><em data-ru="${esc(r.id)}" style="--ru-w:${Math.max(0.02, r.new / max).toFixed(3)}"></em></i><b data-ru-v="${r.new}">${fmtTok(r.new)}</b></div>`)).join("")
     : `<div class="ru-wait">${R.error ? (en ? `Could not read the transcripts (${esc(srvT(R.error))})` : `读不到会话记录（${esc(R.error)}）`) : (en ? "No tokens used yet today" : "今天还没用过")}</div>`;
-  const tot = o.tot ? `<div class="ru-tot" data-ru-open><b data-ru-v="${R.total}" data-ru-k="tot">${fmtTok(R.total)}</b><span>${en ? `new tokens · plus ${fmtTok(R.cache_read)} cache reads` : `新 token · 另读缓存 ${fmtTok(R.cache_read)}`}</span></div>` : "";
+  const cache = en ? `plus ${fmtTok(R.cache_read)} cache reads` : `另读缓存 ${fmtTok(R.cache_read)}`;
+  const tot = !o.tot ? "" : o.v3 ? `<div class="ru-tot hv3-tot" data-ru-open title="${esc(cache)}"><b data-ru-v="${R.total}" data-ru-k="tot">${fmtTok(R.total)}</b><span>${en ? "new tokens today" : "今天新 token"}</span></div>`
+    : `<div class="ru-tot" data-ru-open><b data-ru-v="${R.total}" data-ru-k="tot">${fmtTok(R.total)}</b><span>${en ? `new tokens · ${cache}` : `新 token · ${cache}`}</span></div>`;
+  /* the split bar: the first n roles in their roster tint, the rest as one grey piece; grows from the left once (ruSettle), never loops */
+  let seg = "";
+  if (o.v3 && rows.length) { const top = rows.slice(0, Math.max(n, 4)), rest = rows.slice(top.length).reduce((a, r) => a + r.new, 0);
+    seg = `<div class="ru-seg" data-ru-open data-seg="${esc(top.map(r => r.id + ":" + r.new).join(",") + "|" + rest)}">` + top.map(r => `<i style="--g:${(r.new / tot1).toFixed(4)};background:${tint(r)}" title="${esc(ruName(r) + " " + share(r))}"></i>`).join("")
+      + (rest > 0 ? `<i class="o" style="--g:${(rest / tot1).toFixed(4)}"></i>` : "") + `</div>`; }
   requestAnimationFrame(ruSettle);
   if (o.fit) requestAnimationFrame(ruFit);
-  return tot + `<div class="ru-list">${list}${more > 0 && o.more ? `<div class="ru-more" data-ru-open>${en ? `+${more} more ›` : `还有 ${more} 个 ›`}</div>` : ""}</div>` + (o.soul ? soulHTML() : o.quota ? ruQuota(o.fit) : "");
+  return tot + seg + `<div class="ru-list${o.v3 ? " hv3-list" : ""}">${list}${more > 0 && o.more ? `<div class="ru-more" data-ru-open>${en ? `+${more} more ›` : `还有 ${more} 个 ›`}</div>` : ""}</div>` + qt();
 }
 // Motion (11-04 rule): a bar grows from 0 the first time it is shown and glides from its previous length when the data changes;
 // numbers count up. Rebuilt DOM with the same data does nothing. prefers-reduced-motion: no transition (CSS) and no count.
@@ -272,6 +299,15 @@ function ruFit() {
   });
 }
 function ruSettle() {
+  document.querySelectorAll(".ru-seg:not([data-s])").forEach(sg => {
+    sg.dataset.s = "1"; const k = "seg|" + (sg.closest("[data-wg],.ru-card,.sy-ru") || {}).className, to = sg.dataset.seg, from = UG.prev.get(k); UG.prev.set(k, to);
+    if (from === to || RMQ.matches || document.hidden) return;
+    sg.classList.remove("grow"); void sg.offsetWidth; sg.classList.add("grow");
+  });
+  document.querySelectorAll(".hv3-q:not([data-s])").forEach(q => {
+    q.dataset.s = "1"; const to = [...q.querySelectorAll(".hv3-m b")].map(b => b.textContent).join(), from = UG.prev.get("hv3q"); UG.prev.set("hv3q", to);
+    if (from === to || RMQ.matches || document.hidden) return; q.classList.add("grow");
+  });
   document.querySelectorAll(".ru-bar em:not([data-s])").forEach(em => {
     em.dataset.s = "1"; const k = em.closest(".ru-list") && em.closest(".ru-list").parentElement ? em.dataset.ru + "|" + (em.closest("[data-wg],.ru-card,.sy-ru") || {}).className : em.dataset.ru;
     const to = getComputedStyle(em).getPropertyValue("--ru-w").trim(), from = UG.prev.has(k) ? UG.prev.get(k) : "0";
@@ -293,7 +329,8 @@ function ruSettle() {
 function ruCard() {
   if (!MOBQ.matches) return "";
   const R = roleUsage(), en = UI.lang === "en";
-  return `<section class="ru-card" data-ru-open><div class="ru-hd"><b>${en ? "Usage by role" : "各角色用量"}</b><small>${en ? "today · new tokens" : "今天 · 新 token"}</small>${R ? `<span>${en ? "total" : "共"} ${fmtTok(R.total)}</span>` : ""}</div>${ruHTML(4, { quota: true })}</section>`;
+  /* t-home-cards-redesign V3: the total moved from the header into the big line under it */
+  return `<section class="ru-card hv3-ru" data-ru-open><div class="ru-hd"><b>${en ? "Usage by role" : "各角色用量"}</b><small>${en ? "today · new tokens" : "今天 · 新 token"}</small></div>${ruHTML(4, { quota: true, tot: true, v3: true })}</section>`;
 }
 /* t-sync-pill (detail polish batch 2, V1): the top bar shows one pill, 「● 已同步」 = the last poll answered. Two misses in a row (~30 s) turn it red with a
    running 「断线 · N 秒没连上 · 自动重试中」. Hover / focus opens the details (connection, last data change, next event, team, inbox); a click still opens

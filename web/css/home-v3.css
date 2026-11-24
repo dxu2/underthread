@@ -1,0 +1,112 @@
+/* t-home-cards-redesign V3. Prefix hv3- (plus the shared .ru-seg / .ru-sh / .ru-ql on the usage builder).
+   Phone list home status card (#officebox .hd-a2.hv3, home.js a2Build): big headline, a full-width accent 「N on you」 patch (= .hd-stat[data-hd-f=review],
+   still the filter + the tour target), three knit tags (Doing / To do / Shipped · 7d = .hd-stat), 「Last shipped」 as the last line.
+   Usage (views/header.js ruHTML o.v3): total headline, one bar split by role in roster tints, rows without bars (share %), knit swatch meters = what is LEFT.
+   Status-card rules sit under #officebox so the 墨刊 skin's html[data-skin] .hd-stat rules do not reshape the patch. Motion: transform / opacity only, played once. */
+
+/* ---------- status card ---------- */
+#officebox .hv3 .a2-rest-t { font-family: var(--f-display); font-size: 26px; font-weight: 600; line-height: 1.15; letter-spacing: -.01em; color: var(--ink); }
+#officebox .hv3 .a2-rows:empty + .a2-rest:not([hidden]) + .a2-stack { margin-top: 6px; }
+#officebox .hv3 .a2-faces i { width: 24px; height: 24px; }
+#officebox .hv3-st { display: grid; gap: 8px; margin-top: 12px; }
+#officebox .hv3 .hd-stat { position: relative; display: grid; border-radius: 14px; padding: 0; margin: 0; height: auto; border: 0; box-shadow: none;
+  transition: background-color var(--m-base, .2s) var(--m-ease-std, ease), outline-color var(--m-base, .2s) var(--m-ease-std, ease), transform var(--m-quick, .14s) var(--m-ease-std, ease); }
+#officebox .hv3 .hd-stat::after { display: none; }   /* 墨刊's underline for the active stat */
+#officebox .hv3 .hd-stat b { font-family: var(--f-display); font-weight: 600; letter-spacing: 0; font-variant-numeric: tabular-nums; }
+
+/* the patch: sewn-on accent label */
+#officebox .hv3 .hv3-patch { grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; column-gap: 14px; padding: 13px 16px 13px 18px;
+  background: var(--accent); color: var(--accent-ink); outline: 1.5px dashed color-mix(in srgb, var(--accent-ink) 45%, transparent); outline-offset: -5px;
+  box-shadow: 0 1px 0 color-mix(in srgb, var(--accent) 60%, #000), 0 6px 14px -8px color-mix(in srgb, var(--accent) 70%, #000); }
+#officebox .hv3 .hv3-pn { display: grid; justify-items: start; line-height: 1; }
+#officebox .hv3 .hv3-patch .hv3-pn b { font-size: 46px; line-height: 1; color: inherit; }
+#officebox .hv3 .hv3-patch .hv3-pn span { margin-top: 4px; font-family: var(--f-cjk); font-size: var(--fs-13); font-weight: 600; letter-spacing: .01em; color: inherit; }
+#officebox .hv3 .hv3-pc { display: grid; gap: 5px; justify-items: start; min-width: 0; }
+#officebox .hv3 .hv3-pc > * { max-width: 100%; padding: 2px 9px; border-radius: 999px; background: color-mix(in srgb, var(--accent-ink) 13%, transparent); color: inherit;
+  font-family: var(--f-cjk); font-size: var(--fs-12); font-weight: 500; line-height: 1.45; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; box-sizing: border-box; }
+#officebox .hv3 .hv3-pc .hd-old.hot { background: var(--accent-ink); color: var(--accent); font-weight: 600; }
+#officebox .hv3 .hv3-patch .hd-chev { width: 9px; height: 16px; opacity: .75; }
+#officebox .hv3 .hv3-patch .hd-rdot { position: absolute; top: 9px; right: 11px; left: auto; box-shadow: 0 0 0 2px var(--accent); }
+#officebox .hv3 .hv3-patch .hd-rdot::after { display: none; animation: none; }   /* no endless pulse: the patch itself is the signal */
+#officebox .hv3 .hv3-patch.z { background: color-mix(in srgb, var(--bg) 55%, transparent); color: var(--dim); box-shadow: none;
+  outline-color: color-mix(in srgb, var(--ink) 22%, transparent); }   /* nothing on you: a quiet patch */
+#officebox .hv3 .hv3-patch.z .hd-chev { opacity: .45; }
+
+/* the three knit tags */
+#officebox .hv3 .hv3-tags { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+#officebox .hv3 .hv3-tag { justify-items: center; gap: 1px; padding: 9px 4px 8px; background: color-mix(in srgb, var(--bg) 55%, transparent);
+  outline: 1px dashed color-mix(in srgb, var(--ink) 26%, transparent); outline-offset: -4px; }
+#officebox .hv3 .hv3-tag b { font-size: var(--fs-20); line-height: 1.15; color: var(--ink); }
+#officebox .hv3 .hv3-tag span { max-width: 100%; font-family: var(--f-cjk); font-size: var(--fs-11); color: var(--dim); letter-spacing: .02em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#officebox .hv3 .hv3-tag.z b, #officebox .hv3 .hv3-tag.z span { opacity: .45; }
+#officebox .hv3 .hv3-tag.on { background: color-mix(in srgb, var(--accent) 16%, var(--panel)); outline: 1.5px solid var(--accent); outline-offset: -3px; }
+#officebox .hv3 .hv3-tag.on b, #officebox .hv3 .hv3-tag.on span { color: var(--ink); opacity: 1; }
+#officebox .hv3 .hd-stat:focus-visible { outline: 2px solid var(--ink); outline-offset: 1px; }
+
+/* 「Last shipped」 line */
+#officebox .hv3 .hv3-foot { display: flex; align-items: baseline; gap: 8px; min-width: 0; margin: 12px 0 0; padding: 8px 2px 2px; border-radius: 0 0 10px 10px;
+  border-top: 1px dashed var(--kn-thread, var(--line)); font-family: var(--f-cjk); font-size: var(--fs-12); color: var(--dim);
+  transition: background-color var(--m-quick, .14s) var(--m-ease-std, ease), transform var(--m-quick, .14s) var(--m-ease-std, ease); }
+#officebox .hv3 .hv3-foot[hidden] { display: none; }
+#officebox .hv3 .hv3-foot small { flex: none; font-size: 10px; letter-spacing: .08em; text-transform: uppercase; color: var(--dim); }
+#officebox .hv3 .hv3-foot span { flex: 1; min-width: 0; color: var(--ink2, var(--ink)); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#officebox .hv3 .hv3-foot em { flex: none; font-style: normal; }
+#officebox .hv3 .hv3-foot:not(.go) em { display: none; }
+#officebox .hv3 .hv3-foot.go:active { background: var(--accent-soft); }
+#officebox .hv3 .hv3-foot:focus-visible { outline: 2px solid var(--ink); outline-offset: -2px; }
+
+/* ---------- usage: total + split bar + rows without bars ---------- */
+.ru-card.hv3-ru { gap: 8px; }
+.ru-card .hv3-tot { margin: 0; align-items: baseline; }
+.ru-card .hv3-tot b { font-family: var(--f-display); font-size: 34px; line-height: 1; }
+.ru-seg { position: relative; display: flex; gap: 2px; height: 10px; border-radius: 5px; overflow: hidden; transform-origin: left center; cursor: pointer; }
+.ru-seg i { flex: var(--g) 1 0; min-width: 3px; }
+.ru-seg i.o { background: color-mix(in srgb, var(--ink) 18%, transparent); }
+.ru-seg::after { content: ""; position: absolute; inset: 0; pointer-events: none;   /* knit rib over the colours */
+  background: repeating-linear-gradient(110deg, transparent 0 4px, color-mix(in srgb, #000 14%, transparent) 4px 5.5px); }
+.ru-seg.grow { animation: hv3-grow .6s cubic-bezier(.2, .8, .2, 1) backwards; }
+@keyframes hv3-grow { from { transform: scaleX(0); } }
+.ru-card .ru-seg { height: 12px; border-radius: 6px; margin: 2px 0 2px; }
+.ru-list.hv3-list > .ru-row.ru-row { grid-template-columns: 22px minmax(0, 1fr) auto 2.8em; }
+.hv3-list .ru-av { box-shadow: 0 0 0 2px var(--ru-t, transparent); }
+.hv3-list img.ru-av { border-radius: 50%; }
+.ru-sh { font-size: var(--fs-11); color: var(--dim); text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+html[data-home="widgets"] .wg-usage .ru-seg { flex: none; height: 8px; border-radius: 4px; margin: 0 0 5px; }
+html[data-home="widgets"] .wg-usage .hv3-tot { margin-bottom: 5px; }
+html[data-home="widgets"] .wg-usage .hv3-list > .ru-row.ru-row { padding-top: 3px; padding-bottom: 3px; }
+html[data-home="widgets"] .wg-usage.sz-s .ru-seg { height: 6px; margin: 3px 0 1px; }   /* t-home-sml S has no slack: wgfit measures the 本周 line */
+html[data-home="widgets"] .wg-usage.sz-s .ru-tot { margin-top: 2px; }
+
+/* desk widget: quota numbers say LEFT */
+.ru-ql { font-size: 10px; letter-spacing: .08em; text-transform: uppercase; color: var(--dim); }
+html[data-home="widgets"] .sl-b > b small .sl-lf { font-weight: 400; }
+
+/* ---------- phone usage card: knit swatch meters, all three are amounts LEFT ---------- */
+.hv3-q { display: grid; gap: 7px; margin-top: 4px; padding-top: 9px; border-top: 1px dashed var(--kn-thread, var(--line)); }
+.hv3-qh { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; font-size: 10px; letter-spacing: .08em; text-transform: uppercase; color: var(--dim); }
+.hv3-qh time { text-transform: none; letter-spacing: 0; font-size: var(--fs-11); white-space: nowrap; }
+.hv3-qh time em { font-style: normal; color: var(--warn); font-weight: 500; }
+.hv3-qm { display: grid; grid-template-columns: repeat(var(--n, 3), minmax(0, 1fr)); gap: 10px; }
+.hv3-m { display: grid; grid-template-columns: auto minmax(0, 1fr); grid-template-rows: auto auto; column-gap: 8px; align-items: center; min-width: 0; }
+.hv3-sw { grid-row: 1 / 3; width: 18px; height: 31px; }
+.hv3-sw path { fill: none; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+.hv3-sw path.off { stroke: color-mix(in srgb, var(--ink) 16%, transparent); }
+.hv3-sw path.on { stroke: var(--ok); }
+.hv3-m.mid .hv3-sw path.on { stroke: var(--warn); }
+.hv3-m.low .hv3-sw path.on { stroke: var(--urgent); }
+.hv3-m b { font-family: var(--f-display); font-size: var(--fs-18, 18px); font-weight: 600; line-height: 1.05; color: var(--ink); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.hv3-m.low b { color: var(--urgent); }
+.hv3-m span { font-size: var(--fs-11); color: var(--dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.hv3-q.old .hv3-sw { opacity: .55; } .hv3-q.old .hv3-m b { color: var(--dim); }
+.hv3-q.grow .hv3-sw path.on { animation: hv3-st .32s ease-out backwards; animation-delay: calc(var(--k, 0) * 35ms); }
+@keyframes hv3-st { from { opacity: 0; } }
+
+@media (prefers-reduced-motion: reduce) {
+  #officebox .hv3 .hd-stat, #officebox .hv3 .hv3-foot { transition: none; }
+  .ru-seg.grow, .hv3-q.grow .hv3-sw path.on { animation: none; }
+}
+/* desk S usage tile (fixed height): total on one line, the 「剩余」 label at the right end of the first quota line, so the split bar fits */
+html[data-home="widgets"] .wg-usage.sz-s .ru-tot.hv3-tot { flex-direction: row; align-items: baseline; gap: 6px; min-width: 0; }
+html[data-home="widgets"] .wg-usage.sz-s .ru-tot.hv3-tot span { display: none; }   /* the eyebrow already says 「今天 / today」; the line was cut to 「今天新 to…」 */
+html[data-home="widgets"] .wg-usage.sz-s .ru-q { position: relative; }
+html[data-home="widgets"] .wg-usage.sz-s .ru-q .ru-ql { position: absolute; right: 0; top: 4px; }
