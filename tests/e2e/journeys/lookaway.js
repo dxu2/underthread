@@ -1,7 +1,7 @@
 /* t-lookaway-fx: full-screen ink arrival (#lka-fs) and the top pill (#lka-pw). Real path: stateutil writes in the scratch copy -> long poll ->
  * toast.js -> LookAway.take. Checks: a card handed in for review plays the full screen (48 px backdrop blur even under the knit palette, avatar,
  * title, gone after ~3 s); a second one within 20 min becomes the pill; the pill drops in with an overshoot; reply + DM merge into 「还有 N 条」;
- * the chip shows the next; hover pauses the 5 s countdown; click opens the card; 设置 → 提醒动效: 只用胶囊 = no full screen, 关 = the old cards;
+ * the chip shows the next; hover pauses the 5 s countdown; click opens the card; 设置 has no 提醒动效 row (t-drop-arrival-fx) and a stale saved pref is ignored;
  * reduced motion = pill, no slide; day's end plays once.
  *   node tests/e2e/drive.js run tests/e2e/journeys/lookaway.js --out work/<item>/verify/<run> --views desk,phone --engines chromium,webkit
  */
@@ -18,7 +18,7 @@ module.exports = {
     const p = c.p, desk = c.view === "desk", su = c.su;
     const raw = async name => { const d = process.env.LKA_SHOTS; if (d) await p.screenshot({ path: `${d}/${c.engine}-${c.view}-${name}.png` }); };   // optional mid-animation frames
     await p.evaluate(() => { const s = (k, v) => localStorage.setItem("rt." + k, JSON.stringify(v)); s("ut", "ut"); s("texture", "knit1"); s("lang", "zh"); s("chat", "manager"); s("chatFold", false);
-      s("lka", "on"); s("lka.quiet", false); s("setTab", "general"); localStorage.removeItem("rt.lka.fsAt"); localStorage.removeItem("rt.lka.eod"); });
+      s("lka.quiet", false); s("setTab", "general"); localStorage.removeItem("rt.lka.fsAt"); localStorage.removeItem("rt.lka.eod"); });
     await p.reload({ waitUntil: "load" }); await p.waitForFunction(() => window.App && App.ST && App.ST.meta && window.LookAway && !document.getElementById("ut-splash"), null, { timeout: 15000 }); await c.sleep(2500);
     /* rv: cards that can be handed in (3 needed; the fixture board has exactly 3); any: reply targets */
     const any = await p.evaluate(() => App.items().filter(i => i.stage !== "done" && !i.archived).map(i => i.id));
@@ -97,31 +97,24 @@ module.exports = {
     await p.emulateMedia({ reducedMotion: "no-preference" });
     await p.evaluate(() => LookAway.pillOut()); await c.sleep(500);
 
-    /* 6 · 设置 row */
-    if (desk) { await p.evaluate(() => { location.hash = "#page=settings"; }); await p.reload({ waitUntil: "load" }); await p.waitForFunction(() => window.LookAway && App.ST && App.ST.meta && !document.getElementById("ut-splash"), null, { timeout: 15000 }); await c.sleep(1500); }
-    else { await c.go("settings"); await c.sleep(800); }
-    const row = await p.evaluate(() => !!document.querySelector(".lka-set [data-lka-set='on'].on"));
-    c.note(JSON.stringify(await p.evaluate(() => ({ page: App.UI.page, tab: App.UI.setTab, item: App.UI.item, hash: location.hash, row: !!document.querySelector(".lka-set"), m: localStorage.getItem("rt.lka") }))));
-    c.check("设置 → 通知 has 提醒动效, default 全屏 + 胶囊", row);
-    await (desk ? p.click(".lka-set [data-lka-set='pill']") : p.tap(".lka-set [data-lka-set='pill']")); await c.sleep(300);
-    c.check("只用胶囊 saved and painted in place", await p.evaluate(() => JSON.parse(localStorage.getItem("rt.lka")) === "pill" && document.querySelector(".lka-set [data-lka-set='pill']").classList.contains("on")));
-    await (desk ? p.click(".lka-set [data-lka-prev]") : p.tap(".lka-set [data-lka-prev]")); await c.sleep(500);
-    c.check("预览 in pill mode = pill", !!(await pillInfo(p)) && !(await fsInfo(p)));
-    await p.evaluate(() => LookAway.pillOut()); await c.sleep(500);
-    await (desk ? p.click(".lka-set [data-lka-set='on']") : p.tap(".lka-set [data-lka-set='on']")); await c.sleep(200);
-    await (desk ? p.click(".lka-set [data-lka-prev]") : p.tap(".lka-set [data-lka-prev]"));
-    c.check("预览 in on mode = full screen", await waitFs(p, 2000));
-    await c.sleep(1300); await raw("preview-fs");
-    await p.keyboard.press("Escape"); await c.sleep(500);
-    c.check("Esc closes the full screen", !(await fsInfo(p)));
-    await (desk ? p.click(".lka-set [data-lka-set='off']") : p.tap(".lka-set [data-lka-set='off']")); await c.sleep(200);
-    su("reply", items[2], "smith", "lookaway test off");
+    /* 6 · t-drop-arrival-fx: no 设置 row; a pref saved by an older build ("off") is dropped at load and the effects still play */
+    await p.evaluate(() => { localStorage.setItem("rt.lka", JSON.stringify("off")); document.querySelectorAll("#wtoasts .wt").forEach(e => e.remove()); });
+    await p.reload({ waitUntil: "load" }); await p.waitForFunction(() => window.LookAway && App.ST && App.ST.meta && !document.getElementById("ut-splash"), null, { timeout: 15000 }); await c.sleep(1500);
+    c.check("stale rt.lka = off removed at load, mode on", await p.evaluate(() => localStorage.getItem("rt.lka") === null && LookAway.mode() === "on"));
+    if (desk) { await p.evaluate(() => { location.hash = "#page=settings"; }); await p.reload({ waitUntil: "load" }); await p.waitForFunction(() => window.LookAway && App.ST && App.ST.meta && !document.getElementById("ut-splash"), null, { timeout: 15000 }); await c.sleep(800); }
+    else await c.go("settings");
+    await c.sleep(1200);
+    const st = await p.evaluate(() => ({ page: App.UI.page, row: !!document.querySelector(".lka-set,[data-lka-set],[data-lka-prev]"), push: document.querySelectorAll(".st-row").length }));
+    c.check("设置 has no 提醒动效 row", !st.row && st.push > 0, st);
+    await c.shot("settings-no-lka");
+    su("reply", items[2], "smith", "lookaway test stale off");
     await c.sleep(4500);
     const off = await p.evaluate(() => ({ pill: !!document.querySelector("#lka-pw .lka-pill"), wt: document.querySelectorAll("#wtoasts .wt").length }));
-    c.check(desk ? "关: no pill, the old top-right card instead" : "关: no pill on the phone", !off.pill && (desk ? off.wt >= 1 : off.wt === 0), off);
+    c.check(desk ? "stale 关 ignored: reply still goes to the top-right card" : "stale 关 ignored: reply shows the pill on the phone", desk ? off.wt >= 1 : off.pill, off);
+    await p.evaluate(() => LookAway.pillOut()); await c.sleep(500);
 
     /* 7 · day's end once */
-    await p.evaluate(() => { localStorage.setItem("rt.lka", JSON.stringify("on")); localStorage.removeItem("rt.lka.eod"); document.querySelectorAll("#wtoasts .wt").forEach(e => e.remove()); });
+    await p.evaluate(() => { localStorage.removeItem("rt.lka.eod"); document.querySelectorAll("#wtoasts .wt").forEach(e => e.remove()); });
     const eod = await p.evaluate(() => { const d = new Date(), t = d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
       LookAway._S.eod = "2000-01-01"; App.ST.meta.last_report_date = t; LookAway.eodCheck(); const a = !!document.getElementById("lka-fs") && /收工/.test(document.querySelector("#lka-fs .lka-title").textContent);
       LookAway.fsEnd(); LookAway._S.eod = "2000-01-01"; LookAway.eodCheck(); return { a, again: !!document.getElementById("lka-fs") || !!document.querySelector("#lka-pw .lka-pill") }; });

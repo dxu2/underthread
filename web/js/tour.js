@@ -28,6 +28,8 @@
   const live = () => Object.values(AG()).filter(a => a && a.enabled !== false && !a.retired);
   const mgrA = () => AG().manager || { id: "manager", name: "管家", name_en: "Steward" };
   const nm = a => A().aname(a);
+  /* t-onboard-review ⑦: in Chinese copy a Latin name gets a space on its Latin side (先跟 Steward 说), not 先跟Steward说 */
+  const zn = s => { s = String(s); if (en()) return s; return (/^[A-Za-z0-9]/.test(s) ? " " : "") + s + (/[A-Za-z0-9]$/.test(s) ? " " : ""); };
   const duty = a => String(A().atitle(a) || "").split(/\s*[·&]\s*|\s+and\s+/)[0] || "";
   const av = a => A().avatarUrl(a);
   function crew() {
@@ -56,7 +58,7 @@
       { a: "认识一下", b: "你的团队", sub: "每个人管一摊事，有自己的脸和脾气；管家替你盯着大家。", fine: "想加人去「招聘市场」；名字和头像在「团队」里随时能改。" },
       { a: "有事", b: "跟管家说就行", sub: "说一句你想做的事，管家开卡、派人。大一点的活先交方案，你点「批准开工」才动手。", fine: "等你拿主意的都在首页「等你拍板」。不急的先放着，不会坏事。" },
       { a: "看着", b: "他们干活", sub: "每件事是一张卡：待办 → 进行中 → 待你审核 → 完成。" + (lv ? "队员在用浏览器时，点「看画面」能实时看着。" : ""), fine: "只有走到「待你审核」的卡才要你出手；别的时候放着就行。" },
-      { a: "大事", b: "你说了算", sub: "花钱、下单、发布、登录，永远停下来等你点头；晨报、日报、提醒这些例行，每天自己跑。", fine: "例行都在左边「定时」里，随时能改时间或停掉。这几页以后在「设置」里还能再看。" },
+      { a: "大事", b: "你说了算", sub: "花钱、下单、发布、登录，永远停下来等你点头；晨报、日报、提醒这些例行，每天自己跑。", fine: (phone() ? "例行都在「委托 → 定时」里" : "例行都在左边「定时」里") + "，随时能改时间或停掉。这几页以后在「设置」里还能再看。" },
     ];
   };
   const UIW = () => en() ? { skip: "Skip", back: "Back", next: "Next ›", go: "Show me around ›", lab: "Welcome" } : { skip: "跳过", back: "上一页", next: "下一页 ›", go: "带我认一下路 ›", lab: "欢迎" };
@@ -118,7 +120,7 @@
       const meS = still ? "" : `opacity:${cl(τ / .2).toFixed(3)};transform:translateY(${(14 * (1 - spring(τ))).toFixed(2)}px)`;
       return `<div class="otr-bub me" style="top:4px;${meS}">${esc(L("帮我规划一下感恩节出去玩", "Plan a Thanksgiving trip for me"))}</div>`
         + `<img class="otr-av" alt="" src="${esc(av(D.mgr))}" style="left:0;top:58px;width:34px;height:34px;${pop(.34)}">`
-        + `<div class="otr-bub mg" style="top:56px;${fade(.4)}">${txt ? `<span style="opacity:${E(.86, .3).toFixed(3)}">${esc(L(`好，开了卡，交给${nm(D.who)}先出方案。`, `Card opened; ${nm(D.who)} will draft a plan first.`))}</span>` : typing ? dots : ""}</div>`
+        + `<div class="otr-bub mg" style="top:56px;${fade(.4)}">${txt ? `<span style="opacity:${E(.86, .3).toFixed(3)}">${esc(L(`好，开了卡，交给${zn(nm(D.who))}先出方案。`, `Card opened; ${nm(D.who)} will draft a plan first.`))}</span>` : typing ? dots : ""}</div>`
         + `<div class="otr-mini" style="top:110px;${pop(.98)}"><div class="r"><img alt="" src="${esc(av(D.who))}">${esc(L("感恩节出去玩", "Thanksgiving trip"))}<span>${esc(L("方案 v1", "plan v1"))}</span></div>`
         + `<div class="d">${esc(L("三条路线 · 预算 · 出发清单", "3 routes · budget · checklist"))}</div>`
         + `<div class="bs"><span class="ap" style="box-shadow:0 0 0 ${(1 + 3 * breathe * on).toFixed(2)}px color-mix(in srgb,var(--accent) ${Math.round(10 + 20 * breathe * on)}%,transparent)">${esc(L("批准开工", "Approve & start"))}</span><span class="ch">${esc(L("改一下", "Revise"))}</span></div></div>`;
@@ -347,7 +349,7 @@
     { id: "chat", t: ["先跟{mgr}说一件事", "Tell {mgr} one thing first"],
       b: ["这里是管家的聊天框。说一件你想做的事，比如<em>「帮我查一下 X 的资料」</em>，它会开卡、交给合适的队员。不会打字？点上面的快捷句也行。",
           "This is the steward's chat. Say one thing you want done, like <em>“look up X for me”</em>; it opens a card and hands it to the right teammate. The quick phrases above the field work too."],
-      pb: ["底下「聊天」里第一个就是{mgr}。说一件你想做的事，比如<em>「帮我查一下 X 的资料」</em>，它会开卡、交给合适的队员。",
+      pb: ["底下「对话」里第一个就是{mgr}。说一件你想做的事，比如<em>「帮我查一下 X 的资料」</em>，它会开卡、交给合适的队员。",
            "{mgr} is the first chat under Chats. Say one thing you want done, like <em>“look up X for me”</em>; it opens a card and hands it to the right teammate."],
       prep: () => { if (phone()) return toHome(); const r = $("#right"); if (A().UI.chat !== "manager" || !vis(r)) A().route("#dm=manager"); if (A().UI.chatFold) { const f = $("#right .ch-fold"); if (f) f.click(); } },
       desk: () => { const c = pickVis(["#right .ch-comp"]); if (!c) return null; const q = $("#right > .qg-row"); return q && !q.hidden && vis(q) ? [c, q] : c; },
@@ -362,11 +364,20 @@
         return pickVis(['.hd-stat[data-hd-f="review"]', '#nav [data-go="review"]']); },
       phone: () => pickVis(['.hd-stat[data-hd-f="review"]']), side: "bottom", rad: 18 },
     { id: "team", t: ["TEAM：谁在干活一眼看到", "TEAM: who is working, at a glance"],
-      b: ["左边是你的团队。<em>执行中</em>的人头像会亮，下面一行是他在做的卡；点头像能直接私信他。", "Your team is on the left. Whoever is <em>working</em> lights up, with the card they are on underneath; click a face to message them."],
-      pb: ["正在干活的人排在首页最上面，下面一行是他在做的卡；全部队员在「更多 → 团队」。", "Whoever is working sits at the top of Home with the card they are on; the whole team is under More → Team."],
-      prep: () => { if (phone()) return toHome(); const t = $("#team"); if (t) t.scrollIntoView({ block: "nearest" }); },
+      b: ["左边是你的团队。正在干活的人名字旁写着<em>执行中</em>，下面一行是他在干什么；他在做哪张卡，看首页「此刻在忙」那一格。点名字就能私信。",
+          "Your team is on the left. Whoever is busy says <em>working</em> next to their name, with what they are doing underneath; the card they are on is in “Working now” on Home. Click a name to message them."],
+      /* t-onboard-review ⑤ (home V3): idle board = no working rows, so the copy says where they will show up and points at the 「N 人空闲」 stack */
+      pb: () => { const sn = $("#officebox .a2-sn"), n = sn ? sn.textContent.replace(/[›\s]+$/, "").trim() : "", busy = !!$("#officebox .a2-rows > *");
+        return busy ? ["正在干活的人排在这一格最上面，下面一行是他在做的卡，点一下就打开。" + (n ? `点「${n}」能看到其余队员，点头像就能私信。` : ""), "Whoever is working sits at the top of this card with the card they are on; tap it to open." + (n ? ` Tap “${n}” for the rest of the team, and a face to message them.` : "")]
+          : ["有人干活时，他会出现在这一格，带上他在做的卡。现在都空着：" + (n ? `点「${n}」能看到全部队员，` : "") + "点头像就能私信。", "When someone is working they show up here with the card they are on. Everyone is free right now: " + (n ? `tap “${n}” to see the whole team, and ` : "") + "tap a face to message them."]; },
+      prep: () => { if (phone()) return toHome(); const t = $("#team"); if (!t) return;
+        /* t-onboard-review ①: the rail scrolled to TEAM stayed scrolled after the tour (首页 / 主线 cut off); tClose puts it back */
+        for (let p = t.parentElement; p && p !== document.body; p = p.parentElement) if (p.scrollHeight > p.clientHeight + 1 && /auto|scroll/.test(getComputedStyle(p).overflowY)) { if (!TR.sc.some(x => x[0] === p)) TR.sc.push([p, p.scrollTop]); }
+        t.scrollIntoView({ block: "nearest" }); },
       desk: () => { const t = $("#team"); if (!vis(t)) return null; const rows = [...t.querySelectorAll(".team-i")].filter(vis).slice(0, 3); return [t.firstElementChild || t, ...rows].filter(Boolean); },
-      phone: () => pickVis(["#officebox .a2-rows", "#officebox .hd-a2", '#tabbar button[data-k="more"]']), side: "right", rad: 16 },
+      /* home V3: ring the people part of the card (working rows or 都歇着呢, plus the face stack), not the stats under it */
+      phone: () => { const r = $("#officebox .hd-a2"); if (!vis(r)) return pickVis(['#tabbar button[data-k="more"]']);
+        const els = [".a2-rows", ".a2-rest", ".a2-stack"].map(s => $(s, r)).filter(e => e && !e.hidden && vis(e)); return els.length ? els : r; }, side: "bottom", rad: 16 },
   ];
   function stepList() {
     const out = CORE.slice();
@@ -374,8 +385,9 @@
     ext.forEach(s => { const at = s.after ? out.findIndex(x => x.id === s.after) : -1; out.splice(at >= 0 ? at + 1 : out.length, 0, s); });
     return out;
   }
-  const TR = { on: false, i: 0, steps: [], el: null, raf: 0, R: null, key: "", from: "" };
-  const fill = s => String(s).replace(/\{mgr\}/g, esc(mgrN()));
+  const TR = { on: false, i: 0, steps: [], el: null, raf: 0, R: null, key: "", from: "", sc: [] };
+  const fill = s => String(s).replace(/\{mgr\}/g, (m, at, str) => { const n = esc(mgrN()); if (en()) return n;   /* ⑦: a space only where a Latin name meets a Chinese character */
+    const cjk = c => !!c && /[\u3400-\u9fff]/.test(c); return (cjk(str[at - 1]) && /^[A-Za-z0-9]/.test(n) ? " " : "") + n + (cjk(str[at + m.length]) && /[A-Za-z0-9]$/.test(n) ? " " : ""); });
   function target(st) {
     let el = null; try { el = (phone() ? st.phone : st.desk) ? (phone() ? st.phone : st.desk)() : null; } catch (e) { el = null; }
     if (!el) return null;
@@ -396,7 +408,7 @@
   }
   function cardHTML() {
     const st = TR.steps[TR.i], n = TR.steps.length, i = TR.i, e = en();
-    const body = phone() && st.pb ? st.pb : st.b;
+    const body = phone() && st.pb ? (typeof st.pb === "function" ? st.pb() : st.pb) : st.b;
     return `<div class="otr-chd"><img alt="" src="${esc(av(mgrA()))}"><span>${esc(L(`${mgrN()} 带你认认路`, `${mgrN()} shows you around`))}</span><span class="n">${i + 1} / ${n}</span></div>`
       + `<b class="otr-ct" id="otr-ct">${fill(st.t[e ? 1 : 0])}</b><p>${fill(body[e ? 1 : 0])}</p>`
       + `<div class="otr-cdots" aria-hidden="true">${Array.from({ length: n }, (_, k) => `<i class="${k < i ? "on" : k === i ? "cur" : ""}"></i>`).join("")}</div>`
@@ -455,7 +467,7 @@
   function tOpen(o = {}) {
     if (TR.on) return;
     /* a step that cannot route to its target and has none now (no 看画面 pill on a phone) is left out, so n and 完成 are right */
-    TR.steps = stepList().filter(s => s.prep || target(s)); TR.on = true; TR.from = o.from || ""; tMount();
+    TR.sc = []; TR.steps = stepList().filter(s => s.prep || target(s)); TR.on = true; TR.from = o.from || ""; tMount();
     if (o.fadeIn) TR.el.style.opacity = "0";
     setOpen(true); show(0, 1); TR.raf = requestAnimationFrame(follow);
   }
@@ -463,6 +475,7 @@
   function tClose(how) {
     if (!TR.on) return;
     const el = TR.el; TR.on = false; cancelAnimationFrame(TR.raf);
+    TR.sc.forEach(([p, y]) => { try { p.scrollTo({ top: y, behavior: RMQ.matches ? "auto" : "smooth" }); } catch (e) { p.scrollTop = y; } }); TR.sc = [];
     const end = () => { if (el) el.remove(); if (TR.el === el) TR.el = null; };
     if (el && !RMQ.matches) el.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 220, fill: "forwards" }).finished.then(end, end); else end();
     finish(how);

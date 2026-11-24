@@ -64,3 +64,38 @@ html[data-theme] #pagebody .qc-col > .card.has-cv .owner { top: 166px; }
 @media (min-width: 761px) and (prefers-reduced-motion: reduce) {
   html[data-theme] #pagebody .qc-col > .card .qc-cv img, html[data-theme] #pagebody .qc-col > .card .meta > .qc-dt { transition: none; }
 }
+
+/* t-quest-cards-visual r2 「2 中」 (user pick 11-23 17:03), desk and phone, quest pages only (.qc-grid): the title is the strongest line (18 px, at most
+   two lines), the summary and the footer row step back, the options are bigger filled pills and the recommended one is solid accent with
+   white text (its Rec. badge inverted). .ask-o is shared with the home 等你 cards and the detail ask bar, so every rule here is under .qc-grid.
+   The new-reply dot floats beside the title's first line instead of taking a line of its own. */
+html[data-theme] #pagebody .qc-grid .card .body h3 { font-size: 18px; line-height: 1.3; letter-spacing: .01em; margin: 0 0 6px;
+  display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; }
+html[data-theme] #pagebody .qc-grid .card .body h3 .nr-dot { display: inline; padding: 0 0 0 8px; margin: 0 7px 0 0; vertical-align: .2em; font-size: 8px; line-height: 0; }   /* inline, not inline-block / float: WebKit's -webkit-box (the 2-line clamp) puts any atomic or floated child on a line of its own */
+html[data-theme] #pagebody .qc-grid .card .body > p { opacity: .72; font-size: var(--fs-12); line-height: 1.55; }
+html[data-theme] #pagebody .qc-grid .card .ask-row .ask-rt { font-size: var(--fs-13); }
+html[data-theme] #pagebody .qc-grid .card .ask-row .ask-rt b { font-weight: 600; }
+html[data-theme] #pagebody .qc-grid .card .ask-opts { gap: 7px; }
+html[data-theme] #pagebody .qc-grid .card .ask-o:not(.ghost) { font-size: var(--fs-14); font-weight: 500; padding: 6px 14px; border-width: 1.5px; border-radius: 18px;
+  background: color-mix(in srgb, var(--accent) 10%, transparent); }
+html[data-theme] #pagebody .qc-grid .card .ask-o.rec:not(.on) { background: var(--accent); color: var(--accent-ink); border-color: var(--accent);
+  box-shadow: 0 1px 0 color-mix(in srgb, var(--accent) 55%, #000); }
+html[data-theme] #pagebody .qc-grid .card .ask-o.rec:not(.on) .rec-b { background: var(--accent-ink); color: var(--accent); font-weight: 600; }
+html[data-theme] #pagebody .qc-grid .card .ask-o.ghost { opacity: .75; }
+html[data-theme] #pagebody .qc-grid .card .meta { opacity: .7; }
+html[data-theme] #pagebody .qc-grid .card .meta .tag { transform: scale(.94); transform-origin: left center; }
+/* t-quest-cards-air A 「轻松」: more air inside quest cards, on top of 2 中 (same font sizes and colours). Quest pages only (.qc-grid);
+   the shared .ask-o on home 等你 cards and the detail ask bar is untouched. Card padding 16/16/14 -> 20/20/16, title -> summary 6 -> 8,
+   summary line-height 1.55 -> 1.65, summary -> question 10 -> 14, question -> options 7 -> 10, option gap 6 -> 8, pill 6x14 -> 7x16,
+   body -> footer 12 -> 16, card gap 14 -> 16 (desk columns). */
+html[data-theme] #pagebody .qc-grid .card { padding: 20px 20px 16px; row-gap: 16px; }
+html[data-theme] #pagebody .qc-grid .card .body h3 { margin-bottom: 8px; }
+html[data-theme] #pagebody .qc-grid .card .body > p { line-height: 1.65; }
+html[data-theme] #pagebody .qc-grid .card .ask-row { margin-top: 14px; }
+html[data-theme] #pagebody .qc-grid .card .ask-row .ask-opts, html[data-theme] #pagebody .qc-grid .card .ask-row .ask-opts.sm { margin-top: 10px; gap: 8px; }
+html[data-theme] #pagebody .qc-grid .card .ask-tail { gap: 8px; }
+html[data-theme] #pagebody .qc-grid .card .ask-o:not(.ghost), html[data-theme] #pagebody .qc-grid .card .ask-o.ghost { padding: 7px 16px; }
+html[data-theme] #pagebody .qc-grid .card .meta { margin-top: 0; }
+html[data-theme] #pagebody .qc-grid .card .owner { top: 18px; right: 18px; }
+html[data-theme] #pagebody .qc-grid .card .acts { right: 20px; bottom: 16px; }
+html[data-theme] #pagebody .qc-grid.qc-m, html[data-theme] #pagebody .qc-grid.qc-m > .qc-col { gap: 16px; }

@@ -55,7 +55,7 @@
     });
     if (!fresh.length) return;
     fresh.sort((x, y) => String(x.t).localeCompare(String(y.t)));
-    if (window.LookAway && LookAway.take(fresh, line)) return;   // t-lookaway-fx: full screen / top pill on desk and phone unless 设置 → 提醒动效 is 关
+    if (window.LookAway && LookAway.take(fresh, line)) return;   // t-lookaway-fx: full screen / top pill on desk and phone (always since t-drop-arrival-fx)
     if (PHONE.matches) return;
     fresh.slice(-MAX).forEach(show);
   }
