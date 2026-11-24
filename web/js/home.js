@@ -187,9 +187,12 @@
   // 看画面 as a text link (data-live, same capture handler as the Chrome pill). Idle members fold into a grey avatar stack on the last line; a tap
   // expands names (tap a face to DM). No header line. 0 working: 「都歇着呢。」 + the latest delivery. Stats row unchanged (same .hd-stat markup + patch).
   // The desktop app-style home keeps the D1 strip (render() picks by width).
-  const C2 = { zh: { idle: n => `${n} 人空闲`, exp: "空闲 · 点头像私信", fold: "收起", rest: "都歇着呢。", last: (nm, t, ti) => `最近一单：${nm} ${t} 交了「${ti}」`,
+  /* t-home-cards-redesign V3: headline, the accent 「等你看」 patch, three knit tags, 「最近一单」 as the card's last line (hv3-*) */
+  const C2 = { zh: { idle: n => `${n} 人空闲`, exp: "空闲 · 点头像私信", fold: "收起", rest: "都歇着呢。", last: (nm, t, ti) => `${nm} ${t} 交了「${ti}」`,
+      onyou: "等你看", tags: ["进行中", "待办", "近 7 天交付"], lastK: "最近一单", decide: n => `${n} 件待拍板`, replies: n => `${n} 条回复`,
       since: (c, d) => `${c} 起 · ${d}`, q: n => `还排着 ${n} 个`, live: "看画面", none: "还没有交付" },
-    en: { idle: n => `${n} idle`, exp: "Idle · tap a face to message", fold: "Hide", rest: "Everyone's resting.", last: (nm, t, ti) => `Last shipped: ${nm} · ${t} · ${ti}`,
+    en: { idle: n => `${n} idle`, exp: "Idle · tap a face to message", fold: "Hide", rest: "Everyone's resting.", last: (nm, t, ti) => `${nm} · ${t} · ${ti}`,
+      onyou: "on you", tags: ["Doing", "To do", "Shipped · 7d"], lastK: "Last shipped", decide: n => `${n} to decide`, replies: n => `${n} ${n === 1 ? "reply" : "replies"}`,
       since: (c, d) => `since ${c} · ${d}`, q: n => `${n} queued`, live: "Watch", none: "Nothing shipped yet" } };
   const L2 = () => C2[lang()];
   const PHONE = matchMedia("(max-width: 760px)");
@@ -235,13 +238,15 @@
     ob.addEventListener("contextmenu", e => { if (ob.dataset.hv === "a2" && e.target.closest("[data-lp]")) e.preventDefault(); });
   }
   function a2Build(ob) {
-    const stats = ["review", "doing", "todo", "week"].map((k, i) => [k, L().st[i]]).map(([k, l], i) => `<div class="hd-stat" role="button" tabindex="0" data-hd-f="${k}" style="--i:${i}"><b data-k="${k}">0</b><i class="hd-rdot"></i><span>${l}</span>${k === "review" ? `<small class="hd-old"></small>` : ""}</div>`).join("");
+    const tg = ["doing", "todo", "week"].map((k, i) => `<div class="hd-stat hv3-tag" role="button" tabindex="0" data-hd-f="${k}" style="--i:${i + 1}"><b data-k="${k}">0</b><span>${L2().tags[i]}</span></div>`).join("");
     ob.dataset.lang = lang(); ob.dataset.hv = "a2";
-    ob.innerHTML = `<div class="hd hd-a2"><button type="button" class="hd-srch a2-srch" data-msearch aria-label="${lang() === "en" ? "Search" : "搜索"}"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="M16 16 L20.5 20.5"/></svg></button><div class="a2-rows"></div><div class="a2-rest" role="button" tabindex="0" hidden><div class="a2-rest-t">${L2().rest}</div><div class="a2-rest-k"></div></div>
+    ob.innerHTML = `<div class="hd hd-a2 hv3"><button type="button" class="hd-srch a2-srch" data-msearch aria-label="${lang() === "en" ? "Search" : "搜索"}"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="M16 16 L20.5 20.5"/></svg></button><div class="a2-rows"></div><div class="a2-rest" hidden><div class="a2-rest-t">${L2().rest}</div></div>
       <button type="button" class="a2-stack" aria-expanded="false"><span class="a2-faces"></span><span class="a2-sn"></span></button>
       <div class="a2-exp" aria-hidden="true"><div class="a2-ex-in"><div class="a2-eh"><span>${L2().exp}</span><button type="button" class="a2-fold">${L2().fold} <span aria-hidden="true">‹</span></button></div><div class="a2-gr"></div></div></div>
-      <div class="hd-stats">${stats}</div></div>`;
-    if (!ob._a2kd) { ob._a2kd = true; ob.addEventListener("keydown", e => { if (ob.dataset.hv !== "a2") return; const s = e.target.closest(".hd-stat,.a2-r"); if (s && e.target === s && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); s.click(); } }); }
+      <div class="hv3-st"><div class="hd-stat hv3-patch" role="button" tabindex="0" data-hd-f="review" style="--i:0"><div class="hv3-pn"><b data-k="review">0</b><span>${L2().onyou}</span></div><div class="hv3-pc"></div><i class="hd-rdot"></i>${CHEV}</div>
+      <div class="hv3-tags">${tg}</div></div>
+      <div class="hv3-foot" hidden><small>${L2().lastK}</small><span class="hv3-ft"></span><em aria-hidden="true">›</em></div></div>`;
+    if (!ob._a2kd) { ob._a2kd = true; ob.addEventListener("keydown", e => { if (ob.dataset.hv !== "a2") return; const s = e.target.closest(".hd-stat,.a2-r,.hv3-foot.go"); if (s && e.target === s && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); s.click(); } }); }
     a2Wire(ob);
   }
   function a2Patch(ob, d) {
@@ -293,8 +298,9 @@
       setA(el, "data-hd-open", it ? it.id : null); setA(el, "data-chat", it ? null : a.id);
       setA(el, "aria-label", L().aria(A().aname(a), L().working, it && it.title, it ? L().tapOpen : L().tapChat));
     });
-    const rest = $(".a2-rest", root); if (rest.hidden === !show.length) rest.hidden = !!show.length;
-    if (!show.length) { const ls = lastShip(); setT($(".a2-rest-k", root), ls.t); setA(rest, "data-hd-open", ls.id); rest.classList.toggle("go", !!ls.id); setA(rest, "role", ls.id ? "button" : null); setA(rest, "tabindex", ls.id ? "0" : null); }   // idletap: 0 working opens the latest delivery
+    const rest = $(".a2-rest", root), foot = $(".hv3-foot", root); if (rest.hidden === !show.length) rest.hidden = !!show.length; if (foot.hidden === !show.length) foot.hidden = !!show.length;
+    /* idletap: 0 working = the headline + 「最近一单」 as the last line, which opens the latest delivery (V3: the tap target moved from the headline to that line) */
+    if (!show.length) { const ls = lastShip(); setT($(".hv3-ft", foot), ls.t); setA(foot, "data-hd-open", ls.id); foot.classList.toggle("go", !!ls.id); setA(foot, "role", ls.id ? "button" : null); setA(foot, "tabindex", ls.id ? "0" : null); }
     // idle stack + expanded grid
     const stk = $(".a2-stack", root); if (stk.hidden === !idle.length) stk.hidden = !idle.length;
     const fk = idle.map(a => a.id).join(",");
@@ -311,9 +317,12 @@
       const el = $(`.a2-r[data-a2="${id}"]`, rows); if (el) a2Mission(el);
       setTimeout(() => { const o = document.getElementById("officebox"); if (o && o.dataset.hv === "a2" && S.last) a2Patch(o, S.last); }, 2350);
     });
-    const old = $(".hd-old", root); if (old) { setT(old, c.review ? oldest(c) : ""); old.classList.toggle("hot", !!c.review && !c.nr && !!c.oldest && mins(new Date(c.oldest).toISOString()) > 12 * 60 && !(A().quietNight && A().quietNight())); }
+    /* V3 patch chips: 「N 件待拍板」「N 条回复」 when new replies are part of the count, else the 「最久 N」 chip (.hd-old, turns hot past 12 h outside quiet night) */
+    const pc = $(".hv3-pc", root);
+    if (pc) { const hot = !!c.review && !c.nr && !!c.oldest && mins(new Date(c.oldest).toISOString()) > 12 * 60 && !(A().quietNight && A().quietNight());
+      setH(pc, !c.review ? "" : c.nr ? `<span>${esc(L2().decide(c.cards || 0))}</span><span>${esc(L2().replies(c.nr))}</span>` : c.oldest ? `<small class="hd-old${hot ? " hot" : ""}">${esc(oldest(c))}</small>` : ""); }
     const hf = A().UI.hf || "review";
-    root.querySelectorAll(".hd-stat").forEach(s => { const k = s.dataset.hdF; s.classList.toggle("on", hf === k); s.classList.toggle("alert", k === "review" && c.review > 0); A().roll($("b", s), String(c[k]), "hd." + k); });
+    root.querySelectorAll(".hd-stat").forEach(s => { const k = s.dataset.hdF; s.classList.toggle("on", hf === k); s.classList.toggle("alert", k === "review" && c.review > 0); s.classList.toggle("z", !c[k]); A().roll($("b", s), String(c[k]), "hd." + k); });
   }
   document.addEventListener("click", e => {
     const ob = e.target.closest("#officebox"); if (!ob || ob.dataset.hv !== "a2") return;

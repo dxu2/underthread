@@ -2,8 +2,8 @@
  * the phone A2 rows and by the desk busy widget's patch (特典). The TEAM rail and the phone chat list carry none. A role with a level-2 script
  * (meta.art[id].yarn, your local/ layer) also gets the moving eye layer. Idle -> working = the start beat (fades in), then the loop on the 16 s
  * phase; a poll never swaps the kitten or the avatar node. Phone: a role that finishes its card keeps its row for the 委托完成 plate, and the
- * kitten plays the done beat there. Reduced motion: the static rest kitten. (2) The Notice line kitten: B naps by default, A nudges the ball
- * when a new notice arrives, C tugs the thread now and then (forced here with the window.__nykNext hook), night = B only. Transform / opacity only.
+ * kitten plays the done beat there. Reduced motion: the static rest kitten. (2) The Notice line kitten (t-kitten-daypart): one action per part of
+ * the day, 08-12 A nudges the ball, 12-18 C tugs the thread, 18-22:30 B dozes, night N sleeps. Transform / opacity only.
  *   node tests/e2e/drive.js run tests/e2e/journeys/yarnkit.js --out work/<item>/verify/<run> --engines chromium,webkit
  * Makes its own card per run (fx-yk-<run>-<engine><view>) and drives a role that is idle at the start (a level-2 role if there is one).
  * t-yarn-sleep: the kitten is an easter egg: only after 5 minutes of work (since), one 1-in-3 draw per stretch (id + since), asleep at night
@@ -233,45 +233,48 @@ module.exports = {
     c.su("set-agent", role, "--status", "idle");
     c.su("upsert-item", "--id", card2, "--who", role, "--stage", "done");
 
-    /* 7. the Notice line kitten (clock fixed to the afternoon: 22:30-08:00 is night, B only) */
+    /* 7. the Notice line kitten. t-kitten-daypart: one action per part of the day (local time): 08-12 A, 12-18 C, 18-22:30 B, night N.
+       The 12:00 / 22:30 switches happen without a reload: the 6 s rotation and every poll redraw the kitten. */
     const day = new Date(); day.setHours(14, 0, 0, 0);
     await p.clock.setFixedTime(day);
-    await p.reload({ waitUntil: "load" });   /* daytime list from the first draw: cards held overnight are not "new" here */
+    await p.reload({ waitUntil: "load" });
     await p.waitForFunction(() => window.App && App.ST && App.ST.meta && !document.getElementById("ut-splash"), null, { timeout: 20000 });
     await c.sleep(800);
     if (c.view === "phone") { await c.tap("#tabbar button[data-k=home]"); await c.sleep(600); }
     const tk = () => p.evaluate(() => { const t = document.getElementById("ticker"), mine = e => e && e.closest && e.closest("#ticker");
       const an = document.getAnimations().filter(a => a.effect && mine(a.effect.target) && /^nyk-/.test(a.animationName || ""));
-      return { cls: t.className, pose: (t.querySelector(".nyk svg") || {}).classList ? t.querySelector(".nyk svg").getAttribute("class") : null, text: (t.querySelector(".msg") || {}).textContent || "",
+      return { cls: t.className, part: t.dataset.nykPart || "", pose: (t.querySelector(".nyk svg") || {}).classList ? t.querySelector(".nyk svg").getAttribute("class") : null, text: (t.querySelector(".msg") || {}).textContent || "",
         props: [...new Set(an.flatMap(a => a.effect.getKeyframes().flatMap(k => Object.keys(k))))], names: [...new Set(an.map(a => a.animationName))] }; });
     const t0 = await tk();
-    c.check("Notice kitten: naps by default (B)", /nyk-b/.test(t0.cls) && t0.pose === "nyk-nap", t0);
-    await c.shot("ticker-b", "#ticker");
+    c.check("Notice kitten at 14:00: the midday pose (sits, C)", t0.part === "c" && t0.pose === "nyk-sit", t0);
     c.su("notice", `毛线猫通知 ${tag}`, "--hours", "30");
-    const ta = await c.until(() => tk().then(x => /nyk-a/.test(x.cls) && x), 10000);
-    c.check("a new notice jumps in with the nudge (A), the kitten sits up", ta && ta.pose === "nyk-sit" && ta.text.includes(tag), ta);
-    await c.sleep(500);
-    const ta2 = await tk();
-    c.check("A animates transform / opacity only", ta2.props.every(k => OK.has(k)), ta2);
-    await c.shot("ticker-a", "#ticker");
-    await p.evaluate(() => { window.__nykNext = "c"; });
-    const tc = await c.until(() => tk().then(x => /nyk-c/.test(x.cls) && x), 9000);
-    c.check("now and then a switch tugs the thread (C)", !!tc && tc.pose === "nyk-sit", tc);
+    const tc = await c.until(() => tk().then(x => /nyk-c/.test(x.cls) && x.text.includes(tag) && x), 10000);
+    c.check("a new notice jumps in with the midday action (C tugs the thread)", !!tc && tc.pose === "nyk-sit", tc);
     await c.sleep(300);
     const tc2 = await tk();
     c.check("C animates transform / opacity only", tc2.props.every(k => OK.has(k)), tc2);
     await c.shot("ticker-c", "#ticker");
+    const morning = new Date(); morning.setHours(9, 0, 0, 0);
+    await p.clock.setFixedTime(morning);
+    const ta = await c.until(() => tk().then(x => /nyk-a/.test(x.cls) && x), 9000);
+    c.check("09:00: the next switch nudges the ball (A), the kitten sits up", !!ta && ta.pose === "nyk-sit", ta);
+    await c.sleep(500);
+    const ta2 = await tk();
+    c.check("A animates transform / opacity only", ta2.props.every(k => OK.has(k)), ta2);
+    await c.shot("ticker-a", "#ticker");
+    const eve = new Date(); eve.setHours(19, 30, 0, 0);
+    await p.clock.setFixedTime(eve);
     const tb = await c.until(() => tk().then(x => /nyk-b/.test(x.cls) && x), 9000);
-    c.check("the next switch naps again (B)", !!tb && tb.pose === "nyk-nap", tb);
+    c.check("19:30: the evening doze (B)", !!tb && tb.pose === "nyk-nap", tb);
 
-    /* night: B only, even for a new notice */
+    /* night: N (asleep) only, even for a new notice */
     const night = new Date(); night.setHours(23, 40, 0, 0);
     await p.clock.setFixedTime(night);
     c.su("notice", `毛线猫夜里 ${tag}`, "--hours", "30");
     await c.until(() => tk().then(x => x.text.includes(`夜里 ${tag}`)), 10000);
-    await c.sleep(2600);   /* a later poll must not turn it into A either */
+    await c.sleep(2600);   /* a later poll must not wake it either */
     const tn = await tk();
-    c.check("night: a new notice still gets the nap (B)", /nyk-b/.test(tn.cls) && !/nyk-a/.test(tn.cls), tn);
+    c.check("night: a new notice keeps the kitten asleep (N)", /nyk-n/.test(tn.cls) && tn.pose === "nyk-nap" && !/nyk-[abc]\b/.test(tn.cls), tn);
     c.check("no page errors", !errs.length, errs);
   },
 };
