@@ -2,7 +2,7 @@
    Timeline of the full screen (3.0 s): ink blooms 0-1.3 s, type in .4-1.0 s, countdown 1.0-2.2 s, type out 2.2-2.6 s, ink draws back 2.35-3.0 s. */
 @property --lka-r { syntax: "<length>"; inherits: false; initial-value: 0px; }
 /* t-lookaway-fx font B (user 11-22): rounded Latin (SF Pro Rounded via ui-rounded on Safari/iPhone, the shipped Nunito elsewhere), Chinese stays PingFang SC, heavier */
-#lka-fs, #lka-pw { --lka-font: ui-rounded, "SF Pro Rounded", Nunito, "PingFang SC", -apple-system, sans-serif; }
+#lka-fs { --lka-font: ui-rounded, "SF Pro Rounded", Nunito, "PingFang SC", -apple-system, sans-serif; }
 /* t-lookaway-fx theme A (user 11-22, ask 645ece): the full screen stays a dark veil on every theme, tinted by the palette (Underthread = coffee,
    Ink = neutral black); the pill follows day / night and the palette through the theme tokens, and knit / leather add a stitched edge. */
 #lka-fs { --lka-k: 14,8,5; --lka-k2: 30,18,12; --lka-k3: 12,7,5; --lka-fg: #F6EBDA; --lka-fg2: 241,228,207; --lka-acc: #D6BF9E; }
@@ -17,7 +17,6 @@ html:not([data-ut]) #lka-fs { --lka-k: 6,6,7; --lka-k2: 18,18,20; --lka-k3: 5,5,
 html[data-theme="white"] #lka-fs .lka-blur { background: radial-gradient(ellipse 30% 26% at 50% 40%, rgba(var(--lka-k),.42), rgba(var(--lka-k),0)), radial-gradient(ellipse 75% 65% at 50% 46%, rgba(var(--lka-k2),.5), rgba(var(--lka-k3),.74)); }
 /* the knit / pure palette turns backdrop-filter off for every element with !important (theme-ut.css); an id selector outranks it for these two layers */
 html[data-ut] #lka-fs .lka-blur { -webkit-backdrop-filter: blur(48px) saturate(.7) !important; backdrop-filter: blur(48px) saturate(.7) !important; }
-html[data-ut] #lka-pw .lka-pill { -webkit-backdrop-filter: blur(26px) saturate(1.2) !important; backdrop-filter: blur(26px) saturate(1.2) !important; }
 
 #lka-fs .lka-col { position: absolute; left: 0; right: 0; top: 26vh; display: flex; flex-direction: column; align-items: center; text-align: center; padding: 0 24px; pointer-events: none; }
 #lka-fs .lka-avs { display: flex; justify-content: center; height: 92px; margin-bottom: 26px; }
@@ -58,101 +57,118 @@ html[data-ut] #lka-pw .lka-pill { -webkit-backdrop-filter: blur(26px) saturate(1
 #lka-fs.lka-quit { animation: lka-quit .3s ease-in forwards; }
 @keyframes lka-quit { to { opacity: 0; } }
 
-/* ---------- pill ---------- */
-/* t-pill-wellness (user 11-23 「a+b 都做（日/夜切换）」): the glass lives on ::before so the droplet canvas (web/js/pilldrop.js, #lka-drop) can hand over
-   to it (--lka-sk 0..1 = how much of the CSS glass shows; --lka-c = content). #lka-pw[data-m]: 0 night = LookAway dark liquid glass (rose glow behind the
-   text, rainbow streak on the lower edge, bright rim), 1 knit day = felt with a stitched seam, 2 other day = white frosted glass. Desktop Chromium
-   adds a refracting rim through --lka-bf (an SVG displacement map, lens() in pilldrop.js); Safari / iPhone get blur + rim + rainbow. */
-#lka-pw { position: fixed; left: 0; right: 0; top: 18px; z-index: 9700; display: flex; justify-content: center; align-items: center; gap: 14px; pointer-events: none;
-  --lka-sh: 4,2,1; --lka-fg: #F7F0F3; --lka-fg2: rgba(247,240,243,.62); --lka-ln: rgba(255,255,255,.2); }
-#lka-pw .lka-pill, #lka-pw .lka-bud { pointer-events: auto; position: relative; isolation: isolate; color: var(--lka-fg); font-family: var(--lka-font); }
-/* t-pill-phone-overflow (11-24): min-width 0, or the flex item's automatic minimum (= the nowrap text) holds the pill wider than the screen */
-#lka-pw .lka-pill { display: flex; align-items: center; gap: 14px; height: 68px; min-width: 0; max-width: min(640px, calc(100vw - 24px));
-  padding: 0 12px; border-radius: 34px; cursor: pointer; white-space: nowrap; touch-action: none; user-select: none; -webkit-user-select: none; }
-#lka-pw .lka-pill.lka-c-ask { padding-right: 22px; max-width: min(560px, calc(100vw - 100px)); }
-#lka-pw .lka-pill::before, #lka-pw .lka-bud::before { content: ""; position: absolute; inset: 0; border-radius: inherit; z-index: -2; pointer-events: none; opacity: var(--lka-sk, 1);
-  background: radial-gradient(ellipse 42% 85% at 42% 50%, rgba(140,44,80,.34), rgba(140,44,80,0) 72%),
-    linear-gradient(90deg, transparent 57%, #ff5a7a 60%, #ffc94d 64%, #6dff9a 68%, #52c8ff 72%, #a77bff 76%, transparent 79%) 0 calc(100% - 1.5px) / 100% 1.5px no-repeat,
-    linear-gradient(180deg, rgba(22,17,24,.74), rgba(10,8,12,.8));
-  -webkit-backdrop-filter: blur(14px) saturate(1.6); backdrop-filter: var(--lka-bf, blur(14px) saturate(1.6));
-  box-shadow: 0 18px 40px rgba(var(--lka-sh),.42), 0 4px 12px rgba(var(--lka-sh),.3), inset 0 1px 0 rgba(255,255,255,.34), inset 1px 0 0 rgba(255,255,255,.12),
-    inset 0 0 0 1px rgba(255,255,255,.13), inset 0 -1px 0 rgba(255,255,255,.08); }
-/* knit day: felt */
-#lka-pw[data-m="1"] { --lka-sh: 90,55,30; --lka-fg: #2B1913; --lka-fg2: #7a5d48; --lka-ln: rgba(43,25,19,.2); }
-#lka-pw[data-m="1"] .lka-pill::before, #lka-pw[data-m="1"] .lka-bud::before {
-  background: url(/static/knit/knit-felt.webp) 0 0 / 64px 56px, radial-gradient(ellipse 120% 90% at 40% 20%, #FFF8EC, #F7E6CE);
-  -webkit-backdrop-filter: none; backdrop-filter: none;
-  box-shadow: 0 14px 30px rgba(var(--lka-sh),.2), 0 3px 8px rgba(var(--lka-sh),.14), inset 0 1px 0 rgba(255,255,255,.75), inset 0 -2px 3px rgba(120,80,50,.14), inset 0 0 0 1.5px rgba(126,96,74,.22); }
-/* other day: white frosted glass */
-#lka-pw[data-m="2"] { --lka-sh: 0,0,0; --lka-fg: #111; --lka-fg2: #6b6b6b; --lka-ln: rgba(0,0,0,.14); }
-#lka-pw[data-m="2"] .lka-pill::before, #lka-pw[data-m="2"] .lka-bud::before {
-  background: linear-gradient(180deg, rgba(255,255,255,.9), rgba(250,250,252,.86));
-  -webkit-backdrop-filter: blur(20px) saturate(1.8); backdrop-filter: var(--lka-bf, blur(20px) saturate(1.8));
-  box-shadow: 0 16px 36px rgba(0,0,0,.12), 0 3px 10px rgba(0,0,0,.08), inset 0 1px 0 #fff, inset 0 0 0 1px rgba(0,0,0,.08), inset 0 -1px 0 rgba(0,0,0,.06); }
-/* the knit / pure palette turns backdrop-filter off for everything with !important (theme-ut.css); the id outranks it for the pill */
-html[data-ut] #lka-pw .lka-pill::before, html[data-ut] #lka-pw .lka-bud::before { -webkit-backdrop-filter: blur(14px) saturate(1.6) !important; backdrop-filter: var(--lka-bf, blur(14px) saturate(1.6)) !important; }
-html[data-ut] #lka-pw[data-m="2"] .lka-pill::before, html[data-ut] #lka-pw[data-m="2"] .lka-bud::before { -webkit-backdrop-filter: blur(20px) saturate(1.8) !important; backdrop-filter: var(--lka-bf, blur(20px) saturate(1.8)) !important; }
-html[data-ut] #lka-pw[data-m="1"] .lka-pill::before, html[data-ut] #lka-pw[data-m="1"] .lka-bud::before { -webkit-backdrop-filter: none !important; backdrop-filter: none !important; }
-/* knit day: the stitched seam inside the rim */
-#lka-pw .lka-pill::after, #lka-pw .lka-bud::after { content: none; position: absolute; inset: 5px; border-radius: inherit; pointer-events: none; z-index: -1; opacity: var(--lka-sk, 1); }
-#lka-pw[data-m="1"] .lka-pill::after, #lka-pw[data-m="1"] .lka-bud::after { content: ""; border: 1.5px dashed rgba(126,96,74,.6); }
-/* the droplet is morphing: the canvas draws the shape, the content rides it */
-#lka-pw.lka-morph .lka-pill > *, #lka-pw.lka-morph .lka-bud > * { opacity: var(--lka-c, 1); filter: blur(calc((1 - var(--lka-c, 1)) * 7px)); transform: translateX(calc((1 - var(--lka-c, 1)) * -12px)); }
-#lka-pw.lka-morph .lka-pill:active, #lka-pw.lka-morph .lka-bud:active { scale: none; }
-#lka-pw.lka-morph .lka-bud, #lka-pw.lka-morph .lka-pill > * { transition: none; }
-#lka-pw .lka-pill:focus-visible, #lka-pw .lka-bud:focus-visible { outline: 2px solid var(--accent, #D6BF9E); outline-offset: 3px; }
-/* the 回答 bud of an ask: a separate round button */
-#lka-pw .lka-bud { flex: none; width: 58px; height: 58px; border-radius: 50%; border: 0; padding: 0; cursor: pointer; background: none; display: grid; place-items: center;
-  font: 600 14px/1 var(--lka-font); transition: scale .18s ease; }
-#lka-pw .lka-bud[hidden] { display: none; }
-#lka-pw .lka-bud > span { pointer-events: none; }
-#lka-pw[data-m="0"] .lka-bud { color: #fff; text-shadow: 0 0 10px rgba(255,170,200,.55); }
-#lka-pw[data-m="1"] .lka-bud { color: var(--accent, #84490A); }
-#lka-pw .lka-bud:hover::before { filter: brightness(1.08); }
-#lka-pw .lka-bud:active { scale: .92; }
-#lka-pw .lka-pav { width: 44px; height: 44px; border-radius: 50%; flex: none; object-fit: cover; background: var(--panel, #2B1A13); box-shadow: 0 0 0 1.5px var(--lka-ln), 0 4px 10px rgba(var(--lka-sh),.25); }
-#lka-pw .lka-tx { display: flex; flex-direction: column; gap: 3px; min-width: 0; flex: 1 1 auto; padding-right: 6px; }
-#lka-pw .lka-tx b { font-size: 16px; font-weight: 600; letter-spacing: .01em; overflow: hidden; text-overflow: ellipsis; }
-#lka-pw .lka-tx b em { font-style: normal; font-weight: 500; opacity: .72; }
-#lka-pw .lka-tx small { font-size: 13.5px; font-weight: 500; color: var(--lka-fg2); overflow: hidden; text-overflow: ellipsis; }
-#lka-pw .lka-more { flex: none; font: 600 12px/1 var(--lka-font); color: inherit; padding: 7px 10px; border-radius: 12px; border: 0; cursor: pointer;
-  background: color-mix(in srgb, var(--lka-fg) 10%, transparent); transition: background .18s ease, transform .18s ease; }
-#lka-pw[data-m="1"] .lka-more { color: var(--accent, #84490A); background: color-mix(in srgb, var(--accent, #84490A) 12%, transparent); }
-#lka-pw .lka-more:hover { background: color-mix(in srgb, var(--lka-fg) 18%, transparent); }
-#lka-pw .lka-more:active { transform: scale(.94); }
-#lka-pw .lka-more[hidden] { display: none; }
-#lka-pw .lka-mb { display: none; }
-/* r-improve-1122 P1: on a phone the 「还有 N 条 / N more」 chip becomes a +N badge on the avatar's corner, so the title gets its 60-70 px back
-   ("Roccia · Handed in for review" was cut to "Handed in f…"). Tapping it still steps to the next arrival; ::before widens the hit area to 40 px. */
+/* ---------- pill + header summary (t-pill-notif-style, user 11-24 ask b369c4 「A 收进汇总胶囊，做进 lookaway（替掉右上角小圆点）」) ----------
+   web/js/lookaway.js. The pill (.lka-pw#lka-pw) hangs on the seam under #top (--lka-top from JS); while it moves (.lka-anim) the capsule, its round
+   button and the seam bar are position: fixed and driven frame by frame (left / top / width / height; --lka-c = content, --lka-bl = content blur).
+   A pill that is folding away loses its id, so every rule here is on .lka-pw. Look per data-m (pilldrop.js look()): 0 night, 1 knit day (felt + a
+   running stitch), 2 other day. Restrained on purpose: a solid fill + 1 px rim, a faint shadow, no glow. Chips: one colour per type.
+   The summary capsule (#lka-sum.lka-pw) sits in the top bar, right-aligned before the 信箱 button (desk) or at the right end (phone). */
+.lka-pw { --lka-fill: #24160F; --lka-rim: rgba(255,236,214,.17); --lka-fg: #F4E7D7; --lka-fg2: #C4B19D; --lka-sha: .32; --lka-avbg: #2B1A13; --lka-ring: rgba(255,236,214,.5);
+  --lka-ballline: rgba(0,0,0,.35); --lka-font: ui-rounded, "SF Pro Rounded", Nunito, "PingFang SC", -apple-system, sans-serif; }
+html:not([data-ut]) .lka-pw { --lka-fill: #18171A; --lka-rim: rgba(255,255,255,.14); --lka-fg: #EEEBE4; --lka-fg2: #A8A49C; --lka-avbg: #26252A; --lka-ring: rgba(255,255,255,.45); }
+.lka-pw[data-m="2"] { --lka-fill: #FFFAF2; --lka-rim: rgba(70,40,18,.17); --lka-fg: #2A1A10; --lka-fg2: #6F5A47; --lka-sha: .10; --lka-avbg: #F3E4CF; --lka-ring: rgba(132,73,10,.45); --lka-ballline: rgba(255,250,242,.6); }
+html:not([data-ut]) .lka-pw[data-m="2"] { --lka-fill: #FFFFFF; --lka-rim: rgba(0,0,0,.12); --lka-fg: #111; --lka-fg2: #666; --lka-avbg: #EEE; --lka-ring: rgba(0,0,0,.3); }
+.lka-pw[data-m="1"] { --lka-fill: #FFF8EC; --lka-rim: rgba(126,96,74,.3); --lka-fg: #2B1913; --lka-fg2: #7a5d48; --lka-sha: .12; --lka-avbg: #F3E4CF; --lka-ring: rgba(126,96,74,.5); --lka-ballline: rgba(255,248,236,.55); }
+/* chip colours: night / day */
+.lka-pw .lka-c-reply { --ck-bg: rgba(176,160,236,.20); --ck-fg: #D3C8F7; }
+.lka-pw .lka-c-decide { --ck-bg: rgba(239,175,64,.20); --ck-fg: #F3C46A; }
+.lka-pw .lka-c-ask { --ck-bg: rgba(240,128,112,.20); --ck-fg: #F6A89A; }
+.lka-pw .lka-c-remind { --ck-bg: rgba(110,190,220,.18); --ck-fg: #A6DCEF; }
+.lka-pw .lka-c-eod { --ck-bg: rgba(130,200,140,.18); --ck-fg: #B4E3BA; }
+.lka-pw:is([data-m="1"], [data-m="2"]) .lka-c-reply { --ck-bg: #E9E3F8; --ck-fg: #5A4898; }
+.lka-pw:is([data-m="1"], [data-m="2"]) .lka-c-decide { --ck-bg: #F6E2BC; --ck-fg: #84490A; }
+.lka-pw:is([data-m="1"], [data-m="2"]) .lka-c-ask { --ck-bg: #F8DCD5; --ck-fg: #A23F2C; }
+.lka-pw:is([data-m="1"], [data-m="2"]) .lka-c-remind { --ck-bg: #DCEFF5; --ck-fg: #23657D; }
+.lka-pw:is([data-m="1"], [data-m="2"]) .lka-c-eod { --ck-bg: #E0F1E1; --ck-fg: #2F6B37; }
+
+.lka-pw#lka-pw, .lka-pw.lka-gone { position: fixed; left: 0; right: 0; top: var(--lka-top, 46px); z-index: 9700; display: flex; justify-content: center; align-items: center;
+  gap: 10px; pointer-events: none; }
+.lka-pw.lka-gone, .lka-pw.lka-gone * { pointer-events: none !important; }
+.lka-pw .lka-pill, .lka-pw .lka-bud, .lka-pw .lka-seam { background: var(--lka-fill); box-shadow: inset 0 0 0 1px var(--lka-rim), 0 2px 6px rgba(0,0,0,var(--lka-sha)); }
+.lka-pw[data-m="1"] :is(.lka-pill, .lka-bud, .lka-seam) { background: url(/static/knit/knit-felt.webp) 0 0 / 64px 56px, radial-gradient(ellipse 120% 90% at 40% 20%, #FFF8EC, #F7E6CE); }
+.lka-pw .lka-pill, .lka-pw .lka-bud { pointer-events: auto; position: relative; box-sizing: border-box; overflow: hidden; color: var(--lka-fg); font-family: var(--lka-font); }
+.lka-pw .lka-pill { display: flex; align-items: center; gap: 8px; height: 40px; width: max-content; min-width: 0; max-width: min(540px, calc(100vw - 140px));
+  padding: 0 16px 0 5px; border-radius: 20px; cursor: pointer; white-space: nowrap; touch-action: none; user-select: none; -webkit-user-select: none; }
+.lka-pw .lka-pav { width: 30px; height: 30px; border-radius: 50%; flex: none; object-fit: cover; background: var(--lka-avbg); box-shadow: 0 0 0 1px var(--lka-rim); }
+.lka-pw .lka-tx { display: flex; align-items: center; gap: 8px; min-width: 0; flex: 1 1 auto; }
+.lka-pw .lka-tx b { flex: none; font-size: 14px; font-weight: 600; letter-spacing: .01em; color: var(--lka-fg); }
+.lka-pw .lka-chip { flex: none; font: 600 11px/1 var(--lka-font); font-style: normal; padding: 4px 8px; border-radius: 999px; background: var(--ck-bg); color: var(--ck-fg); }
+.lka-pw .lka-tx small { flex: 1 1 auto; min-width: 0; font-size: 14px; font-weight: 500; color: var(--lka-fg2); overflow: hidden; text-overflow: ellipsis; }
+/* the round button: every type (t-pill-answer-icon knit icons) */
+.lka-pw .lka-bud { flex: none; width: 40px; height: 40px; border-radius: 50%; border: 0; padding: 0; cursor: pointer; display: grid; place-items: center; transition: scale .18s ease, filter .18s ease; }
+.lka-pw .lka-bud > span { pointer-events: none; display: grid; place-items: center; }
+.lka-pw[data-m="1"] .lka-bud, .lka-pw[data-m="2"] .lka-bud { color: var(--accent, #84490A); }
+.lka-pw .lka-ico { display: block; width: 19px; height: 19px; overflow: visible; pointer-events: none; transition: transform .2s cubic-bezier(.3,1.5,.5,1); }
+.lka-pw .lka-bud.lka-c-ask .lka-ico { width: 22px; height: 22px; }
+.lka-pw .lka-bud:hover, .lka-pw .lka-pill:hover { filter: brightness(1.07); }
+.lka-pw[data-m="1"] .lka-bud:hover, .lka-pw[data-m="2"] .lka-bud:hover, .lka-pw[data-m="1"] .lka-pill:hover, .lka-pw[data-m="2"] .lka-pill:hover { filter: brightness(.97); }
+.lka-pw .lka-bud:hover .lka-ico { transform: translateX(1px); }
+.lka-pw .lka-bud:active { scale: .92; }
+.lka-pw .lka-pill:active { scale: .985; }
+.lka-pw .lka-pill:focus-visible, .lka-pw .lka-bud:focus-visible { outline: 2px solid var(--accent, #D6BF9E); outline-offset: 3px; }
+/* knit day: a running stitch inside the rim */
+.lka-pw .lka-pill::after, .lka-pw .lka-bud::after { content: none; position: absolute; inset: 3px; border-radius: inherit; pointer-events: none; }
+.lka-pw[data-m="1"] .lka-pill::after, .lka-pw[data-m="1"] .lka-bud::after { content: ""; border: 1px dashed rgba(126,96,74,.5); }
+/* +N: a badge on the avatar's corner (还有 N 条 stays as its label); the hit area grows to 36 px */
+.lka-pw .lka-more { position: absolute; left: 1px; top: 1px; z-index: 2; min-width: 16px; height: 16px; padding: 0 4px; box-sizing: border-box; border: 0; border-radius: 8px; cursor: pointer;
+  font: 700 10px/16px var(--lka-font); text-align: center; color: var(--accent-ink, #1F110D); background: var(--accent, #D6BF9E); box-shadow: 0 0 0 1.5px var(--lka-fill); transition: transform .18s ease; }
+.lka-pw .lka-more::before { content: ""; position: absolute; inset: -10px; }
+.lka-pw .lka-more:active { transform: scale(.9); }
+.lka-pw .lka-more[hidden] { display: none; }
+.lka-pw .lka-mf { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+/* the seam bar the drop clings to (only while it is born) */
+.lka-pw .lka-seam { position: fixed; display: block; visibility: hidden; box-shadow: none; pointer-events: none; }
+.lka-pw[data-m="1"] .lka-seam { background: #F7E6CE; }
+/* moving: the canvas-free morph, driven from JS */
+.lka-pw.lka-anim .lka-pill, .lka-pw.lka-anim .lka-bud { position: fixed; margin: 0; max-width: none; flex: none; padding-right: 0; scale: none; transition: none; }
+.lka-pw.lka-anim .lka-pill { padding-left: max(0px, min(5px, calc((var(--lka-h, 40px) - 30px) / 2))); }
+.lka-pw.lka-anim .lka-pill > * { opacity: var(--lka-c, 1); filter: blur(var(--lka-bl, 0px)); }
+.lka-pw.lka-anim .lka-pill .lka-tx { padding-right: 16px; }
+.lka-pw.lka-anim .lka-bud > span { opacity: var(--lka-c, 1); }
+.lka-pw.lka-anim :is(.lka-pill, .lka-bud):focus-visible { outline: none; }
+
+/* the summary capsule in the top bar */
+#lka-sum { position: fixed; z-index: 9690; top: calc(var(--lks-cy, 28px) - 15px); right: var(--lks-r, 76px); height: 30px; box-sizing: border-box; max-width: var(--lks-max, 360px);
+  display: flex; align-items: center; justify-content: flex-end; padding: 0; margin: 0; border: 0; border-radius: 999px; cursor: pointer;
+  background: var(--lka-fill); box-shadow: inset 0 0 0 1px var(--lka-rim), 0 2px 6px rgba(0,0,0,var(--lka-sha)); color: var(--lka-fg); font: 600 13px/1 var(--lka-font);
+  transition: scale .18s ease, filter .18s ease; }
+#lka-sum[hidden] { display: none; }
+#lka-sum[data-m="1"] { background: url(/static/knit/knit-felt.webp) 0 0 / 64px 56px, radial-gradient(ellipse 120% 90% at 40% 20%, #FFF8EC, #F7E6CE); }
+#lka-sum[data-m="1"]::after { content: ""; position: absolute; inset: 2.5px; border-radius: inherit; border: 1px dashed rgba(126,96,74,.45); pointer-events: none; }
+#lka-sum .lks-in { display: flex; align-items: center; gap: 8px; height: 100%; min-width: 0; max-width: 100%; box-sizing: border-box; padding: 0 12px 0 4px; overflow: hidden; border-radius: inherit;
+  opacity: var(--lks-c, 1); filter: blur(var(--lks-bl, 0px)); white-space: nowrap; }
+#lka-sum .lks-avs { display: flex; flex: none; }
+#lka-sum .lks-avs img { width: 22px; height: 22px; border-radius: 50%; object-fit: cover; background: var(--lka-avbg); box-shadow: 0 0 0 1.5px var(--lka-fill); }
+#lka-sum .lks-avs img + img { margin-left: -8px; }
+#lka-sum .lks-tx { position: relative; flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+#lka-sum .lks-tx b { display: block; font-weight: 600; overflow: hidden; text-overflow: ellipsis; }
+#lka-sum .lks-tx .lks-old { position: absolute; left: 0; top: 0; }
+#lka-sum .lks-sd { flex: none; width: 7px; height: 7px; border-radius: 50%; background: #AE9EEC; transition: background-color .2s ease; }
+#lka-sum.lks-wait .lks-sd { background: #EFAF40; }
+#lka-sum:is([data-m="1"], [data-m="2"]) .lks-sd { background: #7C68C8; }
+#lka-sum:is([data-m="1"], [data-m="2"]).lks-wait .lks-sd { background: #C9821B; }
+#lka-sum .lks-chev { flex: none; color: var(--lka-fg2); font-size: 15px; margin-top: -1px; }
+#lka-sum .lks-ring { position: absolute; inset: 0; border-radius: 999px; border: 1.5px solid var(--lka-ring); pointer-events: none; visibility: hidden; }
+#lka-sum:hover { filter: brightness(1.08); }
+#lka-sum:is([data-m="1"], [data-m="2"]):hover { filter: brightness(.97); }
+#lka-sum:active { scale: .95; }
+#lka-sum:focus-visible { outline: 2px solid var(--accent, #D6BF9E); outline-offset: 3px; }
 @media (max-width: 760px) {
-  #lka-pw .lka-more, #lka-pw[data-m="1"] .lka-more { position: absolute; left: 32px; top: 5px; z-index: 2; min-width: 20px; height: 20px; padding: 0 5px; border-radius: 10px;
-    font: 700 11px/20px var(--lka-font); text-align: center; color: var(--accent-ink, #1F110D); background: var(--accent, #D6BF9E);
-    box-shadow: 0 0 0 2px rgba(255,255,255,.5), 0 2px 6px rgba(var(--lka-sh),.35); }
-  #lka-pw .lka-more::before { content: ""; position: absolute; inset: -10px -10px -10px -10px; }
-  #lka-pw .lka-more:hover, #lka-pw[data-m="1"] .lka-more:hover { background: var(--accent, #D6BF9E); }
-  #lka-pw .lka-mf { display: none; }
-  #lka-pw .lka-mb { display: inline; }
+  .lka-pw#lka-pw, .lka-pw.lka-gone { gap: 8px; padding: 0 max(8px, env(safe-area-inset-right, 0px)) 0 max(8px, env(safe-area-inset-left, 0px)); }
+  .lka-pw .lka-pill { height: 36px; flex: 1 1 auto; width: auto; max-width: 520px; gap: 6px; padding: 0 13px 0 5px; border-radius: 18px; }
+  .lka-pw .lka-pav { width: 26px; height: 26px; }
+  .lka-pw .lka-tx { gap: 6px; }
+  .lka-pw .lka-tx b, .lka-pw .lka-tx small { font-size: 13px; }
+  .lka-pw .lka-chip { font-size: 10.5px; padding: 3.5px 7px; }
+  .lka-pw .lka-bud { width: 36px; height: 36px; }
+  .lka-pw .lka-more { left: 1px; top: 0; }
+  .lka-pw.lka-anim .lka-pill .lka-tx { padding-right: 13px; }
+  #lka-sum { top: calc(var(--lks-cy, 22px) - 13px); height: 26px; font-size: 12px; }
+  #lka-sum .lks-in { gap: 6px; padding: 0 10px 0 3px; }
+  #lka-sum .lks-avs img { width: 20px; height: 20px; }
+  #lka-sum .lks-chev { font-size: 14px; }
 }
-#lka-pw .lka-go { flex: none; height: 38px; padding: 0 18px; border-radius: 19px; border: 1px solid var(--lka-ln); display: flex; align-items: center;
-  font-size: 14px; font-weight: 600; color: inherit; background: color-mix(in srgb, var(--lka-fg) 5%, transparent); transition: background .18s ease, border-color .18s ease; }
-#lka-pw .lka-pill:hover .lka-go { background: color-mix(in srgb, var(--lka-fg) 11%, transparent); border-color: color-mix(in srgb, var(--lka-fg) 38%, transparent); }
-#lka-pw .lka-pill:active { scale: .985; }
-#lka-pw .lka-pcd { position: absolute; left: 34px; right: 34px; bottom: 5px; height: 1.5px; background: repeating-linear-gradient(90deg, color-mix(in srgb, var(--lka-fg) 12%, transparent) 0 5px, transparent 5px 9px); }
-#lka-pw .lka-pcd > i { display: block; height: 100%; transform-origin: left; background: repeating-linear-gradient(90deg, color-mix(in srgb, var(--lka-fg) 45%, transparent) 0 5px, transparent 5px 9px); }
-#lka-pw[data-m="0"] .lka-pcd { bottom: 6px; left: 40px; right: 46%; }
 @media (max-width: 760px) {
-  #lka-pw { top: calc(env(safe-area-inset-top, 0px) + 8px); }
-  #lka-pw { gap: 10px; }
-  /* t-pill-phone-overflow: the row keeps 8 px (or the landscape safe area) on both sides; the pill fills what is left and its text ellipsizes */
-  #lka-pw { padding: 0 max(8px, env(safe-area-inset-right, 0px)) 0 max(8px, env(safe-area-inset-left, 0px)); }
-  #lka-pw .lka-pill { height: 60px; gap: 10px; padding: 0 10px; width: 100%; min-width: 0; max-width: 520px; border-radius: 30px; }
-  #lka-pw .lka-pill.lka-c-ask { width: auto; flex: 1 1 auto; max-width: 460px; padding-right: 14px; }
-  #lka-pw .lka-bud { width: 52px; height: 52px; font-size: 13px; }
-  #lka-pw .lka-pav { width: 38px; height: 38px; }
-  #lka-pw .lka-tx b { font-size: 15px; }
-  #lka-pw .lka-tx small { font-size: 12.5px; }
-  #lka-pw .lka-go { height: 34px; padding: 0 13px; font-size: 13px; }
-  #lka-pw .lka-pcd { left: 28px; right: 28px; bottom: 4px; }
   #lka-fs .lka-col { top: 24vh; }
   #lka-fs .lka-avs, #lka-fs .lka-avs img { width: 72px; height: 72px; }
   #lka-fs .lka-avs.lka-many { width: auto; }
@@ -164,5 +180,7 @@ html[data-ut] #lka-pw[data-m="1"] .lka-pill::before, html[data-ut] #lka-pw[data-
 @media (prefers-reduced-motion: reduce) {
   #lka-fs.lka-run .lka-blur { animation: none; --lka-r: calc(150vmax + 300px); }
   #lka-fs.lka-run .lka-avs, #lka-fs.lka-run .lka-b { animation: lka-in .15s linear both; transform: none; filter: none; }
-  #lka-pw .lka-pill:active, #lka-pw .lka-bud:active { scale: none; }
+  .lka-pw .lka-pill:active, .lka-pw .lka-bud:active, #lka-sum:active { scale: none; }
+  .lka-pw .lka-ico, #lka-sum .lks-sd { transition: none; }
+  .lka-pw .lka-bud:hover .lka-ico { transform: none; }
 }

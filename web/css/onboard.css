@@ -65,6 +65,10 @@ html[data-home="widgets"] .wg-setup .ob-main { flex: 1; min-width: 0; display: f
 html[data-home="widgets"] .wg-setup .ob-opt { flex: none; width: clamp(128px, 24%, 250px); padding-left: 14px; gap: 4px; border-left: 1.5px dashed color-mix(in srgb, var(--ink) 25%, transparent); }
 html[data-home="widgets"] .wg-setup .ob-chips { grid-template-columns: repeat(auto-fill, minmax(112px, 1fr)); gap: 3px 5px; }
 html[data-home="widgets"] .wg-setup .ob-oc { padding: 1px 8px; min-height: 21px; }
+/* t-onboard-tour 11-24 ④: five chips in one column (1440 desk: the tile is too narrow for two) ran past the stitch; chips were 22.6px tall from the
+   inherited line-height, not min-height. A tighter line box (20px chips) and 2px row gaps fit 133px: h6 17 + 4 + 5 x 20 + 4 x 2 = 129. */
+html[data-home="widgets"] .wg-setup .ob-chips { row-gap: 2px; }
+html[data-home="widgets"] .wg-setup .ob-oc { padding: 0 8px; min-height: 20px; line-height: 1.25; box-sizing: border-box; }
 html[data-home="widgets"] .wg-setup .ob-row { height: 100%; }
 html[data-home="widgets"] .wg-setup .ob-main .wg-eb { margin-bottom: 2px; }
 html[data-home="widgets"] .wg-setup .ob-track { padding-top: 6px; } html[data-home="widgets"] .wg-setup .ob-th { top: 6px; }

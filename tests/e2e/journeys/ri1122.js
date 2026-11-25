@@ -13,7 +13,7 @@ const seed = async (c, ut, tex, theme, lang) => {
 };
 const pill = p => p.evaluate(() => { const w = document.querySelector("#lka-pw .lka-pill"); if (!w) return null; const b = w.querySelector(".lka-tx b"), m = w.querySelector(".lka-more"), a = w.querySelector(".lka-pav");
   const mr = m.getBoundingClientRect(), ar = a.getBoundingClientRect(), pr = w.getBoundingClientRect(), mb = m.querySelector(".lka-mb"), mf = m.querySelector(".lka-mf");
-  return { title: b.textContent, cut: b.scrollWidth > b.clientWidth + 1, hidden: m.hidden, badge: mb && getComputedStyle(mb).display !== "none" ? mb.textContent : "", chip: mf && getComputedStyle(mf).display !== "none" ? mf.textContent : "",
+  return { title: b.textContent, cut: b.scrollWidth > b.clientWidth + 1, hidden: m.hidden, badge: mb && getComputedStyle(mb).display !== "none" ? mb.textContent : "", chip: mf && getComputedStyle(mf).display !== "none" && mf.getBoundingClientRect().width > 1 ? mf.textContent : "",
     aria: m.getAttribute("aria-label"), onAv: mr.left < ar.right && mr.right > ar.left + ar.width / 2 && mr.top < ar.top + ar.height / 2, inPill: mr.top >= pr.top && mr.right <= pr.right, mw: Math.round(mr.width), mh: Math.round(mr.height) }; });
 module.exports = {
   views: ["desk", "phone"],
@@ -26,7 +26,8 @@ module.exports = {
       if (!(await p.evaluate(() => !!window.LookAway))) { c.note("P1 skipped: this tree has no arrival pill (web/js/lookaway.js)"); break; }
       await p.evaluate(() => { LookAway.pillOut(); return new Promise(r => setTimeout(() => { LookAway.pillAdd([{ cls: "decide", agent: "writer", sub: "Script v2" }, { cls: "reply", agent: "smith", sub: "x" }, { cls: "ask", agent: "scout", sub: "y" }]); r(); }, 600)); });
       await c.sleep(1300); let P = await pill(p);
-      if (desk) c.check(`P1 ${lang} desk: the chip stays (${lang === "en" ? "2 more" : "还有 2 条"}), no badge`, P && !P.hidden && /2/.test(P.chip) && !P.badge, P);
+      /* t-pill-notif-style A (11-24): desk and phone both show the +N badge on the avatar corner; the chip words stay for screen readers only */
+      if (desk) c.check(`P1 ${lang} desk: +2 badge on the avatar corner, chip text hidden, label kept for screen readers`, P && !P.hidden && P.badge === "+2" && !P.chip && P.onAv && P.inPill && /2/.test(P.aria), P);
       else {
         c.check(`P1 ${lang} phone: +2 badge on the avatar corner, chip text hidden, label kept for screen readers`, P && P.badge === "+2" && !P.chip && P.onAv && P.inPill && /2/.test(P.aria), P);
         c.check(`P1 ${lang} phone: the title is not cut`, P && !P.cut, P);

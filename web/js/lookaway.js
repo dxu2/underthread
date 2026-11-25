@@ -6,19 +6,19 @@
  *   Split (user 11-22, ask dde091 A): the pill = what waits on you (review hand-ins, rule proposals, questions, reminders, day's end);
  *     on a computer, replies and DMs go to the top-right cards (toast.js WebToast.show) and never to the pill. Phone: everything in the pill.
  *     route() is the one place that decides; each notice reaches exactly one surface.
- *   Pill: every notice that waits on you (ask, reminder, review when full screen is not allowed; replies too on the phone). One capsule at top centre
- *     grows out of the top edge as a droplet (t-pill-wellness, web/js/pilldrop.js; no WebGL = the old 600 ms drop-in); a second notice bumps it and grows the
- *     「还有 N 条」 chip (no stacked edges); the 5 s stitched countdown restarts on each merge and pauses while hovered or hidden. Asks have no countdown
- *     and a separate 回答 bud: they stay until answered.
- *     Click = open; chip = next notice; swipe up = dismiss. Reduced motion = 150 ms fades only.
+ *   Pill: every notice that waits on you (ask, reminder, review when full screen is not allowed; replies too on the phone). Since t-pill-notif-style
+ *     (user 11-24, ask b369c4 A) a one-line capsule that grows out of the seam under the top bar, with a separate round button; after 5 s (asks 8 s)
+ *     it folds into a bead that rises into the header summary capsule #lka-sum (「N 条等你 · 还有 N 条」), which replaced the corner dot. Tap the
+ *     summary = the notices come back. A second arrival bumps the pill and grows the +N badge. Click = open; badge = next; swipe up / Esc = dismiss.
+ *     Reduced motion = 150 ms fades only.
  *   No setting since t-drop-arrival-fx (user 11-23): always full screen + pill. The old 设置 → 提醒动效 pref (localStorage rt.lka) is ignored and removed at load.
  *   Classes: lka-* (checked unused). Knit theme kills backdrop-filter for * with !important; lookaway.css re-enables it for these two layers only.
  *   Test hook: window.LookAway. */
 (function () {
   if (!window.App) return;
   const RM = matchMedia("(prefers-reduced-motion: reduce)"), PHONE = matchMedia("(max-width: 760px)");
-  const GAP = 20 * 6e4, HOLD = 5000, FS_MS = 3000;
-  const S = { q: [], pill: null, cd: null, fs: null, wait: [], eod: undefined };
+  const GAP = 20 * 6e4, HOLD = 5000, MINI = 8000, FS_MS = 3000;
+  const S = { q: [], bag: [], pill: null, cd: null, fs: null, wait: [], eod: undefined };
   const en = () => App.UI.lang === "en";
   const esc = s => String(s == null ? "" : s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
   const LS = { get(k, d) { try { const v = JSON.parse(localStorage.getItem(k)); return v == null ? d : v; } catch (e) { return d; } }, set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) { } } };
@@ -90,192 +90,366 @@
   }
   addEventListener("keydown", e => { if (S.fs && (e.key === "Escape" || e.key === " ")) { e.preventDefault(); fsEnd(true); } }, true);
 
-  /* ---------- pill ---------- */
-  /* t-pill-wellness (user 11-23, ask a1778c 「a+b 都做（日/夜切换）」): the pill is a droplet. web/js/pilldrop.js draws the morphs on a WebGL canvas
-     (out of the top edge on a thread that snaps -> spreads into the capsule with a ripple; an ask buds a separate 回答 button off its right end;
-     leaving folds it back into a drop that the top edge swallows). At rest the CSS pill below takes over (data-m on #lka-pw: 0 night = dark liquid
-     glass, 1 knit day = felt, 2 other day = white frosted). Asks no longer count down: they stay until answered (opened, answered on the card,
-     or swiped / Esc'd away); the rest keep the 5 s countdown. No WebGL: the old drop-in; reduced motion: fades only. */
-  const TAG = { reply: ["回复", "Reply"], decide: ["交给你审核", "Handed in for review"], ask: ["问你一件事", "Has a question"], remind: ["提醒", "Reminder"], eod: ["今天收工了", "That's a wrap"] };
+  /* ---------- pill (t-pill-notif-style, user 11-24 ask b369c4 「A 收进汇总胶囊，做进 lookaway（替掉右上角小圆点）」) ----------
+     Modelled on a header-droplet notification (a capsule that grows out of the seam, then folds into a summary capsule).
+     - A one-line capsule hangs on the seam under the top bar (#top's lower edge crosses it at its upper quarter): avatar, bold name, a coloured chip
+       per type, one line of text; a separate round button (the knit icon of t-pill-answer-icon) on its right. Restrained: solid fill + 1 px rim, no glow.
+     - In: a small drop clings to the seam (a thin bar melts into it), spreads into the capsule (~230 ms, then a ~700 ms tail), content de-blurs
+       at +230..470 ms, the round button drops off the right end at +770 ms, its icon arrives at +1.25 s.
+     - Leaving (5 s; asks 8 s, hover / focus / hidden pause it): the button is swallowed, the capsule narrows (the text re-ellipsizes from the right),
+       blurs, shrinks into a bead that rises into the header summary capsule (#lka-sum: stacked avatars, 「N 条等你 · 还有 N 条」, a status dot, ›),
+       which answers with a ring. The summary replaced the corner dot of t-pill-answer-icon: tap it (Enter) and the notices come back out of it.
+       Esc on the summary clears it. Asks still leave only when answered, opened or dismissed; review cards when they leave review; the others
+       after 30 min. Click = open, +N badge = next, swipe up / Esc = dismiss (not into the summary).
+     - Every move is a pure function of time on one clock (play()); LookAway._clock(t) freezes it for frame-exact recordings.
+     - Reduced motion: 150 ms fades, no ring. No WebGL any more (pilldrop.js only supplies look()). */
+  const TAG = { reply: ["新回复", "Reply"], decide: ["等你审", "Review"], ask: ["问你", "Question"], remind: ["提醒", "Reminder"], eod: ["收工", "Wrap-up"] };
   const BTN = { reply: ["回复", "Reply"], decide: ["打开", "Open"], ask: ["回答", "Answer"], remind: ["查看", "View"], eod: ["去看", "View"] };
+  /* t-pill-answer-icon (user 11-24, ask a8cd44 「A 线团问号」 + e28881 「四个一起换」): the buttons are knit icons; the word stays as aria-label and title.
+     ask = a ? drawn as one thread with a small yarn ball for its dot; reply = back arrow whose tail is a running stitch; decide (Open) = chevron;
+     remind / eod (View) = an eye with a stitched outline. 24 x 24, currentColor. */
+  const ST = 'stroke-dasharray="2.2 1.7"';
+  const ICO = {
+    ask: `<path d="M8.6 8.4a3.5 3.5 0 1 1 5.2 3.1c-1.2.7-1.8 1.4-1.8 2.7v.6" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round"/><circle cx="12" cy="18.6" r="2.1" fill="currentColor"/><path d="M10.4 18.1q1.6-.9 3.2.2M10.6 19.5q1.4.6 2.9-.3" stroke="var(--lka-ballline)" stroke-width=".7" fill="none"/>`,
+    reply: `<path d="M10 7L5 11.5L10 16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/><path d="M5.5 11.5H14a5 5 0 0 1 5 5V18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" ${ST}/>`,
+    decide: `<path d="M9 5.5L15.5 12L9 18.5" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>`,
+    remind: `<path d="M2.5 12q9.5-11 19 0q-9.5 11-19 0z" fill="none" stroke="currentColor" stroke-width="1.9" ${ST}/><circle cx="12" cy="12" r="3" fill="currentColor"/>`,
+  };
+  ICO.eod = ICO.remind;
+  const ico = k => `<svg class="lka-ico" viewBox="0 0 24 24" width="24" height="24" aria-hidden="true" focusable="false">${ICO[k] || ICO.decide}</svg>`;
   const L2 = (p) => p ? p[en() ? 1 : 0] : "";
-  const PD = () => window.PillDrop && !RM.matches && PillDrop.ok() ? PillDrop : null;
+  const WAITK = c => c === "ask" || c === "decide";
+  const BAG_TTL = 30 * 6e4;
   const lookOf = () => window.PillDrop ? PillDrop.look() : (document.documentElement.dataset.theme === "white" ? 2 : 0);
+  const GM = () => PHONE.matches ? { H: 36, SH: 26, ring: 10 } : { H: 40, SH: 30, ring: 13 };
+
+  /* ---- math (same curves as the mock) ---- */
+  const clamp = (x, a = 0, b = 1) => Math.min(b, Math.max(a, x)), lerp = (a, b, k) => a + (b - a) * k, seg = (t, a, b) => clamp((t - a) / (b - a));
+  const eOut = k => 1 - (1 - k) ** 3, eIn = k => k * k * k, eIO = k => k < .5 ? 4 * k * k * k : 1 - (-2 * k + 2) ** 3 / 2;
+  const grow = t => t <= 0 ? 0 : t < .07 ? .03 * eOut(t / .07) : .03 + .97 * (1 - .8 * Math.exp(-(t - .07) / .06) - .2 * Math.exp(-(t - .07) / .3));
+  const crit = (t, w) => t <= 0 ? 0 : 1 - (1 + w * t) * Math.exp(-w * t);
+  const under = (t, w = 22, z = .6) => { if (t <= 0) return 0; const wd = w * Math.sqrt(1 - z * z); return 1 - Math.exp(-z * w * t) * (Math.cos(wd * t) + z * w / wd * Math.sin(wd * t)); };
+
+  /* ---- one clock for every move: tracks are pure functions of the time since they started ---- */
+  const CK = { man: null }, TR = new Set(); let raf = 0;
+  const now = () => CK.man != null ? CK.man : performance.now() / 1000;
+  function play(dur, f, tag) {
+    if (tag) stop(tag);
+    return new Promise(res => { const tr = { t0: now(), dur, f, res, tag }; TR.add(tr); f(0); kick(); });
+  }
+  function stop(tag) { for (const tr of [...TR]) if (tr.tag === tag) { TR.delete(tr); tr.res(false); } }
+  function step() { const n = now(); for (const tr of [...TR]) { if (!TR.has(tr)) continue; const t = n - tr.t0; tr.f(Math.min(Math.max(0, t), tr.dur)); if (t >= tr.dur) { TR.delete(tr); tr.res(true); } } }
+  function kick() { if (CK.man == null && !raf && TR.size) raf = requestAnimationFrame(() => { raf = 0; step(); kick(); }); }
+
+  /* ---- geometry ---- */
+  function seamY() { const t = document.getElementById("top"), b = t ? t.getBoundingClientRect().bottom : 0; return b > 8 ? b : (PHONE.matches ? 44 : 56); }
+  const pillOf = w => w.querySelector(".lka-pill"), budOf = w => w.querySelector(".lka-bud"), seamOf = w => w.querySelector(".lka-seam");
+  function place(w) {
+    const g = GM(); let top = seamY() - g.H / 4;
+    /* t-pill-overlap: never over the 「Chrome 使用中」 chip (#toolbar) on a computer */
+    const chip = !PHONE.matches && document.querySelector("#toolbar .tool-pill");
+    if (chip) { const c = chip.getBoundingClientRect(), p = pillOf(w).getBoundingClientRect(), b = budOf(w).getBoundingClientRect();
+      if (c.width && c.right + 10 > p.left && c.left < b.right + 10 && c.bottom > top && c.top < top + g.H) top = c.bottom + 6; }
+    w.style.setProperty("--lka-top", Math.round(top) + "px");
+  }
+  /* the pill / button at rest */
+  function geoRest(w) {
+    const r = pillOf(w).getBoundingClientRect(), q = budOf(w).getBoundingClientRect();
+    return { W: r.width, H: r.height, ccx: r.left + r.width / 2, ccy: r.top + r.height / 2, gap: q.left - r.right, seam: seamY() };
+  }
+  function animStart(w) { w._anim = true; w.classList.add("lka-anim"); }
+  function animEnd(w) {
+    w._anim = false; w.classList.remove("lka-anim");
+    [pillOf(w), budOf(w), seamOf(w)].forEach(e => { if (!e) return; ["left", "top", "width", "height", "borderRadius", "visibility", "opacity"].forEach(k => e.style[k] = ""); e.style.removeProperty("--lka-c"); e.style.removeProperty("--lka-bl"); });
+  }
+  /* o = { on, cx, cy, w, h, op (content), bl (content blur px), al (whole), barW, barT, bOn, bx, br, iop } */
+  function applyPill(w, G, o) {
+    const p = pillOf(w), b = budOf(w), s = seamOf(w), ps = p.style;
+    if (!o.on || o.w < .5) ps.visibility = "hidden";
+    else { ps.visibility = ""; ps.left = (o.cx - o.w / 2).toFixed(2) + "px"; ps.top = (o.cy - o.h / 2).toFixed(2) + "px"; ps.width = o.w.toFixed(2) + "px"; ps.height = o.h.toFixed(2) + "px";
+      ps.borderRadius = (Math.min(o.w, o.h) / 2).toFixed(2) + "px"; ps.opacity = o.al == null ? "" : o.al.toFixed(3);
+      ps.setProperty("--lka-c", o.op.toFixed(3)); ps.setProperty("--lka-bl", o.bl.toFixed(2) + "px"); }
+    const bs = b.style;
+    if (!o.on || !o.bOn || o.br < .5) bs.visibility = "hidden";
+    else { bs.visibility = ""; bs.left = (o.bx - o.br).toFixed(2) + "px"; bs.top = (o.cy - o.br).toFixed(2) + "px"; bs.width = bs.height = (2 * o.br).toFixed(2) + "px"; bs.setProperty("--lka-c", o.iop.toFixed(3)); }
+    const ss = s.style;
+    if (!o.on || !(o.barT > .2)) ss.visibility = "hidden";
+    else { ss.visibility = ""; ss.left = (o.cx - o.barW / 2).toFixed(2) + "px"; ss.top = (G.seam - o.barT / 2).toFixed(2) + "px"; ss.width = o.barW.toFixed(2) + "px"; ss.height = o.barT.toFixed(2) + "px"; ss.borderRadius = (o.barT / 2).toFixed(2) + "px"; }
+  }
+  const btn = (o, G, bk) => { const re = o.cx + o.w / 2; o.bx = lerp(re - G.H / 2, re + G.gap + G.H / 2, bk); o.br = G.H / 2 * lerp(.5, 1, bk); };
+  /* in: out of the seam (or, from = {x, y}, out of the summary capsule: a bead drops to the seam first) */
+  const PRE = .24, IN_T = 1.42;
+  function enterFrame(G, t, from) {
+    const H = G.H, o = { on: true, cx: G.ccx, cy: G.ccy, w: 0, h: 0, op: 0, bl: 6, barW: 0, barT: 0, bOn: false, iop: 0 };
+    let u = t;
+    if (from) {
+      if (t < PRE) { const k = eIO(t / PRE), s = lerp(16, 22, k); o.cx = lerp(from.x, G.ccx, k); o.cy = lerp(from.y, G.seam + 3, k); o.w = o.h = s; btn(o, G, 0); return o; }
+      u = t - PRE;
+    }
+    const w0 = from ? 22 : 20, h0 = from ? 22 : 26;
+    o.w = lerp(w0, G.W, grow(u)); o.h = lerp(h0, H, eOut(seg(u, 0, .14)));
+    o.cy = lerp(G.seam + 3, G.ccy, eOut(seg(u, 0, .14)));
+    if (!from) { o.barT = 3.4 * (1 - seg(u, .02, .14)); o.barW = o.w + 24; }   // the drop's shoulders cling to the seam for ~120 ms
+    o.op = eOut(seg(u, .23, .45)); o.bl = 6 * (1 - eOut(seg(u, .26, .47)));
+    const bk = crit(u - .77, 13); o.bOn = u > .77; o.iop = eOut(seg(u, 1.25, 1.4)); btn(o, G, bk);
+    return o;
+  }
+  /* fold: into the summary at (tx, ty); the bead lands at e = .55 */
+  const FOLD_T = .74, LAND = .55;
+  function foldFrame(G, e, tx, ty) {
+    const H = G.H, o = { on: true, cx: G.ccx, cy: G.ccy, w: G.W, h: H, op: 1, bl: 0, bOn: e <= .13, iop: 1 - seg(e, 0, .05) };
+    const bk = 1 - eIn(seg(e, 0, .13));
+    const w1 = lerp(G.W, 80, eIO(seg(e, 0, .2))), h1 = lerp(H, 32, eIO(seg(e, .15, .27)));
+    o.w = lerp(w1, 22, eIO(seg(e, .27, .38))); o.h = lerp(h1, 22, eIO(seg(e, .27, .38)));
+    o.op = 1 - seg(e, .12, .24); o.bl = 6 * seg(e, .12, .24);
+    o.cx += (G.gap + H) / 2 * eIO(seg(e, 0, .22));        // the centre of mass slides right as the button is swallowed
+    btn(o, G, bk);
+    const k = eIO(seg(e, .40, .60)), x0 = o.cx, y0 = o.cy;
+    o.cx = lerp(x0, tx, k); o.cy = lerp(y0, ty, k);
+    if (e > .40) { const s = lerp(22, 16, k); o.w = Math.min(o.w, s); o.h = Math.min(o.h, s); }
+    if (e > FOLD_T - .02) o.on = false;
+    return o;
+  }
+  /* dismissed: the same shrink, then the bead sinks back into the seam */
+  const OUT_T = .46;
+  function outFrame(G, e) {
+    const H = G.H, o = { on: true, cx: G.ccx, cy: G.ccy, w: G.W, h: H, op: 1 - seg(e, 0, .14), bl: 6 * seg(e, 0, .14), bOn: e <= .13, iop: 1 - seg(e, 0, .05) };
+    o.w = lerp(G.W, 22, eIO(seg(e, 0, .26))); o.h = lerp(H, 22, eIO(seg(e, .08, .28)));
+    btn(o, G, 1 - eIn(seg(e, 0, .13)));
+    o.cy = lerp(G.ccy, G.seam - 6, eIn(seg(e, .26, .44))); o.al = 1 - seg(e, .32, .44);
+    return o;
+  }
+
   function pillHTML(n) {
-    const a = ag(n.agent), more = S.q.length - 1, ask = n.cls === "ask";
-    return `<img class="lka-pav" src="${esc(av(a))}" alt=""><span class="lka-tx"><b>${esc(nm(a) || n.agent || "")}<em> · ${esc(L2(TAG[n.cls]))}</em></b><small>${esc(n.sub || "")}</small></span>`
-      + `<button type="button" class="lka-more" data-lka-more aria-label="${en() ? `${more} more` : `还有 ${more} 条`}"${more > 0 ? "" : " hidden"}><span class="lka-mf">${en() ? `${more} more` : `还有 ${more} 条`}</span><span class="lka-mb" aria-hidden="true">+${more}</span></button>`
-      + (ask ? "" : `<span class="lka-go" aria-hidden="true">${esc(L2(BTN[n.cls]))}</span><i class="lka-pcd" aria-hidden="true"><i></i></i>`);
+    const a = ag(n.agent), more = S.q.length - 1;
+    return `<img class="lka-pav" src="${esc(av(a))}" alt=""><span class="lka-tx"><b>${esc(nm(a) || n.agent || "")}</b><em class="lka-chip">${esc(L2(TAG[n.cls]))}</em><small>${esc(n.sub || "")}</small></span>`
+      + `<button type="button" class="lka-more" data-lka-more data-nomo aria-label="${en() ? `${more} more` : `还有 ${more} 条`}"${more > 0 ? "" : " hidden"}><span class="lka-mf">${en() ? `${more} more` : `还有 ${more} 条`}</span><span class="lka-mb" aria-hidden="true">+${more}</span></button>`;
   }
   function pillBox() {
-    if (S.pill && S.pill.isConnected) return S.pill;
-    const w = document.createElement("div"); w.id = "lka-pw"; w.dataset.m = lookOf();
-    w.innerHTML = `<div class="lka-pill" role="link" tabindex="0" aria-live="polite"></div><button type="button" class="lka-bud" data-lka-bud hidden><span></span></button>`;
-    document.body.appendChild(w); S.pill = w; S.budOn = false; return w;
+    if (S.pill && S.pill.isConnected && !S.pill._out) return S.pill;
+    const w = document.createElement("div"); w.id = "lka-pw"; w.className = "lka-pw"; w.dataset.m = lookOf();
+    w.innerHTML = `<div class="lka-pill" role="link" tabindex="0" aria-live="polite"></div><button type="button" class="lka-bud" data-lka-bud data-nomo><span></span></button><i class="lka-seam" aria-hidden="true"></i>`;
+    document.body.appendChild(w); S.pill = w; w._anim = false; return w;
   }
-  /* t-pill-overlap: on a computer the centred pill could cover the 「Chrome 使用中」 chip at the top left (#toolbar). Then it drops in under the top bar. */
-  function place(w) {
-    w.style.top = "";
-    if (PHONE.matches) return;
-    const chip = document.querySelector("#toolbar .tool-pill"), p = w.firstElementChild; if (!chip || !p) return;
-    const c = chip.getBoundingClientRect(), r = p.getBoundingClientRect(), b = w.querySelector(".lka-bud");
-    const right = b && !b.hidden ? b.getBoundingClientRect().right : r.right;
-    if (!c.width || c.right + 10 <= r.left || c.left >= right + 10 || c.top >= r.bottom || c.bottom <= r.top) return;
-    const top = document.getElementById("top"), tb = top ? top.getBoundingClientRect().bottom : c.bottom;
-    w.style.top = Math.round(Math.max(tb, c.bottom) + 8) + "px";
-  }
-  /* desktop Chromium: a refracting rim at rest (backdrop-filter url(#svg)); the CSS reads --lka-bf */
-  function lensOn(w) {
-    if (!window.PillDrop || lookOf() === 1) return;
-    [w.firstElementChild, w.querySelector(".lka-bud")].forEach(e => { if (!e || e.hidden) return; const r = e.getBoundingClientRect(), id = PillDrop.lens(r.width, r.height);
-      if (id) e.style.setProperty("--lka-bf", `url(#${id}) blur(${lookOf() ? 20 : 14}px) saturate(${lookOf() ? 1.8 : 1.6})`); else e.style.removeProperty("--lka-bf"); });
-  }
-  /* the pill / bud geometry at rest (no translate), for the canvas */
-  function geo(w) {
-    const p = w.firstElementChild, b = w.querySelector(".lka-bud"), r = p.getBoundingClientRect();
-    const G = { RX: r.left + r.width / 2, Y: r.top + r.height / 2, HW: r.width / 2, HH: r.height / 2, R0: PHONE.matches ? 11 : 12, BR: 28, GAP: 14 };
-    G.CX = G.RX;
-    if (b && !b.hidden) { const q = b.getBoundingClientRect(); G.BR = q.width / 2; G.BX = q.left + q.width / 2; G.GAP = q.left - r.right; G.CX = G.RX + (G.GAP + 2 * G.BR) / 2; G.ask = true; }
-    return G;
-  }
-  /* each canvas frame moves the DOM pill (content fades / blurs in, clipped to the shape) and the bud with it; --lka-sk = how much of the CSS glass shows */
-  function follow(w, G) {
-    const p = w.firstElementChild, b = w.querySelector(".lka-bud");
-    return s => {
-      const [cx, y, hw, hh] = s.pill, ins = Math.max(0, G.HW - hw), iv = Math.max(0, G.HH - hh);
-      p.style.translate = `${(cx - G.RX).toFixed(2)}px ${(y - G.Y).toFixed(2)}px`;
-      p.style.clipPath = ins > 0.3 || iv > 0.3 ? `inset(${iv.toFixed(2)}px ${ins.toFixed(2)}px round ${Math.max(0.1, Math.min(hw, hh)).toFixed(2)}px)` : "";
-      p.style.setProperty("--lka-c", s.c.toFixed(3)); p.style.setProperty("--lka-sk", (1 - s.shape).toFixed(3));
-      if (b && !b.hidden && G.BX != null) {
-        const [bx, by, br] = s.bud;
-        b.style.translate = `${(bx - G.BX).toFixed(2)}px ${(by - G.Y).toFixed(2)}px`; b.style.scale = (br / G.BR).toFixed(4);
-        b.style.setProperty("--lka-c", s.bl.toFixed(3)); b.style.setProperty("--lka-sk", (1 - s.shape).toFixed(3));
-      }
-    };
-  }
-  function settle(w) {
-    w.classList.remove("lka-morph");
-    [w.firstElementChild, w.querySelector(".lka-bud")].forEach(e => { if (!e) return; e.style.translate = ""; e.style.clipPath = ""; e.style.scale = ""; e.style.removeProperty("--lka-c"); e.style.removeProperty("--lka-sk"); });
-  }
-  function budSync(w) {
-    const n = S.q[0], want = !!n && n.cls === "ask", b = w.querySelector(".lka-bud"); if (!b) return;
-    b.firstElementChild.textContent = L2(BTN.ask); b.setAttribute("aria-label", L2(BTN.ask));
-    if (w._entering || w._out || want === S.budOn) return;
-    S.budOn = want;
-    const p = w.firstElementChild, r0 = p.getBoundingClientRect();
-    b.hidden = !want; place(w);
-    const D = PD();
-    if (want && D) {   // the bud splits off the right end
-      const G = geo(w); G.CX = r0.left + r0.width / 2;
-      w.classList.add("lka-morph"); const f = follow(w, G); f(PillDrop.scene("bud", 0, G));
-      D.play("bud", G, f).then(() => { if (S.pill === w && !w._out) { settle(w); lensOn(w); } });
-      return;
-    }
-    if (RM.matches) { if (want) b.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 150 }); lensOn(w); return; }
-    const r1 = p.getBoundingClientRect(), dx = (r0.left + r0.width / 2) - (r1.left + r1.width / 2);   // FLIP: the pill slides to its new centre
-    if (Math.abs(dx) > 0.5) p.animate([{ translate: `${dx}px 0` }, { translate: "0 0" }], { duration: 420, easing: "cubic-bezier(.22,1.4,.36,1)" });
-    if (want) b.animate([{ scale: 0, opacity: 0 }, { scale: 1, opacity: 1 }], { duration: 420, easing: "cubic-bezier(.22,1.4,.36,1)" });
-    lensOn(w);
-  }
+  /* a pill that is leaving gives up the id at once, so the next notice can grow while it still folds */
+  function retire(w) { w._out = true; w.removeAttribute("id"); w.classList.add("lka-gone"); if (S.pill === w) S.pill = null; }
   function paint(bump) {
-    const w = pillBox(), p = w.firstElementChild, n = S.q[0];
+    const w = pillBox(), p = pillOf(w), b = budOf(w), n = S.q[0];
     w.dataset.m = lookOf();
     p.className = "lka-pill lka-c-" + n.cls; p.innerHTML = pillHTML(n);
-    p.setAttribute("aria-label", `${nm(ag(n.agent))} · ${L2(TAG[n.cls])} · ${n.sub || ""}`);
-    if (bump && !RM.matches && !w._entering) p.animate([{ translate: "0 0" }, { translate: "0 3px", offset: .3 }, { translate: "0 -1px", offset: .7 }, { translate: "0 0" }], { duration: 450, easing: "ease-out" });
-    if (!w._entering) { place(w); budSync(w); lensOn(w); }
+    p.setAttribute("aria-label", `${nm(ag(n.agent))} · ${L2(TAG[n.cls])} · ${n.sub || ""} · ${L2(BTN[n.cls])}`);
+    b.className = "lka-bud lka-c-" + n.cls; b.firstElementChild.innerHTML = ico(n.cls);
+    b.setAttribute("aria-label", L2(BTN[n.cls])); b.title = L2(BTN[n.cls]);
+    if (bump && !RM.matches && !w._anim) p.animate([{ translate: "0 0" }, { translate: "0 3px", offset: .3 }, { translate: "0 -1px", offset: .7 }, { translate: "0 0" }], { duration: 450, easing: "ease-out" });
+    if (!w._anim) place(w);
     countdown();
   }
+  /* 5 s on screen (asks 8 s), then fold() into the summary. A target-less animation is the timer, so hover / focus / hidden pause it. */
   function countdown() {
     if (S.cd) { S.cd.cancel(); S.cd = null; }
-    const n = S.q[0]; if (!n || n.cls === "ask") return;   // asks wait for you
-    const bar = S.pill && S.pill.querySelector(".lka-pcd > i"); if (!bar) return;
-    S.cd = bar.animate([{ transform: "scaleX(1)" }, { transform: "scaleX(0)" }], { duration: HOLD, easing: "linear", fill: "forwards" });
-    S.cd.onfinish = () => { S.cd = null; const asks = S.q.filter(x => x.cls === "ask"); if (asks.length && S.pill && !S.pill._out) { S.q = asks; paint(false); } else pillOut(); };
-    if (document.hidden || (S.pill && ((S.mouse && S.pill.matches(":hover")) || S.pill.querySelector(":focus-visible") || S.pill.matches(":focus-visible")))) S.cd.pause();   // touch leaves a sticky :hover and tap focus behind; neither holds it
+    const n = S.q[0]; if (!n || !S.pill || S.pill._out) return;
+    S.cd = new Animation(new KeyframeEffect(null, null, { duration: n.cls === "ask" ? MINI : HOLD })); S.cd.play();
+    S.cd.onfinish = () => { S.cd = null; fold(); };
+    const w = S.pill;
+    if (document.hidden || (S.mouse && (pillOf(w).matches(":hover") || budOf(w).matches(":hover"))) || w.querySelector(":focus-visible")) S.cd.pause();   // touch leaves a sticky :hover and tap focus behind; neither holds it
   }
-  function pillAdd(list) {
+  function pillAdd(list, o = {}) {
     if (S.fs) { S.wait.push(...list); return; }
+    list.forEach(n => { n._at = n._at || Date.now(); });
     const was = S.q.length > 0 && S.pill && S.pill.isConnected && !S.pill._out;
-    if (!was) { if (window.PillDrop) PillDrop.stop(); if (S.pill) { S.pill.remove(); S.pill = null; } S.q = []; }
+    if (!was) S.q = [];
     S.q.push(...list);
     if (was) { paint(true); return; }
-    const w = pillBox(), D = PD();
-    if (D) w._entering = true;
-    paint(false);
-    const p = w.firstElementChild;
-    place(w);
-    if (RM.matches) { p.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 150, fill: "backwards" }); budSync(w); return; }
-    if (D) {
-      const G = geo(w), f = follow(w, G);
-      w.classList.add("lka-morph"); f(PillDrop.scene("in", 0, G));
-      D.play("in", G, f).then(() => { if (S.pill !== w || w._out) return; w._entering = false; settle(w); lensOn(w); budSync(w); });
-      return;
-    }
-    p.animate([{ transform: "translateY(-112px)" }, { transform: "none" }], { duration: 600, easing: "cubic-bezier(.22,1.6,.36,1)", fill: "backwards" });
-    p.animate([{ filter: "blur(6px)" }, { filter: "blur(0)" }], { duration: 330, easing: "ease-out", fill: "backwards" });
-    p.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 150, easing: "ease-out", fill: "backwards" });
-    budSync(w);
+    const w = pillBox(); paint(false); place(w);
+    if (RM.matches) { w.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 150, fill: "backwards" }); return; }
+    const G = geoRest(w); animStart(w);
+    const from = o.from || null, dur = (from ? PRE : 0) + IN_T;
+    play(dur, t => applyPill(w, G, enterFrame(G, t, from)), w).then(ok => { if (ok && !w._out) animEnd(w); });
+  }
+  /* the head notice and everything queued behind it go into the summary */
+  function fold() {
+    const w = S.pill; if (!w || w._out || !S.q.length) return;
+    if (w._anim) { setTimeout(() => { if (S.pill === w && !S.cd) fold(); }, 300); return; }
+    if (w.contains(document.activeElement)) document.activeElement.blur();
+    if (S.cd) { S.cd.cancel(); S.cd = null; }
+    const items = S.q.splice(0); retire(w);
+    S.bag = S.bag.filter(x => !items.includes(x)).concat(items);
+    const tgt = sumTarget();
+    if (RM.matches) { w.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 150, fill: "forwards" }).finished.then(() => w.remove(), () => w.remove()); sumLand(); return; }
+    const G = geoRest(w); animStart(w); let landed = false;
+    play(FOLD_T, e => { applyPill(w, G, foldFrame(G, e, tgt.x, tgt.y)); if (!landed && e >= LAND) { landed = true; sumLand(); } }, w)
+      .then(() => { w.remove(); if (!landed) sumLand(); });
   }
   function pillOut(o = {}) {
-    const w = S.pill; if (!w || w._out) return; w._out = true; S.q = []; if (S.cd) { S.cd.cancel(); S.cd = null; }
-    const p = w.firstElementChild, bud = w.querySelector(".lka-bud"), D = !o.fast && PD();
-    const gone = () => { if (w._out) w.remove(); if (S.pill === w) S.pill = null; };
-    if (D) {
-      if (window.PillDrop) PillDrop.stop(); settle(w);
-      const G = geo(w), f = follow(w, G);
-      w.classList.add("lka-morph"); f(PillDrop.scene("out", 0, G));
-      D.play("out", G, f).then(gone);
+    const w = S.pill; if (!w || w._out) return;
+    S.q = []; if (S.cd) { S.cd.cancel(); S.cd = null; }
+    retire(w);
+    if (RM.matches) { w.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 150, fill: "forwards" }).finished.then(() => w.remove(), () => w.remove()); return; }
+    if (w._anim) stop(w);
+    const G = geoRest(w); animStart(w);
+    play(OUT_T, e => applyPill(w, G, outFrame(G, e)), w).then(() => w.remove());
+  }
+  function next() { S.q.shift(); if (!S.q.length) return pillOut(); paint(false); const p = pillOf(S.pill); if (!RM.matches) p.animate([{ opacity: .3, filter: "blur(3px)" }, { opacity: 1, filter: "blur(0)" }], { duration: 220, easing: "ease-out" }); }
+
+  /* ---------- the header summary capsule (#lka-sum) ---------- */
+  function sumBox() {
+    let s = document.getElementById("lka-sum"); if (s) return s;
+    s = document.createElement("button"); s.type = "button"; s.id = "lka-sum"; s.className = "lka-pw"; s.hidden = true; s.setAttribute("data-nomo", "");
+    s.innerHTML = `<span class="lks-in"><span class="lks-avs"></span><span class="lks-tx"><b></b></span><i class="lks-sd" aria-hidden="true"></i><span class="lks-chev" aria-hidden="true">›</span></span><i class="lks-ring" aria-hidden="true"></i>`;
+    document.body.appendChild(s); return s;
+  }
+  function sumText() {
+    const B = S.bag, w = B.filter(n => WAITK(n.cls)).length, o = B.length - w, E = en();
+    if (w) return E ? `${w} waiting${o ? ` · ${o} more` : ""}` : `${w} 条等你${o ? ` · 还有 ${o} 条` : ""}`;
+    const rep = B.every(n => n.cls === "reply");
+    return E ? (rep ? `${o} new ${o > 1 ? "replies" : "reply"}` : `${o} ${o > 1 ? "updates" : "update"}`) : (rep ? `${o} 条新回复` : `${o} 条更新`);
+  }
+  const sumWho = () => [...new Set(S.bag.slice().reverse().map(n => n.agent).filter(Boolean))].slice(0, 3);
+  function sumFill(s) {
+    const who = sumWho(), txt = sumText(), wait = S.bag.some(n => WAITK(n.cls));
+    s.dataset.m = lookOf(); s.classList.toggle("lks-wait", wait);
+    s.querySelector(".lks-avs").innerHTML = who.map(id => `<img src="${esc(av(ag(id)))}" alt="" data-a="${esc(id)}">`).join("");
+    s.querySelector(".lks-tx b").textContent = txt;
+    const lab = txt + (en() ? " · show" : " · 点开"); s.setAttribute("aria-label", lab); s.title = lab;
+  }
+  /* right-aligned in the top bar, left of the 信箱 / chat buttons (desk) or at the right end (phone); never over the brand, sync chip or Chrome chip */
+  function sumPos(s) {
+    const g = GM(), t = document.getElementById("top"), brand = document.getElementById("brand");
+    const br = brand && brand.getBoundingClientRect(), cy = br && br.height ? br.top + br.height / 2 : (t ? t.getBoundingClientRect().top + g.SH : 28);
+    let right = innerWidth - (PHONE.matches ? 10 : 22), left = br ? br.right + 12 : 12;
+    if (!PHONE.matches) {
+      const hc = [...document.querySelectorAll("#hdrctrl > *")].map(e => e.getBoundingClientRect()).filter(r => r.width && r.height);
+      if (hc.length) right = Math.min(...hc.map(r => r.left)) - 14;
+      ["#sync", "#toolbar .tool-pill"].forEach(q => { const e = document.querySelector(q), r = e && e.getBoundingClientRect(); if (r && r.width && r.bottom > cy - 14 && r.top < cy + 14) left = Math.max(left, r.right + 12); });
+    }
+    s.style.setProperty("--lks-r", Math.round(innerWidth - right) + "px"); s.style.setProperty("--lks-cy", Math.round(cy) + "px");
+    s.style.setProperty("--lks-max", Math.max(g.SH + 40, Math.round(right - left)) + "px");
+  }
+  /* where the bead should go: the summary's centre (as it will be when it holds the new notices) */
+  function sumTarget() {
+    const s = sumBox(); sumPos(s);
+    if (!s.hidden && !s._out) { const r = s.getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2 }; }
+    const keep = s.innerHTML; sumFill(s); s.style.visibility = "hidden"; s.hidden = false;
+    const r = s.getBoundingClientRect(); s.hidden = true; s.style.visibility = ""; s.innerHTML = keep;
+    return { x: r.left + r.width / 2, y: r.top + r.height / 2 };
+  }
+  function ring(s, t) {
+    const e = s.querySelector(".lks-ring").style, k = seg(t, 0, .47);
+    if (k <= 0 || k >= 1) { e.visibility = "hidden"; return; }
+    const g = GM().ring * eOut(k); e.visibility = ""; e.inset = `${-g}px`; e.opacity = (.6 * (1 - k)).toFixed(3);
+  }
+  function sumRest(s) { ["width", "height", "opacity"].forEach(k => s.style[k] = ""); s.style.removeProperty("--lks-c"); s.style.removeProperty("--lks-bl"); s.querySelector(".lks-ring").style.visibility = "hidden";
+    s.querySelectorAll(".lks-old").forEach(e => e.remove()); s.querySelectorAll(".lks-tx b, .lks-avs img").forEach(e => { e.style.opacity = ""; e.style.transform = ""; e.style.marginRight = ""; }); }
+  /* a bead landed: the summary appears (grows out of the bead) or swaps its words, then rings */
+  function sumLand() {
+    if (!S.bag.length) return;
+    const s = sumBox(), was = !s.hidden && !s._out;
+    const r0 = was ? s.getBoundingClientRect() : null, oldTx = s.querySelector(".lks-tx b").textContent, oldWho = [...s.querySelectorAll(".lks-avs img")].map(i => i.dataset.a);
+    stop(s); sumRest(s); s._out = false; sumFill(s); sumPos(s); s.hidden = false;
+    const r1 = s.getBoundingClientRect(), W1 = r1.width, H1 = r1.height;
+    if (RM.matches) { if (!was) s.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 150, fill: "backwards" }); return; }
+    if (!was) {
+      play(.8, t => {
+        s.style.width = lerp(22, W1, under(t, 15, .8)).toFixed(2) + "px"; s.style.height = lerp(16, H1, eOut(seg(t, 0, .16))).toFixed(2) + "px";
+        s.style.setProperty("--lks-c", eOut(seg(t, .12, .26)).toFixed(3)); s.style.setProperty("--lks-bl", (4 * (1 - seg(t, .12, .26))).toFixed(2) + "px");
+        ring(s, t - .27);
+      }, s).then(ok => { if (ok) sumRest(s); });
       return;
     }
-    if (window.PillDrop) PillDrop.stop();
-    const a = RM.matches ? w.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 150, fill: "forwards" })
-      : p.animate([{ transform: "none", opacity: 1, filter: "blur(0)" }, { opacity: 1, filter: "blur(0)", offset: .6 }, { transform: "translateY(-112px)", opacity: 0, filter: "blur(4px)" }],
-        { duration: 380, easing: "cubic-bezier(.55,0,.75,.2)", fill: "forwards" });
-    if (!RM.matches && bud && !bud.hidden) bud.animate([{ opacity: 1 }, { opacity: 0, scale: .6 }], { duration: 240, fill: "forwards" });
-    a.finished.then(gone, () => { });
+    const b = s.querySelector(".lks-tx b"), old = document.createElement("b"); old.className = "lks-old"; old.textContent = oldTx; old.setAttribute("aria-hidden", "true");
+    const swap = oldTx !== b.textContent; if (swap) b.parentNode.appendChild(old);
+    const fresh = [...s.querySelectorAll(".lks-avs img")].filter(i => !oldWho.includes(i.dataset.a)), W0 = r0.width;
+    play(.8, t => {
+      s.style.width = lerp(W0, W1, under(t, 16, .78)).toFixed(2) + "px";
+      if (swap) { const xo = seg(t, 0, .1), xi = eOut(seg(t, .08, .22));
+        old.style.opacity = (1 - xo).toFixed(3); old.style.transform = `translateY(${(-4 * xo).toFixed(2)}px)`;
+        b.style.opacity = xi.toFixed(3); b.style.transform = `translateY(${(4 * (1 - xi)).toFixed(2)}px)`; }
+      const ka = eOut(seg(t, 0, .2)); fresh.forEach(i => { i.style.opacity = ka.toFixed(3); i.style.transform = `translateX(${(-8 * (1 - ka)).toFixed(2)}px)`; });
+      ring(s, t - .2);
+    }, s).then(ok => { if (ok) sumRest(s); });
   }
-  function next() { S.q.shift(); if (!S.q.length) return pillOut(); paint(false); const p = S.pill.firstElementChild; if (!RM.matches) p.animate([{ opacity: .3, filter: "blur(3px)" }, { opacity: 1, filter: "blur(0)" }], { duration: 220, easing: "ease-out" }); }
-  /* an ask answered (or closed) elsewhere leaves the queue; the pill goes when nothing is left */
+  function sumHide() {
+    const s = document.getElementById("lka-sum"); if (!s || s.hidden || s._out) return;
+    s._out = true; stop(s);
+    const done = ok => { if (ok !== false && s._out) { s.hidden = true; sumRest(s); } };
+    if (RM.matches) { s.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 150 }).finished.then(done, () => { }); return; }
+    const r = s.getBoundingClientRect();
+    play(.28, t => { s.style.width = lerp(r.width, 22, eIO(seg(t, 0, .2))).toFixed(2) + "px"; s.style.height = lerp(r.height, 16, eIO(seg(t, .05, .22))).toFixed(2) + "px";
+      s.style.setProperty("--lks-c", (1 - seg(t, 0, .1)).toFixed(3)); s.style.opacity = (1 - seg(t, .18, .28)).toFixed(3); }, s).then(done);
+  }
+  /* the bag changed without a landing (something was answered / opened / expired): redraw quietly */
+  function sumSync() {
+    const s = document.getElementById("lka-sum"); if (!s || s.hidden || s._out) return;
+    if (!S.bag.length) return sumHide();
+    sumFill(s); sumPos(s);
+  }
+  /* tap the summary: the notices come back out of it (waiting ones first) */
+  function expand() {
+    if (!S.bag.length) return;
+    const s = sumBox(), r = s.getBoundingClientRect(), from = { x: r.left + r.width / 2, y: r.top + r.height / 2 };
+    const rank = n => n.cls === "ask" ? 0 : n.cls === "decide" ? 1 : 2;
+    const items = S.bag.splice(0).reverse().sort((a, b) => rank(a) - rank(b));
+    sumHide();
+    if (S.pill && !S.pill._out && S.q.length) { S.q.push(...items); paint(true); return; }
+    pillAdd(items, { from });
+  }
+
+  /* an ask answered (or closed) elsewhere, a card that left review, an old reply: out of the queue and the summary */
+  function live(n) {
+    if (!n.it) return n.cls === "ask" || WAITK(n.cls) || Date.now() - (n._at || 0) < BAG_TTL;
+    const it = App.items().find(i => i.id === n.it.id); if (!it) return false;
+    if (n.cls === "ask") { const asks = App.openAsks ? App.openAsks(it) : (it.asks || []).filter(a => !a.answer && !a.closed); return asks.some(a => n.ask ? a.id === n.ask : a.q === n.text); }
+    if (n.cls === "decide") return it.stage === "review";
+    return true;
+  }
   function prune() {
-    const w = S.pill; if (!w || w._out || !S.q.length) return;
-    const live = n => { if (n.cls !== "ask" || !n.it) return true; const it = App.items().find(i => i.id === n.it.id); if (!it) return false;
-      const asks = App.openAsks ? App.openAsks(it) : (it.asks || []).filter(a => !a.answer && !a.closed); return asks.some(a => n.ask ? a.id === n.ask : a.q === n.text); };
-    const keep = S.q.filter(live); if (keep.length === S.q.length) return;
-    if (!keep.length) return pillOut();
-    const head = keep[0] === S.q[0]; S.q = keep; paint(false);
-    if (!head && !RM.matches) w.firstElementChild.animate([{ opacity: .3, filter: "blur(3px)" }, { opacity: 1, filter: "blur(0)" }], { duration: 220, easing: "ease-out" });
+    const w = S.pill;
+    if (w && !w._out && S.q.length) {
+      const keep = S.q.filter(n => n.cls !== "ask" || live(n));
+      if (keep.length !== S.q.length) {
+        if (!keep.length) pillOut();
+        else { const head = keep[0] === S.q[0]; S.q = keep; paint(false); if (!head && !RM.matches) pillOf(w).animate([{ opacity: .3, filter: "blur(3px)" }, { opacity: 1, filter: "blur(0)" }], { duration: 220, easing: "ease-out" }); }
+      }
+    }
+    if (S.bag.length) {
+      const keep = S.bag.filter(n => live(n) && (WAITK(n.cls) || Date.now() - (n._at || 0) < BAG_TTL));
+      if (keep.length !== S.bag.length) { S.bag = keep; sumSync(); }
+    }
   }
   App.on(() => prune());
-  /* the look follows day / night and the texture while the pill is up */
-  new MutationObserver(() => { const w = S.pill; if (w && w.isConnected) { w.dataset.m = lookOf(); if (!w._entering && !w._out) lensOn(w); } })
+  setInterval(() => { if (S.bag.length) prune(); }, 60e3);
+  /* the look follows day / night and the texture */
+  new MutationObserver(() => { document.querySelectorAll(".lka-pw").forEach(e => { e.dataset.m = lookOf(); }); })
     .observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme", "data-texture"] });
+  addEventListener("resize", () => { const s = document.getElementById("lka-sum"); if (s && !s.hidden) sumPos(s); if (S.pill && !S.pill._anim) place(S.pill); });
   function open(n) {
     if (n.cls === "eod") return App.route("#page=review");
     if (n.it) App.route("#item=" + encodeURIComponent(n.it.id));
     else if (n.chat) { App.route("#dm=" + encodeURIComponent(n.chat)); if (App.UI.chatFold) { const f = document.querySelector("#right .ch-fold"); f && f.click(); } }
   }
   document.addEventListener("click", e => {
+    if (e.target.closest && e.target.closest("#lka-sum")) { expand(); if (e.detail === 0) setTimeout(() => { if (S.pill) pillOf(S.pill).focus(); }, 0); return; }
     const p = e.target.closest && e.target.closest("#lka-pw .lka-pill, #lka-pw .lka-bud"); if (!p || !S.pill || S.pill._out) return;
     if (p._swiped && Date.now() - p._swiped < 400) return;
     if (e.target.closest("[data-lka-more]")) return next();
     const n = S.q[0]; if (n) open(n); next();
   });
   document.addEventListener("keydown", e => {
+    if (e.key === "Escape" && e.target.closest && e.target.closest("#lka-sum")) { S.bag = []; return sumHide(); }
     const p = e.target.closest && e.target.closest("#lka-pw .lka-pill"); if (!p) return;
     if (e.key === "Escape") pillOut();   // t-pill-wellness: also closes an ask without answering it
     else if ((e.key === "Enter" || e.key === " ") && !e.target.closest("[data-lka-more]")) { e.preventDefault(); const n = S.q[0]; if (n) open(n); next(); }
   });
   const hold = on => { if (!S.cd) return; if (on) S.cd.pause(); else if (!document.hidden) S.cd.play(); };
-  document.addEventListener("pointerover", e => { if (e.pointerType === "mouse" && e.target.closest && e.target.closest("#lka-pw .lka-pill")) hold(true); });
-  document.addEventListener("pointerout", e => { const p = e.target.closest && e.target.closest("#lka-pw .lka-pill"); if (p && e.pointerType === "mouse" && !p.contains(e.relatedTarget)) hold(false); });
+  document.addEventListener("pointerover", e => { if (e.pointerType === "mouse" && e.target.closest && e.target.closest("#lka-pw .lka-pill, #lka-pw .lka-bud")) hold(true); });
+  document.addEventListener("pointerout", e => { const p = e.target.closest && e.target.closest("#lka-pw .lka-pill, #lka-pw .lka-bud"); if (p && e.pointerType === "mouse" && !p.contains(e.relatedTarget)) hold(false); });
   addEventListener("pointerdown", e => { S.mouse = e.pointerType === "mouse"; }, true);
   document.addEventListener("focusin", e => { if (e.target.closest && e.target.closest("#lka-pw") && e.target.matches(":focus-visible")) hold(true); });
   document.addEventListener("focusout", e => { if (e.target.closest && e.target.closest("#lka-pw") && !(e.relatedTarget && e.relatedTarget.closest && e.relatedTarget.closest("#lka-pw"))) hold(false); });
   document.addEventListener("visibilitychange", () => hold(document.hidden));
   /* swipe up to dismiss (finger or mouse drag) */
   const SW = {};
-  document.addEventListener("pointerdown", e => { const p = e.target.closest && e.target.closest("#lka-pw .lka-pill"); if (!p || e.button !== 0) return; SW.p = p; SW.id = e.pointerId; SW.y = e.clientY; SW.x = e.clientX; SW.on = false; });
+  document.addEventListener("pointerdown", e => { const p = e.target.closest && e.target.closest("#lka-pw .lka-pill"); if (!p || e.button !== 0 || S.pill._anim) return; SW.p = p; SW.id = e.pointerId; SW.y = e.clientY; SW.x = e.clientX; SW.on = false; });
   document.addEventListener("pointermove", e => {
     if (!SW.p || e.pointerId !== SW.id) return;
     const dy = e.clientY - SW.y;
@@ -289,6 +463,7 @@
     if (e.type === "pointerup" && dy < -28) pillOut({ fast: true }); else hold(false);
   };
   document.addEventListener("pointerup", swEnd); document.addEventListener("pointercancel", swEnd);
+
 
   /* ---------- intake ---------- */
   /* toast.js hands over its fresh notices ({t, cls, agent, it, text, chat}); line = its one-line text. Returns true when they are ours. */
@@ -323,5 +498,7 @@
 
   /* t-onboard-tour: the tour closed; what arrived meanwhile comes in as the quiet top pill (never the full-screen arrival) */
   function release() { const h = S.held || []; S.held = []; if (h.length && mode() !== "off") route(h); }
-  window.LookAway = { release, take, route, fsPlay, fsEnd, pillAdd, pillOut, mode, fsBlock, eodCheck, _S: S };
+  /* _clock(t): freeze the pill clock at t seconds and draw that moment (frame-exact recordings); _clock(null) = real time again */
+  window.LookAway = { release, take, route, fsPlay, fsEnd, pillAdd, pillOut, fold, mini: fold, expand, mode, fsBlock, eodCheck, _S: S,
+    _clock: t => { CK.man = t; if (t == null) kick(); else step(); } };
 })();
