@@ -34,9 +34,13 @@ case "${1:-}" in
       --exclude '/tools/models/' --exclude '/tools/voice/' --exclude '/logs/' --exclude '/uploads/' --exclude '/work/' \
       --exclude '/archive/' --exclude '/rcshots/' --exclude '/.claude/' --exclude '/.live/' --exclude '*.bak*' --exclude '*.tar' \
       --exclude '/.git/' --exclude '/.demo/' --exclude '/.backups/' --exclude '/local/backups/' --exclude 'node_modules/' --exclude '/tests/e2e/out/' --exclude '/.split-backup/' \
+      --exclude '/avatars/me.*' --exclude '/avatars/me-*' --exclude '/avatars/*/me.*' --exclude '/avatars/*/me-*' \
       --exclude '/.state.lock' --exclude '/.inbox.lock' --exclude '/state.json.tmp' --exclude '/.verify.pid' --exclude '/verify-server.log' \
       "$ROOT/" "$S/"
     rm -f "${S:?}/push_subs.json"            # no test message may reach the user's phone
+    # the owner's own photo (avatars/me.png and its avatars/_s/me-*.webp sizes) never goes into a scratch copy; rsync --delete
+    # keeps excluded files, so also remove any left by an older copy
+    find "$S/avatars" \( -name 'me.*' -o -name 'me-*' \) -type f -delete 2>/dev/null || true
     if [ "$DATA" = fixtures ]; then python3 "$ROOT/tests/e2e/fixtures/load.py" "$S" >/dev/null || exit 1; fi
     mkdir -p "$S/logs"
     ( cd "$S" || exit 1; PORT="$PORT" NO_LOOPS=1 nohup python3 server.py >"$S/verify-server.log" 2>&1 </dev/null & echo $! >"$PIDF" )   # simple command, so $! is the server itself

@@ -63,7 +63,7 @@ const pauseL = () => UI.lang === "en" ? "Paused" : "暂停";
 const ballOnYou = i => { const th = i.thread || []; for (let k = th.length - 1; k >= 0; k--) { const e = th[k]; if (!e || e.kind === "event") continue; return e.who !== "me" && e.kind === "msg" ? e : null; } return null; };
 const youOweL = e => { const d = Math.floor((Date.now() - (Date.parse(e.t) || Date.now())) / 864e5); return UI.lang === "en" ? (d >= 1 ? `Your reply · ${d}d` : "Your reply") : (d >= 1 ? `等你回 ${d} 天` : "等你回"); };
 const idleL = i => { if (standing(i)) return UI.lang === "en" ? "Ongoing" : "常驻"; const e = ballOnYou(i); return e ? youOweL(e) : pauseL(); };
-const items = () => (ST.items || []).filter(i => !i.archived);
+const items = () => ((ST && ST.items) || []).filter(i => !i.archived);
 /* r-improve-1119 P1: one 「等了多久」 for every place (card tag, 等你拍板 widget rows + footer, notice line, phone 「最久 N」): the wait starts at the
    last 提交审核 event in the thread (a manager log line or a comment does not reset it); no such event -> it.updated. Always rounded down. */
 /* r-improve-1124 P4: a card not in review (waiting on a plan / a question) waits from its oldest open question (asked, not answered, not closed);
