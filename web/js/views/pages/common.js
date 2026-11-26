@@ -5,14 +5,14 @@
 
 // ---------- pages ----------
 // t-visual-ink: date eyebrow above every page title (hidden unless html[data-skin="ink"])
-import { EN_SUB, PLAT, rtTag, stageLabel, t, whenH } from "../../core/i18n.js";
-import { UI, idleDoing, idleL, waitSince } from "../../core/store.js";
+import { EN_SUB, PLAT, stateTag, t, whenH } from "../../core/i18n.js";
+import { UI, waitSince } from "../../core/store.js";
 import { agent, aname, av } from "../../core/av.js";
 import { orn } from "../../core/ui.js";
 import { routineOf } from "../drawer.js";
 import { STU, stuName, stuTabs } from "../left.js";
 import { mailPv, nrDot, sumPv } from "../mail.js";
-import { askRow, awaitsUser, cardImg, waitTag } from "./review.js";
+import { askRow, askWait, askWaitL, awaitsUser, cardImg, waitTag } from "./review.js";
 import { wkAttr, wkFx, wkTag, workersOf } from "../../app.js";
 function inkEb(right) { const d = new Date(), en = UI.lang === "en";
   const day = en ? d.toLocaleDateString("en-US", { month: "short", day: "numeric", weekday: "short" }) : `${d.getMonth() + 1}月${d.getDate()}日 · 周${"日一二三四五六"[d.getDay()]}`;
@@ -35,7 +35,7 @@ function card(it, o) {   /* o.noCat (r-improve-1116 P3): on that category's own 
   const desk = o && o.cover && !MOBQ.matches, img0 = desk && cardImg(it), img = img0 && QC_CV.get(img0) !== "blank" ? img0 : null, u = img && "/" + img.split("/").map(encodeURIComponent).join("/");
   const cv = img ? `<div class="qc-cv"><img${QC_CV.get(img) === "ok" ? ` class="ok"` : ""} data-qcp="${esc(img)}" src="/api/thumb?p=${encodeURIComponent(img)}&w=780" alt="" loading="lazy" onload="qcCvChk(this)" onerror="if(!this.dataset.f){this.dataset.f=1;this.src='${u}'}else{this.parentNode.closest('.card').classList.remove('has-cv');this.parentNode.remove()}"></div>` : "";
   return `<div class="card${ws.length ? " wk-on" : ""}${img ? " has-cv" : ""}" data-item="${it.id}"${wkAttr(ws)}>${wkFx(ws)}${cv}
-    <div class="meta">${kind ? `<span class="tag ${kind}"><span class="gl" aria-hidden="true">◆</span>${t(kind)}</span>${waitTag(it, desk)}` : `<span class="tag">${rtTag(it) || (idleDoing(it) ? idleL(it) : stageLabel(it.stage))}</span>`}
+    <div class="meta">${kind ? `<span class="tag ${kind}"><span class="gl" aria-hidden="true">◆</span>${t(kind)}</span>${waitTag(it, desk)}` : askWait(it) ? `<span class="tag question"><span class="gl" aria-hidden="true">◆</span>${askWaitL()}</span>` : `<span class="tag">${stateTag(it)}</span>`}
       ${o && o.noCat ? "" : `<span>${t(it.category)}${it.category === "urgent" ? " ⚑" : ""}</span>`}
       ${cardDt(it)}
       <span>${(it.platforms || []).map(p => `<span class="tag pf">${PLAT[p] || p}</span>`).join(" ")}</span></div>

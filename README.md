@@ -1,9 +1,11 @@
 <div align="center">
 
+<h1>
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="web/brand/wordmark-on-dark@2x.png">
-  <img alt="Underthread" src="web/brand/wordmark-on-light@2x.png" width="320">
+  <img alt="Underthread: open-source AI agent team for Claude Code" src="web/brand/wordmark-on-light@2x.png" width="320">
 </picture>
+</h1>
 
 ### Your AI crew, stitched into one inbox.
 #### You just say yes, no, or "try again".
@@ -20,7 +22,7 @@
 
 </div>
 
-**What it is.** Underthread is a local dashboard plus a small team of [Claude Code](https://docs.claude.com/en/docs/claude-code) agents. One long-running Claude Code session, the **steward**, reads what you type in the dashboard, turns it into cards, and hands each card to a specialist subagent. The specialists bring back drafts, plans and files. You approve, reject with a reason, or answer a question with one tap.
+**What it is.** Underthread is an open-source, local-first AI agent team for [Claude Code](https://docs.claude.com/en/docs/claude-code): a dashboard plus a small crew of agents that do real tasks and bring back drafts for you to approve. One long-running Claude Code session, the **steward**, reads what you type in the dashboard, turns it into cards, and hands each card to a specialist subagent. The specialists bring back drafts, plans and files. You approve, reject with a reason, or answer a question with one tap.
 
 **Who it's for.** People who already use Claude Code and have more small projects in flight than they can keep in their head: research, writing, planning, small tooling fixes, recurring chores. If you'd rather review a queue than babysit a chat window, it's for you.
 

@@ -599,7 +599,7 @@
   const CORE = [
     ["usage", ["各角色用量", "Usage by role"], ["s", "m", "l"], "l"],
     ["review", ["等你拍板", "Waiting on you"], ["s", "m", "l"], "l", D => !D.waiting.length, ["没有等你拍板的", "Nothing waiting on you"]],
-    ["busy", ["此刻在忙", "Working now"], ["s", "m", "l"], "l", D => !D.busy.length, ["大家都在待机", "Everyone is idle", false]],
+    ["busy", ["此刻在忙", "Busy now"], ["s", "m", "l"], "l", D => !D.busy.length, ["大家都空闲", "Everyone is idle", false]],
     ["replies", ["新回复", "New replies"], ["s", "m", "l"], "l", D => !D.nr.length, ["没有新回复", "No new replies"]],
     ["today", ["今天交付", "Shipped today"], ["s", "m", "l"], "m", D => !D.shipped.length, ["今天还没有交付", "Nothing shipped today", false]],
     ["week", ["本周进度", "This week"], ["s", "m", "l"], "m"],

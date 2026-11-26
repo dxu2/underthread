@@ -364,8 +364,8 @@
         return pickVis(['.hd-stat[data-hd-f="review"]', '#nav [data-go="review"]']); },
       phone: () => pickVis(['.hd-stat[data-hd-f="review"]']), side: "bottom", rad: 18 },
     { id: "team", t: ["团队：谁在干活一眼看到", "Team: who is working, at a glance"], pt: ["谁在干活，一眼看到", "Who is working, at a glance"],
-      b: ["左边是你的团队。正在干活的人名字旁写着<em>执行中</em>，下面一行是他在干什么；他在做哪张卡，看首页「此刻在忙」那一格。名字旁的「排队 N」是还等他开工的卡数。点名字就能私信。",
-          "Your team is on the left. Whoever is busy says <em>working</em> next to their name, with what they are doing underneath; the card they are on is in “Working now” on Home. “Queued N” by a name counts the cards still waiting for them to start. Click a name to message them."],
+      b: ["左边是你的团队。正在干活的人名字旁写着<em>在忙</em>，下面一行是他在干什么；他在做哪张卡，看首页「此刻在忙」那一格。名字旁的「排队 N」是还等他开工的卡数。点名字就能私信。",
+          "Your team is on the left. Whoever is busy says <em>busy</em> next to their name, with what they are doing underneath; the card they are on is in “Busy now” on Home. “Queued N” by a name counts the cards still waiting for them to start. Click a name to message them."],
       /* t-onboard-review ⑤ (home V3): idle board = no working rows, so the copy says where they will show up and points at the 「N 人空闲」 stack */
       pb: () => { const sn = $("#officebox .a2-sn"), n = sn ? sn.textContent.replace(/[›\s]+$/, "").trim() : "", busy = !!$("#officebox .a2-rows > *");
         return busy ? ["正在干活的人排在这一格最上面，下面一行是他在做的卡，点一下就打开。" + (n ? `点「${n}」能看到其余队员，点头像就能私信。` : ""), "Whoever is working sits at the top of this card with the card they are on; tap it to open." + (n ? ` Tap “${n}” for the rest of the team, and a face to message them.` : "")]

@@ -1,9 +1,11 @@
 <div align="center">
 
+<h1>
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="web/brand/wordmark-on-dark@2x.png">
-  <img alt="Underthread" src="web/brand/wordmark-on-light@2x.png" width="320">
+  <img alt="Underthread：开源的 Claude Code AI 智能体小队" src="web/brand/wordmark-on-light@2x.png" width="320">
 </picture>
+</h1>
 
 ### 一个管家，一支 AI 小队，你只管点头。
 #### 你只需要说：行、不行、再来一版。
@@ -20,7 +22,7 @@
 
 </div>
 
-**这是什么。** Underthread 是一个跑在你自己电脑上的看板，加上一支由 [Claude Code](https://docs.claude.com/en/docs/claude-code) 驱动的小队。一个常驻的 Claude Code 会话当**管家**：你在看板里说的话，它整理成卡片，再派给对应的专员（Claude Code 子代理）。专员交回来的是草稿、计划和文件，你来批准、驳回（写一句原因），或者点一下回答它的问题。
+**这是什么。** Underthread 是一个开源的 AI 智能体小队（多智能体看板），跑在你自己电脑上，由 [Claude Code](https://docs.claude.com/en/docs/claude-code) 驱动。一个常驻的 Claude Code 会话当**管家**：你在看板里说的话，它整理成卡片，再派给对应的专员（Claude Code 子代理）。专员交回来的是草稿、计划和文件，你来批准、驳回（写一句原因），或者点一下回答它的问题。
 
 **给谁用。** 已经在用 Claude Code、手上同时挂着一堆小事的人：查资料、写东西、做计划、修小工具、每天要做的杂事。比起盯着一个聊天窗口，你更想每天过一遍待审队列，那就适合你。
 

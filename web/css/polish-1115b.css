@@ -47,3 +47,20 @@
 }
 @media (max-width: 760px) { #right .ch-comp > .ch-send { display: none; } }   /* the phone keeps its own send button (phone/composer.js) */
 @media (prefers-reduced-motion: reduce) { #right .ch-comp > .ch-send svg { transition: none; } }
+
+/* ===== r-improve-1125 ===== */
+/* P5: on the desktop 信箱 page the top-right mailbox icon is lit (header.js adds .ri25-on + aria-current); the rail row is hidden on desktop */
+html .hdr-ctrl .hc-mail.ri25-on { color: var(--accent); background-color: color-mix(in srgb, var(--accent) 18%, var(--panel)) !important;
+  box-shadow: inset 0 0 0 1.5px var(--accent), var(--kn-puff, 0 0 0 transparent) !important; transition: background-color var(--m-base, .22s) ease, box-shadow var(--m-base, .22s) ease; }
+html .hdr-ctrl .hc-mail.ri25-on > svg { stroke: var(--accent); }
+/* P4: phone detail header, while the title shows: the two copy icons go, the title copies the id on tap and the link on a 0.5 s hold */
+@media (max-width: 760px) {
+  #drawer .dw-lead.dw-ht-on .dw-id { display: none; }
+  #drawer .dw-lead.dw-ht-on .dw-ht { cursor: pointer; -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; touch-action: manipulation;
+    border-radius: 6px; transition: opacity .12s ease, background-color .2s ease; }
+  #drawer .dw-lead.dw-ht-on .dw-ht:active { opacity: .6; }
+  #drawer .dw-lead.dw-ht-on .dw-ht.ri25-hold { background-color: color-mix(in srgb, var(--accent) 16%, transparent); opacity: 1; }
+}
+/* P1: a picked option now stays on the lane card for the 4.5 s hold; the lane cards' light chip fill (quest-cards.css) hid the white label of .on */
+html[data-theme] #pagebody .qc-grid .card .ask-o.on:not(.ghost) { background: var(--accent); color: var(--accent-ink); border-color: var(--accent);
+  box-shadow: 0 1px 0 color-mix(in srgb, var(--accent) 55%, #000); transition: background-color var(--m-fast, .15s) ease, color var(--m-fast, .15s) ease; }

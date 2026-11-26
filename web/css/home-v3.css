@@ -5,7 +5,11 @@
    Status-card rules sit under #officebox so the 墨刊 skin's html[data-skin] .hd-stat rules do not reshape the patch. Motion: transform / opacity only, played once. */
 
 /* ---------- status card ---------- */
-#officebox .hv3 .a2-rest-t { font-family: var(--f-display); font-size: 26px; font-weight: 600; line-height: 1.15; letter-spacing: -.01em; color: var(--ink); }
+#officebox .hv3 .a2-rest-t { font-family: var(--f-display); font-size: var(--fs-20); font-weight: 600; line-height: 28px; letter-spacing: -.01em; color: var(--ink); }
+/* t-mobile-title (11-25): the headline is a section title, not a hero. 20px = the tag numbers, under the 46px 「on you」 number; its 28px line box
+   shares one centre line with the search button, and the button sits on the card's 12px inset (it hung on the corner stitch at 8px). */
+#officebox .hv3 > .a2-srch { top: 12px; right: 12px; }
+#officebox .hv3 .a2-rest, #officebox .hv3 .a2-rows > .a2-r:first-child .a2-b { padding-right: 36px; }
 #officebox .hv3 .a2-rows:empty + .a2-rest:not([hidden]) + .a2-stack { margin-top: 6px; }
 #officebox .hv3 .a2-faces i { width: 24px; height: 24px; }
 #officebox .hv3-st { display: grid; gap: 8px; margin-top: 12px; }

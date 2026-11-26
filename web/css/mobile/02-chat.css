@@ -9,6 +9,8 @@
 .cs-line .in { justify-content: flex-start; flex-wrap: wrap; column-gap: 6px; }
 .cs-line .tx { flex-basis: 100%; padding-left: 0; }
 .cs-jump { bottom: 6px; } .cs-jump .wrap { right: -13px; gap: 6px; }
+/* r-improve-1126 P4: the ↑↓ buttons sat over the card text (10 of 24 spots); the scroll leaves 20px more on the right and the buttons shrink to 32px at the screen edge */
+#drawer .dw-scroll { padding-right: 36px; } #drawer .cs-jump .wrap { right: -34px; } #drawer .cs-jump button { width: 32px; height: 32px; }
 .cs-jump .lb, .cs-jump button:hover .lb { display: none; }
 .at-pop { left: 16px; right: 16px; min-width: 0; }
 .at-pop div { padding: 10px 14px; font-size: var(--fs-15); }

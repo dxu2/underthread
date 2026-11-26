@@ -40,6 +40,10 @@ function reviewCard(it, fresh) {
 // ===== t-imp-p1: 等你拍板 = review items + waiting items whose open draft is a plan or a question (the owner is waiting on the user).
 // Shown as compact rows under the review cards; when nothing is waiting on review, the page shows 此刻 (who is working on what) and 今天交付.
 const awaitsUser = it => !!it && it.stage === "waiting" && (it.kind === "plan" || it.kind === "question");
+/* r-improve-1125 P3: a waiting card of another kind (task / deliverable) that still holds a question for the user is listed in 等你拍板 as 「问题」;
+   its small stage tag (list card, detail header, search rows) says the same instead of 「等别人」. The stage menu keeps the real stage. */
+const askWait = it => !!it && it.stage === "waiting" && !awaitsUser(it) && openAsks(it).length > 0;
+const askWaitL = () => UI.lang === "en" ? "Question" : "问题";
 // t-wait-days: a card on the user (review, or waiting on a plan / question) for more than 24 h gets an amber 「等了 N 天」 tag (same idea as 暂停).
 // The wait starts at the last 提交审核 event in the thread; no such event -> it.updated.
 /* r-improve-1119 P1: waitSince now lives in core/store.js (shared with widgets, ticker and the phone hero) */
@@ -87,8 +91,8 @@ const optDone = (opts, said, at) => {   // r-improve-1102 P1; t-option-quote: at
   const hit = many.length > 1 ? many.join("、") : opts.map(norm).find(o => o && (s === o || s.startsWith(o)));
   return `<div class="opt-done">${hit ? (en ? `✓ You chose “${esc(hit)}”` : `✓ 你选了「${esc(hit)}」`) : (en ? "Replied" : "已回复")}${hit && at ? ` · ${whenH(at)}` : ""}</div>`;
 };
-const AR = { pending: null, timer: 0 };   // pending = { id, picks: [{ ask, opt }] }
-const arPick = (id, askId) => { const p = AR.pending; return p && p.id === id ? (p.picks.find(x => x.ask === askId) || {}).opt : undefined; };
+const AR = { pending: null, timer: 0, sent: null };   // pending = { id, picks: [{ ask, opt }], hand }; sent = the batch in flight (keeps the chip lit until the poll has the answer)
+const arPick = (id, askId) => { for (const p of [AR.pending, AR.sent]) { const x = p && p.id === id && p.picks.find(x => x.ask === askId); if (x) return x.opt; } return undefined; };
 function arButton(it) {
   const oa = openAsks(it), n = oa.filter(a => recOf(a)).length, zh = UI.lang !== "en";
   if (oa.length < 2 || !n || it.stage === "done" || (AR.pending && AR.pending.id === it.id)) return "";
@@ -98,10 +102,48 @@ function arCommit(keepalive) {
   const P = AR.pending; if (!P) return;
   clearTimeout(AR.timer); AR.pending = null; arHide();
   if (keepalive) { P.picks.forEach(x => { try { fetch("/api/action", { method: "POST", keepalive: true, headers: { "Content-Type": "application/json" }, body: JSON.stringify({ kind: "answer", item: P.id, ask: x.ask, opt: x.opt }) }); } catch (e) { } }); return; }
-  const zh = UI.lang !== "en";
+  const zh = UI.lang !== "en", it = ST.items.find(i => i.id === P.id), a0 = it && (it.asks || []).find(q => q.id === P.picks[0].ask), by = aname(agent((a0 && a0.by) || (it && it.owner)));
+  AR.sent = P;
   P.picks.reduce((q, x) => q.then(() => api("answer", { item: P.id, ask: x.ask, opt: x.opt })), Promise.resolve())
-    .then(() => toast(zh ? `已按推荐答了 ${P.picks.length} 题` : `${P.picks.length} answered as recommended`))
-    .catch(() => { if (UI.item === P.id) renderDrawer(); });
+    .then(() => toast(!P.hand ? (zh ? `已按推荐答了 ${P.picks.length} 题` : `${P.picks.length} answered as recommended`)
+      : P.picks.length > 1 ? (zh ? `已回答 ${P.picks.length} 题 · 转给${by}` : `${P.picks.length} answered · sent to ${by}`) : (zh ? `已回答 · 转给${by}` : `Answered · sent to ${by}`)))
+    .catch(() => { })
+    .then(() => { if (AR.sent === P) AR.sent = null; pickPaint(P.id); if (UI.item === P.id) renderDrawer(); });
+}
+/* r-improve-1125 P1: the undo bar (#ar-undo, bottom right) shared by 全按推荐, one tapped option and 「全部 X」 */
+function arBar(html, undoAttr) {
+  let b = document.getElementById("ar-undo");
+  if (!b) { b = document.createElement("div"); b.id = "ar-undo"; b.setAttribute("role", "status"); b.hidden = true; document.body.appendChild(b); }
+  const zh = UI.lang !== "en";
+  b.innerHTML = `<span class="rv-u-tx"><b>${html}</b>${zh ? "4.5 秒后发出" : "sending in 4.5 s"}</span><button type="button" ${undoAttr}>${zh ? "撤销" : "Undo"}</button><i class="rv-u-bar" style="--hold:${RV_HOLD}ms"></i>`;
+  clearTimeout(b._h); b.hidden = false; void b.offsetWidth; b.classList.add("on");
+}
+/* every chip of this card on screen (list card, home row, detail) shows the held pick, else the stored answer; no page rebuild needed */
+function pickPaint(id) {
+  const it = ST.items.find(i => i.id === id); if (!it) return;
+  document.querySelectorAll(`[data-ask-item="${CSS.escape(id)}"][data-ask-opt]`).forEach(b => {
+    const a = (it.asks || []).find(q => q.id === b.dataset.ask); if (!a) return;
+    const p = arPick(id, a.id); b.classList.toggle("on", p !== undefined ? p === b.dataset.askOpt : !!a.answer && a.answer.opt === b.dataset.askOpt);
+    b.classList.toggle("rec", p === undefined && !a.answer && recOf(a) === b.dataset.askOpt);
+  });
+}
+/* r-improve-1125 P1: one tapped option was sent at once (the card left 等你拍板 before a mis-tap could be taken back). Now it is held like
+   全按推荐: the card stays where it is with the option lit, #ar-undo counts 4.5 s, then the ordinary answer action goes out. Another option on
+   the same card replaces that question's pick and restarts the hold; picking the stored answer again drops the pick; a tap on another card
+   sends the held one first. The approve / done guard sheet (askGuard) still answers at once. */
+function pickStart(id, askId, opt) {
+  const it = ST.items.find(i => i.id === id), a = it && (it.asks || []).find(q => q.id === askId); if (!a) return;
+  if (GRP.pending) grpCommit();
+  if (AR.pending && AR.pending.id !== id) arCommit();
+  const P = AR.pending || (AR.pending = { id, picks: [] });
+  P.hand = true;
+  P.picks = P.picks.filter(x => x.ask !== askId);
+  if (!(a.answer && a.answer.opt === opt)) P.picks.push({ ask: askId, opt });
+  if (!P.picks.length) return arUndo();
+  pickPaint(id);
+  const zh = UI.lang !== "en", one = P.picks.length === 1 ? P.picks[0].opt : null;
+  arBar(one != null ? (zh ? `已选「${esc(one)}」` : `Picked “${esc(one)}”`) : (zh ? `已选 ${P.picks.length} 题` : `${P.picks.length} picked`), "data-ar-undo");
+  clearTimeout(AR.timer); AR.timer = setTimeout(() => arCommit(), RV_HOLD);
 }
 function arHide() { const b = document.getElementById("ar-undo"); if (b && !b.hidden) { b.classList.remove("on"); clearTimeout(b._h); b._h = setTimeout(() => { b.hidden = true; }, 260); } }
 function arStart(id) {
@@ -110,13 +152,10 @@ function arStart(id) {
   const picks = openAsks(it).map(a => ({ ask: a.id, opt: recOf(a) })).filter(x => x.opt); if (!picks.length) return;
   AR.pending = { id, picks }; const zh = UI.lang !== "en";
   if (UI.item === id) renderDrawer();
-  let b = document.getElementById("ar-undo");
-  if (!b) { b = document.createElement("div"); b.id = "ar-undo"; b.setAttribute("role", "status"); b.hidden = true; document.body.appendChild(b); }
-  b.innerHTML = `<span class="rv-u-tx"><b>${zh ? `按推荐答 ${picks.length} 题` : `${picks.length} answered as recommended`}</b>${zh ? "4.5 秒后发出" : "sending in 4.5 s"}</span><button type="button" data-ar-undo>${zh ? "撤销" : "Undo"}</button><i class="rv-u-bar" style="--hold:${RV_HOLD}ms"></i>`;
-  clearTimeout(b._h); b.hidden = false; void b.offsetWidth; b.classList.add("on");
+  arBar(zh ? `按推荐答 ${picks.length} 题` : `${picks.length} answered as recommended`, "data-ar-undo");
   clearTimeout(AR.timer); AR.timer = setTimeout(() => arCommit(), RV_HOLD);
 }
-function arUndo() { const P = AR.pending; if (!P) return; clearTimeout(AR.timer); AR.pending = null; arHide(); if (UI.item === P.id) renderDrawer(); }
+function arUndo() { const P = AR.pending; if (!P) return; clearTimeout(AR.timer); AR.pending = null; arHide(); pickPaint(P.id); if (UI.item === P.id) renderDrawer(); }
 /* ===== t-ri1113-a P3: the card sweep (twice a day) asks one and the same question on many cards. A card that is on you ONLY for one open ask
    (not in review) joins a group with every card whose ask has the very same text and options; GRP_MIN or more are drawn as one group row in
    等你拍板 (widget home + phone home). 「全部 X」 answers each card with the ordinary answer action after the same 4.5 s undo hold as 全按推荐;
@@ -148,10 +187,7 @@ function grpStart(id, opt) {
   if (AR.pending) arCommit(); if (GRP.pending) grpCommit();
   GRP.pending = { id, opt, picks: g.items.map(it => ({ item: it.id, ask: grpAsk(it).id })) };
   const zh = UI.lang !== "en", n = GRP.pending.picks.length;
-  let b = document.getElementById("ar-undo");
-  if (!b) { b = document.createElement("div"); b.id = "ar-undo"; b.setAttribute("role", "status"); b.hidden = true; document.body.appendChild(b); }
-  b.innerHTML = `<span class="rv-u-tx"><b>${zh ? `${n} 张都答「${esc(opt)}」` : `${n} cards: “${esc(opt)}”`}</b>${zh ? "4.5 秒后发出" : "sending in 4.5 s"}</span><button type="button" data-ri13-undo>${zh ? "撤销" : "Undo"}</button><i class="rv-u-bar" style="--hold:${RV_HOLD}ms"></i>`;
-  clearTimeout(b._h); b.hidden = false; void b.offsetWidth; b.classList.add("on");
+  arBar(zh ? `${n} 张都答「${esc(opt)}」` : `${n} cards: “${esc(opt)}”`, "data-ri13-undo");
   clearTimeout(GRP.timer); GRP.timer = setTimeout(() => grpCommit(), RV_HOLD);
   if (UI.page === "review") renderPage();
 }
@@ -176,9 +212,9 @@ const okAria = (it, full) => { const l = askLeft(it); return ` aria-label="${esc
 const okBtnIn = it => { const l = askLeft(it); return `<b>${okLabel(it)}</b>${l ? `<small class="ok-ask">${l}</small>` : ""}`; };   // label + the open-question line under it
 function askChips(it, a, cls = "", tail) {   /* tail: extra html kept on one line with 「其他…」 (askRow tail mode) */
   const done = it.stage === "done", zh = UI.lang !== "en";
-  const rec = !a.answer && recOf(a), pend = arPick(it.id, a.id);   // t-ask-rec
+  const pend = arPick(it.id, a.id), rec = !a.answer && pend === undefined && recOf(a);   // t-ask-rec; r-improve-1125 P1: a held pick drops the filled 推荐 look (two filled chips read as two picks)
   const oth = a.other !== false && !done ? `<button type="button" class="ask-o ghost" data-ask-other="${esc(a.id)}" data-ask-item="${esc(it.id)}">${zh ? "其他…" : "Other…"}</button>` : "";
-  return `<div class="ask-opts${cls}">${a.options.map(o => `<button type="button" class="ask-o${(a.answer ? a.answer.opt === o : pend === o) ? " on" : ""}${rec === o ? " rec" : ""}" data-ask-opt="${esc(o)}" data-ask="${esc(a.id)}" data-ask-item="${esc(it.id)}"${done ? " disabled" : ""}>${esc(o)}${rec === o && !REC_TXT.test(o) ? `<i class="rec-b">${zh ? "推荐" : "Rec."}</i>` : ""}</button>`).join("")}${tail == null ? oth : `<span class="ask-tail">${oth}${tail}</span>`}</div>`;
+  return `<div class="ask-opts${cls}">${a.options.map(o => `<button type="button" class="ask-o${(pend !== undefined ? pend === o : !!a.answer && a.answer.opt === o) ? " on" : ""}${rec === o ? " rec" : ""}" data-ask-opt="${esc(o)}" data-ask="${esc(a.id)}" data-ask-item="${esc(it.id)}"${done ? " disabled" : ""}>${esc(o)}${rec === o && !REC_TXT.test(o) ? `<i class="rec-b">${zh ? "推荐" : "Rec."}</i>` : ""}</button>`).join("")}${tail == null ? oth : `<span class="ask-tail">${oth}${tail}</span>`}</div>`;
 }
 function askCard(it, a, n) {
   const zh = UI.lang !== "en", by = aname(agent(a.by || it.owner));
@@ -381,8 +417,9 @@ function wireReview() {
     const a = (it.asks || []).find(q => q.id === (o ? o.dataset.ask : x.dataset.askOther)); if (!a) return;
     const zh = UI.lang !== "en";
     if (o) {
-      if (AR.pending && AR.pending.id === id) AR.pending.picks = AR.pending.picks.filter(x => x.ask !== a.id);   // t-ask-rec: a hand pick during the hold wins over the recommendation
-      if (o.disabled || (a.answer && a.answer.opt === o.dataset.askOpt)) return;
+      if (o.disabled) return;
+      if (!o.closest("#modal .ask-guard")) { const p = arPick(id, a.id); if (p === o.dataset.askOpt || (p === undefined && a.answer && a.answer.opt === o.dataset.askOpt)) return; return pickStart(id, a.id, o.dataset.askOpt); }   // r-improve-1125 P1 (a hand pick during 全按推荐 joins that hold and wins over the recommendation)
+      if (a.answer && a.answer.opt === o.dataset.askOpt) return;
       o.parentElement.querySelectorAll(".ask-o.on").forEach(b => b.classList.remove("on")); o.classList.add("on");   // instant; the poll then redraws from the stored answer
       api("answer", { item: id, ask: a.id, opt: o.dataset.askOpt })
         .then(() => { toast(zh ? `已回答 · 转给${aname(agent(a.by || it.owner))}` : `Answered · sent to ${aname(agent(a.by || it.owner))}`); if (AG.draw && !$("#modal").hidden && $("#modal .ask-guard")) AG.draw(); })
@@ -409,4 +446,4 @@ function wireReview() {
   document.addEventListener("visibilitychange", () => { if (document.visibilityState === "hidden") rvCommit(true); });
 }
 
-export { cardImg, reviewRow, RV, RV_HOLD, rvCanApprove, reviewCard, awaitsUser, waitSince, waitTag, snzWas, waitTag0, liveAsks, openAsks, isHire, isXfer, okLabel, okDone, askLeft, REC_TXT, recOf, optChips, MSEL, msendBtn, CHIP_RE, chipParens, optDone, AR, arPick, arButton, arCommit, arHide, arStart, arUndo, GRP, GRP_MIN, grpAsk, grpId, askGroups, grpHTML, grpFind, grpStart, grpCommit, grpUndo, okShort, okDockIn, okAria, okBtnIn, askChips, askCard, askBlock, askRow, askJump, ASK_CV, askFold, askFoldWire, AG, askGuard, decisions, decHead, decRow, DC_KIND, todayBlock, nowBlock, shipBlock, rvEase, rvReduce, rvCollapse, rvExpand, rvUndoBar, rvHideBar, rvCommit, rvApprove, rvUndo, wireReview };
+export { cardImg, reviewRow, RV, RV_HOLD, rvCanApprove, reviewCard, awaitsUser, waitSince, waitTag, snzWas, waitTag0, liveAsks, openAsks, isHire, isXfer, okLabel, okDone, askLeft, REC_TXT, recOf, optChips, MSEL, msendBtn, CHIP_RE, chipParens, optDone, AR, arPick, askWait, askWaitL, arButton, arCommit, arHide, arStart, arUndo, arBar, pickPaint, pickStart, GRP, GRP_MIN, grpAsk, grpId, askGroups, grpHTML, grpFind, grpStart, grpCommit, grpUndo, okShort, okDockIn, okAria, okBtnIn, askChips, askCard, askBlock, askRow, askJump, ASK_CV, askFold, askFoldWire, AG, askGuard, decisions, decHead, decRow, DC_KIND, todayBlock, nowBlock, shipBlock, rvEase, rvReduce, rvCollapse, rvExpand, rvUndoBar, rvHideBar, rvCommit, rvApprove, rvUndo, wireReview };

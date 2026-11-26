@@ -1,5 +1,6 @@
 /* r-improve-1122: four polish fixes.
- *  P1 phone arrival pill: the 「还有 N 条 / N more」 chip is a +N badge on the avatar corner, so an English title is not cut; tapping it steps on. Desk keeps the chip.
+ *  P1 arrival pill: the 「还有 N 条 / N more」 count sits at the right end of the pill (t-lka-more-badge 11-25: the +N badge on the avatar corner read like an
+ *     unread count), the name is not cut; tapping it steps on.
  *  P2 phone 素材 (two rows) and 招聘市场 use the 委托 / 通知 filter row (.filters.mb-row.m-seg.q > .seg): same height, sliding pill; desk keeps its chips.
  *  P3 the 推荐 tag never splits across two lines.
  *  P4 desk, Knit: top-right reply cards carry the pill's stitched edge and 22 px corner; Leather and plain skins unchanged.
@@ -26,17 +27,18 @@ module.exports = {
       if (!(await p.evaluate(() => !!window.LookAway))) { c.note("P1 skipped: this tree has no arrival pill (web/js/lookaway.js)"); break; }
       await p.evaluate(() => { LookAway.pillOut(); return new Promise(r => setTimeout(() => { LookAway.pillAdd([{ cls: "decide", agent: "writer", sub: "Script v2" }, { cls: "reply", agent: "smith", sub: "x" }, { cls: "ask", agent: "scout", sub: "y" }]); r(); }, 600)); });
       await c.sleep(1300); let P = await pill(p);
-      /* t-pill-notif-style A (11-24): desk and phone both show the +N badge on the avatar corner; the chip words stay for screen readers only */
-      if (desk) c.check(`P1 ${lang} desk: +2 badge on the avatar corner, chip text hidden, label kept for screen readers`, P && !P.hidden && P.badge === "+2" && !P.chip && P.onAv && P.inPill && /2/.test(P.aria), P);
+      /* t-lka-more-badge (11-25): desk and phone show the count words at the pill's right end (was a +N badge on the avatar corner since 11-24) */
+      const want = lang === "en" ? "2 more" : "还有 2 条";
+      if (desk) c.check(`P1 ${lang} desk: 「${want}」 at the right end of the pill, no badge on the avatar`, P && !P.hidden && !P.badge && P.chip === want && !P.onAv && P.inPill && /2/.test(P.aria), P);
       else {
-        c.check(`P1 ${lang} phone: +2 badge on the avatar corner, chip text hidden, label kept for screen readers`, P && P.badge === "+2" && !P.chip && P.onAv && P.inPill && /2/.test(P.aria), P);
+        c.check(`P1 ${lang} phone: 「${want}」 at the right end of the pill, no badge on the avatar`, P && !P.badge && P.chip === want && !P.onAv && P.inPill && /2/.test(P.aria), P);
         c.check(`P1 ${lang} phone: the title is not cut`, P && !P.cut, P);
         await c.shot(`p1-${lang}`);
         await p.evaluate(() => LookAway.pillOut()); await c.sleep(500);
         await p.evaluate(() => LookAway.pillAdd([{ cls: "decide", agent: "writer", sub: "Script v2" }, { cls: "reply", agent: "smith", sub: "x" }, { cls: "ask", agent: "scout", sub: "y" }])); await c.sleep(900);
-        const bb = await p.locator("#lka-pw .lka-more").boundingBox();   /* the pill re-renders as it counts down: tap the badge's spot, not the node */
+        const bb = await p.locator("#lka-pw .lka-more").boundingBox();   /* the pill re-renders as it counts down: tap the count's spot, not the node */
         await p.touchscreen.tap(bb.x + bb.width / 2, bb.y + bb.height / 2); await c.sleep(600); P = await pill(p);
-        c.check(`P1 ${lang} phone: tapping the badge steps to the next (+1)`, P && P.badge === "+1", P);
+        c.check(`P1 ${lang} phone: tapping the count steps to the next (${lang === "en" ? "1 more" : "还有 1 条"})`, P && P.chip === (lang === "en" ? "1 more" : "还有 1 条"), P);
       }
       await p.evaluate(() => LookAway.pillOut()); await c.sleep(500);
     }
