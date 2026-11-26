@@ -6,7 +6,7 @@
 // ---------- pages ----------
 // t-visual-ink: date eyebrow above every page title (hidden unless html[data-skin="ink"])
 import { EN_SUB, PLAT, rtTag, stageLabel, t, whenH } from "../../core/i18n.js";
-import { UI, idleDoing, idleL } from "../../core/store.js";
+import { UI, idleDoing, idleL, waitSince } from "../../core/store.js";
 import { agent, aname, av } from "../../core/av.js";
 import { orn } from "../../core/ui.js";
 import { routineOf } from "../drawer.js";
@@ -37,11 +37,20 @@ function card(it, o) {   /* o.noCat (r-improve-1116 P3): on that category's own 
   return `<div class="card${ws.length ? " wk-on" : ""}${img ? " has-cv" : ""}" data-item="${it.id}"${wkAttr(ws)}>${wkFx(ws)}${cv}
     <div class="meta">${kind ? `<span class="tag ${kind}"><span class="gl" aria-hidden="true">◆</span>${t(kind)}</span>${waitTag(it, desk)}` : `<span class="tag">${rtTag(it) || (idleDoing(it) ? idleL(it) : stageLabel(it.stage))}</span>`}
       ${o && o.noCat ? "" : `<span>${t(it.category)}${it.category === "urgent" ? " ⚑" : ""}</span>`}
-      <span class="qc-dt">${whenH(it.created)}</span><span class="dim">${UI.lang === "en" ? "act." : "动态"} ${whenH(it.activity)}</span>
+      ${cardDt(it)}
       <span>${(it.platforms || []).map(p => `<span class="tag pf">${PLAT[p] || p}</span>`).join(" ")}</span></div>
     <div class="body"><h3>${nrDot(it.id)}${window.Onboard ? Onboard.exT(it) : esc(it.title)}</h3><p>${esc(sumPv(it.summary || ""))}</p>${wkTag(ws)}${askRow(it, false, desk)}</div>
     <div class="owner">${av(a, "sm", it.id)}<span>${esc(aname(a))}</span></div>
     <div class="acts"><button data-arch="${it.id}">${t("archive")}</button>${it.stage !== "done" && !routineOf(it) ? `<button data-quickdone="${it.id}">${t("complete")}</button>` : ""}</div></div>`;
+}
+
+/* r-improve-1124 P2: the corner date follows the list order. By activity (default): the latest activity; a card waiting on review says
+   「交来 / Sent」 + when it was handed in (waitSince = the last 提交审核). Sorted by 最新创建: the created date + the dim 动态 time, as before. */
+function cardDt(it) {
+  const en = UI.lang === "en";
+  if (UI.sort === "created") return `<span class="qc-dt">${whenH(it.created)}</span><span class="dim">${en ? "act." : "动态"} ${whenH(it.activity)}</span>`;
+  if (it.stage === "review") return `<span class="qc-dt"><span class="qc-dl">${en ? "Sent" : "交来"}</span> ${whenH(waitSince(it))}</span>`;
+  return `<span class="qc-dt">${whenH(it.activity || it.updated || it.created)}</span>`;
 }
 
 // ===== p3 (t-slack-p3): Slack-Activity-style list rows on phones (<=760px). Desktop keeps .card / .mail-i. =====

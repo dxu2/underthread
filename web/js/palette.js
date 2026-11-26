@@ -127,7 +127,11 @@
   function find(q, opt = {}) {
     if (!opt.itemsOnly) fullDrafts();   // ri1107-P1: opening search starts it (no-op within 10 min, or when no card is slim); the # picker only needs items
     const hit = it => [it.title, it.summary, it.id, (it.tags || []).join(" "), App.aname(App.agent(it.owner))].join(" ").toLowerCase().includes(q);
-    let items = App.items().slice().sort(App.byAct).filter(it => !q || hit(it)).slice(0, q ? (opt.items || 30) : (opt.recent || 8));
+    /* r-improve-1124 P5: with a query, cards whose title has it come first, then the ones not closed; inside each group the latest activity first, as before */
+    const rk = it => (it.title || "").toLowerCase().includes(q) ? (it.stage !== "done" ? 0 : 1) : (it.stage !== "done" ? 2 : 3);
+    let items = App.items().slice().sort(App.byAct).filter(it => !q || hit(it));
+    if (q) items.sort((a, b) => rk(a) - rk(b));   // stable: byAct order kept inside a group
+    items = items.slice(0, q ? (opt.items || 30) : (opt.recent || 8));
     if (q && App.archIx) {   // t-perf A: archived cards after the live ones (full cards once loaded, else the id / title index)
       if (App.archAll) App.archAll();
       if (App.histAll) App.histAll();   /* ri1105-P4: chat before the poll window, loaded once on the first search ("rt-hist" re-runs it) */
@@ -212,7 +216,7 @@
     const named = all && q ? R.actions.filter(a => !a.id.startsWith("approve:") && a.label.toLowerCase().includes(q)).slice(0, 3) : [];
     if (named.length) html += `<div class="pl-h">${zh ? "页面和操作" : "Pages & actions"}</div>` + named.map(actRow).join("");
     if (all && R.items.length) html += `<div class="pl-h">${P.q ? (zh ? "单子" : "Items") : (zh ? "最近" : "Recent")}</div>` + R.items.slice(0, iCap).map(it =>
-      row(`<span class="pl-av">${App.av(App.agent(it.owner), "sm")}</span>`, esc(it.title), `${kindTag(it)} ${esc(App.aname(App.agent(it.owner)))} · ${App.t(it.category)} · ${App.when(it.activity)}`, () => App.openItem(it.id), zh ? "↵ 打开" : "↵ open")).join("");
+      row(`<span class="pl-av">${App.av(App.agent(it.owner), "sm")}</span>`, hlAll(it.title, q), `${kindTag(it)} ${esc(App.aname(App.agent(it.owner)))} · ${App.t(it.category)} · ${App.when(it.activity)}`, () => App.openItem(it.id), zh ? "↵ 打开" : "↵ open")).join("");
     const more = (k, n) => all && n > shown[k] ? `<button type="button" class="pl-more" data-pl-tab="${k}">${zh ? `全部 ${n > 30 ? "30+" : n} 条 →` : `All ${n > 30 ? "30+" : n} →`}</button>` : "";
     const shown = { drafts: all ? 4 : 30, talk: all ? 4 : 30, convs: all ? 4 : 30 };
     for (const k of ["drafts", "talk"]) {

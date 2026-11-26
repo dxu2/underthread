@@ -50,14 +50,14 @@
     return en() ? [
       { a: "Welcome to", b: "Underthread", sub: "A small team that works for you. Say what you need; the steward hands it to the right teammate, and you sign off on what comes back.", fine: "Everything stays on your own computer." },
       { a: "Meet", b: "your team", sub: `Each one owns one kind of work, with their own face and manner. ${esc(m)}, the steward, keeps an eye on all of them.`, fine: "Hire more in the Market; rename anyone or change a face under Team." },
-      { a: "Just tell", b: "the steward", sub: "Say what you want done; the steward opens a card and assigns it. Bigger jobs come back as a plan first, and nothing starts until you press Approve & start.", fine: "Everything waiting on you sits in “Your call” on Home. Nothing breaks if it waits." },
-      { a: "Watch", b: "them work", sub: "Every job is a card: To do → In progress → Your review → Done." + (lv ? " When a teammate is using the browser, open Watch to see it live." : ""), fine: "A card only needs you once it reaches Your review; the rest can sit." },
+      { a: "Just tell", b: "the steward", sub: "Say what you want done; the steward opens a card and assigns it. Bigger jobs come back as a plan first, and nothing starts until you press Approve & start.", fine: (phone() ? "Everything waiting on you is under “On you” on Home." : "Everything waiting on you sits in “Waiting on you” on Home.") + " Nothing breaks if it waits." },
+      { a: "Watch", b: "them work", sub: "Every job is a card: To do → In progress → On you → Done." + (lv ? " When a teammate is using the browser, open Watch to see it live." : ""), fine: "A card only needs you once it reaches On you; the rest can sit." },
       { a: "The big calls", b: "stay yours", sub: "Spending, ordering, publishing and signing in always stop and wait for your click. Routines like the morning paper, daily report and reminders run on their own.", fine: "Routines live under Schedules; change a time or pause one any day. You can replay these pages from Settings." },
     ] : [
       { a: "欢迎来到", b: "Underthread", sub: "一支替你干活的小团队。你说一句，管家分给合适的队员；他们交上来，你拍板。", fine: "东西都在你自己的电脑上。" },
       { a: "认识一下", b: "你的团队", sub: "每个人管一摊事，有自己的脸和脾气；管家替你盯着大家。", fine: "想加人去「招聘市场」；名字和头像在「团队」里随时能改。" },
-      { a: "有事", b: "跟管家说就行", sub: "说一句你想做的事，管家开卡、派人。大一点的活先交方案，你点「批准开工」才动手。", fine: "等你拿主意的都在首页「等你拍板」。不急的先放着，不会坏事。" },
-      { a: "看着", b: "他们干活", sub: "每件事是一张卡：待办 → 进行中 → 待你审核 → 完成。" + (lv ? "队员在用浏览器时，点「看画面」能实时看着。" : ""), fine: "只有走到「待你审核」的卡才要你出手；别的时候放着就行。" },
+      { a: "有事", b: "跟管家说就行", sub: "说一句你想做的事，管家开卡、派人。大一点的活先交方案，你点「批准开工」才动手。", fine: (phone() ? "等你拿主意的都在首页「等你看」那块。" : "等你拿主意的都在首页「等你拍板」。") + "不急的先放着，不会坏事。" },
+      { a: "看着", b: "他们干活", sub: "每件事是一张卡：待办 → 进行中 → 等你拍板 → 完成。" + (lv ? "队员在用浏览器时，点「看画面」能实时看着。" : ""), fine: "只有走到「等你拍板」的卡才要你出手；别的时候放着就行。" },
       { a: "大事", b: "你说了算", sub: "花钱、下单、发布、登录，永远停下来等你点头；晨报、日报、提醒这些例行，每天自己跑。", fine: (phone() ? "例行都在「委托 → 定时」里" : "例行都在左边「定时」里") + "，随时能改时间或停掉。这几页以后在「设置」里还能再看。" },
     ];
   };
@@ -126,7 +126,7 @@
         + `<div class="bs"><span class="ap" style="box-shadow:0 0 0 ${(1 + 3 * breathe * on).toFixed(2)}px color-mix(in srgb,var(--accent) ${Math.round(10 + 20 * breathe * on)}%,transparent)">${esc(L("批准开工", "Approve & start"))}</span><span class="ch">${esc(L("改一下", "Revise"))}</span></div></div>`;
     }
     if (i === 3) {
-      const cols = e ? ["To do", "In progress", "Your review", "Done"] : ["待办", "进行中", "待你审核", "完成"], n = [3, 2, 1, 6], X = c => c * 130;
+      const cols = e ? ["To do", "In progress", "On you", "Done"] : ["待办", "进行中", "等你拍板", "完成"], n = [3, 2, 1, 6], X = c => c * 130;
       const mv = still ? 1 : io(seg(τ, 1.05, 1.6)), hx = lerp(X(1), X(2), mv) + 7, hy = 30;
       const arrived = still ? 1 : seg(τ, 1.55, 1.75), glow = still ? 0 : .5 + .5 * Math.sin(t * 2.4);
       let h = cols.map((c, k) => { const d = k * .06, hot = k === 2 ? arrived : 0;
@@ -349,23 +349,23 @@
     { id: "chat", t: ["先跟{mgr}说一件事", "Tell {mgr} one thing first"],
       b: ["这里是管家的聊天框。说一件你想做的事，比如<em>「帮我查一下 X 的资料」</em>，它会开卡、交给合适的队员。不会打字？点上面的快捷句也行。",
           "This is the steward's chat. Say one thing you want done, like <em>“look up X for me”</em>; it opens a card and hands it to the right teammate. The quick phrases above the field work too."],
-      pb: ["底下「对话」里第一个就是{mgr}。说一件你想做的事，比如<em>「帮我查一下 X 的资料」</em>，它会开卡、交给合适的队员。",
-           "{mgr} is the first chat under Chats. Say one thing you want done, like <em>“look up X for me”</em>; it opens a card and hands it to the right teammate."],
+      pb: ["底下第二个图标（对话）里第一个就是{mgr}。说一件你想做的事，比如<em>「帮我查一下 X 的资料」</em>，它会开卡、交给合适的队员。输入框上面的快捷句点一下也行。",
+           "{mgr} is the first chat behind the second icon below (Chats). Say one thing you want done, like <em>“look up X for me”</em>; it opens a card and hands it to the right teammate. The quick phrases above the field work too."],
       prep: () => { if (phone()) return toHome(); const r = $("#right"); if (A().UI.chat !== "manager" || !vis(r)) A().route("#dm=manager"); if (A().UI.chatFold) { const f = $("#right .ch-fold"); if (f) f.click(); } },
       desk: () => { const c = pickVis(["#right .ch-comp"]); if (!c) return null; const q = $("#right > .qg-row"); return q && !q.hidden && vis(q) ? [c, q] : c; },
       phone: () => pickVis(['#tabbar button[data-k="dms"]']), side: "left", rad: 18 },
     { id: "review", t: ["方案来了，你来拍板", "Plans come back; you decide"],
-      b: ["队员先交方案，卡就出现在「等你拍板」。看一眼，点<em>批准开工</em>队员就接着做；不行就驳回，写一句原因。示例卡可以随便点。",
-          "A teammate hands in a plan first and the card lands in “Your call”. Take a look and press <em>Approve & start</em>, or reject it with one line of why. The sample cards are safe to try."],
-      pb: ["队员交上来、等你看的卡数在这里。点开，按<em>批准开工</em>队员就接着做；不行就驳回，写一句原因。",
-           "Cards waiting on you are counted here. Open one and press <em>Approve & start</em>, or reject it with one line of why."],
+      b: ["队员先交方案，卡就出现在「等你拍板」。看一眼，点<em>批准开工</em>队员就接着做；不行就驳回，写一句原因。带「问题」签的点一个选项，「待验收」的点<em>验收 · 关单</em>。示例卡可以随便点。新事找你时，顶栏下会冒出一行提醒，几秒后收进右上角的汇总胶囊，点它提醒就回来。",
+          "A teammate hands in a plan first and the card lands in “Waiting on you”. Take a look and press <em>Approve & start</em>, or reject it with one line of why. A Question tag wants one option picked; a Review tag wants <em>Accept & close</em>. The sample cards are safe to try. When something new needs you, a one-line notice drops in under the top bar and after a few seconds folds into the summary capsule at the top right; tap it to bring the notices back."],
+      pb: ["队员交上来、等你看的卡数在这里。点开，方案按<em>批准开工</em>，问题点一个选项，交付点<em>验收 · 关单</em>；不行就驳回，写一句原因。新事找你时，顶栏下会冒出一行提醒，几秒后收进右上角的汇总胶囊，点它提醒就回来。",
+           "Cards waiting on you are counted here. Open one: a plan wants <em>Approve & start</em>, a question one option, a delivery <em>Accept & close</em>; or reject it with one line of why. When something new needs you, a one-line notice drops in under the top bar and after a few seconds folds into the summary capsule at the top right; tap it to bring the notices back."],
       prep: toHome,
-      desk: () => { const w = pickVis(['#wg .wg[data-wg="review"]']); if (w) { const hd = w.querySelector(".wg-eb"), rows = [...w.querySelectorAll(".wg-row")].filter(vis).slice(0, 2); return hd ? [hd, ...rows] : w; }
+      desk: () => { const w = pickVis(['#wg .wg[data-wg="review"]']); if (w) { const hd = w.querySelector(".wg-eb"), rows = [...w.querySelectorAll(".wg-row")].filter(vis).slice(0, 4);   /* t-onboard-tour 11-24 ⑤: two visual rows, so the coach card sits under the second one instead of on it */ return hd ? [hd, ...rows] : w; }
         return pickVis(['.hd-stat[data-hd-f="review"]', '#nav [data-go="review"]']); },
       phone: () => pickVis(['.hd-stat[data-hd-f="review"]']), side: "bottom", rad: 18 },
-    { id: "team", t: ["TEAM：谁在干活一眼看到", "TEAM: who is working, at a glance"],
-      b: ["左边是你的团队。正在干活的人名字旁写着<em>执行中</em>，下面一行是他在干什么；他在做哪张卡，看首页「此刻在忙」那一格。点名字就能私信。",
-          "Your team is on the left. Whoever is busy says <em>working</em> next to their name, with what they are doing underneath; the card they are on is in “Working now” on Home. Click a name to message them."],
+    { id: "team", t: ["团队：谁在干活一眼看到", "Team: who is working, at a glance"], pt: ["谁在干活，一眼看到", "Who is working, at a glance"],
+      b: ["左边是你的团队。正在干活的人名字旁写着<em>执行中</em>，下面一行是他在干什么；他在做哪张卡，看首页「此刻在忙」那一格。名字旁的「排队 N」是还等他开工的卡数。点名字就能私信。",
+          "Your team is on the left. Whoever is busy says <em>working</em> next to their name, with what they are doing underneath; the card they are on is in “Working now” on Home. “Queued N” by a name counts the cards still waiting for them to start. Click a name to message them."],
       /* t-onboard-review ⑤ (home V3): idle board = no working rows, so the copy says where they will show up and points at the 「N 人空闲」 stack */
       pb: () => { const sn = $("#officebox .a2-sn"), n = sn ? sn.textContent.replace(/[›\s]+$/, "").trim() : "", busy = !!$("#officebox .a2-rows > *");
         return busy ? ["正在干活的人排在这一格最上面，下面一行是他在做的卡，点一下就打开。" + (n ? `点「${n}」能看到其余队员，点头像就能私信。` : ""), "Whoever is working sits at the top of this card with the card they are on; tap it to open." + (n ? ` Tap “${n}” for the rest of the team, and a face to message them.` : "")]
@@ -410,7 +410,7 @@
     const st = TR.steps[TR.i], n = TR.steps.length, i = TR.i, e = en();
     const body = phone() && st.pb ? (typeof st.pb === "function" ? st.pb() : st.pb) : st.b;
     return `<div class="otr-chd"><img alt="" src="${esc(av(mgrA()))}"><span>${esc(L(`${mgrN()} 带你认认路`, `${mgrN()} shows you around`))}</span><span class="n">${i + 1} / ${n}</span></div>`
-      + `<b class="otr-ct" id="otr-ct">${fill(st.t[e ? 1 : 0])}</b><p>${fill(body[e ? 1 : 0])}</p>`
+      + `<b class="otr-ct" id="otr-ct">${fill((phone() && st.pt ? st.pt : st.t)[e ? 1 : 0])}</b><p>${fill(body[e ? 1 : 0])}</p>`
       + `<div class="otr-cdots" aria-hidden="true">${Array.from({ length: n }, (_, k) => `<i class="${k < i ? "on" : k === i ? "cur" : ""}"></i>`).join("")}</div>`
       + `<div class="otr-cft"><button type="button" class="otr-sk" data-otr-t="skip">${esc(L("跳过引导", "Skip tour"))}</button><button type="button" class="otr-pv" data-otr-t="back"${i ? "" : " disabled"}>${esc(L("上一步", "Back"))}</button>`
       + `<button type="button" class="otr-nx" data-otr-t="next">${esc(i === n - 1 ? L("完成 ✓", "Done ✓") : L("下一步 ›", "Next ›"))}</button></div><i class="otr-arrow" aria-hidden="true"></i>`;
@@ -523,7 +523,7 @@
   // ---------- entry points: Settings → 通用 「再走一遍」, the 开工清单 header 「导览 ›」 ----------
   function lastLine(e) {
     const ob = (A().ST.meta || {}).onboarding, r = ob && ob.tour && ob.tour[form()];
-    if (!r || !r.at) return e ? "Five welcome pages, then a short walk to the chat, Your call and the team." : "5 页欢迎，再带你认一遍：管家聊天、等你拍板、团队。";
+    if (!r || !r.at) return e ? "Five welcome pages, then a short walk to the chat, Waiting on you and the team." : "5 页欢迎，再带你认一遍：管家聊天、等你拍板、团队。";
     const d = new Date(r.at), day = e ? d.toLocaleDateString("en-US", { month: "short", day: "numeric" }) : `${d.getMonth() + 1}月${d.getDate()}日`;
     const how = r.how === "upgrade" ? (e ? "came with the update; never shown" : "升级前就在用，没弹过") : r.how === "skip" ? (e ? `skipped ${day}` : `${day}跳过了`) : (e ? `last walked ${day}` : `上次走完：${day}`);
     return (e ? "Five welcome pages and the tour · " : "5 页欢迎 + 认路 · ") + how;

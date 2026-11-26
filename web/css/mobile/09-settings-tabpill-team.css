@@ -278,3 +278,5 @@ html:not([data-texture^="knit"]) #tabbar .ngl-thr { display: none; }
 .ri22-row .seg-i :is(small, b) { font: inherit; font-weight: 500; margin-left: 3px; opacity: .6; font-variant-numeric: tabular-nums; color: inherit; }
 .ri22-row .seg-i.on :is(small, b) { opacity: .75; }
 .ri22-row + .ri22-row { margin-top: -4px; }
+/* r-improve-1124 P3: the 此刻在忙 card name on the phone home, no lone 「v2）」 on the second line */
+.a2-t { text-wrap: pretty; }

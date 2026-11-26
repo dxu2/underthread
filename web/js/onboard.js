@@ -56,7 +56,7 @@
     team: L("在终端运行 python3 make_agents.py，给每位队员生成 agent 文件，然后重开管家。", "Run python3 make_agents.py in a terminal to write each teammate's agent file, then restart the steward."),
     wake: L(`在电脑终端里跑一行命令，${mgrName()} 就上线了。你现在说的话会先排队。`, `Run one line in a terminal on the computer and ${mgrName()} comes online. Anything you say now waits in the queue.`),
     say: L(`跟 ${mgrName()} 说一件你想做的事，点输入框上面的快捷句也行。`, `Tell ${mgrName()} one thing you want done; the quick phrases above the field work too.`),
-    card: L(`${mgrName()} 会把你的话变成卡，交给合适的队员；左边「TEAM」里亮起来的就是在做的人。`, `${mgrName()} turns what you said into a card and hands it to a teammate; whoever lights up under TEAM is on it.`),
+    card: L(`${mgrName()} 会把你的话变成卡，交给合适的队员；左边「团队」里亮起来的就是在做的人。`, `${mgrName()} turns what you said into a card and hands it to a teammate; whoever lights up under TEAM is on it.`),
     decide: L("打开一张「等你拍板」的卡（示例卡也算）。方案卡要点「批准开工」才会开始做；交付卡点「验收」关单；不满意就写原因再驳回；有问题就点一个选项回答。", "Open a card that waits on you (the samples count). A plan only starts when you tap “Approve & start”; a delivery closes with “Accept”; not happy? write why and reject; a question takes one tap on an option."),   /* t-oss-polish-1121 ④ */
     about: "",
   }[k] || "");

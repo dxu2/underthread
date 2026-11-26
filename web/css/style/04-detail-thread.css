@@ -107,3 +107,16 @@
 .team-i .nm:has(.st.sleeping) .aq { padding: 0 5px; }
 
 .at-pop { max-height: min(360px, 45vh); overflow-y: auto; overscroll-behavior: contain; }   /* t-mention-hires: every role is listed now (was capped at 8); the list scrolls */
+/* r-improve-1124 P3: the detail title breaks without an orphan */
+#drawer .dw-title { text-wrap: pretty; }
+/* r-improve-1124 P1: card title in the header while .dw-title is out of view (htWatch in drawer.js); the id text steps aside, its copy icon stays */
+#drawer .dw-lead .dw-ht { display: none; }
+#drawer .dw-lead.dw-ht-on { min-width: 0; flex-wrap: nowrap; }
+@media (min-width: 761px) { #drawer .dw-lead.dw-ht-on { display: flex; align-items: center; gap: 4px; } #drawer .dw-lead.dw-ht-on .dw-ht { margin-left: 8px; } }   /* desk: the lead is inline text until now */
+#drawer .dw-lead.dw-ht-on .dw-ht { display: block; flex: 0 1 auto; min-width: 0; margin: 0 0 0 6px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis;
+  font-size: var(--fs-14); font-weight: 600; color: var(--ink); }
+#drawer .dw-lead.dw-ht-on.dw-ht-anim .dw-ht { animation: dw-ht-in var(--m-base, .22s) var(--m-ease-std, ease) both; }
+#drawer .dw-lead.dw-ht-on .dw-id[data-copy-id] > span { display: none; }
+#drawer .dw-lead.dw-ht-on .dw-id { flex: none; }
+@keyframes dw-ht-in { from { opacity: 0; translate: 0 4px; } to { opacity: 1; translate: none; } }
+@media (prefers-reduced-motion: reduce) { #drawer .dw-lead.dw-ht-on.dw-ht-anim .dw-ht { animation: none; } }

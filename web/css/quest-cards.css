@@ -99,3 +99,5 @@ html[data-theme] #pagebody .qc-grid .card .meta { margin-top: 0; }
 html[data-theme] #pagebody .qc-grid .card .owner { top: 18px; right: 18px; }
 html[data-theme] #pagebody .qc-grid .card .acts { right: 20px; bottom: 16px; }
 html[data-theme] #pagebody .qc-grid.qc-m, html[data-theme] #pagebody .qc-grid.qc-m > .qc-col { gap: 16px; }
+/* r-improve-1124 P3: card titles break before a lone last word or two (「…配图检」 + 「查」); pretty moves the break, same lines and size; ignored where unsupported */
+#pagebody .card .body h3 { text-wrap: pretty; }

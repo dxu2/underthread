@@ -84,7 +84,8 @@ module.exports = {
     c.check("tap To do tag filters the list", await hf() === "todo" && await p.evaluate(() => !!document.querySelector('#officebox .hv3-tag[data-hd-f="todo"].on')), await hf());
     await c.shot("filter-todo");
     await c.tap('#officebox .hv3-tag[data-hd-f="todo"]'); await c.sleep(700);
-    c.check("tap again goes back to on you", await hf() === "review", await hf());
+    /* t-home-v3-jump (11-23): a phone tile jumps to its list and no longer toggles back on a second tap; the patch is the way back */
+    c.check("tap again keeps To do (jump, no toggle)", await hf() === "todo", await hf());
     await c.tap('#officebox .hv3-tag[data-hd-f="week"]'); await c.sleep(600);
     await c.tap('#officebox .hv3-patch'); await c.sleep(600);
     c.check("tap the patch goes back to on you", await hf() === "review", await hf());

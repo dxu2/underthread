@@ -45,8 +45,11 @@ const onYou = i => onYouCard(i) || (!!i && awaitsUser(i) && !busy(i) && !snoozed
    todo cards (the manager dispatches; a todo it owns is a parked idea until the user says go). */
 const schedItem = id => (ST.schedules || []).some(s => s && !s.deleted && !s.finished && s.enabled !== false && s.task && s.task.item === id);
 const standing = i => i.category === "ongoing" || !!routineOf(i) || schedItem(i.id);
+/* t-promo-ui-nits: a parent card (a quest) whose sub-cards are still open is carried by those sub-cards, so it is not in its owner's queue
+   (the steward's quest card read 「排队 1」 while four teammates worked its sub-cards). Once every sub-card is done it counts again. */
+const openKids = i => items().some(k => k.id !== i.id && !k.archived && k.stage !== "done" && (k.tags || []).includes(i.id));
 const queueOf = id => { const a = (ST && ST.agents && ST.agents[id]) || {}; return items().filter(i => i.owner === id && !i.archived && !/^r-/.test(i.id) && (i.stage === "todo" || (i.stage === "doing" && i.id !== a.item))
-    && !standing(i) && !onYou(i) && !snoozed(i) && !(id === "manager" && i.stage === "todo"))
+    && !standing(i) && !onYou(i) && !snoozed(i) && !(id === "manager" && i.stage === "todo") && !openKids(i))
   .sort((x, y) => (Date.parse(x.updated || x.created) || 0) - (Date.parse(y.updated || y.created) || 0)); };
 const qBadge = (id, small) => { const n = queueOf(id).length; return !n ? "" : small ? `<i class="aq-n" data-aq="${esc(id)}" title="${UI.lang === "en" ? `${n} queued` : `排队 ${n}`}">${n}</i>` : `<span class="aq" data-aq="${esc(id)}" title="${UI.lang === "en" ? `${n} queued` : `排队 ${n}`}"><span class="aq-w">${UI.lang === "en" ? "Queued" : "排队"}</span>${n}<span class="aq-d" aria-hidden="true"></span></span>`; };   /* t-queued-dots: .aq-d = three floating dots (dot + ::before + ::after) */
 const grpOf = i => busy(i) ? "doing" : snoozed(i) ? "todo" : (awaitsUser(i) || onYouCard(i)) ? "review" : idleDoing(i) ? "todo" : i.stage;   // ri1103-P2: a snoozed card waits under 待办
@@ -60,10 +63,15 @@ const pauseL = () => UI.lang === "en" ? "Paused" : "暂停";
 const ballOnYou = i => { const th = i.thread || []; for (let k = th.length - 1; k >= 0; k--) { const e = th[k]; if (!e || e.kind === "event") continue; return e.who !== "me" && e.kind === "msg" ? e : null; } return null; };
 const youOweL = e => { const d = Math.floor((Date.now() - (Date.parse(e.t) || Date.now())) / 864e5); return UI.lang === "en" ? (d >= 1 ? `Your reply · ${d}d` : "Your reply") : (d >= 1 ? `等你回 ${d} 天` : "等你回"); };
 const idleL = i => { if (standing(i)) return UI.lang === "en" ? "Ongoing" : "常驻"; const e = ballOnYou(i); return e ? youOweL(e) : pauseL(); };
-const items = () => (ST.items || []).filter(i => !i.archived);
+const items = () => ((ST && ST.items) || []).filter(i => !i.archived);
 /* r-improve-1119 P1: one 「等了多久」 for every place (card tag, 等你拍板 widget rows + footer, notice line, phone 「最久 N」): the wait starts at the
    last 提交审核 event in the thread (a manager log line or a comment does not reset it); no such event -> it.updated. Always rounded down. */
-const waitSince = it => { const th = (it && it.thread) || []; for (let i = th.length - 1; i >= 0; i--) if (th[i].kind === "event" && /^提交审核/.test(th[i].text || "")) return th[i].t; return it.updated || it.activity; };
+/* r-improve-1124 P4: a card not in review (waiting on a plan / a question) waits from its oldest open question (asked, not answered, not closed);
+   a review card, or one with no open question, from the last 提交审核 as before (r-improve-1119 P1), else it.updated */
+const waitSince = it => { const th = (it && it.thread) || [];
+  if (it && it.stage !== "review") { const oa = (it.asks || []).filter(a => !a.closed && !a.answer && a.t).map(a => a.t).sort((x, y) => (Date.parse(x) || 0) - (Date.parse(y) || 0))[0]; if (oa) return oa; }
+  for (let i = th.length - 1; i >= 0; i--) if (th[i].kind === "event" && /^提交审核/.test(th[i].text || "")) return th[i].t;
+  return it.updated || it.activity; };
 const waitMs = it => Math.max(0, Date.now() - (Date.parse(waitSince(it)) || Date.now()));
 const byAct = (a, b) => (b.activity || b.updated || "").localeCompare(a.activity || a.updated || "");
 const byCreated = (a, b) => (b.created || "").localeCompare(a.created || "");
