@@ -46,8 +46,8 @@
       add("approve:" + it.id, zh ? `${App.okLabel(it, false)}「${it.title}」` : `${App.okLabel(it, true)} “${it.title}”`,   // t-btn-names
         (App.askLeft(it) ? App.askLeft(it) + " · " : "") + (zh ? "4.5 秒内可撤销" : "Undo within 4.5 s"), "approve 批准 开工 验收 关单 accept pz", () => App.rvApprove(it.id), "");
     }
-    const nRev = App.items().filter(i => i.stage === "review").length, nDec = App.decisions().length;
-    add("go:review", zh ? `回首页 · 等你拍板 ${nRev + nDec}` : `Home · waiting on you ${nRev + nDec}`, zh ? "首页" : "Home page", "home shouye 首页 sy review shenhe 审核 拍板 sh", () => fire("data-go", "review"));
+    const nOn = App.items().filter(App.onYou).length;   // r-improve-1126 P1: same list as the home 等你拍板 widget (onYouCard, or onYou + awaitsUser = onYou)
+    add("go:review", zh ? `回首页 · 等你拍板 ${nOn}` : `Home · waiting on you ${nOn}`, zh ? "首页" : "Home page", "home shouye 首页 sy review shenhe 审核 拍板 sh", () => fire("data-go", "review"));
     for (const p of ["quests", "main", "side", "daily", "urgent", "ongoing", "market", "studio", "pipe", "board", "channels", "assets", "logs", "reports", "docs", "crew"]) {   /* t-roster-rail: 团队 (the roster) replaces 角色 */   /* t-ui-fix-r2 B06: + 团队, 招聘市场 */   /* t-nav-shoot: 制作 + its four sub pages */
       if (p === "quests" && !phone()) continue;
       if ((p === "pipe" || p === "channels") && App.contentMode && !App.contentMode()) continue;   /* t-oss-gen-s5: content mode only */
@@ -171,7 +171,7 @@
   const avOf = w => w === "me" ? App.av("me", "sm") : App.av(App.agent(w), "sm");
   const kindTag = it => {
     const k = it.kind === "task" ? "deliverable" : it.kind;
-    return it.stage === "review" ? `<i class="tag ${k}">${App.t(k)}</i>` : App.awaitsUser(it) ? `<i class="tag ${k}">${en() ? "waiting on you" : "等你拍板"}</i>` : `<i class="pl-st">${esc(App.stageLabel(it.stage))}</i>`;
+    return it.stage === "review" ? `<i class="tag ${k}">${App.t(k)}</i>` : App.awaitsUser(it) ? `<i class="tag ${k}">${en() ? "waiting on you" : "等你拍板"}</i>` : App.askWait && App.askWait(it) ? `<i class="tag question">${App.askWaitL()}</i>` : `<i class="pl-st">${esc(App.stateTag(it))}</i>`   /* r-improve-1126 P2 */;
   };
   function build() {
     const el = document.createElement("div"); el.id = "pal"; el.hidden = true;

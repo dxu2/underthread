@@ -1,8 +1,8 @@
 /* t-lookaway-fx: full-screen ink arrival (#lka-fs) and the top pill (#lka-pw). Real path: stateutil writes in the scratch copy -> long poll ->
  * toast.js -> LookAway.take. Checks: a card handed in for review plays the full screen (48 px backdrop blur even under the knit palette, avatar,
  * title, gone after ~3 s); a second one within 20 min becomes the pill; the pill grows out of the seam under the top bar (t-pill-notif-style:
- * one line, fixed-position morph while .lka-anim, rest after, look per theme, every notice has the round button); reply + DM merge into 「还有 N 条」 (+N badge);
- * the badge shows the next; an ask has the 回答 button, no countdown bar, stays past 5 s, folds into the header summary #lka-sum after 8 s
+ * one line, fixed-position morph while .lka-anim, rest after, look per theme, every notice has the round button); reply + DM merge into 「还有 N 条 ›」 at the pill's right end;
+ * the count shows the next; an ask has the 回答 button, no countdown bar, stays past 5 s, folds into the header summary #lka-sum after 8 s
  * (「N 条等你」), comes back out on a click and goes once answered on the card; hover pauses the countdown; Esc clears the summary; click opens the card;
  * 设置 has no 提醒动效 row (t-drop-arrival-fx) and a stale saved pref is ignored;
  * reduced motion = pill, no slide; day's end plays once.
@@ -91,13 +91,13 @@ module.exports = {
       await c.shot("pill-ask-bud");
       await p.mouse.move(300, 600); await c.sleep(6500);
       c.check("ask stays past 5 s (until answered)", !!(await pillInfo(p)));
-      await c.sleep(3000);   // the 8 s start when the mouse leaves the pill (it rested on the badge)
+      await c.sleep(3000);   // the 8 s start when the mouse leaves the pill (it rested on the count)
       const M = await sumInfo(p);
       c.check("after 8 s the asks fold into the header summary: 2 条等你, stacked avatars, the pill gone, no corner dot", M && /2 条等你/.test(M.txt) && M.avs >= 1 && M.bag === 2 && !(await pillInfo(p)) && !(await p.$(".lka-dot")), M);
       await c.shot("pill-ask-summary");
       await p.click("#lka-sum"); await c.sleep(1800);
       const B = await pillInfo(p);
-      c.check("click on the summary: the asks come back out of it (summary gone, +1 badge)", B && /lka-c-ask/.test(B.cls) && /还有 1 条/.test(B.more) && !(await sumInfo(p)), B);
+      c.check("click on the summary: the asks come back out of it (summary gone, 还有 1 条)", B && /lka-c-ask/.test(B.cls) && /还有 1 条/.test(B.more) && !(await sumInfo(p)), B);
       await p.mouse.move(300, 600);
       const q0 = await p.evaluate(() => LookAway._S.q.length);
       for (const [it, id] of await p.evaluate(() => LookAway._S.q.map(n => [n.it && n.it.id, n.ask]))) if (id) su("ask-close", it, id);

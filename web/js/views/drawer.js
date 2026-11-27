@@ -8,7 +8,7 @@
 // The thread reads like a chat: agent replies are cards, logs/events are centred lines, your messages are right bubbles,
 // and each draft version is a card at the time it was submitted.
 import { $, $$, DRAFT, LS } from "../core/util.js";
-import { CATS, PLAT, STAGES, dayKey, hm, rowLabel, srvT, stageLabel, t, when, whenH, whoName } from "../core/i18n.js";
+import { CATS, PLAT, STAGES, dayKey, hm, rowLabel, srvT, stageLabel, stateTag, t, when, whenH, whoName } from "../core/i18n.js";
 import { ARCH, ST, UI, archItem, archKnown, fullItem, grpOf, items, snoozed, snzEnd } from "../core/store.js";
 import { agent, agents, aname, atitle, av, ringOnce } from "../core/av.js";
 import { api, closeBtn, closeModal, modalClose, modalReject, openModal, stillUploading, toast } from "../core/ui.js";
@@ -18,7 +18,7 @@ import { contentMode } from "./left.js";
 import { MB, closeMailbox, itemMailRead, nrMail, nrRead } from "./mail.js";
 import { MOBQ } from "./pages/common.js";
 import { renderPage } from "./pages/index.js";
-import { askBlock, askFold, askFoldWire, askGuard, askRow, awaitsUser, okAria, okDockIn, okDone, okLabel, okShort, openAsks } from "./pages/review.js";
+import { askBlock, askFold, askFoldWire, askGuard, askRow, askWait, askWaitL, awaitsUser, okAria, okDockIn, okDone, okLabel, okShort, openAsks } from "./pages/review.js";
 import { RMQ, hooks, wkBand, workersOf } from "../app.js";
 const drawerAtt = [];
 const DW = { to: null, pop: [], sel: 0, open: new Set(), n: 0, fresh: false, stampPre: null, askOpen: new Set(), sumOpen: new Set() };   // askOpen / sumOpen: item ids (t-ui-next 1, 4)
@@ -610,6 +610,22 @@ function askDup(dw, sc, it) {
 /* r-improve-1124 P1: a card opens at its newest message, so its title is far above and the header only said the card id. While .dw-title is out of
    view the header shows the title (one line, ellipsis) in place of the id text; the copy-id and copy-link icons stay. Phone: the glass header floats
    over the scroller, so a title under it counts as out of view. Re-attached on every render (the header and the scroll content are rebuilt). */
+/* r-improve-1125 P4: on a phone the header row held back + stage tag + title + two copy icons + category menu, and the title got ~103 px.
+   While the title shows (dw-ht-on) the phone hides both icons (CSS); tapping the title copies the card id, holding it 0.5 s copies the link.
+   The link is copied on release: iOS only lets a page write the clipboard inside a touchend / click, not from a timer. */
+const RI25H = { t: 0, long: false, done: false, x: 0, y: 0 };
+const copyIdT = id => { copyText(id).then(ok => toast(ok ? (UI.lang === "en" ? `Copied ${id}` : `已复制 ${id}`) : (UI.lang === "en" ? "Copy failed" : "复制失败"), !ok)); };
+const copyLinkT = id => { copyText(location.origin + location.pathname + "#item=" + id).then(ok => toast(ok ? (UI.lang === "en" ? "Link copied" : "已复制链接") : (UI.lang === "en" ? "Copy failed" : "复制失败"), !ok)); };
+function htPressWire(dw) {
+  const el = e => MOBQ.matches && e.target.closest && e.target.closest(".dw-lead.dw-ht-on .dw-ht[data-ht-copy]");
+  const stop = () => { clearTimeout(RI25H.t); const h = document.querySelector("#drawer .dw-ht.ri25-hold"); if (h) h.classList.remove("ri25-hold"); };
+  dw.addEventListener("pointerdown", e => { const h = el(e); if (!h) return; stop(); RI25H.long = false; RI25H.done = false; RI25H.x = e.clientX; RI25H.y = e.clientY;
+    RI25H.t = setTimeout(() => { RI25H.long = true; h.classList.add("ri25-hold"); try { navigator.vibrate && navigator.vibrate(8); } catch { } }, 500); });
+  dw.addEventListener("pointermove", e => { if (RI25H.t && Math.hypot(e.clientX - RI25H.x, e.clientY - RI25H.y) > 8) { stop(); RI25H.long = false; } });
+  dw.addEventListener("pointerup", e => { const h = el(e); stop(); if (h && RI25H.long) { RI25H.long = false; RI25H.done = true; copyLinkT(h.dataset.htCopy); setTimeout(() => { RI25H.done = false; }, 600); } });
+  dw.addEventListener("pointercancel", () => { stop(); RI25H.long = false; });
+  dw.addEventListener("contextmenu", e => { if (el(e)) e.preventDefault(); });
+}
 function htWatch(dw, sc, it) {
   if (DW.htIO) { DW.htIO.disconnect(); DW.htIO = null; }
   const ttl = sc.querySelector(".dw-title"), lead = $(".dw-lead", dw);
@@ -624,7 +640,7 @@ const DW_TWO_STEP = false;   // t-perf-smooth F1, see openItemNow
 function dwTopHTML(it) {   // t-detail-close B: words, not ✕, so it never reads as ending the card
   const opts = (list, cur) => list.map(([v, n]) => `<option value="${v}" ${v === cur ? "selected" : ""}>${esc(n)}</option>`).join("");
   const htOn = !!DW.ht && DW.ht.id === it.id && DW.ht.on;   /* r-improve-1124 P1: kept across re-renders so the title does not blink on each poll */
-  return `<div class="dw-lead${htOn ? " dw-ht-on" : ""}"><button class="dw-back" data-close aria-label="${UI.lang === "en" ? "Back" : "返回"}"><svg viewBox="0 0 12 20" width="12" height="20" aria-hidden="true"><path d="M10 2 2 10l8 8" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg><span>${UI.lang === "en" ? "Back" : "返回"}</span></button><span class="tag ${it.stage === "review" || awaitsUser(it) ? it.kind : ""}" title="${esc(it.stage === "review" || awaitsUser(it) ? t(it.kind === "task" ? "deliverable" : it.kind) : stageLabel(it.stage))}"><span class="gl" aria-hidden="true">◆</span>${it.stage === "review" || awaitsUser(it) ? t(it.kind === "task" ? "deliverable" : it.kind) : stageLabel(it.stage)}</span> <b class="dw-ht" title="${esc(it.title)}">${esc(it.title)}</b><button type="button" class="mono dim dw-id" data-copy-id="${esc(it.id)}" title="${UI.lang === "en" ? "Copy card id" : "复制卡号"}"><span>${esc(it.id)}</span><svg viewBox="0 0 16 16" width="11" height="11" aria-hidden="true"><rect x="5" y="5" width="8.5" height="8.5" rx="1.6" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M10.5 3.2V3a1.5 1.5 0 0 0-1.5-1.5H3A1.5 1.5 0 0 0 1.5 3v6A1.5 1.5 0 0 0 3 10.5h.2" fill="none" stroke="currentColor" stroke-width="1.4"/></svg></button><button type="button" class="dw-id dce-lnk" data-copy-link="${esc(it.id)}" title="${UI.lang === "en" ? "Copy link to this card" : "复制这张卡的链接"}" aria-label="${UI.lang === "en" ? "Copy link" : "复制链接"}"><svg viewBox="0 0 16 16" width="12" height="12" aria-hidden="true"><path d="M6.6 9.4a2.6 2.6 0 0 0 3.7 0l2.4-2.4a2.6 2.6 0 0 0-3.7-3.7l-.9.9M9.4 6.6a2.6 2.6 0 0 0-3.7 0L3.3 9a2.6 2.6 0 0 0 3.7 3.7l.9-.9" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></button></div>
+  return `<div class="dw-lead${htOn ? " dw-ht-on" : ""}"><button class="dw-back" data-close aria-label="${UI.lang === "en" ? "Back" : "返回"}"><svg viewBox="0 0 12 20" width="12" height="20" aria-hidden="true"><path d="M10 2 2 10l8 8" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg><span>${UI.lang === "en" ? "Back" : "返回"}</span></button><span class="tag ${it.stage === "review" || awaitsUser(it) ? it.kind : askWait(it) ? "question" : ""}" title="${esc(it.stage === "review" || awaitsUser(it) ? t(it.kind === "task" ? "deliverable" : it.kind) : askWait(it) ? askWaitL() : stateTag(it))}"><span class="gl" aria-hidden="true">◆</span>${it.stage === "review" || awaitsUser(it) ? t(it.kind === "task" ? "deliverable" : it.kind) : askWait(it) ? askWaitL() : stateTag(it)}</span> <b class="dw-ht" title="${esc(it.title)}" data-ht-copy="${esc(it.id)}">${esc(it.title)}</b><button type="button" class="mono dim dw-id" data-copy-id="${esc(it.id)}" title="${UI.lang === "en" ? "Copy card id" : "复制卡号"}"><span>${esc(it.id)}</span><svg viewBox="0 0 16 16" width="11" height="11" aria-hidden="true"><rect x="5" y="5" width="8.5" height="8.5" rx="1.6" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M10.5 3.2V3a1.5 1.5 0 0 0-1.5-1.5H3A1.5 1.5 0 0 0 1.5 3v6A1.5 1.5 0 0 0 3 10.5h.2" fill="none" stroke="currentColor" stroke-width="1.4"/></svg></button><button type="button" class="dw-id dce-lnk" data-copy-link="${esc(it.id)}" title="${UI.lang === "en" ? "Copy link to this card" : "复制这张卡的链接"}" aria-label="${UI.lang === "en" ? "Copy link" : "复制链接"}"><svg viewBox="0 0 16 16" width="12" height="12" aria-hidden="true"><path d="M6.6 9.4a2.6 2.6 0 0 0 3.7 0l2.4-2.4a2.6 2.6 0 0 0-3.7-3.7l-.9.9M9.4 6.6a2.6 2.6 0 0 0-3.7 0L3.3 9a2.6 2.6 0 0 0 3.7 3.7l.9-.9" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></button></div>
     <div class="r"><select data-f="category">${opts(CATS.map(c => [c, t(c)]), it.category)}</select><button class="dw-hide" data-close title="${UI.lang === "en" ? "Hide the panel · the card stays" : "收起面板 · 卡还在，随时从列表点回来"}"><span>${UI.lang === "en" ? "Hide" : "收起"}</span><svg viewBox="0 0 8 12" width="7" height="11" aria-hidden="true"><path d="M1.5 1.5 6 6l-4.5 4.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></button></div>`;
 }
 function renderDrawer(first, fill) {
@@ -981,6 +997,7 @@ function wireDrawer() {
       api("set_stage", { item: sid, stage: v });
     }
   });
+  htPressWire($("#drawer"));   // r-improve-1125 P4
   $("#drawer").addEventListener("click", e => {
     if (e.target.closest(".dw-back[data-close]")) return backItem();
     { // t-ri1103-p4: 目录
@@ -991,8 +1008,10 @@ function wireDrawer() {
     const nv = e.target.closest("[data-dw-nav]"); if (nv) { navItem(nv.dataset.dwNav); return; }
     const ci = e.target.closest("[data-copy-id]");   // t-id-copy: tap the card id to copy it
     const cl = e.target.closest("[data-copy-link]");   // t-detail-close End: 复制链接 lives here now (was in the bottom ⋯ menu)
-    if (cl) { const id = cl.dataset.copyLink; copyText(location.origin + location.pathname + "#item=" + id).then(ok => toast(ok ? (UI.lang === "en" ? "Link copied" : "已复制链接") : (UI.lang === "en" ? "Copy failed" : "复制失败"), !ok)); return; }
-    if (ci) { const id = ci.dataset.copyId; copyText(id).then(ok => toast(ok ? (UI.lang === "en" ? `Copied ${id}` : `已复制 ${id}`) : (UI.lang === "en" ? "Copy failed" : "复制失败"), !ok)); return; }
+    const hc = MOBQ.matches && e.target.closest(".dw-lead.dw-ht-on .dw-ht[data-ht-copy]");   // r-improve-1125 P4: phone header title, tap = copy the id (a long press copied the link on release)
+    if (hc) { if (RI25H.done) { RI25H.done = false; return; } return copyIdT(hc.dataset.htCopy); }
+    if (cl) return copyLinkT(cl.dataset.copyLink);
+    if (ci) return copyIdT(ci.dataset.copyId);
     const cp = e.target.closest("[data-copy-v]");
     if (cp) { const it = curItem(), k = cp.dataset.copyV; const txt = k === "cur" ? it.draft : ((it.versions || [])[+k.slice(1)] || {}).draft; navigator.clipboard.writeText(txt || "").then(() => toast(t("copied"))); return; }
     if (e.target.closest("[data-vd-toggle]")) { if (DW.vd) DW.vd.open = !DW.vd.open; renderDrawer(); return; }   // t-imp-p2

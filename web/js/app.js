@@ -4,7 +4,7 @@
 // listeners used to register, keeps render() / the presence helpers / the window.App facade for the other page scripts, and boots.
 // A new top-level name another file needs: add it to that file's export { ... } line and to the importer's import line.
 import { $, DRAFT, LS } from "./core/util.js";
-import { PLAT, ago, agoH, srvT, stageLabel, t, titleEn, tplEn, tplSeed, when, whenH } from "./core/i18n.js";
+import { PLAT, ago, agoH, srvT, stageLabel, stateTag, t, titleEn, tplEn, tplSeed, when, whenH } from "./core/i18n.js";
 import { ARCH, LP, REV, ST, UI, archAll, archIx, busy, byAct, grpOf, histAll, items, lpAbort, lpLoop, mailAll, mailUnread, onYou, onYouCard, poll, qBadge, queueOf, snapBoot, snoozed, waitMs } from "./core/store.js";
 import { agent, aname, atitle, av, avatarUrl, avLoad, hasArt, ringOnce, tintOf, wireAv, wsheet } from "./core/av.js";
 import { wireYk, yk, ykInto, ykSync } from "./core/yarnkit.js";
@@ -20,7 +20,7 @@ import { chatMailRead, mailPv, newReplies, nrDot, renderMailbox, seenOf, tablePv
 import { inkEb } from "./views/pages/common.js";
 import { phaseFree, renderPage, wirePages, wirePages2 } from "./views/pages/index.js";
 import { wireLibrary } from "./views/pages/library.js";
-import { askGroups, askLeft, awaitsUser, decisions, grpHTML, okDone, okLabel, openAsks, rvApprove, rvCanApprove, wireReview } from "./views/pages/review.js";
+import { askGroups, askLeft, askWait, askWaitL, awaitsUser, decisions, grpHTML, okDone, okLabel, openAsks, rvApprove, rvCanApprove, wireReview } from "./views/pages/review.js";
 import { wireSchedule } from "./views/pages/schedule.js";
 import { TEXTURES, setTab, stageSub, themeMode, wireSettings } from "./views/pages/settings.js";
 import { ghLabel, ghOpen, loadHealth, modalStatus, statusRows, statusSummary, verCheck, wireStatus } from "./views/status.js";
@@ -142,13 +142,13 @@ window.App = {
   askGroups: l => askGroups(l), grpHTML: (g, c) => grpHTML(g, c),   /* t-ri1113-a P3 */
   rtShort, rtFull, schToday, contentMode,   /* t-oss-gen-s5: contentMode (palette.js) */   /* t-ri1109-a: routine names, shared with widgets.js; t-ri1110-a P2: schToday */
   utEmpty: (text, cls, h) => utEmpty(text, cls, h),   /* t-thread-motif ④ (widgets.js, palette.js, mobile.js) */
-  rvApprove: id => rvApprove(id, null), rvCanApprove: it => rvCanApprove(it), awaitsUser: it => awaitsUser(it), busy: it => busy(it), onYou: it => onYou(it), onYouCard: it => onYouCard(it), grpOf: it => grpOf(it), waitMs: it => waitMs(it), newReplies: () => newReplies(), nrDot: id => nrDot(id), decisions: () => decisions(),   // t-imp-p5 (palette)
+  rvApprove: id => rvApprove(id, null), rvCanApprove: it => rvCanApprove(it), awaitsUser: it => awaitsUser(it), askWait: it => askWait(it), askWaitL: () => askWaitL(), busy: it => busy(it), onYou: it => onYou(it), onYouCard: it => onYouCard(it), grpOf: it => grpOf(it), waitMs: it => waitMs(it), newReplies: () => newReplies(), nrDot: id => nrDot(id), decisions: () => decisions(),   // t-imp-p5 (palette)
   /* t-chrome-badge (home.js .hd-tool) */
   toolLine: w => toolLine(w), toolBadge: a => toolBadge(a), toolWhat: a => toolWhat(a), addToolExtra: fn => { if (!TOOL_EXTRA.includes(fn)) TOOL_EXTRA.push(fn); }, ext: window.UTExt,   /* S8: App.ext = web/ext.js */
   wsheet: (a, sz) => wsheet(a, sz),   /* t-chibi-anim (home.js .hd-mini / .dp-uti) */
   yk: (a, h, b) => yk(a, h, b), ykInto: (el, a, h, b) => ykInto(el, a, h, b), ykSync: () => ykSync(),   /* t-yarn-anim: the home 「此刻在忙」 card (widgets.js busy patch, home.js A2 rows) */
   hasArt: (a, k) => hasArt(a, k), tintOf: a => tintOf(a),   /* t-hr-registry (home.js, widgets.js) */
-  UI, get ST() { return ST; }, roll, modalStatus: () => modalStatus(), ghOpen: () => ghOpen(), ghLabel: () => ghLabel(), statusSummary: () => statusSummary(statusRows()), loadHealth: a => loadHealth(a), refreshPage: () => renderPage(), phaseFree, avatarUrl, t, items, agent, aname, atitle, av, when, whenH, agoH, ago, byAct, PLAT, stageLabel,
+  UI, get ST() { return ST; }, roll, modalStatus: () => modalStatus(), ghOpen: () => ghOpen(), ghLabel: () => ghLabel(), statusSummary: () => statusSummary(statusRows()), loadHealth: a => loadHealth(a), refreshPage: () => renderPage(), phaseFree, avatarUrl, t, items, agent, aname, atitle, av, when, whenH, agoH, ago, byAct, PLAT, stageLabel, stateTag,
   refresh: async () => { await poll(true); if (!UI.down) await avLoad(true); return !UI.down; },   // t-m2-c ④ pull-to-refresh: a forced full fetch; false = the server did not answer; t-avatar-live-refresh: then reread the avatar manifests
   tablePv: s => tablePv(s),   // t-chat-table (mobile.js chat list preview)
   mailPv: (s, a) => mailPv(s, a),   /* t-ri1108-a P1 (widgets.js 新回复 rows) */

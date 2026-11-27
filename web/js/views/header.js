@@ -454,7 +454,8 @@ function renderHeader() {
      t-mailbox-icon (user 00:26): icon only; the word lives in title (hover tip) + aria-label, the unread count is a corner badge (none at 0).
      The SVG is written in its serialized form (explicit closing tags) so the innerHTML compare below stays equal and the pill is not rebuilt every poll. */
   const mlab = UI.lang === "en" ? "Mailbox" : "信箱", mn = unread > 99 ? "99+" : String(unread);
-  const hc = `<button data-h="mail" class="hc-mail" title="${mlab}" aria-label="${mlab}${unread ? " " + mn : ""}"><svg viewBox="0 0 16 16" aria-hidden="true"><rect x="1.8" y="3.2" width="12.4" height="9.6" rx="2"></rect><path class="ums-flap" d="M2.5 4.5 8 8.6l5.5-4.1"></path>${MAIL_X}</svg>${unread ? `<span class="n">${YARN}${mn}</span>` : ""}</button>`
+  const here = UI.page === "mail" && !MOBQ.matches;   /* r-improve-1125 P5: on the desktop 信箱 page the icon is lit (the rail row is hidden there) */
+  const hc = `<button data-h="mail" class="hc-mail${here ? " ri25-on" : ""}"${here ? ` aria-current="page"` : ""} title="${mlab}" aria-label="${mlab}${unread ? " " + mn : ""}"><svg viewBox="0 0 16 16" aria-hidden="true"><rect x="1.8" y="3.2" width="12.4" height="9.6" rx="2"></rect><path class="ums-flap" d="M2.5 4.5 8 8.6l5.5-4.1"></path>${MAIL_X}</svg>${unread ? `<span class="n">${YARN}${mn}</span>` : ""}</button>`
     + `<button data-h="chat" class="hc-chat" aria-expanded="${document.body.classList.contains("chat-pop")}">${UI.lang === "en" ? "Chat" : "聊天"}</button>`;
   if ($("#hdrctrl").innerHTML.trim() !== hc) $("#hdrctrl").innerHTML = hc;
 }

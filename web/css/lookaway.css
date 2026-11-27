@@ -109,13 +109,19 @@ html:not([data-ut]) .lka-pw[data-m="2"] { --lka-fill: #FFFFFF; --lka-rim: rgba(0
 /* knit day: a running stitch inside the rim */
 .lka-pw .lka-pill::after, .lka-pw .lka-bud::after { content: none; position: absolute; inset: 3px; border-radius: inherit; pointer-events: none; }
 .lka-pw[data-m="1"] .lka-pill::after, .lka-pw[data-m="1"] .lka-bud::after { content: ""; border: 1px dashed rgba(126,96,74,.5); }
-/* +N: a badge on the avatar's corner (还有 N 条 stays as its label); the hit area grows to 36 px */
-.lka-pw .lka-more { position: absolute; left: 1px; top: 1px; z-index: 2; min-width: 16px; height: 16px; padding: 0 4px; box-sizing: border-box; border: 0; border-radius: 8px; cursor: pointer;
-  font: 700 10px/16px var(--lka-font); text-align: center; color: var(--accent-ink, #1F110D); background: var(--accent, #D6BF9E); box-shadow: 0 0 0 1.5px var(--lka-fill); transition: transform .18s ease; }
-.lka-pw .lka-more::before { content: ""; position: absolute; inset: -10px; }
-.lka-pw .lka-more:active { transform: scale(.9); }
+/* 还有 N 条 ›: the queue count sits at the right end of the pill, after the line (t-lka-more-badge 11-25: a +N on the avatar's corner read like that
+   person's unread count). Tapping it steps to the next notice; the hit area grows to the pill's height. */
+.lka-pw .lka-more { flex: none; position: relative; display: inline-flex; align-items: center; gap: 2px; height: 24px; margin: 0 -8px 0 0; padding: 0 7px 0 9px; box-sizing: border-box;
+  border: 0; border-radius: 12px; cursor: pointer; font: 600 12px/1 var(--lka-font); color: var(--lka-fg); background: color-mix(in srgb, var(--lka-fg) 10%, transparent);
+  transition: transform .18s ease, background-color .18s ease; }
+.lka-pw:is([data-m="1"], [data-m="2"]) .lka-more { color: var(--accent, #84490A); background: color-mix(in srgb, var(--accent, #84490A) 12%, transparent); }
+.lka-pw .lka-more::before { content: ""; position: absolute; inset: -8px -6px; }
+.lka-pw .lka-more:hover { background: color-mix(in srgb, var(--lka-fg) 17%, transparent); }
+.lka-pw:is([data-m="1"], [data-m="2"]) .lka-more:hover { background: color-mix(in srgb, var(--accent, #84490A) 20%, transparent); }
+.lka-pw .lka-more:active { transform: scale(.92); }
 .lka-pw .lka-more[hidden] { display: none; }
-.lka-pw .lka-mf { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+.lka-pw .lka-more:focus-visible { outline: 2px solid var(--accent, #D6BF9E); outline-offset: 1px; }
+.lka-pw .lka-mc { font-style: normal; font-size: 14px; line-height: 1; margin-top: -1px; opacity: .75; }
 /* the seam bar the drop clings to (only while it is born) */
 .lka-pw .lka-seam { position: fixed; display: block; visibility: hidden; box-shadow: none; pointer-events: none; }
 .lka-pw[data-m="1"] .lka-seam { background: #F7E6CE; }
@@ -124,6 +130,8 @@ html:not([data-ut]) .lka-pw[data-m="2"] { --lka-fill: #FFFFFF; --lka-rim: rgba(0
 .lka-pw.lka-anim .lka-pill { padding-left: max(0px, min(5px, calc((var(--lka-h, 40px) - 30px) / 2))); }
 .lka-pw.lka-anim .lka-pill > * { opacity: var(--lka-c, 1); filter: blur(var(--lka-bl, 0px)); }
 .lka-pw.lka-anim .lka-pill .lka-tx { padding-right: 16px; }
+.lka-pw.lka-anim .lka-pill:has(> .lka-more:not([hidden])) .lka-tx { padding-right: 0; }
+.lka-pw.lka-anim .lka-more { margin-right: 8px; }
 .lka-pw.lka-anim .lka-bud > span { opacity: var(--lka-c, 1); }
 .lka-pw.lka-anim :is(.lka-pill, .lka-bud):focus-visible { outline: none; }
 
@@ -161,12 +169,18 @@ html:not([data-ut]) .lka-pw[data-m="2"] { --lka-fill: #FFFFFF; --lka-rim: rgba(0
   .lka-pw .lka-tx b, .lka-pw .lka-tx small { font-size: 13px; }
   .lka-pw .lka-chip { font-size: 10.5px; padding: 3.5px 7px; }
   .lka-pw .lka-bud { width: 36px; height: 36px; }
-  .lka-pw .lka-more { left: 1px; top: 0; }
+  .lka-pw .lka-more { height: 22px; margin-right: -6px; padding: 0 6px 0 8px; font-size: 11.5px; }
+  .lka-pw .lka-mc { font-size: 13px; }
   .lka-pw.lka-anim .lka-pill .lka-tx { padding-right: 13px; }
+  .lka-pw.lka-anim .lka-pill:has(> .lka-more:not([hidden])) .lka-tx { padding-right: 0; }
+  .lka-pw.lka-anim .lka-more { margin-right: 7px; }
   #lka-sum { top: calc(var(--lks-cy, 22px) - 13px); height: 26px; font-size: 12px; }
   #lka-sum .lks-in { gap: 6px; padding: 0 10px 0 3px; }
   #lka-sum .lks-avs img { width: 20px; height: 20px; }
   #lka-sum .lks-chev { font-size: 14px; }
+  /* a card detail covers the top bar, and its own header (title, category menu) sits right where the summary hangs: the summary steps aside while
+     the card is open and comes back when it closes; the notices stay in it (t-lka-more-badge 11-25) */
+  body:has(#drawer.open) #lka-sum { opacity: 0 !important; visibility: hidden; pointer-events: none; transition: opacity .18s ease, visibility 0s .18s; }
 }
 @media (max-width: 760px) {
   #lka-fs .lka-col { top: 24vh; }
@@ -181,6 +195,8 @@ html:not([data-ut]) .lka-pw[data-m="2"] { --lka-fill: #FFFFFF; --lka-rim: rgba(0
   #lka-fs.lka-run .lka-blur { animation: none; --lka-r: calc(150vmax + 300px); }
   #lka-fs.lka-run .lka-avs, #lka-fs.lka-run .lka-b { animation: lka-in .15s linear both; transform: none; filter: none; }
   .lka-pw .lka-pill:active, .lka-pw .lka-bud:active, #lka-sum:active { scale: none; }
+  .lka-pw .lka-more { transition: none; }
+  .lka-pw .lka-more:active { transform: none; }
   .lka-pw .lka-ico, #lka-sum .lks-sd { transition: none; }
   .lka-pw .lka-bud:hover .lka-ico { transform: none; }
 }

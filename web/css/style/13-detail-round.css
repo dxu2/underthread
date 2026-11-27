@@ -299,3 +299,8 @@ html:not([data-theme="dark"]) .tag.deliverable::selection, html:not([data-theme=
 /* t-native-dialogs: UI.confirm (core/ui.js): title + one line + Cancel / Confirm in the usual #modal frame (bottom sheet on phone) */
 #modal .ncf h2 { margin-bottom: 6px; }
 #modal .ncf-p { margin: 0 0 4px; font-size: var(--fs-14); line-height: 1.5; color: var(--ink2, var(--dim)); overflow-wrap: anywhere; }
+
+/* r-improve-1126 P3: a card that is not in review but still has an open question: 完成委托 steps back to an outline so the question's options lead; it fills again once every question is answered (has-ask drops). Review cards (批准 / 验收) keep the solid button. */
+#drawer .ab.ok.solo.has-ask[data-act="done"] { background: color-mix(in srgb, var(--accent) 7%, var(--panel, #fff8ec)) !important; background-image: none !important; color: var(--accent) !important; box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--accent) 60%, transparent) !important; text-shadow: none !important; }
+#drawer .ab.ok.solo.has-ask[data-act="done"] * { color: inherit !important; }
+#drawer .ab.ok.solo.has-ask[data-act="done"]::before, #drawer .ab.ok.solo.has-ask[data-act="done"]::after { display: none !important; }

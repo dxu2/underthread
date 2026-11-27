@@ -9,7 +9,7 @@
  *   Pill: every notice that waits on you (ask, reminder, review when full screen is not allowed; replies too on the phone). Since t-pill-notif-style
  *     (user 11-24, ask b369c4 A) a one-line capsule that grows out of the seam under the top bar, with a separate round button; after 5 s (asks 8 s)
  *     it folds into a bead that rises into the header summary capsule #lka-sum (「N 条等你 · 还有 N 条」), which replaced the corner dot. Tap the
- *     summary = the notices come back. A second arrival bumps the pill and grows the +N badge. Click = open; badge = next; swipe up / Esc = dismiss.
+ *     summary = the notices come back. A second arrival bumps the pill and grows the 「还有 N 条 ›」 count at the pill's right end. Click = open; count = next; swipe up / Esc = dismiss.
  *     Reduced motion = 150 ms fades only.
  *   No setting since t-drop-arrival-fx (user 11-23): always full screen + pill. The old 设置 → 提醒动效 pref (localStorage rt.lka) is ignored and removed at load.
  *   Classes: lka-* (checked unused). Knit theme kills backdrop-filter for * with !important; lookaway.css re-enables it for these two layers only.
@@ -100,7 +100,7 @@
        blurs, shrinks into a bead that rises into the header summary capsule (#lka-sum: stacked avatars, 「N 条等你 · 还有 N 条」, a status dot, ›),
        which answers with a ring. The summary replaced the corner dot of t-pill-answer-icon: tap it (Enter) and the notices come back out of it.
        Esc on the summary clears it. Asks still leave only when answered, opened or dismissed; review cards when they leave review; the others
-       after 30 min. Click = open, +N badge = next, swipe up / Esc = dismiss (not into the summary).
+       after 30 min. Click = open, 「还有 N 条 ›」 = next, swipe up / Esc = dismiss (not into the summary).
      - Every move is a pure function of time on one clock (play()); LookAway._clock(t) freezes it for frame-exact recordings.
      - Reduced motion: 150 ms fades, no ring. No WebGL any more (pilldrop.js only supplies look()). */
   const TAG = { reply: ["新回复", "Reply"], decide: ["等你审", "Review"], ask: ["问你", "Question"], remind: ["提醒", "Reminder"], eod: ["收工", "Wrap-up"] };
@@ -223,7 +223,7 @@
   function pillHTML(n) {
     const a = ag(n.agent), more = S.q.length - 1;
     return `<img class="lka-pav" src="${esc(av(a))}" alt=""><span class="lka-tx"><b>${esc(nm(a) || n.agent || "")}</b><em class="lka-chip">${esc(L2(TAG[n.cls]))}</em><small>${esc(n.sub || "")}</small></span>`
-      + `<button type="button" class="lka-more" data-lka-more data-nomo aria-label="${en() ? `${more} more` : `还有 ${more} 条`}"${more > 0 ? "" : " hidden"}><span class="lka-mf">${en() ? `${more} more` : `还有 ${more} 条`}</span><span class="lka-mb" aria-hidden="true">+${more}</span></button>`;
+      + `<button type="button" class="lka-more" data-lka-more data-nomo aria-label="${en() ? `${more} more` : `还有 ${more} 条`}"${more > 0 ? "" : " hidden"}><span class="lka-mf">${en() ? `${more} more` : `还有 ${more} 条`}</span><i class="lka-mc" aria-hidden="true">›</i></button>`;
   }
   function pillBox() {
     if (S.pill && S.pill.isConnected && !S.pill._out) return S.pill;

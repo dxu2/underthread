@@ -133,7 +133,7 @@
       const lab = bl.slice(0, 1).map(a => { const it = A().liveItem(a);
         return `<div class="tb-ml" style="--c:${tint(a)}"${it ? ` data-item="${esc(it.id)}"` : ""}><b><span>${esc(A().aname(a))}</span><i>${a.since ? ago(a.since) : ""}</i></b><small>${esc((it && it.title) || a.activity || "")}</small></div>`; }).join("");
       const idle = M.idle.slice(0, 8).map(a => `<img class="tb-ia" src="${esc(A().avatarUrl(a))}" alt="" title="${esc(A().aname(a))}">`).join("");
-      return eb(L(`${nb} 在忙`, `${nb} busy`)) + `<div class="tb-m"><div class="tb-mg">${g}</div><div class="tb-mr">${nb ? lab : `<div class="tb-calm">${L("大家都在待机", "Everyone is idle")}</div>`}<div class="tb-idle">${idle}${nb > 1 ? `<em>${L(`+${nb - 1} 人在忙`, `+${nb - 1} busy`)}</em>` : ""}</div></div></div>`
+      return eb(L(`${nb} 在忙`, `${nb} busy`)) + `<div class="tb-m"><div class="tb-mg">${g}</div><div class="tb-mr">${nb ? lab : `<div class="tb-calm">${L("大家都空闲", "Everyone is idle")}</div>`}<div class="tb-idle">${idle}${nb > 1 ? `<em>${L(`+${nb - 1} 人在忙`, `+${nb - 1} busy`)}</em>` : ""}</div></div></div>`
         + (oldNote() || `<div class="wg-more"><span>${L(`近 24 小时交接 ${M.evs.length} 次`, `${M.evs.length} handoffs in 24 h`)}</span></div>`)   /* t-drop-team-tab: no 团队 page to open any more */;
     },
     l(M) {   // the whole graph + the last 3 handoffs
@@ -145,7 +145,7 @@
   function widget(s) { sync(); const M = model(null); return (W[s] || W.m)(M); }
 
   // ---------- the 团队 page ----------
-  const stTxt = a => a.status === "working" ? L("执行中", "working") : a.status === "sleeping" ? L("休眠", "asleep") : a.status === "offline" ? L("离线", "offline") : L("待机", "idle");
+  const stTxt = a => a.status === "working" ? L("在忙", "busy") : a.status === "sleeping" ? L("休眠", "asleep") : a.status === "offline" ? L("离线", "offline") : L("空闲", "idle");
   function qCard(a) {
     const app = A(), it = isB(a) ? app.liveItem(a) : null, q = app.queueOf ? app.queueOf(a.id) : [];   // t-ui-fix-r6 R6-08
     return `<div class="tb-qc${isB(a) ? " on" : ""}" style="--c:${tint(a)}"><div class="tb-qh" data-chat="${esc(a.id)}"><img src="${esc(app.avatarUrl(a))}" alt=""><b>${esc(app.aname(a))}</b><span class="tb-st ${esc(a.status || "idle")}">${stTxt(a)}${isB(a) && a.since ? ` · ${ago(a.since)}` : ""}</span></div>
@@ -178,13 +178,13 @@
   }
   function deskPage(head) {
     const M = model(T.cursor), all = model(null);
-    const sum = `<div class="tb-sum"><b>${all.busy.length}</b> ${L("在忙", "busy")} · ${all.idle.length} ${L("待机", "idle")} · ${L(`近 24 小时交接 <b>${all.evs.length}</b> 次`, `<b>${all.evs.length}</b> handoffs in 24 h`)}${T.err === "old" ? ` · <span class="tb-warn">${L("看板服务重启后才有交接记录", "restart the server to see handoffs")}</span>` : ""}</div>`;
+    const sum = `<div class="tb-sum"><b>${all.busy.length}</b> ${L("在忙", "busy")} · ${all.idle.length} ${L("空闲", "idle")} · ${L(`近 24 小时交接 <b>${all.evs.length}</b> 次`, `<b>${all.evs.length}</b> handoffs in 24 h`)}${T.err === "old" ? ` · <span class="tb-warn">${L("看板服务重启后才有交接记录", "restart the server to see handoffs")}</span>` : ""}</div>`;
     return `${head}<div class="tb-page">${sum}<div class="tb-gbox" data-tb-g>${graphBox(M)}</div>${bar(all)}<div class="tb-q">${all.ags.map(qCard).join("")}</div></div>`;
   }
   function phonePage(head) {
     const M = model(null);
     const rows = M.evs.slice(-15).reverse().map(e => `<div class="tb-pr-row" data-item="${esc(e.item)}"><span class="tb-pr"><img src="${esc(A().avatarUrl(M.by[e.f]))}" alt=""><i>→</i><img src="${esc(A().avatarUrl(M.by[e.to]))}" alt=""></span><div class="t">${esc(e.title || e.item)}<small>${esc(A().aname(M.by[e.f]))} → ${esc(A().aname(M.by[e.to]))}</small></div><time>${hm(e.ms)}</time></div>`).join("");
-    return `${head}<div class="tb-page tb-ph"><div class="tb-sum"><b>${M.busy.length}</b> ${L("在忙", "busy")} · ${M.idle.length} ${L("待机", "idle")} · ${L(`近 24 小时交接 <b>${M.evs.length}</b> 次`, `<b>${M.evs.length}</b> handoffs in 24 h`)}</div>
+    return `${head}<div class="tb-page tb-ph"><div class="tb-sum"><b>${M.busy.length}</b> ${L("在忙", "busy")} · ${M.idle.length} ${L("空闲", "idle")} · ${L(`近 24 小时交接 <b>${M.evs.length}</b> 次`, `<b>${M.evs.length}</b> handoffs in 24 h`)}</div>
       <h3>${L("最近交接", "Recent handoffs")}</h3><div class="tb-list">${rows || `<div class="tb-calm">${T.err === "old" ? L("看板服务重启后才有交接记录", "Restart the server to see handoffs") : L("近 24 小时还没有交接", "No handoffs in the last 24 h")}</div>`}</div>
       <h3>${L("各人排队", "Queues")}</h3><div class="tb-q">${M.ags.map(qCard).join("")}</div></div>`;
   }

@@ -25,7 +25,7 @@ const T = {
     file: "文件", default_owner: "默认：负责人",
     send_to: "发给", jump_top: "顶部", jump_new: "最新", expand: "展开全文", collapse: "收起", owner_tag: "负责人",
     k_plan: "方案", k_deliverable: "交付", k_question: "提问", k_task: "草稿",
-    online: "在线", offline: "离线", working: "执行中", idle: "待机",
+    online: "在线", offline: "离线", working: "在忙", idle: "空闲",   /* r-improve-1126 P5: one word pair everywhere (was 执行中 / 待机) */
     by_activity: "按最新动态", by_created: "最新创建", pending: "待审核",
     empty_review: "没有等你审核的东西。去喝杯水。", empty_ok: "没有等你拍板的 · 去喝杯水", empty: "这里是空的。", empty_mail: "没有新动态", mail_thread: "{n} 条",
     wake: "唤醒管家", refresh_usage: "刷新用量", settings: "设置", write_report: "日报", report_req: "现在就要一份", report_next: "今天的日报 {t} 自动出", report_asked: "已告诉管家，写好就出现在这页", theme: "主题",
@@ -64,7 +64,7 @@ const T = {
     file: "File", default_owner: "default: owner",
     send_to: "To", jump_top: "Top", jump_new: "Latest", expand: "Show all", collapse: "Collapse", owner_tag: "owner",
     k_plan: "Plan", k_deliverable: "Deliverable", k_question: "Question", k_task: "Draft",
-    online: "online", offline: "offline", working: "working", idle: "idle",
+    online: "online", offline: "offline", working: "busy", idle: "idle",
     by_activity: "Latest activity", by_created: "Newest", pending: "Pending",
     empty_review: "Nothing waiting on you.", empty_ok: "Nothing waiting on you", empty: "Nothing here.", empty_mail: "Nothing new", mail_thread: "{n}",
     wake: "Ping manager", refresh_usage: "Refresh usage", settings: "Settings", write_report: "Report", report_req: "Get one now", report_next: "Today's report comes by itself at {t}", report_asked: "Told the manager; it shows up on this page when written", theme: "Theme",
@@ -102,6 +102,7 @@ const PLAT = new Proxy({}, {  // platform names follow the UI language
 const stageLabel = s => t(s === "review" ? "review_s" : s);
 // t-routine-btn: a routine's main card says 「暂停」 only when the routine is really paused; running, idle between runs, it says 每天 HH:MM
 const rtTag = i => { const r = i && i.stage !== "done" && !busy(i) && routineOf(i); return !r ? null : r.paused ? pauseL() : r.time ? (UI.lang === "en" ? `Daily ${r.time}` : `每天 ${r.time}`) : null; };
+const stateTag = i => rtTag(i) || (idleDoing(i) ? idleL(i) : stageLabel(i.stage));   // r-improve-1126 P2: one state word for list cards, the detail header, ⌘K and phone search
 const rowLabel = i => rtTag(i) || (snoozed(i) ? (UI.lang === "en" ? "Later · " : "稍后 · ") + snzText(i) : idleDoing(i) ? idleL(i) : grpLabel(grpOf(i)));
 const grpLabel = s => s === "review" ? (UI.lang === "en" ? "On you" : "等你拍板") : stageLabel(s);
 
@@ -296,4 +297,4 @@ function srvLocal() {
   }
 }
 
-export { T, t, EN_SUB, CATS, STAGES, PLAT_ZH, PLAT_EN, PLAT, stageLabel, rtTag, rowLabel, grpLabel, D, pad, hm, dayKey, when, relH, agoH, whenH, ago, whoName, nmEn, SNZ_EN, SKIP_EN, APV_EN, SRV_TH, SRV_ANY, srvT, TPLN, tplSeed, tplEn, titleEn, summaryEn, srvLocal };
+export { T, t, EN_SUB, CATS, STAGES, PLAT_ZH, PLAT_EN, PLAT, stageLabel, rtTag, stateTag, rowLabel, grpLabel, D, pad, hm, dayKey, when, relH, agoH, whenH, ago, whoName, nmEn, SNZ_EN, SKIP_EN, APV_EN, SRV_TH, SRV_ANY, srvT, TPLN, tplSeed, tplEn, titleEn, summaryEn, srvLocal };
