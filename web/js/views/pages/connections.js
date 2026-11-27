@@ -57,14 +57,14 @@ function statusLine(s) {
 function rowHTML(s) {
   const en = UI.lang === "en", busy = !!FC.busy[s.id], ic = ICON[s.id] || ICON.gmail;
   const head = `<span class="fc-ic" aria-hidden="true">${ic}</span><span class="st-tx"><b>${esc(P(s.label))}</b><small>${statusLine(s)}</small></span>`;
-  if (!s.available) return `<div class="st-row fc-row fc-off" data-fc-row="${s.id}">${head}</div>`;
-  if (!s.connected) return `<div class="st-row fc-row" data-fc-row="${s.id}">${head}<button type="button" class="st-act fc-go" data-fc="open" data-src="${s.id}"${busy ? " disabled" : ""}>${L("连接…", "Connect…")}</button></div>`;
+  if (!s.available) return `<div class="st-row fc-row fc-off" data-fc-row="${esc(s.id)}">${head}</div>`;
+  if (!s.connected) return `<div class="st-row fc-row" data-fc-row="${esc(s.id)}">${head}<button type="button" class="st-act fc-go" data-fc="open" data-src="${esc(s.id)}"${busy ? " disabled" : ""}>${L("连接…", "Connect…")}</button></div>`;
   const on = !!s.enabled, iv = s.interval_min || 5, ivs = (FC.st && FC.st.intervals) || [1, 5, 15, 30, 60];
-  const seg = `<div class="seg st-seg fc-iv" role="radiogroup" aria-label="${L("多久拉一次", "How often")}">${ivs.map(v => `<button type="button" class="seg-i ${v === iv ? "on" : ""}" role="radio" aria-checked="${v === iv}" data-fc="iv" data-src="${s.id}" data-v="${v}">${v < 60 ? (en ? `${v} min` : `${v} 分钟`) : (en ? "1 h" : "1 小时")}</button>`).join("")}</div>`;
+  const seg = `<div class="seg st-seg fc-iv" role="radiogroup" aria-label="${L("多久拉一次", "How often")}">${ivs.map(v => `<button type="button" class="seg-i ${v === iv ? "on" : ""}" role="radio" aria-checked="${v === iv}" data-fc="iv" data-src="${esc(s.id)}" data-v="${v}">${v < 60 ? (en ? `${v} min` : `${v} 分钟`) : (en ? "1 h" : "1 小时")}</button>`).join("")}</div>`;
   const msg = FC.msg[s.id] ? `<p class="fc-msg ${FC.msg[s.id].lv || ""}">${esc(FC.msg[s.id].t)}</p>` : "";
-  return `<div class="fc-blk" data-fc-row="${s.id}"><button type="button" class="st-row fc-row" data-fc="toggle" data-src="${s.id}" aria-pressed="${on}"${busy ? " disabled" : ""}>${head}<span class="sw ${on ? "on" : ""}" aria-hidden="true"><i></i></span></button>
+  return `<div class="fc-blk" data-fc-row="${esc(s.id)}"><button type="button" class="st-row fc-row" data-fc="toggle" data-src="${esc(s.id)}" aria-pressed="${on}"${busy ? " disabled" : ""}>${head}<span class="sw ${on ? "on" : ""}" aria-hidden="true"><i></i></span></button>
     <div class="fc-sub"><span class="fc-l">${L("多久拉一次", "Check every")}</span>${seg}
-      <div class="fc-acts"><button type="button" class="gt-b" data-fc="poll" data-src="${s.id}"${busy ? " disabled" : ""}>${busy === "poll" ? L("拉取中…", "Fetching…") : L("立即拉取", "Fetch now")}</button><button type="button" class="gt-b" data-fc="open" data-src="${s.id}"${busy ? " disabled" : ""}>${L("换密码", "New password")}</button><button type="button" class="gt-b dn" data-fc="disconnect" data-src="${s.id}"${busy ? " disabled" : ""}>${L("断开", "Disconnect")}</button></div>${msg}</div></div>`;
+      <div class="fc-acts"><button type="button" class="gt-b" data-fc="poll" data-src="${esc(s.id)}"${busy ? " disabled" : ""}>${busy === "poll" ? L("拉取中…", "Fetching…") : L("立即拉取", "Fetch now")}</button><button type="button" class="gt-b" data-fc="open" data-src="${esc(s.id)}"${busy ? " disabled" : ""}>${L("换密码", "New password")}</button><button type="button" class="gt-b dn" data-fc="disconnect" data-src="${esc(s.id)}"${busy ? " disabled" : ""}>${L("断开", "Disconnect")}</button></div>${msg}</div></div>`;
 }
 // t-oss-live: 看画面 / Watch (built-in ext/live). meta.exts.live is the switch the server reports (config.json extensions.live);
 // the row flips in place, then POSTs ext_set. Switching on loads ext/live's files into this page if it was drawn without them.

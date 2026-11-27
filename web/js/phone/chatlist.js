@@ -172,7 +172,7 @@ function convList() {
     const st = x.a.id !== "manager" && x.a.status === "working" ? `<i class="st">${App.t("working")}</i>` : "";
     const pop = x.n > (prevN[x.a.id] ?? x.n) ? " pop" : ""; prevN[x.a.id] = x.n;
     const dr = App.draft ? App.draft("dm:" + x.a.id) : null;   // t-draft-keep: unsent text shows as [草稿] like WeChat
-    return `<button class="cl-row ${x.a.id === "manager" ? "pin" : ""}" data-conv="${x.a.id}">
+    return `<button class="cl-row ${x.a.id === "manager" ? "pin" : ""}" data-conv="${esc(x.a.id)}">
       <span class="cl-av">${App.av(x.a)}${x.n ? `<b class="cl-n${pop}">${x.n > 99 ? "99+" : x.n}</b>` : ""}</span>
       <span class="cl-m"><span class="cl-t"><span class="nm">${esc(App.aname(x.a))}</span>${App.qBadge ? App.qBadge(x.a.id) : ""}${st}<time>${wtime(x.last && x.last.t)}</time></span>
       <span class="cl-p">${dr ? `<span class="cl-dr">${en() ? "[Draft]" : "[草稿]"}</span> ${esc(dr.t.replace(/\s+/g, " ").trim())}` : x.last ? esc(preview(x.last)) : `<em>${esc(App.atitle(x.a))}</em>`}</span></span></button>`;

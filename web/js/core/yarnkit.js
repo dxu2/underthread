@@ -142,7 +142,7 @@ const kk = (id, v, cls) => `${id}|${v || 0}|${toneNow()}|${/yk-out/.test(cls) ? 
 /* the wrapper: no layers when off; the level-2 eyes only while the kitten is awake (start / loop / done) */
 function wrap(id, v, [cls, ph, wp], html) {
   const off = /yk-off/.test(cls), out = /yk-out/.test(cls), e = v && !off, nap = ph === "sleep";
-  return `<span class="yk ${cls}${e ? " yk-l2" : ""}" data-yk="${id}" data-ykv="${v || ""}" data-ykk="${kk(id, e ? v : 0, cls)}" style="${vars(id, e ? v : 0, ph, wp)}">${html}${e ? '<i class="yk-ey" aria-hidden="true"></i>' : ""}${off && !out ? "" : `<i class="yk-fx" aria-hidden="true">${nap ? napSvg() : ""}</i>`}${off ? "" : '<i class="yk-hit" aria-hidden="true"></i>'}</span>`;
+  return `<span class="yk ${cls}${e ? " yk-l2" : ""}" data-yk="${esc(id)}" data-ykv="${v || ""}" data-ykk="${kk(id, e ? v : 0, cls)}" style="${vars(id, e ? v : 0, ph, wp)}">${html}${e ? '<i class="yk-ey" aria-hidden="true"></i>' : ""}${off && !out ? "" : `<i class="yk-fx" aria-hidden="true">${nap ? napSvg() : ""}</i>`}${off ? "" : '<i class="yk-hit" aria-hidden="true"></i>'}</span>`;
 }
 /* a beat that ends before the next re-render hands over in place (the avatar node stays): start -> the loop, done -> the out fade
    (the eyes go, the sleeping kitten fades), fade end -> no layers */

@@ -14,7 +14,7 @@ import { renderPage } from "./index.js";
 import { MGR_ON, dcDur, liveItem, mgrOnline, workersOf } from "../../app.js";
 function reviewRow(it, fresh) {
   const a = agent(it.owner), th = (it.thread || []).filter(x => x.kind !== "event").length;
-  return actRow({ attr: `data-item="${it.id}"`, av: av(a, "", it.id), ws: workersOf(it.id), unread: fresh, name: aname(a), title: it.title, time: agoH(it.activity || it.updated),
+  return actRow({ attr: `data-item="${esc(it.id)}"`, av: av(a, "", it.id), ws: workersOf(it.id), unread: fresh, name: aname(a), title: it.title, time: agoH(it.activity || it.updated),
     preview: sumPv(it.summary || ""), chip: rowLabel(it), n: th, extra: waitTag(it) });
 }
 // ===== P5 (t-aes-p5): phone home 待审 = a review card per item: first image on top, owner + time, title, summary, 看详情 / 批准.
@@ -29,12 +29,12 @@ function reviewCard(it, fresh) {
   const img = cardImg(it);
   const kind = it.kind === "plan" ? (zh ? "方案" : "Plan") : it.kind === "question" ? (zh ? "问题" : "Question") : (zh ? "交付" : "Delivery");
   const u = img && "/" + img.split("/").map(encodeURIComponent).join("/");
-  const media = img ? `<div class="rv-media"><img src="/api/thumb?p=${encodeURIComponent(img)}&w=780" alt="" loading="lazy" onerror="if(!this.dataset.f){this.dataset.f=1;this.src='${u}'}else{this.parentNode.remove()}"><span class="rv-kind">${kind}</span></div>` : "";
+  const media = img ? `<div class="rv-media"><img src="/api/thumb?p=${encodeURIComponent(img)}&w=780" alt="" loading="lazy" data-fb="${esc(u)}" onerror="imgFb(this,'rm')"><span class="rv-kind">${kind}</span></div>` : "";
   const ok = rvCanApprove(it);
-  return `<div class="rv-card${img ? "" : " no-img"}" data-item="${it.id}">${media}<div class="rv-body">
+  return `<div class="rv-card${img ? "" : " no-img"}" data-item="${esc(it.id)}">${media}<div class="rv-body">
     <div class="rv-meta">${av(a, "sm", it.id)}<b>${esc(aname(a))}</b>${fresh ? `<i class="rv-dot"></i>` : ""}<span>· ${t(it.category)} · ${agoH(it.activity || it.updated)}</span>${waitTag(it)}${img ? "" : `<span class="rv-kind sm">${kind}</span>`}</div>
     <h3>${nrDot(it.id)}${window.Onboard ? Onboard.exT(it) : esc(it.title)}</h3>${it.summary ? `<p>${esc(mailPv(it.summary))}</p>` : ""}${askRow(it)}
-    <div class="rv-acts${ok ? "" : " one"}"><button class="rv-open" data-rv-open="${it.id}">${zh ? "看详情" : "Open"}</button>${ok ? `<button class="rv-ok${openAsks(it).length ? " has-ask" : ""}" data-rv-ok="${it.id}">${okBtnIn(it)}</button>` : ""}</div>
+    <div class="rv-acts${ok ? "" : " one"}"><button class="rv-open" data-rv-open="${esc(it.id)}">${zh ? "看详情" : "Open"}</button>${ok ? `<button class="rv-ok${openAsks(it).length ? " has-ask" : ""}" data-rv-ok="${esc(it.id)}">${okBtnIn(it)}</button>` : ""}</div>
   </div></div>`;
 }
 // ===== t-imp-p1: 等你拍板 = review items + waiting items whose open draft is a plan or a question (the owner is waiting on the user).
@@ -177,9 +177,9 @@ function grpHTML(g, cls = "") {   // the group row; the caller adds the member c
   const opts = rec ? [rec].concat(a.options.filter(o => o !== rec)) : a.options, last = g.items.reduce((t, i) => (i.activity || i.updated) > t ? (i.activity || i.updated) : t, "");
   const acts = g.pend
     ? `<div class="ri13-pend" role="status">${zh ? `4.5 秒后 ${n} 张都答「${esc(g.pend)}」` : `Answering all ${n} “${esc(g.pend)}” in 4.5 s`}</div>`
-    : opts.map(o => `<button type="button" class="ri13-o${o === rec ? " rec" : ""}" data-ri13-all="${g.id}" data-ri13-opt="${esc(o)}">${zh ? `全部${esc(o)}` : `All: ${esc(o)}`}${o === rec && !REC_TXT.test(o) ? `<i class="rec-b">${zh ? "推荐" : "Rec."}</i>` : ""}</button>`).join("");
-  return `<div class="ri13-grp${cls ? " " + cls : ""}${g.open ? " open" : ""}${g.pend ? " pend" : ""}" data-ri13-g="${g.id}"><div class="ri13-hd"><span class="ri13-n">${n}</span><div class="ri13-t"><b>${esc(a.q)}</b><small>${zh ? `${n} 张卡同一个问题 · ${esc(aname(by))} · ${agoH(last)}` : `Same question on ${n} cards · ${esc(aname(by))} · ${agoH(last)}`}</small></div></div>`
-    + `<div class="ri13-acts">${acts}<button type="button" class="ri13-x" data-ri13-open="${g.id}" aria-expanded="${g.open}">${g.open ? (zh ? "收起 ‹" : "Fold ‹") : (zh ? "逐张看 ›" : "One by one ›")}</button></div></div>`;
+    : opts.map(o => `<button type="button" class="ri13-o${o === rec ? " rec" : ""}" data-ri13-all="${esc(g.id)}" data-ri13-opt="${esc(o)}">${zh ? `全部${esc(o)}` : `All: ${esc(o)}`}${o === rec && !REC_TXT.test(o) ? `<i class="rec-b">${zh ? "推荐" : "Rec."}</i>` : ""}</button>`).join("");
+  return `<div class="ri13-grp${cls ? " " + cls : ""}${g.open ? " open" : ""}${g.pend ? " pend" : ""}" data-ri13-g="${esc(g.id)}"><div class="ri13-hd"><span class="ri13-n">${n}</span><div class="ri13-t"><b>${esc(a.q)}</b><small>${zh ? `${n} 张卡同一个问题 · ${esc(aname(by))} · ${agoH(last)}` : `Same question on ${n} cards · ${esc(aname(by))} · ${agoH(last)}`}</small></div></div>`
+    + `<div class="ri13-acts">${acts}<button type="button" class="ri13-x" data-ri13-open="${esc(g.id)}" aria-expanded="${g.open}">${g.open ? (zh ? "收起 ‹" : "Fold ‹") : (zh ? "逐张看 ›" : "One by one ›")}</button></div></div>`;
 }
 const grpFind = id => askGroups(items().filter(onYouCard)).map(e => e.g).find(g => g && g.id === id);
 function grpStart(id, opt) {
@@ -236,7 +236,7 @@ function askRow(it, dock, tail) {   /* tail (t-web-quest-cards-p2, desk lane car
   const oa = openAsks(it); if (!oa.length) return "";
   const zh = UI.lang !== "en", a = oa[0], n = oa.length - 1;
   /* t-ri1114-a P4: list cards clamp the question to 2 lines (ri14-clamp) and 「+N」 is a button that opens the card at 「要你拿主意」 */
-  const more = !n ? "" : dock ? `<span class="ask-more">+${n}</span>` : `<button type="button" class="ri14-more" data-askjump="${it.id}">${zh ? `还有 ${n} 题` : `${n} more`}<span aria-hidden="true">›</span></button>`;
+  const more = !n ? "" : dock ? `<span class="ask-more">+${n}</span>` : `<button type="button" class="ri14-more" data-askjump="${esc(it.id)}">${zh ? `还有 ${n} 题` : `${n} more`}<span aria-hidden="true">›</span></button>`;
   return `<div class="ask-row${dock ? "" : " ri14-clamp"}"><div class="ask-rt"><i></i><b>${zh ? `${oa.length} 个问题要你选` : `${oa.length} question${oa.length > 1 ? "s" : ""} for you`}</b><span><span class="ask-sep"> · </span>${esc(a.q)}</span></div>${tail ? askChips(it, a, " sm", more) : askChips(it, a, " sm") + more}</div>`;
 }
 /* t-ri1114-a P4: 「还有 N 题 ›」 on a list card opens the card scrolled to 「要你拿主意」 (same placing as seekItem) */
@@ -299,9 +299,9 @@ function decHead(nRev, dec) {
 function decRow(it) {
   const a = agent(it.owner), zh = UI.lang !== "en", plan = it.kind === "plan";
   const what = plan ? (zh ? "方案待批" : "Plan to approve") : (zh ? "问题待答" : "Question for you");
-  return `<div class="dc-row" data-item="${it.id}">${av(a, "", it.id)}<div class="dc-main"><div class="dc-t">${nrDot(it.id)}${window.Onboard ? Onboard.exT(it) : esc(it.title)}</div>
+  return `<div class="dc-row" data-item="${esc(it.id)}">${av(a, "", it.id)}<div class="dc-main"><div class="dc-t">${nrDot(it.id)}${window.Onboard ? Onboard.exT(it) : esc(it.title)}</div>
     <div class="dc-s">${what} · ${esc(aname(a))} · ${agoH(it.activity || it.updated)}${waitTag(it)}${openAsks(it).length ? ` · <b class="ask-n">${zh ? `${openAsks(it).length} 个问题要你选` : `${openAsks(it).length} to answer`}</b>` : ""}</div></div>
-    <button class="dc-btn${plan ? "" : " g"}" data-rv-open="${it.id}">${plan ? (zh ? "看方案" : "Review") : (zh ? "去回答" : "Answer")}</button></div>`;
+    <button class="dc-btn${plan ? "" : " g"}" data-rv-open="${esc(it.id)}">${plan ? (zh ? "看方案" : "Review") : (zh ? "去回答" : "Answer")}</button></div>`;
 }
 const DC_KIND = { plan: '<path d="M5 4h10l4 4v12H5z"/><path d="M9 12h6M9 16h4"/>', deliverable: '<path d="M5 12.5l4.5 4.5L19 7.5"/>',
   question: '<circle cx="12" cy="12" r="8.5"/><path d="M9.6 9.5a2.5 2.5 0 1 1 3.4 2.3c-.7.3-1 .8-1 1.5v.4M12 16.8v.2"/>', task: '<rect x="5" y="5" width="14" height="14" rx="3"/><path d="M9 12h6"/>' };
@@ -313,7 +313,7 @@ function nowBlock() {
   const all = agents().filter(a => a.enabled !== false && a.status === "working"), ws = all.filter(a => !mgrOnline(a)), on = all.filter(mgrOnline);
   const now = ws.map(a => {
     const it = liveItem(a);
-    return `<div class="dc-row${it ? "" : " plain"}"${it ? ` data-item="${it.id}"` : ""}>${av(a, "", it && it.id)}<div class="dc-main">
+    return `<div class="dc-row${it ? "" : " plain"}"${it ? ` data-item="${esc(it.id)}"` : ""}>${av(a, "", it && it.id)}<div class="dc-main">
       <div class="dc-t">${esc(aname(a))}${it ? ` · ${esc(it.title)}` : ""}</div>
       <div class="dc-s">${esc(a.activity || (zh ? "工作中" : "Working"))}${a.since ? ` · <time class="wk-el" data-fmt="dc" data-since="${esc(a.since)}">${dcDur(a.since)}</time>` : ""}</div>
       <i class="dc-bar" aria-hidden="true"><u style="animation-delay:-${Date.now() % 2400}ms"></u></i></div></div>`;
@@ -331,9 +331,9 @@ function shipBlock() {
   done.forEach(it => {
     const img = (it.draft_attachments && it.draft_attachments.length ? it.draft_attachments : it.attachments || []).find(p => /^(uploads|work)\/.+\.(png|jpe?g|webp|gif)$/i.test(p));
     const a = agent(it.owner);
-    if (img) return ship.push(`<div class="dc-sh" data-item="${it.id}"><div class="im" style="background-image:url('/api/thumb?p=${encodeURIComponent(img)}&w=320')"></div><b>${esc(it.title)}</b><span>${esc(aname(a))} · ${hm(it.closed)}</span></div>`);
+    if (img) return ship.push(`<div class="dc-sh" data-item="${esc(it.id)}"><div class="im" style="background-image:url('/api/thumb?p=${encodeURIComponent(img)}&w=320')"></div><b>${esc(it.title)}</b><span>${esc(aname(a))} · ${hm(it.closed)}</span></div>`);
     const k = DC_KIND[it.kind] ? it.kind : "task";
-    const card = `<div class="dc-sh c" data-item="${it.id}"><div class="k" title="${esc(t("k_" + k))} · ${hm(it.closed)}"><svg viewBox="0 0 24 24" aria-hidden="true">${DC_KIND[k]}</svg><span class="kl">${esc(t("k_" + k))}</span><span class="kt">· ${hm(it.closed)}</span>${a ? `<i class="mav" style="background-image:url('${avatarUrl(a)}')" title="${esc(aname(a))}"></i>` : ""}</div><b>${esc(it.title)}</b></div>`;
+    const card = `<div class="dc-sh c" data-item="${esc(it.id)}"><div class="k" title="${esc(t("k_" + k))} · ${hm(it.closed)}"><svg viewBox="0 0 24 24" aria-hidden="true">${DC_KIND[k]}</svg><span class="kl">${esc(t("k_" + k))}</span><span class="kt">· ${hm(it.closed)}</span>${a ? `<i class="mav" style="background-image:url('${avatarUrl(a)}')" title="${esc(aname(a))}"></i>` : ""}</div><b>${esc(it.title)}</b></div>`;
     const last = ship[ship.length - 1];
     if (last && last.open) { last.push(card); last.open = false; } else { const col = [card]; col.open = true; ship.push(col); }
   });

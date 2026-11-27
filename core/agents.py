@@ -1,12 +1,14 @@
 """Agent status (set_agent + its extension hooks), the open HR interview, and role-name aliases.
 Moved from stateutil.py (t-oss-struct B1); stateutil re-exports every name."""
 from core.ext import SET_AGENT_HOOKS
-from core.store import now, read
+from core.store import check_id, now, read
 
 # ---------- agents ----------
 
 def set_agent(st, agent_id, auto=False, **fields):
     """auto=True: the change comes from automation (a hook), not from the agent itself; extensions may treat it differently."""
+    if agent_id not in st["agents"]:
+        check_id(agent_id, "agent id")   # t-oss-secreview P1-3: a new role id is a plain token (it lands in HTML attributes)
     a = st["agents"].setdefault(agent_id, {"id": agent_id, "status": "idle"})
     was = a.get("status")
     tool = fields.pop("tool", None)

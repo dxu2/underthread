@@ -60,7 +60,7 @@ function libChips(L) {
   /* r-improve-1122 P2: on a phone both rows are the 通知 / 委托 filter row (div.filters.mb-row.m-seg.q > .seg): same track, sliding pill, soft edges.
      The desk keeps its .lib-seg chips. Clicks go by data-libk / data-libw either way. */
   const ph = MOBQ.matches, bc = on => (ph ? "seg-i" : "") + (on ? " on" : "");
-  const row = (key, cls, inner) => ph ? `<div class="filters mb-row m-seg q ri22-row"><div class="seg" data-seg="${key}" role="group">${inner}</div></div>` : `<div class="${cls}" role="group">${inner}</div>`;
+  const row = (key, cls, inner) => ph ? `<div class="filters mb-row m-seg q ri22-row"><div class="seg" data-seg="${esc(key)}" role="group">${inner}</div></div>` : `<div class="${cls}" role="group">${inner}</div>`;
   return row("libk", "lib-seg", K.map(([k, n]) => `<button type="button" class="${bc(LIB.kind === k)}" data-libk="${k}">${n} <small>${kc(k)}</small></button>`).join("")) +
     row("libw", "lib-seg lib-who", `<button type="button" class="${bc(!LIB.who)}" data-libw="">${zh ? "所有人" : "Everyone"}</button>${order.map(w => `<button type="button" class="${bc(LIB.who === w)}" data-libw="${esc(w)}">${esc(libWho(w))}</button>`).join("")}`) +
     (nPriv ? `<button type="button" class="lib-pvt${LIB.priv ? " on" : ""}" data-libpriv>${LIB.priv ? (zh ? `已显示私用录音 ${nPriv} 个 · 隐藏` : `Showing ${nPriv} private voice files · hide`) : (zh ? `私用录音 ${nPriv} 个已隐藏 · 显示` : `${nPriv} private voice files hidden · show`)}</button>` : "");
@@ -79,7 +79,7 @@ function libTile(a) {
   if (a.kind === "image") {
     const th = `/api/thumb?p=${encodeURIComponent(a.p)}&w=360`;
     face = /\.(heic|heif)$/i.test(a.p) ? `<a href="${u}" target="_blank" class="lib-f" ${lb} data-kind="image"><img src="${th}" alt="${name}" loading="lazy" decoding="async" onload="this.classList.add('ld')" onerror="this.style.display='none'"></a>`
-      : `<a href="${u}" target="_blank" class="lib-f" ${lb} data-kind="image"><img src="${th}" alt="${name}" loading="lazy" decoding="async" onload="this.classList.add('ld')" onerror="if(!this.dataset.f){this.dataset.f=1;this.src='${u}'}else{this.style.display='none'}"></a>`;
+      : `<a href="${u}" target="_blank" class="lib-f" ${lb} data-kind="image"><img src="${th}" alt="${name}" loading="lazy" decoding="async" onload="this.classList.add('ld')" data-fb="${esc(u)}" onerror="imgFb(this,'hide')"></a>`;
   } else if (a.kind === "video") {
     const d = LIB.dur[a.p];
     face = `<a href="${u}" target="_blank" class="lib-f lib-vid" ${lb} data-kind="video"><i class="lib-play" aria-hidden="true">▶</i><b class="lib-k">${zh ? "视频" : "Video"}<span class="lib-dur" data-libdur="${esc(a.p)}">${d ? " " + fmtDur(d) : ""}</span></b></a>`;

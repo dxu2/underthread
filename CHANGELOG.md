@@ -13,6 +13,31 @@ Versions follow [semantic versioning](https://semver.org) and the `VERSION` file
 
 Work in progress goes under `## Unreleased`; the release renames it to `## [X.Y.Z] - YYYY-MM-DD`. Sections dated before 0.1.0 are from before versioning.
 
+## [0.3.1] - 2026-11-27
+
+### Added
+- `tests/api/test_security.py` and the e2e journey `tests/e2e/journeys/secfix.js` cover the security fixes below (and that the features they touch keep working).
+
+### Changed
+- **Security fixes (t-oss-secreview)**. A review of 0.3.0 found ways a crafted link, or a crafted card field written by a teammate, could run script inside the board's own page. Because the board's page can act as you (send the steward messages, approve cards), these are worth updating for. Nothing changes in how the board looks or works:
+  - A `#page=` link only accepts real page names; anything else opens 首页 / Home. Every existing `#page=` link (pages, categories, old names) still works.
+  - HTML, SVG and XML files under `work/` and `uploads/` still open and run, but in a browser sandbox, so they cannot read or act on the board. Images, PDFs, video and audio are served as before.
+  - Attachment thumbnails no longer put the file path inside inline script; the full-file fallback when a thumbnail fails works as before.
+  - Card ids, role ids, platform keys and draft labels are escaped wherever the page puts them into HTML. `stateutil.py` and the API refuse new card or role ids and platform keys with anything but letters, digits, `.`, `_` and `-`, and attachment paths with quotes, `<`, `>` or control characters (existing cards keep their ids).
+  - Every answer carries `X-Frame-Options: SAMEORIGIN`, `Content-Security-Policy: frame-ancestors 'self'` and `X-Content-Type-Options: nosniff`, so another site cannot load the board in a frame.
+  - An unexpected server error answers with a plain message; the details go to `logs/server.log` instead of the browser.
+  - A `#push=…&mail=…` link marks mailbox entries read only when it came from a notification this server sent; any other such link only navigates.
+  - The CI workflow pins its GitHub Actions to commit SHAs.
+
+### Fixed
+- Nothing.
+
+### Upgrade notes
+- Migrations: none
+- New config keys: none
+- Extension API: unchanged
+- Manual steps: none
+
 ## [0.3.0] - 2026-11-26
 
 ### Added

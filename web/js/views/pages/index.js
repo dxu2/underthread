@@ -4,7 +4,7 @@
 
 
 import { $, LS } from "../../core/util.js";
-import { PLAT, STAGES, ago, dayKey, grpLabel, rowLabel, rtTag, srvT, stageLabel, t, when, whenH, whoName } from "../../core/i18n.js";
+import { CATS, PLAT, STAGES, ago, dayKey, grpLabel, rowLabel, rtTag, srvT, stageLabel, t, when, whenH, whoName } from "../../core/i18n.js";
 import { ST, UI, byAct, byCreated, grpOf, idleDoing, idleL, items, logsFor, mailAll, onYouCard } from "../../core/store.js";
 import { aduty, agent, agents, aname, atitle, av, hasArt, ringOnce } from "../../core/av.js";
 import { UE_ART, api, toast, utEmpty } from "../../core/ui.js";
@@ -69,15 +69,15 @@ const PAGES = {
       let g = list.filter(i => grpOf(i) === s).sort(byAct); const total = g.length;
       const more = s === "done" && !UI.boardAll && !MOBQ.matches && total > 12 ? total - 12 : 0; if (more) g = g.slice(0, 12);   // t-web-audit 01: the done column shows the latest 12
       return `<div class="col" data-drop="${s}"><div class="col-h"><span>${grpLabel(s)}</span><span>${total}</span></div>${g.map(i =>
-        { const ws = workersOf(i.id); return `<div class="mini${ws.length ? " wk-on" : ""}" draggable="true" data-drag="${i.id}" data-item="${i.id}"${wkAttr(ws)}>${wkFx(ws)}<div class="t">${esc(i.title)}</div>${wkTag(ws)}<div class="m">${av(agent(i.owner), "sm", i.id)}${idleDoing(i) ? `<span class="tag">${rtTag(i) || idleL(i)}</span>` : ""}<span>${t(i.category)}</span><span>${when(i.activity)}</span></div></div>`; }).join("")}${more ? `<button class="col-more" data-board-all>${UI.lang === "en" ? `${more} more · show all` : `还有 ${more} 张 · 展开`}</button>` : ""}</div>`;
+        { const ws = workersOf(i.id); return `<div class="mini${ws.length ? " wk-on" : ""}" draggable="true" data-drag="${esc(i.id)}" data-item="${esc(i.id)}"${wkAttr(ws)}>${wkFx(ws)}<div class="t">${esc(i.title)}</div>${wkTag(ws)}<div class="m">${av(agent(i.owner), "sm", i.id)}${idleDoing(i) ? `<span class="tag">${rtTag(i) || idleL(i)}</span>` : ""}<span>${t(i.category)}</span><span>${when(i.activity)}</span></div></div>`; }).join("")}${more ? `<button class="col-more" data-board-all>${UI.lang === "en" ? `${more} more · show all` : `还有 ${more} 张 · 展开`}</button>` : ""}</div>`;
     }).join("")}</div>`;
   },
   logs() {
     const ids = ["", ...agents().map(a => a.id), "me"];
     const got = logsFor(UI.logAgent), list = (got || []).slice(-400).reverse();   /* ri1105-P4: logs come from /api/history while this tab is open */
-    return pageHead("logs") + `<div class="filters"><div class="seg" data-seg="logs">${ids.map(id => `<button class="seg-i ${UI.logAgent === id ? "on" : ""}" data-logf="${id}">${id ? esc(whoName(id)) : t("all")}</button>`).join("")}</div></div>` +
+    return pageHead("logs") + `<div class="filters"><div class="seg" data-seg="logs">${ids.map(id => `<button class="seg-i ${UI.logAgent === id ? "on" : ""}" data-logf="${esc(id)}">${id ? esc(whoName(id)) : t("all")}</button>`).join("")}</div></div>` +
       (list.length ? logRows(list).map(({ l, hb, n }) => hb ? `<div class="log-i hb"><span class="tm">${whenH(l.t)}</span>${av(agent(l.agent), "sm")}<span>${esc(whoName(l.agent))}</span><span>${UI.lang === "en" ? "Heartbeat" : "在线心跳"}${n > 1 ? ` × ${n}` : ""}</span></div>` : `<div class="log-i"><span class="tm">${whenH(l.t)}</span>${l.agent === "me" ? av("me", "sm") : av(agent(l.agent), "sm")}<span>${esc(whoName(l.agent))}</span>
-        <span>${l.item ? `<span class="it" data-item="${l.item}">${esc(l.item)}</span> ` : ""}${esc(logText(l.text))}</span></div>`).join("") : got ? `<div class="empty">${t("empty")}</div>` : `<div class="empty">${UI.lang === "en" ? "Loading…" : "载入中…"}</div>`);
+        <span>${l.item ? `<span class="it" data-item="${esc(l.item)}">${esc(l.item)}</span> ` : ""}${esc(logText(l.text))}</span></div>`).join("") : got ? `<div class="empty">${t("empty")}</div>` : `<div class="empty">${UI.lang === "en" ? "Loading…" : "载入中…"}</div>`);
   },
   reports() {
     const list = (ST.reports || []).slice().reverse();
@@ -93,13 +93,13 @@ const PAGES = {
       (list.length ? list.map(r => {
         /* t-ri1110-a P5: a body that opens with its own 「# 日报 …」 line said the title twice; that line becomes the row title (keeps the weekday) */
         const m = /^#\s+(日报[^\n]*)\n*/.exec(r.body || ""), head = m ? m[1].trim() : `${r.title} · ${r.date}`, body = m ? r.body.slice(m[0].length) : r.body;
-        return `<div class="rep"><div class="rep-h" data-rep="${r.id}"><b>${esc(head)}</b><span class="dim">${whenH(r.t)}</span></div>
+        return `<div class="rep"><div class="rep-h" data-rep="${esc(r.id)}"><b>${esc(head)}</b><span class="dim">${whenH(r.t)}</span></div>
         ${r.id === open ? `<div class="md" style="margin-top:10px">${md(body)}</div>` : ""}</div>`; }).join("") : `<div class="empty">${t("reports_empty", { t: "18:00" })}</div>`);
   },
   channels() {
     const its = items().filter(i => i.stage !== "done" || new Date(i.closed || i.updated) > Date.now() - 14 * 864e5);
     const col = (key, name, list) => `<div class="plat"><h3>${name}</h3><div class="sub">${list.length}</div>${list.sort(byAct).map(i =>
-      { const ws = workersOf(i.id); return `<div class="mini${ws.length ? " wk-on" : ""}" data-item="${i.id}"${wkAttr(ws)}>${wkFx(ws)}<div class="t">${esc(i.title)}</div>${wkTag(ws)}<div class="m"><span class="tag">${rowLabel(i)}</span>${av(agent(i.owner), "sm", i.id)}<span>${t(i.category)}</span></div></div>`; }).join("") || `<div class="dim">—</div>`}</div>`;
+      { const ws = workersOf(i.id); return `<div class="mini${ws.length ? " wk-on" : ""}" data-item="${esc(i.id)}"${wkAttr(ws)}>${wkFx(ws)}<div class="t">${esc(i.title)}</div>${wkTag(ws)}<div class="m"><span class="tag">${rowLabel(i)}</span>${av(agent(i.owner), "sm", i.id)}<span>${t(i.category)}</span></div></div>`; }).join("") || `<div class="dim">—</div>`}</div>`;
     const none = its.filter(i => !(i.platforms || []).length && ["main", "side"].includes(i.category));
     return pageHead("channels") + `<div class="plats">${Object.entries(PLAT).map(([k, n]) => col(k, n, its.filter(i => (i.platforms || []).includes(k)))).join("")}</div>` +
       (none.length ? `<div class="grp-h"><b>${t("ch_none")}</b> · ${none.length}</div>` + none.map(card).join("") : "");
@@ -143,12 +143,12 @@ function rosterPage() {
       const cur = liveItem(a);   // t-now-closed: a closed card is not "current"
       return `<div class="rc frame ${a.enabled === false ? "disabled" : ""}">${hasArt(a, "jpg") || !(ST.meta && ST.meta.art) ? `<img class="rc-art" src="/static/art/${esc(a.id)}.jpg?v=1" alt="" width="560" height="840" loading="lazy" decoding="async" onerror="this.remove()">` : ""}<div class="rc-h">${av(a, "lg")}<div><div class="nm">${esc(aname(a))}</div><div class="ti">${esc(atitle(a))} · <span class="mono">${esc(a.agent_name || (UI.lang === "en" ? "main session" : "主会话"))}</span></div></div></div>
         <div class="du">${esc(aduty(a))}</div>
-        <div class="now">${a.status === "working" ? `<span style="color:var(--accent)">▶ ${t("working")}</span> ${esc(a.activity || "")} ${cur ? `· <a data-item="${cur.id}" href="#">${esc(cur.title)}</a>` : ""}` : `<span class="dim">${t(a.status || "idle")} ${a.last_seen ? "· " + ago(a.last_seen) : ""}</span>`}</div>
+        <div class="now">${a.status === "working" ? `<span style="color:var(--accent)">▶ ${t("working")}</span> ${esc(a.activity || "")} ${cur ? `· <a data-item="${esc(cur.id)}" href="#">${esc(cur.title)}</a>` : ""}` : `<span class="dim">${t(a.status || "idle")} ${a.last_seen ? "· " + ago(a.last_seen) : ""}</span>`}</div>
         <div class="stats"><div><b>${done.length}</b><small>${t("closed")}</small></div><div><b>${done.length ? Math.round(first / done.length * 100) + "%" : "—"}</b><small>${t("first_pass")}</small></div><div><b>${adopted}</b><small>${t("adopted")}</small></div></div>
         ${rcLinks(a)}
         ${rcTasks(a, mine)}
         ${pend.length ? `<div class="dim" style="font-size:12px;margin-top:6px"><a href="#" data-ui12go="review">${UI.lang === "en" ? `${pend.length} rule proposal(s) → Review page` : `${pend.length} 条规则提议 → 在「审核」页处理`}</a></div>` : ""}
-        <div class="rc-bt"><button class="btn-s" data-chat="${a.id}">${t("dm")}</button>${lookBtns(a)}</div>${window.HT ? HT.acts(a) : ""}</div>`;
+        <div class="rc-bt"><button class="btn-s" data-chat="${esc(a.id)}">${t("dm")}</button>${lookBtns(a)}</div>${window.HT ? HT.acts(a) : ""}</div>`;
     }).join("")}</div>`;
 }
 // ===== t-agent-memory v2: 记忆 / 灵魂 pills on the role card (viewer lives in rolefiles.js; read-only) =====
@@ -188,7 +188,7 @@ function rulesBlock() {
     const dim = [it ? it.title : "", l.t ? l.t.slice(0, 10) : ""].filter(Boolean).join(" · ");
     return `<div class="rl-row ${common ? "common" : ""}">${who}<div class="rl-main"><div class="rl-top"><span class="rl-tag">${common ? (en ? "Team" : "全员") : (en ? "Rule" : "规则")}</span>${common ? `<span class="rl-tag">${en ? "Rule" : "规则"}</span>` : ""}<b class="rl-nm">${esc(nm)}</b>${link}</div>
       <div class="rl-tx">${esc(srvT(l.text))}</div><div class="rl-dim dim">${esc(dim)}</div></div>
-      <div class="rl-bt"><button class="btn-s" data-lesson="${l.id}" data-d="adopt">${t("adopt")}</button><button class="btn-s" data-lesson="${l.id}" data-d="drop">${t("drop")}</button></div></div>`;
+      <div class="rl-bt"><button class="btn-s" data-lesson="${esc(l.id)}" data-d="adopt">${t("adopt")}</button><button class="btn-s" data-lesson="${esc(l.id)}" data-d="drop">${t("drop")}</button></div></div>`;
   }).join("");
   return `<div class="rl-block"><div class="grp-h"><b>${en ? "Rules awaiting your call" : "待确认的规则"}</b> · ${ls.length}</div>${rows}</div>`;
 }
@@ -212,6 +212,7 @@ function renderPage(scrollTop) {
       HomeD.render(ob, { agents: agents(), counts: homeCounts() });
     } else { ob.hidden = true; ob.dataset.hv = ""; ob.innerHTML = ""; }
   } else { ob.hidden = true; ob.innerHTML = ""; }
+  if (!PAGES[UI.page] && !CATS.includes(UI.page)) UI.page = "review";   /* t-oss-secreview P0: an unknown page key (a crafted #page= link, an old saved value) lands on 首页 */
   const html = (PAGES[UI.page] || (() => catPage(UI.page)))();
   if (html != null) {   // t-imp29-p4: a page may return null to keep its DOM (the asset library keeps scroll, focus and loaded thumbs across polls)
     // t-home-flicker (11-03): every state rev (any chat message) re-renders; on the phone / app-style home an unchanged page keeps its DOM, so the

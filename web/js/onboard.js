@@ -73,14 +73,14 @@
   // the thread: a gentle wave through the six cell centres (x = 50 + 100 i in a 600-wide box, y = 20), split at the current step
   const wave = (a, b) => { let d = `M${50 + a * 100} 20`; for (let i = a + 1; i <= b; i++) d += ` Q${i * 100} ${20 + (i % 2 ? -9 : 9)} ${50 + i * 100} 20`; return d; };
   const thread = ci => `<svg class="ob-th" viewBox="0 0 600 40" preserveAspectRatio="none" aria-hidden="true">${ci < 5 ? `<path class="lo" d="${wave(ci, 5)}"/>` : ""}${ci > 0 ? `<path class="ta" d="${wave(0, ci)}" pathLength="1"/>` : ""}</svg>`;
-  const stepCell = (s, i, cur, all) => `<button type="button" class="ob-st${s.done ? " done" : ""}${cur ? " cur" : ""}" data-ob-step="${s.id}" data-i="${i}"${s.done ? ' aria-disabled="true"' : ""}${cur ? ' aria-current="step"' : ""} title="${esc(L(...NAME[s.id]) + (short(s.id, s.done) ? " · " + short(s.id, s.done) : ""))}">`
+  const stepCell = (s, i, cur, all) => `<button type="button" class="ob-st${s.done ? " done" : ""}${cur ? " cur" : ""}" data-ob-step="${esc(s.id)}" data-i="${i}"${s.done ? ' aria-disabled="true"' : ""}${cur ? ' aria-current="step"' : ""} title="${esc(L(...NAME[s.id]) + (short(s.id, s.done) ? " · " + short(s.id, s.done) : ""))}">`
     + `<i class="ob-k" aria-hidden="true">${all && i === 5 ? SQ : s.done ? CK : cur ? BALL : `<small>${i + 1}</small>`}</i><b>${esc(L(...NAME[s.id]))}</b></button>`;
   const track = d => {
     const ci = d.all ? 5 : Math.max(0, d.steps.findIndex(x => x.id === d.next));
     return `<div class="ob-track${d.all ? " all" : ""}" data-ob-track data-ci="${d.all ? 6 : ci}" style="--yb:${(1 - 0.06 * ci).toFixed(2)}">${thread(ci)}`
       + `<div class="ob-steps">${d.steps.map((x, i) => stepCell(x, i, !d.all && x.id === d.next, d.all)).join("")}</div></div>`;
   };
-  const stepBtn = (s, i, cur) => `<button type="button" class="ob-li${s.done ? " done" : ""}${cur ? " cur" : ""}" data-ob-step="${s.id}"${s.done ? ' aria-disabled="true"' : ""}>`
+  const stepBtn = (s, i, cur) => `<button type="button" class="ob-li${s.done ? " done" : ""}${cur ? " cur" : ""}" data-ob-step="${esc(s.id)}"${s.done ? ' aria-disabled="true"' : ""}>`
     + `<i aria-hidden="true">${s.done ? "✓" : i + 1}</i><b>${esc(L(...NAME[s.id]))}</b>${short(s.id, s.done) ? `<small>· ${esc(short(s.id, s.done))}</small>` : ""}</button>`;
   const hintLine = d => { const k = d.next; if (!k) return ""; const a = act(k);
     return `<div class="ob-hint"><span>${esc(hint(k))}</span>${a ? `<button type="button" class="ob-go" data-ob-step="${k}">${esc(a)}</button>` : ""}</div>`; };
@@ -94,7 +94,7 @@
   const optName = k => L(OPT[k][1], OPT[k][2]);
   const chipName = k => typeof OPT[k][3] === "function" ? OPT[k][3](L) : OPT[k][3];
   const OS = () => (SU() && SU().opt) || { steps: [] };
-  const optChip = s => `<button type="button" class="ob-oc${s.done ? " on" : ""}${s.skipped ? " skip" : ""}" data-ob-opt="${s.id}" title="${esc(optName(s.id))}">`
+  const optChip = s => `<button type="button" class="ob-oc${s.done ? " on" : ""}${s.skipped ? " skip" : ""}" data-ob-opt="${esc(s.id)}" title="${esc(optName(s.id))}">`
     + `<i aria-hidden="true">${s.done ? "✓" : OPT[s.id][0]}</i><span>${esc(chipName(s.id))}</span>${s.done ? "" : `<b aria-hidden="true">${s.skipped ? esc(L("跳过", "skipped")) : "›"}</b>`}</button>`;
   const optArea = () => { const o = OS(); if (!o.steps.length) return "";
     return `<div class="ob-opt"><h6>${esc(L("可选 · 不计数", "Optional · not counted"))}</h6><div class="ob-chips">${o.steps.map(optChip).join("")}</div></div>`; };
@@ -163,7 +163,7 @@
   let BIP = null;   // Chrome / Edge: the install prompt, kept while the checklist is up so 「安装」 can show the browser's own dialog
   window.addEventListener("beforeinstallprompt", e => { if (!SU()) return; e.preventDefault(); BIP = e; if (SH.k === "app") paintSheet(); });
   const ago = iso => { if (!iso) return ""; const m = Math.round((Date.now() - new Date(iso)) / 60000); return m < 1 ? L("刚刚", "just now") : m < 60 ? L(`${m} 分钟前`, `${m} min ago`) : L(`${Math.round(m / 60)} 小时前`, `${Math.round(m / 60)} h ago`); };
-  const cmdBox = (code, id) => `<div class="ob-cmd"><code>${esc(code)}</code><button type="button" class="ob-copy" data-ob-copy="${id}">${esc(phone() ? L("在电脑上跑", "Run on the computer") : L("复制", "Copy"))}</button></div>`;
+  const cmdBox = (code, id) => `<div class="ob-cmd"><code>${esc(code)}</code><button type="button" class="ob-copy" data-ob-copy="${esc(id)}">${esc(phone() ? L("在电脑上跑", "Run on the computer") : L("复制", "Copy"))}</button></div>`;
   const ul = xs => `<ul>${xs.map(x => `<li>${esc(x)}</li>`).join("")}</ul>`;
   const stLine = (ok, yes, no) => `<p class="ob-stl${ok ? " ok" : ""}">${esc(ok ? "✓ " + yes : no)}</p>`;
   function sheetBody(k) {
