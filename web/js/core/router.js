@@ -34,7 +34,7 @@ function route(P, via) {
     if (routed.has(pid)) return "dup";
     routed.add(pid);
     if (/[#&](push|mail)=/.test(location.hash)) { try { history.replaceState(history.state, "", location.pathname + location.search); } catch (_) { } }
-    if (P.get("mail")) api("mail_read", { ids: P.get("mail").split(",") }).catch(() => { });
+    if (P.get("mail")) api("mail_read", { ids: P.get("mail").split(","), push: pid }).catch(() => { });   /* t-oss-secreview P2-3: the server checks pid was its own notification */
   }
   const item = P.get("item"), dm = P.get("dm"), rep = P.get("rep"), page = P.get("page");
   const kind = item ? "item" : dm ? "dm" : rep ? "rep" : page ? "page" : "";

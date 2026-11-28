@@ -20,7 +20,7 @@ function inkEb(right) { const d = new Date(), en = UI.lang === "en";
 function pageHead(k, extra = "") {
   if (UI.noHead) return extra;   // t-settings-tab: a page drawn inside a 设置 tab keeps its bars, not its masthead
   if (STU.includes(k)) return `<div class="ph ph-studio ph-${k}">${inkEb("Underthread")}<h1>${stuName()}</h1>${UI.lang === "zh" ? `<div class="en">${stuName(true)}</div>` : ""}${orn()}</div>${stuTabs(k)}${extra}`;   // t-nav-shoot
-  return `<div class="ph ph-${k}">${inkEb("Underthread")}<h1>${t(k)}</h1>${UI.lang === "zh" ? `<div class="en">${EN_SUB[k] || ""}</div>` : ""}${orn()}</div>${extra}`;
+  return `<div class="ph ph-${esc(k)}">${inkEb("Underthread")}<h1>${esc(t(k))}</h1>${UI.lang === "zh" ? `<div class="en">${EN_SUB[k] || ""}</div>` : ""}${orn()}</div>${extra}`;
 }
 
 
@@ -33,15 +33,15 @@ function card(it, o) {   /* o.noCat (r-improve-1116 P3): on that category's own 
      t-web-quest-cards-p2: the picture stays hidden until qcCvChk (below) has looked at the part the cover shows; a near-blank one (a white page with one needle)
      is dropped, and the verdict is kept per path so the next poll's re-render draws it at once (ok) or not at all (blank). */
   const desk = o && o.cover && !MOBQ.matches, img0 = desk && cardImg(it), img = img0 && QC_CV.get(img0) !== "blank" ? img0 : null, u = img && "/" + img.split("/").map(encodeURIComponent).join("/");
-  const cv = img ? `<div class="qc-cv"><img${QC_CV.get(img) === "ok" ? ` class="ok"` : ""} data-qcp="${esc(img)}" src="/api/thumb?p=${encodeURIComponent(img)}&w=780" alt="" loading="lazy" onload="qcCvChk(this)" onerror="if(!this.dataset.f){this.dataset.f=1;this.src='${u}'}else{this.parentNode.closest('.card').classList.remove('has-cv');this.parentNode.remove()}"></div>` : "";
-  return `<div class="card${ws.length ? " wk-on" : ""}${img ? " has-cv" : ""}" data-item="${it.id}"${wkAttr(ws)}>${wkFx(ws)}${cv}
+  const cv = img ? `<div class="qc-cv"><img${QC_CV.get(img) === "ok" ? ` class="ok"` : ""} data-qcp="${esc(img)}" src="/api/thumb?p=${encodeURIComponent(img)}&w=780" alt="" loading="lazy" onload="qcCvChk(this)" data-fb="${esc(u)}" onerror="imgFb(this,'cv')"></div>` : "";
+  return `<div class="card${ws.length ? " wk-on" : ""}${img ? " has-cv" : ""}" data-item="${esc(it.id)}"${wkAttr(ws)}>${wkFx(ws)}${cv}
     <div class="meta">${kind ? `<span class="tag ${kind}"><span class="gl" aria-hidden="true">◆</span>${t(kind)}</span>${waitTag(it, desk)}` : askWait(it) ? `<span class="tag question"><span class="gl" aria-hidden="true">◆</span>${askWaitL()}</span>` : `<span class="tag">${stateTag(it)}</span>`}
       ${o && o.noCat ? "" : `<span>${t(it.category)}${it.category === "urgent" ? " ⚑" : ""}</span>`}
       ${cardDt(it)}
-      <span>${(it.platforms || []).map(p => `<span class="tag pf">${PLAT[p] || p}</span>`).join(" ")}</span></div>
+      <span>${(it.platforms || []).map(p => `<span class="tag pf">${esc(PLAT[p] || p)}</span>`).join(" ")}</span></div>
     <div class="body"><h3>${nrDot(it.id)}${window.Onboard ? Onboard.exT(it) : esc(it.title)}</h3><p>${esc(sumPv(it.summary || ""))}</p>${wkTag(ws)}${askRow(it, false, desk)}</div>
     <div class="owner">${av(a, "sm", it.id)}<span>${esc(aname(a))}</span></div>
-    <div class="acts"><button data-arch="${it.id}">${t("archive")}</button>${it.stage !== "done" && !routineOf(it) ? `<button data-quickdone="${it.id}">${t("complete")}</button>` : ""}</div></div>`;
+    <div class="acts"><button data-arch="${esc(it.id)}">${t("archive")}</button>${it.stage !== "done" && !routineOf(it) ? `<button data-quickdone="${esc(it.id)}">${t("complete")}</button>` : ""}</div></div>`;
 }
 
 /* r-improve-1124 P2: the corner date follows the list order. By activity (default): the latest activity; a card waiting on review says

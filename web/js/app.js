@@ -170,7 +170,7 @@ window.App = {
 // ---------- boot ----------
 // deep links: #page=board  #item=<id>  #theme=light  #lang=en
 const H = new URLSearchParams(location.hash.slice(1));
-if (H.get("page")) UI.page = pageAlias(H.get("page"));
+if (H.get("page")) { const p = pageAlias(H.get("page")); if (/^[a-z]{1,24}$/.test(p)) UI.page = p; }   // t-oss-secreview P0: only a plain page key; renderPage() drops unknown ones
 if (H.get("tab") && SET_TABS.includes(H.get("tab"))) UI.setTab = H.get("tab");   // t-settings-tab: #page=settings&tab=system
 if (H.get("theme")) UI.theme = H.get("theme");
 LS.set("home3", "widgets");   /* t-home-style-trim: old saved dense / app / classic land on widgets; #home= links are ignored */

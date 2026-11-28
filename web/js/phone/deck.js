@@ -14,8 +14,8 @@ function deck() {
   const order = [0, 1, 2].map(k => list[(deckIdx + k) % list.length]).filter((x, i, a) => a.indexOf(x) === i);
   const card = (it, cls) => {
     const a = App.agent(it.owner), kind = it.kind === "task" ? "deliverable" : it.kind;
-    return `<div class="dk-card ${cls}" data-id="${it.id}">
-      <div class="dk-meta"><span class="tag ${kind}"><span class="gl" aria-hidden="true">◆</span>${App.t(kind)}</span><span>${App.t(it.category)}</span><span class="dim">${App.whenH(it.activity)}</span>${(it.platforms || []).map(p => `<span class="tag pf">${App.PLAT[p] || p}</span>`).join("")}</div>
+    return `<div class="dk-card ${cls}" data-id="${esc(it.id)}">
+      <div class="dk-meta"><span class="tag ${kind}"><span class="gl" aria-hidden="true">◆</span>${App.t(kind)}</span><span>${App.t(it.category)}</span><span class="dim">${App.whenH(it.activity)}</span>${(it.platforms || []).map(p => `<span class="tag pf">${esc(App.PLAT[p] || p)}</span>`).join("")}</div>
       <h3>${window.Onboard ? Onboard.exT(it) : esc(it.title)}</h3><p class="dk-sum">${esc(it.summary || "")}</p>
       <div class="dk-draft md">${it.draft ? md(it.draft) : `<p class="dim">${en() ? "No draft yet." : "还没有草稿。"}</p>`}</div>
       <div class="dk-who">${App.av(a, "sm")}${esc(App.aname(a))} · ${esc(App.atitle(a))}${App.askLeft(it) ? `<b class="ok-ask">${App.askLeft(it)}</b>` : ""}</div>

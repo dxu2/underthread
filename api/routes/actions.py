@@ -294,6 +294,13 @@ def _notice_dismiss(a):
 @action("mail_read")
 def _mail_read(a):
     ids = set(a.body.get("ids") or [])
+    if "push" in a.body:
+        # t-oss-secreview P2-3: a cold-start #push=..&mail=.. link marks only what that notification carried. A link typed or planted
+        # elsewhere (unknown push id) only navigates. In-page clicks send no "push" and work as before.
+        from api.routes.push import _push
+        ids &= set((_push.get("sent") or {}).get(str(a.body.get("push")), []))
+        if not ids:
+            return
     for m in a.st["mail"]:
         if a.body.get("all") or m["id"] in ids:
             m["read"] = True

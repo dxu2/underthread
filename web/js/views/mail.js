@@ -91,7 +91,7 @@ const sansName = (title, name) => { let t = String(title || ""), k = 0; const re
 function mailRow(g) {
   const m = g.last, it = m.item ? ST.items.find(i => i.id === m.item) : null, a = m.agent ? agent(m.agent) : null;
   const unread = g.ms.some(unreadM);
-  return actRow({ attr: `data-mail="${m.id}" data-mailids="${g.ms.map(x => x.id).join(",")}"`, av: a ? av(a, "", m.item) : av("me"), ws: it ? workersOf(it.id) : [], unread,
+  return actRow({ attr: `data-mail="${esc(m.id)}" data-mailids="${g.ms.map(x => x.id).join(",")}"`, av: a ? av(a, "", m.item) : av("me"), ws: it ? workersOf(it.id) : [], unread,
     name: a ? aname(a) : whoName("me"), title: sansName(it ? it.title : archTitle(m.item), a && aname(a)), time: agoH(m.t), preview: REV_MAIL.test(m.text || "") && it ? cardLine(it, a) : mailPv(m.text, a),
     chip: it ? rowLabel(it) : (m.kind === "reply" ? t("replies") : t("updates")), n: g.ms.length, un: g.ms.filter(unreadM).length });
 }
@@ -137,7 +137,7 @@ function mbCard(m, ix) {
 function mbRow(g, i, ix) {   /* r-improve-1121 P2: one row of the drop-down; the desk 信箱 page uses the same rows */
   const en = UI.lang === "en", kindName = { reply: t("replies"), update: t("updates") };
   const m = g.body, rv = g.rv, n = g.ms.length;
-  return `<div class="mb-i ${g.ms.some(unreadM) ? "unread" : ""}" data-mail="${g.last.id}"${n > 1 ? ` data-mailids="${g.ms.map(x => x.id).join(",")}"` : ""} style="--i:${Math.min(i, 8)}">
+  return `<div class="mb-i ${g.ms.some(unreadM) ? "unread" : ""}" data-mail="${esc(g.last.id)}"${n > 1 ? ` data-mailids="${g.ms.map(x => x.id).join(",")}"` : ""} style="--i:${Math.min(i, 8)}">
     ${m.agent ? av(agent(m.agent), "sm") : "<span class=\"av sm\"></span>"}<div class="mb-b"><div class="mb-m"><b>${m.agent ? esc(aname(agent(m.agent))) : ""}</b>${rv ? `<i class="ri14-rv">${en ? "Review" : "待审核"}</i>` : kindName[m.kind] ? `<i>${esc(kindName[m.kind])}</i>` : ""}<span>${whenH(g.last.t)}${n > 1 ? (en ? ` · ${n}` : ` · ${n} 条`) : ""}</span></div>${mbCard(g.last, ix)}<div class="mb-x">${esc(mailPv(m.text, m.agent && agent(m.agent)))}</div></div><span class="u"></span></div>`;
 }
 function renderMailbox(enter) {

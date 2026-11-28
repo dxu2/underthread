@@ -117,7 +117,7 @@ function openItemNow(id, nav) {
   fi.onchange = () => { add(Array.from(fi.files)); fi.value = ""; };
   const closePop = () => { pop.hidden = true; DW.pop = []; };
   const drawPop = () => {
-    pop.innerHTML = DW.pop.map((a, i) => `<div data-pick-to="${a.id}" class="${i === DW.sel ? "on" : ""}">${av(a, "sm")}${esc(aname(a))} <small>${esc(atitle(a))}${a.id === curItem().owner ? " · " + t("owner_tag") : ""}</small></div>`).join("");
+    pop.innerHTML = DW.pop.map((a, i) => `<div data-pick-to="${esc(a.id)}" class="${i === DW.sel ? "on" : ""}">${av(a, "sm")}${esc(aname(a))} <small>${esc(atitle(a))}${a.id === curItem().owner ? " · " + t("owner_tag") : ""}</small></div>`).join("");
     pop.hidden = !DW.pop.length;
     const on = $("div.on", pop); if (on) on.scrollIntoView({ block: "nearest" });   // arrow keys can reach rows below the fold
   };
@@ -675,7 +675,7 @@ function renderDrawer(first, fill) {
   const par = parentOf(it), kids = childrenOf(it), en = UI.lang === "en";
   const parHTML = par ? `<button class="dw-parent" data-dw-nav="${esc(par.id)}"><span class="k">${en ? "Part of" : "属于"}</span><b>${esc(par.title)}</b><span class="st">${esc(rowLabel(par))}</span><svg viewBox="0 0 8 14" width="7" height="12" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1.5 1.5 6.5 7l-5 5.5"/></svg></button>` : "";
   const kidsHTML = kids.length ? `<div class="sec-h">${en ? "Sub-items" : "子单"} · ${kids.length}</div><div class="dw-kids">${kids.map(k => `<button class="dw-kid${k.stage === "done" ? " done" : ""}" data-dw-nav="${esc(k.id)}">${av(agent(k.owner), "sm")}<span class="t">${esc(k.title)}</span><span class="st s-${esc(grpOf(k))}">${esc(rowLabel(k))}</span><svg viewBox="0 0 8 14" width="7" height="12" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1.5 1.5 6.5 7l-5 5.5"/></svg></button>`).join("")}</div>` : "";
-  const dwTags = [...(it.platforms || []).map(p => `<span class="tag pf">${PLAT[p] || p}</span>`), ...(it.due ? [`<span class="tag">${t("due")} ${esc(it.due)}</span>`] : []),
+  const dwTags = [...(it.platforms || []).map(p => `<span class="tag pf">${esc(PLAT[p] || p)}</span>`), ...(it.due ? [`<span class="tag">${t("due")} ${esc(it.due)}</span>`] : []),
     ...(it.tags || []).filter(x => !par || x !== par.id).map(x => `<span class="tag">#${esc(x)}</span>`)].join("");
   sc.innerHTML = `${wkBand(wsD)}${parHTML}<div class="dw-title">${window.Onboard ? Onboard.exT(it) : esc(it.title)}</div>${window.Onboard ? Onboard.exNote(it) : ""}${it.summary ? `<div class="dw-sum${DW.sumOpen.has(it.id) ? "" : " uin-clamp"}">${esc(it.summary)}</div><button type="button" class="uin-more" data-uin-sum hidden>${DW.sumOpen.has(it.id) ? (UI.lang === "en" ? "Show less ▴" : "收起 ▴") : (UI.lang === "en" ? "Show all ▾" : "展开全文 ▾")}</button>` : ""}
     <div class="dw-meta">${dwPill(t("owner"), `${av(agent(it.owner), "sm", it.id)}<b>${esc(aname(agent(it.owner)))}<i> · ${esc(atitle(agent(it.owner)))}</i></b>`, `<select data-f="owner" aria-label="${t("owner")}">${ownerOpts}</select>`)}

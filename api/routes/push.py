@@ -265,6 +265,11 @@ def push_payload(st, new, en=False):
     targets = [_mail_target(st, m) for m in new]
     one = len(set(targets)) == 1
     tail = (f"&mail={','.join(m['id'] for m in new[-20:])}" if one else "") + f"&push={nid}"
+    if one:   # t-oss-secreview P2-3: only a link this server put in a notification may mark mail read (see mail_read)
+        sent = _push.setdefault("sent", {})
+        sent[nid] = [m["id"] for m in new[-20:]]
+        for k in list(sent)[:-300]:
+            sent.pop(k, None)
     url = "/#" + (targets[0] if one else "page=mail") + tail
     if len(new) == 1:
         m = new[0]

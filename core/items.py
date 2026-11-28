@@ -2,7 +2,7 @@
 Moved from stateutil.py (t-oss-struct B1); stateutil re-exports every name."""
 import re
 
-from core.store import (CATEGORIES, KINDS, STAGES, _restore, add_thread, archive_find, new_id, norm_attach,  # noqa: F401
+from core.store import (CATEGORIES, KINDS, STAGES, _restore, add_thread, archive_find, check_id, new_id, norm_attach,  # noqa: F401
                         now)
 
 # ---------- t-voice-memo: voice memos ----------
@@ -104,6 +104,13 @@ def upsert_item(st, fields, who="manager"):
     item_id = fields.get("id")
     it = find_item(st, item_id) if item_id else None
     created = it is None
+    if created and item_id:
+        check_id(item_id, "card id")   # t-oss-secreview P1-3: a new card id is a plain token (old cards keep theirs)
+    if fields.get("owner") is not None:
+        check_id(fields["owner"], "owner")
+    if fields.get("platforms") is not None:
+        for p in fields["platforms"] if isinstance(fields["platforms"], list) else [fields["platforms"]]:
+            check_id(p, "platform")
     if created:
         it = {"id": item_id or new_id("q"), "title": "", "summary": "", "category": "daily",
               "stage": "todo", "kind": "task", "owner": "manager", "platforms": [], "tags": [],

@@ -108,6 +108,17 @@ def guard_log(kind, h, path):
               f"origin={(h.headers.get('Origin') or '')[:80]!r} site={h.headers.get('Sec-Fetch-Site') or ''}", flush=True)
 
 
+ACTIVE_DOC = {"text/html", "application/xhtml+xml", "image/svg+xml", "text/xml", "application/xml", "text/xsl"}
+SANDBOX = "sandbox allow-scripts allow-forms allow-modals allow-popups allow-popups-to-escape-sandbox allow-downloads"
+
+
+def err_log(h, path, e):
+    """t-oss-secreview P2-5: an unexpected error is written to logs/server.log (stdout) with its traceback; the answer stays generic."""
+    import traceback
+    print(f"[{dt.datetime.now():%Y-%m-%d %H:%M:%S}] error {h.command} {path}: {e!r}", flush=True)
+    traceback.print_exc()
+
+
 class H(BaseHTTPRequestHandler):
     server_version = "Underthread/1"
     # ri1105-P2: HTTP/1.1 keep-alive. Every answer carries Content-Length (304 / HEAD carry no body). A connection may sit idle between
@@ -122,6 +133,7 @@ class H(BaseHTTPRequestHandler):
     def handle_one_request(self):
         self._sent = False
         self._body_ok = False
+        self._csp = None
         try:
             self.connection.settimeout(KEEPALIVE_IDLE)
         except OSError:
@@ -136,6 +148,16 @@ class H(BaseHTTPRequestHandler):
             pass
         self._body_ok = False
         return ok
+
+    # t-oss-secreview: every answer says "do not frame me from another site" (P2-1) and "do not guess my type" (P1-1).
+    # SAMEORIGIN, not DENY: the file viewer shows PDFs in a same-origin iframe. _csp is set per answer by _file for user files.
+    def end_headers(self):
+        csp = getattr(self, "_csp", None)
+        self.send_header("X-Frame-Options", "SAMEORIGIN")
+        self.send_header("Content-Security-Policy", (csp + "; " if csp else "") + "frame-ancestors 'self'")
+        self.send_header("X-Content-Type-Options", "nosniff")
+        self._csp = None
+        super().end_headers()
 
     def _keep(self):
         """False = close the connection after this answer (a POST body we did not read in full would be read as the next request)."""
@@ -216,6 +238,10 @@ class H(BaseHTTPRequestHandler):
         ctype = "application/manifest+json" if path.endswith(".webmanifest") else (mimetypes.guess_type(path)[0] or "application/octet-stream")
         if ctype.startswith("text/") or ctype in ("application/javascript",):
             ctype += "; charset=utf-8"
+        if media is True and ctype.split(";")[0] in ACTIVE_DOC:
+            # t-oss-secreview P1-1: an HTML / SVG / XML file a teammate saved under work/ or uploads/ still opens and runs, but in a
+            # sandbox (an opaque origin): it cannot read the board or call /api (its Origin is "null", which the POST guard refuses).
+            self._csp = SANDBOX
         if media == "static":
             return self._static(path, ctype, extra)
         if not media:
@@ -369,7 +395,10 @@ class H(BaseHTTPRequestHandler):
                 self.close_connection = True
                 print("GET after send:", u.path, repr(e))
                 return
-            self._send(400, {"error": str(e)})
+            if isinstance(e, (ValueError, KeyError)):
+                return self._send(400, {"error": str(e)})
+            err_log(self, u.path, e)   # t-oss-secreview P2-5: details go to logs/server.log, not to the browser
+            self._send(400, {"error": "bad request"})
 
     def do_POST(self):
         if not self._host_guard():
@@ -395,7 +424,8 @@ class H(BaseHTTPRequestHandler):
         except (ValueError, KeyError, SystemExit) as e:
             self._send(400, {"error": str(e)})
         except Exception as e:
-            self._send(500, {"error": repr(e)})
+            err_log(self, u.path, e)   # t-oss-secreview P2-5: repr(e) could carry paths or posted values; the browser gets a plain message
+            self._send(500, {"error": "server error"})
 
 
 class QuietServer(ThreadingHTTPServer):

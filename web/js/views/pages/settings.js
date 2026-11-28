@@ -34,7 +34,7 @@ function setTab(k, dir) {
   if (pane && !RMQ_S.matches && was !== k) { pane.classList.add("st-out"); setTimeout(draw, 90); } else draw();   // fade out, then slide the new pane in from the side you moved to
 }
 const stRow = (b, sm, right, attrs = "", tag = "button") => `<${tag} ${tag === "button" ? 'type="button" ' : ""}class="st-row" ${attrs}><span class="st-tx"><b>${b}</b>${sm ? `<small>${sm}</small>` : ""}</span>${right}</${tag}>`;
-const stSeg = (key, list, on, attr) => `<div class="seg st-seg" data-seg="${key}" role="radiogroup">${list.map(([v, zh, en]) => `<button type="button" class="seg-i ${v === on ? "on" : ""}" role="radio" aria-checked="${v === on}" ${attr}="${v}">${UI.lang === "en" ? en : zh}</button>`).join("")}</div>`;
+const stSeg = (key, list, on, attr) => `<div class="seg st-seg" data-seg="${esc(key)}" role="radiogroup">${list.map(([v, zh, en]) => `<button type="button" class="seg-i ${v === on ? "on" : ""}" role="radio" aria-checked="${v === on}" ${attr}="${v}">${UI.lang === "en" ? en : zh}</button>`).join("")}</div>`;
 const stSw = on => `<span class="sw ${on ? "on" : ""}" aria-hidden="true"><i></i></span>`;
 const stSec = (h, rows) => `<section class="st-sec"><h4>${h}</h4>${rows}</section>`;
 function stGeneral() {
@@ -265,7 +265,7 @@ function wireSettings() {
         <div class="pl-d">${esc(en ? p.de : p.d)}</div>${g.map(x => pipeCard(x.i, x.p.guess)).join("")}</div>`;
     }).join("");
     /* t-ri1108-a P5: one line + 「展开 ›」; the list opens one card per line. RI8.skip keeps it open across poll rebuilds; the click flips the class in place. */
-    const skip = skipped.length ? `<div class="pl-skip${RI8.skip ? " ri8-open" : ""}"><div class="ri8-skip-h"><span>${en ? `${skipped.length} more main/side card${skipped.length > 1 ? "s are" : " is"} not in the pipeline: no platform chosen, and the owner does not make content` : `另有 ${skipped.length} 张主线/支线卡不进制作线：没选发布平台，负责人也不做内容`   /* r-improve-1120 P5: no 「pipe 标签」 jargon */}</span><button type="button" class="ri8-skip-t" data-ri8-skip aria-expanded="${RI8.skip}">${RI8.skip ? (en ? "Hide ‹" : "收起 ‹") : (en ? "Show ›" : "展开 ›")}</button></div><div class="ri8-skip-l"><div>${skipped.map(i => `<a href="#" data-item="${i.id}">${esc(i.title)}</a>`).join("")}</div></div></div>` : "";
+    const skip = skipped.length ? `<div class="pl-skip${RI8.skip ? " ri8-open" : ""}"><div class="ri8-skip-h"><span>${en ? `${skipped.length} more main/side card${skipped.length > 1 ? "s are" : " is"} not in the pipeline: no platform chosen, and the owner does not make content` : `另有 ${skipped.length} 张主线/支线卡不进制作线：没选发布平台，负责人也不做内容`   /* r-improve-1120 P5: no 「pipe 标签」 jargon */}</span><button type="button" class="ri8-skip-t" data-ri8-skip aria-expanded="${RI8.skip}">${RI8.skip ? (en ? "Hide ‹" : "收起 ‹") : (en ? "Show ›" : "展开 ›")}</button></div><div class="ri8-skip-l"><div>${skipped.map(i => `<a href="#" data-item="${esc(i.id)}">${esc(i.title)}</a>`).join("")}</div></div></div>` : "";
     /* t-ui-fix-r2 audit P2-10: at 1100 the last columns sit past the edge behind a faint fade only; a line under the board says so (shown only while .more) and scrolls on click */
     return pageHead("pipe", bar) + wk.html + empty + `<div class="pl-board">${cols}</div><button type="button" class="pl-more-h" data-pl-next>${en ? "More stages to the right · scroll →" : "右边还有阶段 · 横向滚动 →"}</button>` + skip;
   };

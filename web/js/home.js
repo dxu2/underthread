@@ -57,12 +57,12 @@
   // ---------- build ----------
   function panel(a, i) {
     const nm = A().aname(a);
-    return `<div class="dp" role="button" tabindex="0" data-id="${a.id}" data-hd-pick="${a.id}" style="--i:${i};--tint:var(--tint-ph, var(--accent));--tint-hex:${A().tintOf(a)}">
+    return `<div class="dp" role="button" tabindex="0" data-id="${esc(a.id)}" data-hd-pick="${esc(a.id)}" style="--i:${i};--tint:var(--tint-ph, var(--accent));--tint-hex:${A().tintOf(a)}">
       <i class="dp-edge"></i><div class="dp-art"><i class="dp-img" style="background-image:${A().hasArt && A().hasArt(a, "panel") ? `url('/static/art/panels/${a.id}.webp'),` : ""}url('${esc(A().avatarUrl(a, 1))}'); --ph:${(i * 0.7).toFixed(1)}s"></i><i class="dp-uti" style="background-image:url('${esc(A().avatarUrl(a, 1))}')">${A().wsheet && A().wsheet(a, 320) ? `<i class="dp-utw" style="${A().wsheet(a, 320).slice(1)}"></i>` : ""}</i></div>
       <span class="dp-vn">${esc(nm)}</span><i class="dp-un"></i><span class="dp-rg"><i></i></span>
       <div class="dp-info"><div class="n"><b>${esc(nm)}</b><span class="hd-st"></span></div><div class="rl">${esc(A().atitle(a))}</div>
         <div class="dp-t"><span></span>${CHEV}</div><div class="dp-m"><em></em><i class="dp-bar"><u></u></i></div></div>
-      <div class="dp-btns"><button class="dp-b" data-op aria-label="${L().open}">${IC_OPEN}</button><button class="dp-b" data-chat="${a.id}" aria-label="${L().dm}">${IC_DM}</button></div>
+      <div class="dp-btns"><button class="dp-b" data-op aria-label="${L().open}">${IC_OPEN}</button><button class="dp-b" data-chat="${esc(a.id)}" aria-label="${L().dm}">${IC_DM}</button></div>
       <div class="dp-fx" aria-hidden="true"></div></div>`;
   }
   function build(ob, d) {
@@ -142,7 +142,7 @@
     /* t-office-d1-s3 + t-ri1104-p2: the dot also means "unread messages from TA", same rule as the TEAM list and the chat roster */
     as.forEach(a => { if (A().unreadOf && A().unreadOf(a.id)) waiting.add(a.id); });
     as.forEach(a => {
-      const el = $(`.dp[data-id="${a.id}"]`, root); if (!el) return;
+      const el = $(`.dp[data-id="${esc(a.id)}"]`, root); if (!el) return;
       const w = isW(a), it = itemFor(a), on = a.id === S.act, sn = a.since;   // no `since` (old server): the elapsed line falls back to the activity text and the bar hides
       el.classList.toggle("act", on); el.classList.toggle("w", w);
       setA(el, "aria-label", L().aria(A().aname(a), w ? L().working : L().resting, it && it.title, on ? (it ? L().tapOpen : L().tapChat) : L().tapExp));
@@ -158,7 +158,7 @@
       const bar = $(".dp-bar", el); bar.classList.toggle("off", !(w && sn)); setA($("u", bar), "style", `--p:${w && sn ? Math.min(1, mins(sn) / 60).toFixed(3) : 0}`);
     });
     if (events) as.forEach(a => {   // transitions are inferred from the previous poll
-      const el = $(`.dp[data-id="${a.id}"]`, root), p = S.prev[a.id], w = isW(a);
+      const el = $(`.dp[data-id="${esc(a.id)}"]`, root), p = S.prev[a.id], w = isW(a);
       if (p && el) {
         if (!p.w && w) { lit(el); if (Date.now() - S.pick > 15000) { S.act = a.id; S.pick = 0; apply(ob, d, false); } }
         if (p.w && !w && p.item && itemStage(p.item) === "done") { if (Date.now() - S.pick > 15000) { S.act = a.id; apply(ob, d, false); } mission(el); }
@@ -211,8 +211,8 @@
   // a2restore (t-m-a2-restore): data-lp = long-press opens the D1 quick sheet; .a2-glow wraps the avatar so the dispatch halo never overrides the chibi sheet animation;
   // .a2-tg = the 「Chrome」 tag (agents[id].tool); .a2-fx hosts the 委托完成 streak / plate (same markup as the D1 mission()).
   function a2Row(a) {
-    return `<div class="a2-r" role="button" tabindex="0" data-a2="${a.id}" data-lp="${a.id}" style="--tint:var(--tint-ph, var(--accent));--tint-hex:${A().tintOf(a)}"><span class="a2-glow"></span><div class="a2-b"><div class="a2-n"><span class="a2-nm">${esc(A().aname(a))}</span><span class="a2-tg" hidden></span></div><div class="a2-t"></div>
-      <div class="a2-m"><span class="a2-k"></span><button type="button" class="a2-lk" data-live="${a.id}" hidden>${L2().live} <span aria-hidden="true">›</span></button></div></div><div class="a2-fx" aria-hidden="true"></div></div>`;
+    return `<div class="a2-r" role="button" tabindex="0" data-a2="${esc(a.id)}" data-lp="${esc(a.id)}" style="--tint:var(--tint-ph, var(--accent));--tint-hex:${A().tintOf(a)}"><span class="a2-glow"></span><div class="a2-b"><div class="a2-n"><span class="a2-nm">${esc(A().aname(a))}</span><span class="a2-tg" hidden></span></div><div class="a2-t"></div>
+      <div class="a2-m"><span class="a2-k"></span><button type="button" class="a2-lk" data-live="${esc(a.id)}" hidden>${L2().live} <span aria-hidden="true">›</span></button></div></div><div class="a2-fx" aria-hidden="true"></div></div>`;
   }
   const toolTag = k => k === "chrome" ? "Chrome" : k === "computer" ? (lang() === "en" ? "Computer" : "电脑") : String(k);
   function a2Lit(el) { if (el.classList.contains("lit")) { el.classList.remove("lit"); void el.offsetWidth; } el.classList.add("lit"); setTimeout(() => el.classList.remove("lit"), 1700); }   /* t-perf-smooth F4a: reflow only to restart a row that is still lit (it was forced on every poll that lit a row) */
@@ -279,7 +279,7 @@
     const lead = show.find(a => isW(a) && !S2.mc[a.id]); setA(root, "data-role", lead ? lead.id : null);
     const rc = lead ? A().tintOf(lead) : ""; if (root.style.getPropertyValue("--hd-role") !== rc) { if (rc) root.style.setProperty("--hd-role", rc); else root.style.removeProperty("--hd-role"); }
     show.forEach(a => {
-      const el = $(`.a2-r[data-a2="${a.id}"]`, rows); if (!el) return;
+      const el = $(`.a2-r[data-a2="${esc(a.id)}"]`, rows); if (!el) return;
       const tg = $(".a2-tg", el), tk = isW(a) ? a.tool || "" : ""; setT(tg, tk ? toolTag(tk) : ""); if (tg.hidden === !!tk) tg.hidden = !tk;
       /* t-yarn-anim (user 11-22 10:21): the yarn kitten by the working avatar (core/yarnkit.js; in place: the chibi sheet node is kept, a beat is
          never restarted by a poll). A finishing row (委托完成 plate) gets the done beat: the kitten curls up and fades with the row. */
@@ -306,15 +306,15 @@
     const fk = idle.map(a => a.id).join(",");
     if (stk.dataset.k !== fk) {
       stk.dataset.k = fk;
-      setH($(".a2-faces", stk), idle.slice(0, 3).map(a => `<i data-lp="${a.id}" style="background-image:url('${esc(A().avatarUrl(a))}')"></i>`).join(""));
-      setH($(".a2-gr", root), idle.map((a, i) => `<button type="button" class="a2-g" data-chat="${a.id}" data-lp="${a.id}" style="--gi:${i}"><i style="background-image:url('${esc(A().avatarUrl(a))}')"></i><span>${esc(A().aname(a).split(" ")[0])}</span></button>`).join(""));
+      setH($(".a2-faces", stk), idle.slice(0, 3).map(a => `<i data-lp="${esc(a.id)}" style="background-image:url('${esc(A().avatarUrl(a))}')"></i>`).join(""));
+      setH($(".a2-gr", root), idle.map((a, i) => `<button type="button" class="a2-g" data-chat="${esc(a.id)}" data-lp="${esc(a.id)}" style="--gi:${i}"><i style="background-image:url('${esc(A().avatarUrl(a))}')"></i><span>${esc(A().aname(a).split(" ")[0])}</span></button>`).join(""));
     }
     const x = S2.x && idle.length > 0;
     setH($(".a2-sn", stk), `${L2().idle(idle.length)} <span aria-hidden="true">${x ? "‹" : "›"}</span>`);
     setA(stk, "aria-expanded", String(x)); const ex = $(".a2-exp", root); ex.classList.toggle("on", x); setA(ex, "aria-hidden", String(!x)); stk.classList.toggle("on", x);   // idletap: grid-rows 0fr -> 1fr animates the open / close
-    lit.forEach(id => { const el = $(`.a2-r[data-a2="${id}"]`, rows); if (el) a2Lit(el); });
+    lit.forEach(id => { const el = $(`.a2-r[data-a2="${esc(id)}"]`, rows); if (el) a2Lit(el); });
     fin.forEach(id => {
-      const el = $(`.a2-r[data-a2="${id}"]`, rows); if (el) a2Mission(el);
+      const el = $(`.a2-r[data-a2="${esc(id)}"]`, rows); if (el) a2Mission(el);
       setTimeout(() => { const o = document.getElementById("officebox"); if (o && o.dataset.hv === "a2" && S.last) a2Patch(o, S.last); }, 2350);
     });
     /* V3 patch chips: 「N 件待拍板」「N 条回复」 when new replies are part of the count, else the 「最久 N」 chip (.hd-old, turns hot past 12 h outside quiet night) */

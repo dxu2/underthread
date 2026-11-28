@@ -342,10 +342,25 @@ def read():
             fcntl.flock(lf, fcntl.LOCK_UN)
 
 
+# t-oss-secreview P1-3: ids that end up inside HTML attributes on the board (card ids, role ids, platform keys) are plain tokens.
+# Wide enough for every id the board and its tools make (t-x-y, q-1126-ab12, mt-..., role ids); no quotes, brackets or spaces.
+SAFE_ID = re.compile(r"[A-Za-z0-9][A-Za-z0-9._-]{0,80}")
+# P1-2: attachment paths may hold spaces, CJK and apostrophes, but never characters that close an HTML attribute or tag.
+BAD_PATH = re.compile(r'["<>`\x00-\x1f\x7f]')
+
+
+def check_id(v, what="id"):
+    if not isinstance(v, str) or not SAFE_ID.fullmatch(v):
+        raise SystemExit(f"bad {what} {v!r}: letters, digits, '.', '_' and '-' only (max 81)")
+    return v
+
+
 def norm_attach(x):
     """Attachment path -> path relative to ROOT when it resolves inside ROOT; else unchanged."""
     if isinstance(x, list):
         return [norm_attach(i) for i in x]
+    if isinstance(x, str) and BAD_PATH.search(x):
+        raise SystemExit(f"bad attachment path {x!r}: no quotes, < > or control characters")
     if not isinstance(x, str) or not x or "://" in x:
         return x
     if not (os.path.isabs(x) or x.startswith("./") or ".." in x.split("/")):

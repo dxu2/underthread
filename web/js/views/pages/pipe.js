@@ -54,8 +54,8 @@ function pipeWeek(content) {
 /* r-improve-1120 P5: <wbr> after each 「/」 so a narrow column breaks 「dxu2/underthread」 at the slash, not mid-word */
 function pipeCard(it, guess) {
   const en = UI.lang === "en", ws = workersOf(it.id), plats = (it.platforms || []).map(p => PLAT[p] || p).join(" · ");
-  const flag = busy(it) ? "" : it.stage === "review" ? (en ? `${it.draft_label || "draft"} · your review` : `${esc(it.draft_label || "新稿")} 待你看`) : awaitsUser(it) ? (en ? "needs your call" : "待你拍板") : it.stage === "waiting" ? (en ? "waiting" : "等别人") : "";
-  return `<div class="mini pl-card${ws.length ? " wk-on" : ""}" draggable="true" data-pdrag="${it.id}" data-item="${it.id}"${wkAttr(ws)}>${wkFx(ws)}<div class="t">${esc(it.title).replace(/\//g, "/<wbr>")}</div>${wkTag(ws)}
+  const flag = busy(it) ? "" : it.stage === "review" ? (en ? `${esc(it.draft_label || "draft")} · your review` : `${esc(it.draft_label || "新稿")} 待你看`) : awaitsUser(it) ? (en ? "needs your call" : "待你拍板") : it.stage === "waiting" ? (en ? "waiting" : "等别人") : "";
+  return `<div class="mini pl-card${ws.length ? " wk-on" : ""}" draggable="true" data-pdrag="${esc(it.id)}" data-item="${esc(it.id)}"${wkAttr(ws)}>${wkFx(ws)}<div class="t">${esc(it.title).replace(/\//g, "/<wbr>")}</div>${wkTag(ws)}
     ${flag ? `<span class="pl-flag${it.stage === "review" || awaitsUser(it) ? " you" : ""}">${flag}</span>` : ""}
     <div class="m">${av(agent(it.owner), "sm", it.id)}<span>${t(it.category)}</span>${plats ? `<span>${esc(plats)}</span>` : ""}${guess ? `<span class="pl-guess" title="${en ? "No pipe:<stage> tag; guessed from the owner" : "没有 pipe:阶段 标签，按负责人推断"}">${en ? "guessed" : "推断"}</span>` : ""}</div></div>`;
 }
