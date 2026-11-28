@@ -102,7 +102,7 @@ def _fsig(p):
         return None
 
 
-_RV = {"sig": None, "rev": None, "un": 0}
+_RV = {"sig": None, "rev": None, "un": 0, "old": None}
 _PSC, _PSL = {}, threading.Lock()
 _AR = {"sig": None, "items": [], "body": None}
 
@@ -112,9 +112,16 @@ def rev_unacked():
     if k != _RV["sig"]:
         st = S.read()
         acked = set(st["meta"].get("inbox_acked") or [])
-        un = sum(1 for e in S.inbox_all() if e["id"] not in acked)
-        _RV.update(sig=k, rev=st["meta"]["rev"], un=un)
+        pend = [e for e in S.inbox_all() if e["id"] not in acked]
+        _RV.update(sig=k, rev=st["meta"]["rev"], un=len(pend), old=min((str(e.get("t") or "") for e in pend), default=None) or None)
     return _RV["rev"], _RV["un"]
+
+
+def inbox_oldest():
+    """t-oss-monitor-check: when the oldest entry the steward has not acked yet was written (ISO), or None. The page warns
+    when it sits for minutes: a steward that never acks is usually one whose Claude Code has no Monitor tool."""
+    rev_unacked()
+    return _RV["old"]
 
 
 def archive_cached():
@@ -383,6 +390,7 @@ def public_state(slim=False):
     st["meta"]["avatars"] = {f.rsplit(".", 1)[0]: f for f in sorted(os.listdir(AVATARS))
                              if f.lower().endswith((".png", ".jpg", ".jpeg", ".webp", ".gif"))}
     st["meta"]["inbox_unacked"] = rev_unacked()[1]
+    st["meta"]["inbox_oldest"] = inbox_oldest()
     st["meta"]["art"] = art_scan()
     st["meta"]["avv"] = avatar_stamp()   # t-avatar-live-refresh
     st["meta"]["hires"] = hire_welcomes(st.get("agents") or {})   # t-hire-celebration
@@ -531,7 +539,7 @@ def _state(h, u, q):   # t-perf B: cached rev / body (see public_state_cached)
                 rev, un, avv = r2, u2, v2
                 break
     if q.get("rev", [""])[0] == str(rev):
-        return h._send(200, {"same": True, "meta": {"server_time": S.now(), "inbox_unacked": un, "avv": avv, "hires": hire_welcomes_cached()}})
+        return h._send(200, {"same": True, "meta": {"server_time": S.now(), "inbox_unacked": un, "inbox_oldest": inbox_oldest(), "avv": avv, "hires": hire_welcomes_cached()}})
     _, raw, gzb = public_state_cached(q.get("slim", [""])[0] == "1")
     if "gzip" in (h.headers.get("Accept-Encoding") or ""):
         return h._send(200, gzb, extra={"Content-Encoding": "gzip", "Vary": "Accept-Encoding"})

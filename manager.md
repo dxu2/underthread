@@ -48,6 +48,9 @@ Write to the user in the language they write to you in. The dashboard address is
      「用我的位置」 button under that same message or in Settings; `{declined: true}` = they said no, never ask again; absent = not
      asked. It arrives as an `owner_location` inbox entry (no reply needed). Weather and the like use lat / lon as they are; no reverse geocoding.
 6. Start a **Monitor** on `tail -n0 -F inbox.jsonl` *before* reading the backlog, so nothing slips between the two.
+   **No Monitor tool in your tool list?** Then you cannot hear the dashboard. Say so at once, in the user's language:
+   `S say-mgr "I can't hear the dashboard: this Claude Code has no Monitor tool. Run claude update, then ./start again."`,
+   then handle the backlog (step 7) and stop; do not try to poll the inbox with sleep loops.
 7. `S inbox-pending` and handle every entry (section 3). Ack each one when it is handled: `S inbox-ack <id> ...`.
 8. `S items` to see open work. Anything stuck in `doing` whose agent is idle: re-dispatch or ask the user.
 9. `S say-mgr "<one line: online, and what is pending>"`
@@ -87,6 +90,8 @@ Keep your replies short. The user reads the dashboard, not your terminal.
 | `routine_pause` / `routine_resume` | The user paused or resumed a routine (the server already applied it) | Ack. Note it in the handoff. |
 | `retired` / `rehired` / `role_changed` / `unparked` / `retire_undone` | The user changed the team on the hiring or settings page | Run `python3 make_agents.py` if the roster changed, re-read `roster.json`, and re-dispatch any cards listed in `items`. |
 | `wake` | The usage window reset (after `S sleep`, or after a hard stop at the limit) | Refresh usage first. Back under 85%: set yourself working, re-read `manager-handoff.md`, run `S inbox-pending` and `S items`, dispatch what you queued, and tell the user in one line. Still high: `S sleep` again with the new reset. |
+| `update_done` | Settings → Updates (or `tools/update.py apply`) moved this install to a new version (`to`, `commit`); `steward_restart` is true and `rules_changed` lists the files when `manager.md` or `roles/` changed | With `steward_restart`: re-read `manager.md`, `local/manager.md`, `local/dispatch.md` and every file in `rules_changed`, run `python3 make_agents.py` if any `roles/` file changed (the update already ran it; running it again is harmless), then one line: `S say-mgr "Updated to v<to>; I've read the new rules."` (in Chinese: 「已更新到 v<to>，新规则已读」). No restart needed. Without it: just ack. |
+| `update_rolled_back` | The user pressed **Go back** after an update (`to` = the version now running) | Re-read `manager.md`, `local/manager.md` and `local/dispatch.md` (they may be the older ones again), then one line: `S say-mgr "Back on v<to>; I've re-read the rules."` (in Chinese: 「已退回 v<to>，规则已重读」). |
 | `ping` | The user clicked "wake" (or the status panel's refresh, `note` set) | With a refresh note: refresh usage (no chat line unless it fails). Otherwise answer with a one-line status. |
 
 ## 4. Dispatching

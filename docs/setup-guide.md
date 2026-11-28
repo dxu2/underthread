@@ -46,6 +46,8 @@ Everything below still works by hand, exactly as before.
 | Optional: whisper.cpp, for voice memo transcription | see `tools/transcribe.py` |
 | Optional: Tailscale, to use the dashboard from your phone | `tailscale status` |
 
+Monitor arrived in Claude Code 2.1.98 (2.1.310 on Bedrock, Vertex or Foundry, or with telemetry turned off). `./start` checks your version and prints the fix if it is too old: run `claude update`, then `./start` again.
+
 **What it costs.** Underthread itself is free. All the work runs in Claude Code and uses your Claude plan. The steward stays online and every card a teammate works on spends usage. See [section 7](#7-usage-and-the-brakes) for how the steward slows down near your limit.
 
 ---

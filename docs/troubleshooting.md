@@ -9,6 +9,7 @@ Start with the log: `tail -n 80 logs/server.log`. Most problems show up there fi
 | `http://127.0.0.1:8765` doesn't load | The server isn't running, or another program holds the port (the server then prints one line saying the port is taken and exits) | `python3 tools/ensure_server.py`. Port taken: `lsof -nP -iTCP:8765 -sTCP:LISTEN` shows who; set another `port` in `config.json` or run with `PORT=8766` |
 | The header says the manager is offline and requests are waiting | The steward session isn't running, or its Monitor expired | Check the terminal running `claude`. If it's gone, start it again (click the Underthread icon, run `./start`, or `claude "Start the manager per manager.md"`); it picks up the backlog from `inbox.jsonl`. If it's alive, tell it "re-arm your inbox Monitor" |
 | You type in chat and nothing happens | Same as above: nobody is watching `inbox.jsonl` | As above. Your messages are not lost; they wait in the inbox |
+| The steward shows online, but the ticker says your messages are unread for 10 min (header: "not listening?") | Its Claude Code has no **Monitor** tool, so it never hears `inbox.jsonl` | See [below](#the-steward-is-online-but-never-picks-up-what-you-type) |
 | The steward says it can't find a teammate / dispatch fails | `make_agents.py` never ran, or ran after the steward started | `python3 make_agents.py`, then restart the steward |
 | A teammate keeps asking for permission to run `stateutil.py` | `.claude/settings.json` is missing or was replaced | Restore it from git: `git checkout -- .claude/settings.json` |
 | The usage widget says "no usage data" | No usage feed | In a terminal session, `.claude/settings.json` must set `tools/statusline.py` as the status line, and your plan must be Pro or Max. In the desktop app, ask the steward to refresh usage |
@@ -29,6 +30,23 @@ Start with the log: `tail -n 80 logs/server.log`. Most problems show up there fi
 | `./start --uninstall` says it needs a terminal | It asks questions, so it won't run from a script or the icon | Run it in a terminal, or `./start --uninstall --dry-run` to just see the list |
 | A finished card disappeared | It was archived after 3 quiet days | Search still finds it. `python3 stateutil.py archive list`; `archive unarchive-all` restores everything |
 | `state.json` looks broken | Hand edits, or a crash mid-write elsewhere | Don't edit it by hand. Stop the server and the steward, keep a copy, and open an issue with the server log |
+
+### The steward is online but never picks up what you type
+
+The steward hears the dashboard through Claude Code's **Monitor** tool: it watches `inbox.jsonl` and gets one event per
+line. A Claude Code without Monitor starts the steward fine, but whatever you type just waits, with no error.
+
+- Monitor arrived in Claude Code **2.1.98**. With Bedrock, Vertex or Foundry, or with `DISABLE_TELEMETRY` /
+  `CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC` set, it arrived in **2.1.310** (see Claude Code's
+  [CHANGELOG](https://github.com/anthropics/claude-code/blob/main/CHANGELOG.md)).
+- `./start` checks `claude --version` (and a `Monitor` rule in `permissions.deny`) and prints a line with the fix when it
+  looks missing. It never stops the start.
+- The dashboard warns when your oldest unhandled message has waited 10 minutes while the steward looks online: the
+  header says "not listening?" and the ticker says how to fix it.
+
+**Fix:** run `claude update` (or reinstall Claude Code), close the steward's terminal, then run `./start` again. Your
+messages are not lost: the steward reads the backlog first when it starts. If the steward is just busy with something
+long, the warning clears by itself once it catches up.
 
 When opening an issue, include your OS, `python3 --version`, `claude --version` and the last 80 lines of `logs/server.log` (remove anything private).
 
