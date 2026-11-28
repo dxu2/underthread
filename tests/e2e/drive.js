@@ -48,8 +48,12 @@ async function openView(engine, view, hash, theme, launch) {
     const s = document.createElement("style"); s.textContent = "*{overflow-anchor:none!important}"; document.head.appendChild(s);
   }));
   const p = await ctx.newPage(), errs = [];
-  p.on("pageerror", e => errs.push(String(e)));
-  p.on("console", m => { if (m.type() === "error" && !/^Failed to load resource/.test(m.text())) errs.push("console: " + m.text()); });
+  /* WebKit reports a same-origin fetch cancelled by a reload or navigation (a long poll, av.js's avatar HEAD checks) as "Fetch API cannot load
+     <url> due to access control checks", even when the page catches it; Chromium says nothing. Ten journeys filtered it one by one, crew did not
+     (t-oss-webkit-e2e). Only this server's own URLs are dropped: a real cross-origin failure still counts. */
+  const cancelled = t => /due to access control checks/.test(t) && /cannot load (https?:\s*\/*)?(127\.0\.0\.1|localhost)[:/]/.test(t);
+  p.on("pageerror", e => { if (!cancelled(String(e))) errs.push(String(e)); });
+  p.on("console", m => { if (m.type() === "error" && !/^Failed to load resource/.test(m.text()) && !cancelled(m.text())) errs.push("console: " + m.text()); });
   /* HTTP errors: /work/ and /uploads/ are not copied into scratch, so their 404s (and /api/thumb?p=work/… for them) are expected noise; anything else counts.
      /api/thumb 415 = no thumbnail tool on this machine (sips is macOS only, e.g. Linux CI): the page falls back to the full file, so it is noise too. */
   p.on("response", r => { if (r.status() >= 400) { const u = new URL(r.url()); ((/^\/(work|uploads)\//.test(u.pathname) || (u.pathname === "/api/thumb" && /^(work|uploads)\//.test(u.searchParams.get("p") || ""))) && r.status() === 404 || u.pathname === "/api/thumb" && r.status() === 415 ? (errs.skipped = errs.skipped || []) : errs).push(`http ${r.status()} ${u.pathname}`); } });
