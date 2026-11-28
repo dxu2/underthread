@@ -16,6 +16,9 @@ Options:
     --views LIST        e2e views, default each journey's own (desk,phone)
     --port N            e2e server port (default 8796; never 8765)
     --no-install        e2e: do not run npm ci / playwright install when Playwright is missing (fail instead)
+    --retries N         e2e: run a failed journey again up to N times (default 0). A pass on a later try is reported
+                        as "flaky" in the table and the summary, and the failed try's evidence stays in <journey>.try1/.
+                        CI uses 1 for the non-blocking WebKit job only; Chromium never retries.
 
 e2e details: every journey gets a fresh server copy (tests/e2e/scratch.sh with VERIFY_DATA=fixtures), so journeys do not
 see each other's data. Evidence lands in tests/e2e/out/<engine>/<journey>/ (log.txt, results.json, screenshots).
@@ -44,6 +47,7 @@ ONLY = opt("-k", "")
 ENGINES = opt("--engines", os.environ.get("E2E_ENGINES", "chromium"))
 VIEWS = opt("--views")
 PORT = opt("--port", os.environ.get("E2E_PORT", "8796"))
+RETRIES = int(opt("--retries", os.environ.get("E2E_RETRIES", "0")))
 
 
 def sh(cmd, **kw):
@@ -135,31 +139,54 @@ def e2e():
     journeys = sorted(j for j in glob.glob(os.path.join(E2E, "journeys", "*.js")) if ONLY in os.path.basename(j))
     scratch = f"/tmp/rt-e2e-{PORT}"
     env = dict(os.environ, VERIFY_PORT=PORT, VERIFY_SCRATCH=scratch, VERIFY_DATA="fixtures")
-    rows, bad = [], 0
+    rows, bad, flaky = [], 0, []
+
+    def attempt(engine, j, out):
+        rc = subprocess.run(["bash", os.path.join(E2E, "scratch.sh"), "up"], env=env, cwd=ROOT).returncode
+        if rc == 0:
+            cmd = ["node", os.path.join(E2E, "drive.js"), "run", j, "--out", out, "--engines", engine]
+            if VIEWS:
+                cmd += ["--views", VIEWS]
+            rc = subprocess.run(cmd, env=env, cwd=ROOT, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True).returncode
+        subprocess.run(["bash", os.path.join(E2E, "scratch.sh"), "down"], env=env, cwd=ROOT, stdout=subprocess.DEVNULL)
+        last = ""
+        try:
+            with open(os.path.join(out, "log.txt"), encoding="utf-8") as f:
+                last = f.read().strip().splitlines()[-1].split(" ", 1)[1]
+        except (OSError, IndexError):
+            pass
+        return rc, last
+
     for engine in ENGINES.split(","):
         for j in journeys:
             name = os.path.basename(j)[:-3]
             out = os.path.join(E2E, "out", engine, name)
+            for k in range(1, RETRIES + 2):
+                shutil.rmtree(f"{out}.try{k}", ignore_errors=True)
             shutil.rmtree(out, ignore_errors=True)
             t0 = time.time()
-            rc = subprocess.run(["bash", os.path.join(E2E, "scratch.sh"), "up"], env=env, cwd=ROOT).returncode
-            if rc == 0:
-                cmd = ["node", os.path.join(E2E, "drive.js"), "run", j, "--out", out, "--engines", engine]
-                if VIEWS:
-                    cmd += ["--views", VIEWS]
-                rc = subprocess.run(cmd, env=env, cwd=ROOT, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True).returncode
-            subprocess.run(["bash", os.path.join(E2E, "scratch.sh"), "down"], env=env, cwd=ROOT, stdout=subprocess.DEVNULL)
-            last = ""
-            try:
-                with open(os.path.join(out, "log.txt"), encoding="utf-8") as f:
-                    last = f.read().strip().splitlines()[-1].split(" ", 1)[1]
-            except (OSError, IndexError):
-                pass
-            rows.append((engine, name, "ok" if rc == 0 else "FAIL", f"{time.time() - t0:.0f}s", last))
-            print(f"  {engine:8} {name:14} {'ok' if rc == 0 else 'FAIL':4} {time.time() - t0:5.0f}s  {last}", flush=True)
+            rc, last = attempt(engine, j, out)
+            tries = 1
+            while rc != 0 and tries <= RETRIES:
+                # keep the failed try's evidence next to the retry, so a flaky check can still be read afterwards
+                if os.path.isdir(out):
+                    os.replace(out, f"{out}.try{tries}")
+                first = last
+                print(f"  {engine:8} {name:14} retry   (try {tries} failed: {first})", flush=True)
+                tries += 1
+                rc, last = attempt(engine, j, out)
+                if rc == 0:
+                    last = f"{last}  [flaky: try 1 failed: {first}]"
+            status = "ok" if rc == 0 and tries == 1 else "flaky" if rc == 0 else "FAIL"
+            if status == "flaky":
+                flaky.append(f"{engine}/{name}")
+            rows.append((engine, name, status, f"{time.time() - t0:.0f}s", last))
+            print(f"  {engine:8} {name:14} {status:5} {time.time() - t0:5.0f}s  {last}", flush=True)
             bad += rc != 0
     subprocess.run(["bash", os.path.join(E2E, "scratch.sh"), "wipe"], env=env, cwd=ROOT, stdout=subprocess.DEVNULL)
     print(f"e2e: {len(rows) - bad}/{len(rows)} journeys passed; evidence in tests/e2e/out/")
+    if flaky:
+        print(f"e2e: passed only on retry (flaky, see <journey>.try1/): {', '.join(flaky)}")
     return 1 if bad else 0
 
 
