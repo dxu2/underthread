@@ -39,12 +39,14 @@ Everything below still works by hand, exactly as before.
 | macOS or Linux | Windows is untested |
 | Python 3.10 or newer (standard library only) | `python3 --version` |
 | Claude Code, signed in to a paid Claude plan | `claude --version` |
-| A Claude Code version that has the **Monitor** tool (the steward watches its inbox with it): 2.1.98 or newer, 2.1.310 or newer on Bedrock / Vertex / Foundry or with telemetry off | `claude --version`; `./start` checks it for you. Too old: `claude update` |
+| A Claude Code version that has the **Monitor** tool (the steward watches its inbox with it) | Ask Claude Code "do you have the Monitor tool?" |
 | A browser | Any recent one; Safari on iPhone for the phone app |
 | Optional: ffmpeg, if a teammate works on audio or video | `ffmpeg -version` |
 | Optional: the Codex CLI signed in with ChatGPT, for images | `python3 tools/image.py backend` |
 | Optional: whisper.cpp, for voice memo transcription | see `tools/transcribe.py` |
 | Optional: Tailscale, to use the dashboard from your phone | `tailscale status` |
+
+Monitor arrived in Claude Code 2.1.98 (2.1.310 on Bedrock, Vertex or Foundry, or with telemetry turned off). `./start` checks your version and prints the fix if it is too old: run `claude update`, then `./start` again.
 
 **What it costs.** Underthread itself is free. All the work runs in Claude Code and uses your Claude plan. The steward stays online and every card a teammate works on spends usage. See [section 7](#7-usage-and-the-brakes) for how the steward slows down near your limit.
 
