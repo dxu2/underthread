@@ -160,8 +160,11 @@ module.exports = {
       c.check(`${tag}: chips inline; 其他… and 还有 1 题 share one line`, ch.found && ch.tail && ch.more && ch.otherMore && ch.inline, ch);
       const h = await hit(p, ID("a"));
       c.check(`${tag}: ask options inside the card and clickable`, h.found && h.hit && h.inside, h);
-      await p.hover(`#pagebody [data-item="${ID("b")}"] .body h3`); await c.sleep(500);
-      const hv = await hov(p, ID("b"));
+      /* poll instead of one read after a fixed 500 ms: on slow WebKit (Linux CI) the columns may be dealt again under the
+         mouse and the .35 s fade starts late (run 46123216088 read acts .03 / date .89); hovering again each step is what a moving mouse does */
+      const hvSel = `#pagebody [data-item="${ID("b")}"] .body h3`;
+      const hv = await c.until(async () => { await p.hover(hvSel); const v = await hov(p, ID("b")); return v.acts > .9 && v.dt < .1 ? v : null; }, 4000, 250)
+        || await hov(p, ID("b"));
       c.check(`${tag}: hover: 归档 / 完成 over the date, date faded, no pill covered`, hv.acts > .9 && hv.dt < .1 && hv.clear, hv);
       await p.mouse.move(2, 2);
       await p.evaluate(() => document.getElementById("page").scrollTo(0, 0)); await c.sleep(300);

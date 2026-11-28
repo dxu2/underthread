@@ -39,6 +39,7 @@ function route(P, via) {
   const item = P.get("item"), dm = P.get("dm"), rep = P.get("rep"), page = P.get("page");
   const kind = item ? "item" : dm ? "dm" : rep ? "rep" : page ? "page" : "";
   if (!kind) return "none";
+  if (!ST) return "no-state";   /* t-oss-webkit-e2e: the cold route ran after a first poll that ended without a state (WebKit, a fetch cut off by the reload) */
   if (dm && !(ST && ST.agents && ST.agents[dm])) return "no-agent";
   if (item && !(ST.items || []).some(i => i.id === item) && !archKnown(item)) return "no-item";   // t-perf A: an archived card opens via /api/item
   if (MB.open) closeMailbox();

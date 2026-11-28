@@ -76,7 +76,9 @@ jobs:
           npx playwright install --with-deps ${{ matrix.engine }}
           sudo apt-get install -y --no-install-recommends fonts-noto-cjk webp   # webp: cwebp for tools/avatar_sizes.py (avrefresh journey)
       - name: Journeys
-        run: python3 tests/run.py e2e --engines ${{ matrix.engine }} --no-install
+        # WebKit only: one retry per failed journey (timing on the slow Linux runner); a pass on retry is printed as "flaky"
+        # and keeps the failed try's evidence. Chromium blocks and never retries.
+        run: python3 tests/run.py e2e --engines ${{ matrix.engine }} --no-install --retries ${{ matrix.engine == 'webkit' && 1 || 0 }}
       - name: Keep the evidence
         if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9  # v7

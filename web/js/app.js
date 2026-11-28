@@ -181,7 +181,10 @@ document.documentElement.dataset.theme = UI.theme;
 snapBoot();
 poll(true).then(() => {
   if (!poll.entered) window.FX && FX.enter($("#pagebody"));
-  if (H.get("item") || H.get("dm") || H.get("rep") || H.get("push")) { const r = route(H, "cold"); document.dispatchEvent(new CustomEvent("rt:routed", { detail: { via: "cold", result: r, push: H.get("push") } })); }
+  /* t-oss-webkit-e2e: the first poll can end without a state (a fetch cut off by a reload, WebKit); then wait for the next one (up to 10 s)
+     instead of routing on a null state (was an unhandled TypeError on ST.items) */
+  if (H.get("item") || H.get("dm") || H.get("rep") || H.get("push")) { let n = 0; const cold = () => { if (!ST && ++n < 20) return setTimeout(cold, 500);
+    const r = route(H, "cold"); document.dispatchEvent(new CustomEvent("rt:routed", { detail: { via: "cold", result: r, push: H.get("push") } })); }; cold(); }
 });
 /* t-power-save: a hidden tab polls every 30 s instead of 2.5 s, and refreshes once the moment it is visible again */
 let pollAt = Date.now();
