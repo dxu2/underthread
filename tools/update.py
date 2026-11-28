@@ -24,7 +24,8 @@ apply, in order (nothing on the live install changes until step 4, and any failu
   5. migrations (stateutil.py schema), make_agents.py, server restart (keepalive / launchd bring it back), then the
      health check: /api/health and /api/state must answer within 60 s, and the page and every file it loads must answer
      200 (page_check; the trial in step 3 checks the same), or rollback runs by itself
-  6. one inbox entry "update_done" for the steward (and "steward_restart": true when manager.md or roles/ changed)
+  6. one inbox entry "update_done" for the steward ("steward_restart": true and "rules_changed" when manager.md or roles/ changed;
+     the steward re-reads them in place, see manager.md section 3)
 
 rollback moves the code back to the commit before the last update, puts your core edits back and restarts. Data stays as
 it is: minor and patch versions only add to the data, and the old code reads the newer data. --data also puts the data
@@ -673,10 +674,13 @@ def apply(to=None, rem=None, discard_mine=False, restart_server=True, do_trial=T
         e["done"] = now()
         add_history(e)
         changed = git("diff", "--name-only", frm, tgt).splitlines()
-        steward = any(f == "manager.md" or f.startswith("roles/") for f in changed)
+        rules = [f for f in changed if f == "manager.md" or f.startswith("roles/")]
+        steward = bool(rules)
+        # t-oss-monitor-check: "steward_restart" keeps its name for older stewards; manager.md's update_done row says to
+        # re-read these files in place (and make_agents.py when roles/ changed), so no restart is needed.
         notify({"kind": "update_done", "from": e["from_version"], "to": e["to_version"], "commit": tgt[:7],
-                "steward_restart": steward, "dropped_mine": e["dropped_mine"],
-                "text": f"updated to v{e['to_version']} ({tgt[:7]})" + ("; manager.md or roles/ changed: restart the steward session to read them" if steward else "")})
+                "steward_restart": steward, "rules_changed": rules, "dropped_mine": e["dropped_mine"],
+                "text": f"updated to v{e['to_version']} ({tgt[:7]})" + ("; manager.md or roles/ changed: re-read them (see manager.md, update_done)" if steward else "")})
         check(rem, quiet=True)
         run.end(True, f"updated to v{e['to_version']}", to_version=e["to_version"])
         return e

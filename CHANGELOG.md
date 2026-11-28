@@ -17,12 +17,16 @@ Work in progress goes under `## Unreleased`; the release renames it to `## [X.Y.
 
 ### Added
 - A latest-release badge at the top of both READMEs.
+- **`./start` checks for Claude Code's Monitor tool (t-oss-monitor-check).** The steward hears the dashboard through Monitor; without it, what you type is never picked up and nothing says why. `./start` reads `claude --version` and prints the fix (`claude update`, then `./start`) when it is older than 2.1.98, older than 2.1.310 on Bedrock / Vertex / Foundry or with telemetry off, or when your settings deny `Monitor`. A warning only: the start goes on.
+- **"Not listening?" on the dashboard.** When the steward looks online but your oldest message has waited 10 minutes, the rail and chat header say "not listening?" and the ticker gives the fix; tapping it opens the troubleshooting guide. `/api/state` meta has a new `inbox_oldest` (when the oldest unhandled inbox entry was written). Covered by `tests/unit/test_monitor_check.py`, `tests/api/test_inbox_oldest.py` and the e2e journey `monitorhint`.
+- `manager.md`: rows for the `update_done` and `update_rolled_back` inbox entries (re-read the rules in place after an update or a Go back, then say so in one line; no restart needed), and a step for a steward that finds no Monitor tool (say so with the fix instead of going quiet).
 
 ### Changed
 - README refresh (`README.md`, `README.zh-CN.md`, `docs/img/`): the top image is now the desktop home in the Leather look at night; `crew.gif` moves into "Meet the crew"; every screenshot is retaken on the sample board (no Welcome notice, sample usage only); the looks image is a bigger 2x2 grid at night; step 1 of "Try it in 5 minutes" no longer repeats the clone commands.
 
 ### Fixed
 - The README said ComfyUI support was removed "in this version"; it now says 0.2.0.
+- After an update that changed `manager.md` or `roles/`, a running steward kept the old rules until someone restarted it: the `update_done` entry asked for a restart, but `manager.md` never said what to do with it. The entry now also lists `rules_changed`, and the steward re-reads them.
 
 ### Upgrade notes
 - Migrations: none

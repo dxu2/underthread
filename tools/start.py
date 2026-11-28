@@ -11,7 +11,7 @@
     ./start --uninstall     take it off this computer (asks first; --dry-run only lists): see tools/uninstall.py
     ./start --from-app      what the icon runs: no questions, errors in a dialog, the steward in a minimised Terminal window
 
-Order: Python >= 3.10 → git / claude present (a warning only) → .claude/agents/ (make_agents.py when missing or older than
+Order: Python >= 3.10 → git / claude present and its Monitor tool (`claude --version`; warnings only) → .claude/agents/ (make_agents.py when missing or older than
 roster.json) → tools/ensure_server.py (reuses a running server; never installs anything) → browser → steward.
 The steward is started only when none is running: a `claude` process started with the steward prompt in this folder, or a
 heartbeat (agents.manager.last_seen) newer than 30 minutes while its status is not offline.
@@ -127,7 +127,80 @@ def check_env():
     claude = shutil.which("claude")
     if claude:
         say("✓ " + T("找到 Claude Code：", "Claude Code: ") + claude)
+        ok, msg = monitor_check(claude)
+        say(("✓ " if ok else "! ") + msg)
     return claude
+
+
+# t-oss-monitor-check: the steward hears the dashboard through Claude Code's Monitor tool. Without it, what you type is
+# never picked up and nothing says why. Versions from Claude Code's CHANGELOG (github.com/anthropics/claude-code):
+# 2.1.98 "Added Monitor tool"; 2.1.310 "Added the Monitor tool ... on Bedrock, Vertex, and Foundry, and when telemetry
+# or nonessential traffic is disabled" (before that it was missing there). A warning only: startup goes on either way.
+MONITOR_MIN = (2, 1, 98)
+MONITOR_MIN_GATED = (2, 1, 310)
+GATE_ENV = ("CLAUDE_CODE_USE_BEDROCK", "CLAUDE_CODE_USE_VERTEX", "CLAUDE_CODE_USE_FOUNDRY",
+            "DISABLE_TELEMETRY", "CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC")
+UPGRADE_CMD = "claude update"
+
+
+def claude_version(claude):
+    """(major, minor, patch) from `claude --version` ("2.1.319 (Claude Code)"), or None."""
+    import re
+    try:
+        out = subprocess.run([claude, "--version"], capture_output=True, text=True, timeout=15,
+                             stdin=subprocess.DEVNULL).stdout
+    except (OSError, subprocess.SubprocessError):
+        return None
+    m = re.search(r"(\d+)\.(\d+)\.(\d+)", out or "")
+    return tuple(int(x) for x in m.groups()) if m else None
+
+
+def _settings_files():
+    home = os.path.expanduser("~")
+    return [os.path.join(home, ".claude", "settings.json"), os.path.join(ROOT, ".claude", "settings.json"),
+            os.path.join(ROOT, ".claude", "settings.local.json")]
+
+
+def _settings():
+    """(env keys set to a true-ish value, Monitor denied?) across the user and project Claude Code settings."""
+    env, denied = {k for k in GATE_ENV if str(os.environ.get(k) or "").strip() not in ("", "0", "false")}, False
+    for p in _settings_files():
+        try:
+            with open(p, encoding="utf-8") as f:
+                s = json.load(f)
+        except (OSError, ValueError):
+            continue
+        if not isinstance(s, dict):
+            continue
+        e = s.get("env") if isinstance(s.get("env"), dict) else {}
+        env |= {k for k in GATE_ENV if str(e.get(k) or "").strip() not in ("", "0", "false")}
+        deny = (s.get("permissions") or {}).get("deny") if isinstance(s.get("permissions"), dict) else None
+        if isinstance(deny, list) and any(str(r).split("(")[0].strip() == "Monitor" for r in deny):
+            denied = True
+    return env, denied
+
+
+def monitor_check(claude):
+    """(ok, one line for the terminal). Never blocks: a missing Monitor is a warning with the fix."""
+    v = claude_version(claude)
+    env, denied = _settings()
+    fix = T(f"修法：跑 `{UPGRADE_CMD}` 更新 Claude Code，然后再跑 ./start。",
+            f"Fix: run `{UPGRADE_CMD}` to update Claude Code, then run ./start again.")
+    if v is None:
+        return False, T("没读出 Claude Code 的版本（claude --version）。管家要靠 Monitor 工具听看板，需要 2.1.98 或更新。",
+                        "Could not read the Claude Code version (claude --version). The steward needs the Monitor tool to hear the dashboard: 2.1.98 or newer.") + " " + fix
+    ver = ".".join(map(str, v))
+    if v < MONITOR_MIN:
+        return False, T(f"Claude Code {ver} 还没有 Monitor 工具（2.1.98 才有）。没有它，管家听不到你在看板上说的话，也不会报错。",
+                        f"Claude Code {ver} has no Monitor tool (it arrived in 2.1.98). Without it the steward never hears what you type in the dashboard, and nothing says why.") + " " + fix
+    if v < MONITOR_MIN_GATED and env:
+        keys = ", ".join(sorted(env))
+        return False, T(f"Claude Code {ver} 在这种设置下（{keys}）没有 Monitor 工具，2.1.310 起才有。没有它，管家听不到看板。",
+                        f"Claude Code {ver} has no Monitor tool with this setup ({keys}); it arrived there in 2.1.310. Without it the steward never hears the dashboard.") + " " + fix
+    if denied:
+        return False, T("Claude Code 的设置里 permissions.deny 拦了 Monitor，管家就听不到看板。把那条从 deny 里删掉，再跑 ./start。",
+                        "Your Claude Code settings deny Monitor (permissions.deny), so the steward cannot hear the dashboard. Remove that rule, then run ./start again.")
+    return True, T(f"Claude Code {ver}，有 Monitor 工具（管家靠它听看板）", f"Claude Code {ver} has the Monitor tool (the steward hears the dashboard with it)")
 
 
 def agents_stale():

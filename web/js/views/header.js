@@ -106,7 +106,17 @@ function mgrState() {
     return { on: false, sleep: true, wake, back: back && clock(wake), since: m.last_seen,
       txt: back ? t("sleep_at", { t: clock(wake) }) : t("waking") };
   }
+  /* t-oss-monitor-check: online by heartbeat, but your oldest message has sat unread for DEAF_MIN minutes. Usually a steward
+     whose Claude Code has no Monitor tool (it never hears inbox.jsonl); the ticker line says how to fix it. */
+  if (!stale && deafMin() >= DEAF_MIN) return { on: false, deaf: true, txt: t("mgr_deaf_pill"), since: m.last_seen };
   return { on: !stale, txt: stale ? `${t("offline")}?` : t("online"), since: m.last_seen };
+}
+const DEAF_MIN = 10;
+/* minutes the oldest unacked inbox entry has waited (0 when none); the server clock offset is not worth it at this scale */
+function deafMin() {
+  const o = ST.meta && ST.meta.inbox_oldest, n = ST.meta && ST.meta.inbox_unacked;
+  if (!o || !n) return 0;
+  const ms = Date.now() - new Date(o); return ms > 0 ? Math.floor(ms / 6e4) : 0;
 }
 // Plan usage comes from the manager's statusLine (tools/statusline.py): 5-hour window drives the orb,
 // the weekly window is the thin bar under it. Shown as what's LEFT, like a stamina bar.
@@ -485,4 +495,4 @@ function wireHeader() {
   $("#sync").addEventListener("keydown", e => { if ((e.key === "Enter" || e.key === " ") && e.target.id === "sync" && !e.repeat) { e.preventDefault(); modalStatus(); } });
 }
 
-export { TOOL_IC, toolName, toolIc, TOOL_IN, TOOL_OUT, TOOL_STALE, TOOL_T, toolFx, fxStyle, toolBadge, toolWhat, TOOL_LAST, TOOL_EXTRA, toolLine, toolHTML, renderTool, runsLeft, nextEvent, mgrState, until, clock, USAGE_STALE, ageShort, ageTxt, usageSrc, usage, UG, loadRoleUsage, fmtTok, roleUsage, ruName, ruTip, ruQuota, soulSw, soulHTML, ruHTML, ruFit, ruSettle, ruCard, syncPaint, MAIL_X, YARN, SW, swatchSvg, swatchSet, renderHeader, wireHeader };
+export { TOOL_IC, toolName, toolIc, TOOL_IN, TOOL_OUT, TOOL_STALE, TOOL_T, toolFx, fxStyle, toolBadge, toolWhat, TOOL_LAST, TOOL_EXTRA, toolLine, toolHTML, renderTool, runsLeft, nextEvent, mgrState, deafMin, until, clock, USAGE_STALE, ageShort, ageTxt, usageSrc, usage, UG, loadRoleUsage, fmtTok, roleUsage, ruName, ruTip, ruQuota, soulSw, soulHTML, ruHTML, ruFit, ruSettle, ruCard, syncPaint, MAIL_X, YARN, SW, swatchSvg, swatchSet, renderHeader, wireHeader };

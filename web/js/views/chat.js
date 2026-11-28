@@ -371,7 +371,7 @@ function renderChat() {
   if (firstBuild) chatDraftLoad();   // t-draft-keep: restore this partner's unsent text after a reload
   const a = agent(UI.chat);
   const ms = mgrState();
-  const st = a.id === "manager" ? (ms.on ? `<span class="on">▶ ${t("online")}</span>` : ms.sleep ? `<span class="zz">☾ ${esc(ms.txt)}</span>` : `<span class="off">● ${t("offline")}</span>`)
+  const st = a.id === "manager" ? (ms.on ? `<span class="on">▶ ${t("online")}</span>` : ms.sleep ? `<span class="zz">☾ ${esc(ms.txt)}</span>` : `<span class="off">● ${ms.deaf ? esc(ms.txt) : t("offline")}</span>`)
     : a.status === "working" ? `<span class="on">▶ ${t("working")}</span>` : `<span class="idle">${t(a.status || "idle")}</span>`;
   if (window.Market && Market.hrBar) Market.hrBar(r);   /* t-hr-build: the 面试中 bar above the HR DM */
   setSrc($(".ch-who", r), `${av(a, "lg")}<span class="nm">${esc(aname(a))}</span>${atitle(a) && atitle(a) !== aname(a) ? `<span class="ti">${esc(atitle(a))}</span>` : ""}${qBadge(a.id)}${st}<span class="sp"></span>`);

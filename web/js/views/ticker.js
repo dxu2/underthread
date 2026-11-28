@@ -9,7 +9,8 @@ import { t } from "../core/i18n.js";
 import { ST, UI, items, waitMs } from "../core/store.js";
 import { api } from "../core/ui.js";
 import { openItem } from "./drawer.js";
-import { mgrState } from "./header.js";
+import { mgrState, deafMin } from "./header.js";
+const DEAF_HELP = "https://github.com/dxu2/underthread/blob/main/docs/troubleshooting.md#the-steward-is-online-but-never-picks-up-what-you-type";
 /* r-improve-1118 P2 (health): 22:30-08:00 the page stops nagging about cards waiting on review (the user has a 22:30 bedtime reminder).
    Counts, red dots, urgent cards and manager-offline lines are unchanged; push has its own quiet hours. */
 const QUIET = { from: 22 * 60 + 30, to: 8 * 60 };
@@ -21,6 +22,7 @@ function tickerItems() {
   for (const n of ST.notices || []) if (!n.until || new Date(n.until) > now) out.push({ text: UI.lang === "en" && n.text_en || n.text, level: n.level, id: n.id });   /* t-i18n-c: text_en */
   const m = mgrState();
   if (m.sleep) out.unshift({ text: m.back ? t("mgr_sleep", { t: m.back, n: ST.meta.inbox_unacked || 0 }) : t("mgr_waking"), level: "info" });
+  else if (m.deaf) out.unshift({ text: t("mgr_deaf", { m: deafMin(), n: ST.meta.inbox_unacked }), level: "urgent", href: DEAF_HELP });   /* t-oss-monitor-check */
   else if (!m.on && ST.meta.inbox_unacked) out.unshift({ text: t("mgr_offline", { n: ST.meta.inbox_unacked }), level: "urgent" });
   for (const it of items()) {
     if (it.category === "urgent" && it.stage !== "done" && it.owner === "manager") out.unshift({ text: t("no_owner_urgent", { t: it.title }), level: "urgent", item: it.id });
@@ -87,6 +89,7 @@ function renderTicker() {
   el.onclick = e => {
     const d = e.target.closest("[data-dismiss]"); if (d) return api("notice_dismiss", { id: d.dataset.dismiss });
     if (e.target.closest(".msg") && n.item) openItem(n.item);
+    else if (e.target.closest(".msg") && n.href) window.open(n.href, "_blank", "noopener");
   };
 }
 

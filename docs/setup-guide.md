@@ -39,7 +39,7 @@ Everything below still works by hand, exactly as before.
 | macOS or Linux | Windows is untested |
 | Python 3.10 or newer (standard library only) | `python3 --version` |
 | Claude Code, signed in to a paid Claude plan | `claude --version` |
-| A Claude Code version that has the **Monitor** tool (the steward watches its inbox with it) | Ask Claude Code "do you have the Monitor tool?" |
+| A Claude Code version that has the **Monitor** tool (the steward watches its inbox with it): 2.1.98 or newer, 2.1.310 or newer on Bedrock / Vertex / Foundry or with telemetry off | `claude --version`; `./start` checks it for you. Too old: `claude update` |
 | A browser | Any recent one; Safari on iPhone for the phone app |
 | Optional: ffmpeg, if a teammate works on audio or video | `ffmpeg -version` |
 | Optional: the Codex CLI signed in with ChatGPT, for images | `python3 tools/image.py backend` |
