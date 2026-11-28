@@ -55,7 +55,10 @@ module.exports = {
     await c.shot("rest", home);
 
     /* 1. idle -> working: start beat, then the loop (changes in the first 4 s after a load are taken as the boot snapshot catching up) */
-    await c.until(() => p.evaluate(() => performance.now() > 4600), 15000);   /* past yarnkit.js's 4 s boot guard (a fast fixture load gets here sooner) */
+    /* past yarnkit.js's 4 s boot guard. It counts from when the module ran, not from navigation: on a slow load (CI WebKit) the scripts finish
+       well after navigation start, so wait 4.6 s from the last script's responseEnd (modules run after that) */
+    await c.until(() => p.evaluate(() => { const js = performance.getEntriesByType("resource").filter(e => /\.m?js(\?|$)/.test(e.name));
+      return performance.now() > Math.max(0, ...js.map(e => e.responseEnd)) + 4600; }), 20000);
     const card = `fx-yk-${tag}`;
     c.su("upsert-item", "--id", card, "--title", `毛线猫测试 ${tag}`, "--who", role, "--owner", role, "--category", "side", "--kind", "deliverable", "--stage", "doing");
     c.su("set-agent", role, "--status", "working", "--item", card, "--activity", "yarn test");

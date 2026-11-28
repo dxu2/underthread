@@ -61,7 +61,9 @@ module.exports = {
         await new Promise(res => setTimeout(res, 500));
         return { at: +at.toFixed(2), before: +before.toFixed(2), on: document.querySelector("#tabbar button.on").dataset.k };
       });
-      c.check(`${tag}: a second tap mid-slide does not jump`, j.at <= Math.max(.35, j.before * 1.3) && j.on === "home", j);
+      /* floor .5 px/ms: a retarget runs at .26-.39 px/ms on CI WebKit even when the slide before it started late (low "before"); a jump is
+         a whole tab width (~80 px) in one frame, several px/ms */
+      c.check(`${tag}: a second tap mid-slide does not jump`, j.at <= Math.max(.5, j.before * 1.3) && j.on === "home", j);
       if (tag === "white-ut-leather1" || tag === "white-ut-knit1" || tag === "dark-plain-off") {
         await p.evaluate(() => document.querySelector("#tabbar button[data-k=activity]").click()); await c.sleep(150);
         await c.shot(`mid-${tag}`, "#tabbar"); await c.sleep(900); await c.shot(`rest-${tag}`, "#tabbar");

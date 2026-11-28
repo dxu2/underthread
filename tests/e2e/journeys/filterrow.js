@@ -29,14 +29,16 @@ module.exports = {
     const slide = async (sel, i) => {
       await p.evaluate(sel => { window.__fr = []; const t0 = performance.now(), r0 = document.querySelector(sel);
         const f = ts => { const r = document.querySelector(sel), ind = r && r.querySelector(".seg-ind"), ir = ind && ind.getBoundingClientRect();
-          window.__fr.push({ t: ts - t0, same: r === r0, x: ir ? ir.x : null, w: ir ? ir.width : 0, io: ind ? +getComputedStyle(ind).opacity : 0, ro: r ? +getComputedStyle(r).opacity : 0 });
+          const sg = ind && ind.parentElement;   /* x on the track, not the screen: the track may scroll the picked button into view while the pill slides,
+            and on a slow WebKit frame the scroll runs ahead of the pill's start, which on screen looks like a step back (19 -> 8 -> 32) */
+          window.__fr.push({ t: ts - t0, same: r === r0, x: ir ? ir.x - sg.getBoundingClientRect().x + sg.scrollLeft : null, sl: sg ? sg.scrollLeft : 0, w: ir ? ir.width : 0, io: ind ? +getComputedStyle(ind).opacity : 0, ro: r ? +getComputedStyle(r).opacity : 0 });
           if (performance.now() - t0 < 900) requestAnimationFrame(f); };
         requestAnimationFrame(f); }, sel);
       const bt = (await p.$$(`${sel} .seg-i`))[i]; await bt.tap(); await c.sleep(1100);
       return p.evaluate(sel => { const F = window.__fr, on = document.querySelector(sel + " .seg-i.on"), ind = document.querySelector(sel + " .seg-ind");
         const a = on.getBoundingClientRect(), b = ind.getBoundingClientRect(); let vel = 0, back = 0, gone = 0, fade = 1, moved = 0, jt = null;
         for (let k = 1; k < F.length; k++) { if (F[k].x == null || F[k].w < 4 || F[k].io < .99) gone++; else if (F[k - 1].x != null) { const d = F[k].x - F[k - 1].x, v = Math.abs(d) / Math.max(16.7, F[k].t - F[k - 1].t); if (v > vel) { vel = v; jt = [Math.round(F[k - 1].t), Math.round(F[k].t), Math.round(F[k - 1].x), Math.round(F[k].x)]; } if (Math.abs(d) > .5) moved++; back = Math.max(back, -Math.sign(F.at(-1).x - F[0].x) * d); } fade = Math.min(fade, F[k].ro); }
-        return { jt, xs: F.map(f => f.x == null ? -1 : Math.round(f.x)).join(" "), frames: F.length, same: F.every(x => x.same), gone, vel: +vel.toFixed(2), back: Math.round(back), moved, fade, end: Math.round(Math.abs(a.x - b.x)) + Math.round(Math.abs(a.width - b.width)) }; }, sel);
+        return { jt, xs: F.map(f => f.x == null ? -1 : Math.round(f.x)).join(" "), frames: F.length, same: F.every(x => x.same), gone, vel: +vel.toFixed(2), back: Math.round(back), moved, fade, end: Math.round(Math.abs(a.x - b.x)) + Math.round(Math.abs(a.width - b.width)), scr: Math.round(Math.max(...F.map(f => f.sl)) - Math.min(...F.map(f => f.sl))) }; }, sel);
     };
     for (const [th, ut, tx] of SK) {
       const tag = `${th}-${ut || "plain"}-${tx}`;
@@ -53,9 +55,9 @@ module.exports = {
         for (const i of [3, 1]) {
           const r = await slide(sel, i);
           /* speed, not distance per frame: a render frame can be long (WebKit ~90 ms), the pill keeps its pace through it (transform-only, compositor);
-             the spring's peak is ~1.4 px/ms over a 4-button pick; no step backwards beyond the spring's small overshoot */
+             the spring's peak is ~1.4 px/ms over a 4-button pick; no step backwards beyond the spring's small overshoot; the track scrolls only enough to show the picked button (scr), not to centre it */
           c.check(`${tag} ${nm} -> ${i}: pill slides every frame, never vanishes, row never fades, row kept`,
-            r.gone === 0 && r.vel <= 2.2 && r.back <= 4 && r.moved >= 6 && r.fade >= .99 && r.end <= 2 && r.same, r);
+            r.gone === 0 && r.vel <= 2.2 && r.back <= 4 && r.moved >= 6 && r.fade >= .99 && r.end <= 2 && r.same && r.scr <= 48, r);
         }
         if (tab === "activity") { await c.tap("#tabbar button[data-k=quests]"); await c.sleep(900); }
       }

@@ -37,8 +37,11 @@ module.exports = {
     const entry = sf.an.filter(a => /^(rise|bub-in)$/.test(a.n)), begins = entry.map(a => a.begin != null ? a.begin : a.at - a.el * 1000);
     /* fresh = starts from 0 (no negative delay): only the very first draw may do that, every redraw carries on (.m-ago). The begins
        agree within a frame or two (the carried delay is counted from when the first draw was made, the animation starts a frame later). */
+    /* the carried delay is fixed when the redraw is built and the animation starts on the next frame: a slow frame there (CI WebKit, ~120 ms)
+       lands the begin that much later; a restart shows as fresh > 1 and as opacity dropping back (next check), so allow the longest frame seen */
     const spread = Math.max(...begins) - Math.min(...begins), late = Math.min(...begins) - sf.first, fresh = entry.filter(a => a.delay === 0).length;
-    c.check("my bubble's entry animation begins once (a redraw only carries on)", entry.length >= 1 && fresh <= 1 && spread < 60 && late < 150, { fresh, spread, late, first: sf.first, an: sf.an });
+    let gap = 0; for (let i = 1; i < sf.op.length; i++) gap = Math.max(gap, sf.op[i][0] - sf.op[i - 1][0]);
+    c.check("my bubble's entry animation begins once (a redraw only carries on)", entry.length >= 1 && fresh <= 1 && spread < Math.max(60, gap + 30) && late < 150, { fresh, spread, gap, late, first: sf.first, an: sf.an });
     let back = 0; for (let i = 1; i < sf.op.length; i++) back = Math.max(back, sf.op[i - 1][1] - sf.op[i][1], sf.op[i][2] - sf.op[i - 1][2]);
     c.check("opacity never drops back and blur never returns (per frame)", back < 0.05, { back, frames: sf.op.length, op: sf.op.filter((x, i) => i % 3 === 0).slice(0, 30) });
     c.check("server copy is on screen, no pending bubble left", await p.evaluate(t => [...document.querySelectorAll("#right .ch-msgs .msg.me:not(.pend)")].some(e => e.textContent.includes(t)), mine));
