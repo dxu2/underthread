@@ -188,15 +188,15 @@ def monitor_check(claude):
             f"Fix: run `{UPGRADE_CMD}` to update Claude Code, then run ./start again.")
     if v is None:
         return False, T("没读出 Claude Code 的版本（claude --version）。管家要靠 Monitor 工具听看板，需要 2.1.98 或更新。",
-                        "Could not read the Claude Code version (claude --version). The steward needs the Monitor tool to hear the dashboard: 2.1.98 or newer.") + " " + fix
+                        "Could not read the Claude Code version (claude --version). The steward needs the Monitor tool to hear the dashboard: 2.1.98 or newer.") + T("", " ") + fix
     ver = ".".join(map(str, v))
     if v < MONITOR_MIN:
         return False, T(f"Claude Code {ver} 还没有 Monitor 工具（2.1.98 才有）。没有它，管家听不到你在看板上说的话，也不会报错。",
-                        f"Claude Code {ver} has no Monitor tool (it arrived in 2.1.98). Without it the steward never hears what you type in the dashboard, and nothing says why.") + " " + fix
+                        f"Claude Code {ver} has no Monitor tool (it arrived in 2.1.98). Without it the steward never hears what you type in the dashboard, and nothing says why.") + T("", " ") + fix
     if v < MONITOR_MIN_GATED and env:
         keys = ", ".join(sorted(env))
         return False, T(f"Claude Code {ver} 在这种设置下（{keys}）没有 Monitor 工具，2.1.310 起才有。没有它，管家听不到看板。",
-                        f"Claude Code {ver} has no Monitor tool with this setup ({keys}); it arrived there in 2.1.310. Without it the steward never hears the dashboard.") + " " + fix
+                        f"Claude Code {ver} has no Monitor tool with this setup ({keys}); it arrived there in 2.1.310. Without it the steward never hears the dashboard.") + T("", " ") + fix
     if denied:
         return False, T("Claude Code 的设置里 permissions.deny 拦了 Monitor，管家就听不到看板。把那条从 deny 里删掉，再跑 ./start。",
                         "Your Claude Code settings deny Monitor (permissions.deny), so the steward cannot hear the dashboard. Remove that rule, then run ./start again.")
