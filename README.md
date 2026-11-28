@@ -12,13 +12,14 @@
 
 **English** · [简体中文](README.zh-CN.md)
 
-<img src="docs/img/crew.gif" alt="Five embroidered-patch teammates standing in a row, then picking up their tools one by one" width="560">
+<img src="docs/img/hero-en.png" alt="The desktop home in the Leather look at night: Waiting on you, New replies, Shipped today, usage per teammate, this week's progress, dailies and recent media, with the crew down the left rail (example data)" width="960">
 
 [**Try it in 5 minutes**](#try-it-in-5-minutes) · [**Meet the crew**](#meet-the-crew) · [**Features**](#features) · [**Phone**](#on-your-phone) · [**Docs**](#docs)
 
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 ![Python 3.10+, standard library only](https://img.shields.io/badge/python-3.10%2B%20%C2%B7%20stdlib%20only-informational)
 ![Runs on Claude Code](https://img.shields.io/badge/runs%20on-Claude%20Code-orange)
+[![Latest release](https://img.shields.io/github/v/release/dxu2/underthread)](https://github.com/dxu2/underthread/releases/latest)
 
 </div>
 
@@ -27,8 +28,6 @@
 **Who it's for.** People who already use Claude Code and have more small projects in flight than they can keep in their head: research, writing, planning, small tooling fixes, recurring chores. If you'd rather review a queue than babysit a chat window, it's for you.
 
 **What it costs.** The software is free (MIT). The work is done by Claude Code, so it **uses your own Claude plan's usage**, and the steward stays online all day. Every card a teammate works on spends plan quota. The steward watches the meter: once usage passes 85% it queues new work instead of dispatching it, and at 95% it sleeps until the usage window resets.
-
-<p align="center"><img src="docs/img/hero-home-en.png" alt="The desktop home in the Stitch look: Waiting on you, the Getting started checklist, the team in the left rail and the steward chat on the right (example data)" width="840"></p>
 
 Everything runs on your own machine, and nothing goes out into the world unless you send it yourself.
 
@@ -60,6 +59,8 @@ Everything runs on your own machine, and nothing goes out into the world unless 
 ## Meet the crew
 
 The default crew starts small: five members, and you hire the rest as you need them. Each one has an embroidered patch, and when they're busy they pick up a little tool of their own.
+
+<p align="center"><img src="docs/img/crew.gif" alt="Five embroidered-patch teammates standing in a row, then picking up their tools one by one" width="560"></p>
 
 > **Steward = manager.** In files, commands and the roster, the steward's id is `manager` (`manager.md`, `set-agent manager`). The other ids are in the third column.
 
@@ -99,12 +100,7 @@ That's it: `./start` starts the dashboard, opens it in your browser and wakes th
 
 ### Steps
 
-**1. Get it and start it.**
-
-```bash
-git clone https://github.com/dxu2/underthread.git && cd underthread
-./start
-```
+**1. Get it and start it.** Run the same two commands as above: `git clone` the repo, then `./start` inside it.
 
 `./start` does the setup in order and prints one line per step:
 - checks for Python 3.10+ (and says which version to install if yours is older), git and the `claude` command;
@@ -158,9 +154,11 @@ Something not working? See [Troubleshooting](docs/troubleshooting.md). The long 
 
 ## A day with your crew
 
-The screenshots below are a sample board (the `classic` seven-person crew, made-up cards), in the Stitch look.
+The screenshots below are a sample board (the `classic` seven-person crew, made-up cards), in the Stitch look at night. The one at the top of this page is Leather; see [Looks](#looks) for all four.
 
 **09:10 · Just say it.** You type a sentence into the chat. The steward answers, a new card appears, and a teammate gets to work. No form, no template. The **Working now** row shows who is on what, and a small knit kitten keeps them company while they work (it curls up and naps at night).
+
+<p align="center"><img src="docs/img/hero-home-en.png" alt="The desktop home in the Stitch look at night: Waiting on you, New replies, Shipped today, usage per teammate and this week's progress, with the steward chat open on the right (example data)" width="840"></p>
 
 **10:40 · A question, not a wall of text.** Nobody hides a decision on page four of a draft. Scout wrote a plan and wants to know one thing first. You get the options as buttons, the one Scout would pick goes first (marked Rec.), and "Other…" is always there.
 
@@ -207,9 +205,9 @@ The screenshots below are a sample board (the `classic` seven-person crew, made-
 
 ### Looks
 
-Four looks, each in night and day (or follow the system): **Stitch** (knit texture, the signature look), **Ink** (black glass), **Leather** and **Plain**. Pick one in the checklist's Look step or in Settings → Appearance. A new browser starts on Leather.
+Four looks, each in night and day (or follow the system): **Stitch** (knit texture, the signature look), **Ink** (black glass), **Leather** and **Plain**. Pick one in the checklist's Look step or in Settings → Appearance. A new browser starts on Leather. Below, all four at night.
 
-<p align="center"><img src="docs/img/looks-en.png" alt="The same home in Stitch, Ink, Leather and Plain, at night and in the day (example data)" width="840"></p>
+<p align="center"><img src="docs/img/looks-en.png" alt="The same home in Stitch, Ink, Leather and Plain, all four at night (example data)" width="960"></p>
 
 Every button, tab and switch responds to hover, press and switch, and everything respects reduced motion. Looping animations pause after 20 seconds without input or when the window is in the background (power saving, on by default).
 
@@ -269,7 +267,7 @@ Brush, avatars for new hires and a few tools draw through `tools/image.py`, whic
 | `codex` | The Codex CLI (or the one inside ChatGPT.app) on your ChatGPT subscription. Never an API key |
 | `none` | No drawing. New hires get their job template's patch instead, and everything else still works |
 
-`python3 tools/image.py backend` tells you which one is active and why. Every picture costs quota, so there are no automatic retries. ComfyUI support was removed in this version; an old `image.backend: "comfy"` is read as `auto`.
+`python3 tools/image.py backend` tells you which one is active and why. Every picture costs quota, so there are no automatic retries. ComfyUI support was removed in 0.2.0; an old `image.backend: "comfy"` is read as `auto`.
 
 ---
 

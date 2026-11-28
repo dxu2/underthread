@@ -12,13 +12,14 @@
 
 [English](README.md) · **简体中文**
 
-<img src="docs/img/crew.gif" alt="五个刺绣徽章队员排成一排，依次拿起自己的小工具" width="560">
+<img src="docs/img/hero-zh.png" alt="软皮外观的夜间电脑首页：等你拍板、新回复、今天交付、各角色用量、本周进度、每日和最近素材，左栏是队员（示例数据）" width="960">
 
 [**5 分钟跑起来**](#5-分钟跑起来) · [**认识队员**](#认识队员) · [**功能**](#功能) · [**手机**](#手机上用) · [**文档**](#文档)
 
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 ![Python 3.10+，只用标准库](https://img.shields.io/badge/python-3.10%2B%20%C2%B7%20stdlib%20only-informational)
 ![Runs on Claude Code](https://img.shields.io/badge/runs%20on-Claude%20Code-orange)
+[![最新版本](https://img.shields.io/github/v/release/dxu2/underthread)](https://github.com/dxu2/underthread/releases/latest)
 
 </div>
 
@@ -27,8 +28,6 @@
 **给谁用。** 已经在用 Claude Code、手上同时挂着一堆小事的人：查资料、写东西、做计划、修小工具、每天要做的杂事。比起盯着一个聊天窗口，你更想每天过一遍待审队列，那就适合你。
 
 **要花什么。** 软件本身免费（MIT）。活是 Claude Code 干的，所以**会用掉你自己 Claude 订阅的额度**，而且管家全天在线，每张卡都要消耗额度。管家会看着用量：超过 85% 只排队不派新活，到 95% 就睡到额度窗口重置。
-
-<p align="center"><img src="docs/img/hero-home-zh.png" alt="针脚外观的电脑首页：等你拍板、开工清单、左栏的队员和右边的管家对话（示例数据）" width="840"></p>
 
 所有东西都在你自己的机器上。你不亲手发出去的东西，什么都不会出去。
 
@@ -60,6 +59,8 @@
 ## 认识队员
 
 默认小队从五个人起步，缺谁再招谁。每人一枚刺绣徽章，干活的时候会拿起自己的小工具。
+
+<p align="center"><img src="docs/img/crew.gif" alt="五个刺绣徽章队员排成一排，依次拿起自己的小工具" width="560"></p>
 
 > **管家 = manager。** 文件、命令和 roster 里，管家的 id 是 `manager`（`manager.md`、`set-agent manager`）。其他人的 id 见第三列。
 
@@ -99,12 +100,7 @@ git clone https://github.com/dxu2/underthread.git && cd underthread
 
 ### 步骤
 
-**1. 下载并启动。**
-
-```bash
-git clone https://github.com/dxu2/underthread.git && cd underthread
-./start
-```
+**1. 下载并启动。** 就是上面那两行命令：先 `git clone`，再在目录里跑 `./start`。
 
 `./start` 按顺序做完准备，每一步打印一行：
 - 检查 Python 3.10+（版本太旧会告诉你装哪个）、git 和 `claude` 命令；
@@ -158,9 +154,11 @@ git clone https://github.com/dxu2/underthread.git && cd underthread
 
 ## 和小队过一天
 
-下面的截图是一块示例看板（`classic` 七人队，卡片是编的），外观是「针脚」。
+下面的截图是一块示例看板（`classic` 七人队，卡片是编的），外观是夜间的「针脚」。本页最上面那张是「软皮」，四种外观见[外观](#外观)。
 
 **09:10 · 张口就来。** 在聊天里打一句话。管家回你，一张新卡出现，有个队员开始干活。不用填表，不用选模板。「此刻在忙」里能看到谁在做哪张卡，旁边还有一只针织小猫陪着（晚上它会蜷起来睡觉）。
+
+<p align="center"><img src="docs/img/hero-home-zh.png" alt="针脚外观的夜间电脑首页：等你拍板、新回复、今天交付、各角色用量和本周进度，右边开着管家对话（示例数据）" width="840"></p>
 
 **10:40 · 一个问题，不是一大段字。** 没人会把需要你拍板的事藏在草稿第四页。Scout 交了方案，开工前想先问一件事：选项就是几个按钮，Scout 推荐的排第一（标着「推荐」），「其他…」永远都在。
 
@@ -207,9 +205,9 @@ git clone https://github.com/dxu2/underthread.git && cd underthread
 
 ### 外观
 
-四种外观，各有夜间和日间（也可以跟随系统）：**针脚**（针织质感，招牌外观）、**墨刊**（黑玻璃）、**软皮**、**素色**。在开工清单的「外观」一步或 设置 → 外观 里选。新浏览器默认是软皮。
+四种外观，各有夜间和日间（也可以跟随系统）：**针脚**（针织质感，招牌外观）、**墨刊**（黑玻璃）、**软皮**、**素色**。在开工清单的「外观」一步或 设置 → 外观 里选。新浏览器默认是软皮。下图是四种外观的夜间版。
 
-<p align="center"><img src="docs/img/looks-zh.png" alt="同一个首页的针脚、墨刊、软皮、素色四种外观，夜间和日间（示例数据）" width="840"></p>
+<p align="center"><img src="docs/img/looks-zh.png" alt="同一个首页的针脚、墨刊、软皮、素色四种外观，都是夜间（示例数据）" width="960"></p>
 
 每个按钮、标签和开关都有悬停、按下和切换的反馈，也都尊重「减少动态效果」。20 秒没操作或窗口在后台时，循环动画会暂停（省电模式，默认开）。
 
@@ -269,7 +267,7 @@ Brush、新队员的头像和几个工具都通过 `tools/image.py` 出图，后
 | `codex` | Codex CLI（或 ChatGPT.app 里自带的），走你的 ChatGPT 订阅，从不用 API key |
 | `none` | 不出图。新队员用岗位模板自带的补丁头像，其他一切照常 |
 
-`python3 tools/image.py backend` 会告诉你现在用的是哪个、为什么。每张图都花额度，所以不会自动重试。这一版去掉了 ComfyUI；旧配置里的 `image.backend: "comfy"` 会按 `auto` 处理。
+`python3 tools/image.py backend` 会告诉你现在用的是哪个、为什么。每张图都花额度，所以不会自动重试。0.2.0 起去掉了 ComfyUI；旧配置里的 `image.backend: "comfy"` 会按 `auto` 处理。
 
 ---
 

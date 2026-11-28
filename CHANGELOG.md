@@ -13,6 +13,23 @@ Versions follow [semantic versioning](https://semver.org) and the `VERSION` file
 
 Work in progress goes under `## Unreleased`; the release renames it to `## [X.Y.Z] - YYYY-MM-DD`. Sections dated before 0.1.0 are from before versioning.
 
+## Unreleased
+
+### Added
+- A latest-release badge at the top of both READMEs.
+
+### Changed
+- README refresh (`README.md`, `README.zh-CN.md`, `docs/img/`): the top image is now the desktop home in the Leather look at night; `crew.gif` moves into "Meet the crew"; every screenshot is retaken on the sample board (no Welcome notice, sample usage only); the looks image is a bigger 2x2 grid at night; step 1 of "Try it in 5 minutes" no longer repeats the clone commands.
+
+### Fixed
+- The README said ComfyUI support was removed "in this version"; it now says 0.2.0.
+
+### Upgrade notes
+- Migrations: none
+- New config keys: none
+- Extension API: unchanged
+- Manual steps: none
+
 ## [0.3.1] - 2026-11-27
 
 ### Added
